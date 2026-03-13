@@ -1,0 +1,6 @@
+flags:
+  enabled: true
+  off: false
+counts:
+  int: 42
+  float: 3.14

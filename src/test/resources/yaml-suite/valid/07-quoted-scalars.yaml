@@ -1,0 +1,4 @@
+simple: "Double Quotes"
+single: 'Single Quotes'
+escaped: "Line one\nLine two"
+symbols: "Contains : and #"

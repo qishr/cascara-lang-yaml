@@ -1,0 +1,3 @@
+list:
+  - first
+ - second  # Only 1 space indent, should fail

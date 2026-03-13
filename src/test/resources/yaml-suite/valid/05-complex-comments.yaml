@@ -1,0 +1,6 @@
+# Header
+key: value # Inline
+# Middle
+list:
+  - item # List comment
+# Footer
