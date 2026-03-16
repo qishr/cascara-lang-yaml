@@ -109,21 +109,6 @@ public class YamlParser implements Parser<YamlDocument> {
 
         YamlNode root = parseValue();
 
-
-
-
-        // YamlNode root = parseValue();
-        // List<CommentAstNode> headers = new ArrayList<>(pendingComments);
-
-        // consume(YamlTokenType.STREAM_START, "Expected start of stream.");
-        // skipTrivia();
-
-        // pendingComments.clear();
-
-        // match(YamlTokenType.DOCUMENT_START);
-        // skipTrivia();
-
-
         // Consume any remaining structural trivia
         skipTrivia();
         while (!isAtEnd() && (check(YamlTokenType.DEDENT) || check(YamlTokenType.NEWLINE))) {
@@ -476,39 +461,45 @@ public class YamlParser implements Parser<YamlDocument> {
 
     /// Parses a scalar value and checks for same-line (inline) comments.
     private YamlScalarNode parseScalar() {
-        depth++;
-        trace("parseScalar");
+        ++this.depth;
+        this.trace("parseScalar");
+
         try {
-            YamlToken token = consume(YamlTokenType.SCALAR, "Expected scalar.");
+            YamlToken token = this.consume(YamlTokenType.SCALAR, "Expected scalar.");
             String raw = token.getLexeme();
             String value = (String) token.getValue();
 
-            // If it's a double-quoted string, we need to unescape backslashes
+            QuoteStyle style;
             if (raw.startsWith("\"")) {
-                value = unescapeDoubleQuotes(value);
+                style = QuoteStyle.DOUBLE;
+                value = this.unescapeDoubleQuotes(value);
+            } else if (raw.startsWith("'")) {
+                style = QuoteStyle.SINGLE;
+                value = this.unescapeSingleQuotes(value);
+            } else {
+                style = QuoteStyle.PLAIN;
+                // Handle boolean/null/number conversion for plain scalars
+                Object coercedValue = this.coercePlainScalar(value);
+
+                // We need to decide if YamlScalarNode holds Object or String.
+                // If it holds String, we'll fix it in the Compiler,
+                // but usually, it's better to store the typed value here.
+                value = coercedValue.toString();
+                // Note: If YamlScalarNode supports a 'TypedValue', set it here.
             }
 
             YamlScalarNode scalar = new YamlScalarNode(
-                token.getStartLine(),
-                token.getStartColumn(),
-                uri,
-                raw,
-                value,
-                raw.startsWith("\"") ? QuoteStyle.DOUBLE :
-                    (raw.startsWith("'") ? QuoteStyle.SINGLE : QuoteStyle.PLAIN)
+                token.getStartLine(), token.getStartColumn(), this.uri, raw, value, style
             );
 
-            // If there's a comment on the SAME line, grab it now!
-            if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
-                scalar.getComments().add(parseComment());
+            if (this.check(YamlTokenType.COMMENT) && this.peek().getStartLine() == token.getStartLine()) {
+                scalar.getComments().add(this.parseComment());
             }
 
-            parseInlineComment(scalar);
-
+            this.parseInlineComment(scalar);
             return scalar;
-
         } finally {
-            depth--;
+            --this.depth;
         }
     }
 
@@ -519,6 +510,24 @@ public class YamlParser implements Parser<YamlDocument> {
                     .replace("\\\\", "\\")
                     .replace("\\n", "\n")
                     .replace("\\r", "\r");
+    }
+
+    /// YAML single quotes unescape by replacing doubled single quotes with one.
+    private String unescapeSingleQuotes(String input) {
+        return input == null ? null : input.replace("''", "'");
+    }
+
+    /// Evaluates plain scalars for boolean values to avoid type-bleeding.
+    private Object coercePlainScalar(String input) {
+        if (input == null) return null;
+        String lowered = input.toLowerCase().trim();
+
+        // Standard YAML 1.2 boolean set
+        if (lowered.equals("true") || lowered.equals("yes") || lowered.equals("on")) return Boolean.TRUE;
+        if (lowered.equals("false") || lowered.equals("no") || lowered.equals("off")) return Boolean.FALSE;
+
+        // Add number parsing here if needed later
+        return input;
     }
 
     private YamlNode parseBlockScalar(boolean isLiteral) {
