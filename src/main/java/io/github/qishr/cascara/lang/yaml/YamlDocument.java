@@ -17,7 +17,7 @@ public class YamlDocument extends YamlNode implements StructuredDocument {
     private URI schemaUri = null;
 
     public YamlDocument(YamlNode root) {
-        super(root.getStartLine(), root.getStartColumn(), root.getUri());
+        super(root.getStartLine(), root.getStartColumn(), root.getOriginUri());
         this.root = root;
     }
 
@@ -28,8 +28,8 @@ public class YamlDocument extends YamlNode implements StructuredDocument {
     // StructuredDocument Implementation
     //
 
-    @Override public Optional<URI> getSchemaUri() {
-        return schemaUri == null ? Optional.empty() : Optional.of(schemaUri);
+    @Override public URI getSchemaUri() {
+        return schemaUri;
     }
 
     /// Returns the primary content node of the document.

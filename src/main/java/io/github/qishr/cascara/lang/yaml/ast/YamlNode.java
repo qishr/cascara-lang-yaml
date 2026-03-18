@@ -18,14 +18,14 @@ public abstract class YamlNode implements AstNode {
     private final int startColumn;
     private final int endLine = 0;
     private final int endColumn = 0;
-    private final URI uri;
+    private final URI originUri;
     private final List<CommentAstNode> comments = new ArrayList<>();
     private String anchor;
 
     protected YamlNode() {
         startLine = 0;
         startColumn = 0;
-        uri = null;
+        originUri = null;
     }
 
     /// Constructs a new YamlNode with specific source coordinates.
@@ -36,7 +36,7 @@ public abstract class YamlNode implements AstNode {
     protected YamlNode(int line, int column, URI uri) {
         this.startLine = line;
         this.startColumn = column;
-        this.uri = uri;
+        this.originUri = uri;
     }
 
     /// Gets the YAML anchor associated with this node (e.g., &anchorName).
@@ -69,7 +69,7 @@ public abstract class YamlNode implements AstNode {
     @Override public int getEndColumn() { return endColumn; }
 
     /// {@inheritDoc}
-    @Override public URI getUri() { return uri; }
+    @Override public URI getOriginUri() { return originUri; }
 
     /// {@inheritDoc}
     @Override public List<CommentAstNode> getComments() { return comments; }

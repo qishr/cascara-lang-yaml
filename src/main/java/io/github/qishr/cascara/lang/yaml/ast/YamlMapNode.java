@@ -68,7 +68,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
                 return;
             }
         }
-        entries.add(new YamlMapEntryNode(0, 0, getUri(), key, value));
+        entries.add(new YamlMapEntryNode(0, 0, getOriginUri(), key, value));
     }
 
     @Override
@@ -161,8 +161,8 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
             }
         }
         // Only if not found, create the new entry
-        YamlNode keyNode = new YamlScalarNode(0, 0, getUri(), key, key, QuoteStyle.PLAIN);
-        entries.add(new YamlMapEntryNode(0, 0, getUri(), keyNode, value));
+        YamlNode keyNode = new YamlScalarNode(0, 0, getOriginUri(), key, key, QuoteStyle.PLAIN);
+        entries.add(new YamlMapEntryNode(0, 0, getOriginUri(), keyNode, value));
     }
 
     public void put(YamlMapEntryNode entry) {
