@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 /// Base implementation for all YAML AST nodes.
 ///
@@ -21,6 +22,7 @@ public abstract class YamlNode implements AstNode {
     private final URI originUri;
     private final List<CommentAstNode> comments = new ArrayList<>();
     private String anchor;
+    private YamlToken token;
 
     protected YamlNode() {
         startLine = 0;
@@ -80,6 +82,10 @@ public abstract class YamlNode implements AstNode {
     public void addComment(CommentAstNode comment) {
         this.comments.add(comment);
     }
+
+    @Override
+    public YamlToken getToken() { return token; }
+    public void setToken(YamlToken token) { this.token = token; }
 
     /// Compares this node with another for equality based on its content.
     ///

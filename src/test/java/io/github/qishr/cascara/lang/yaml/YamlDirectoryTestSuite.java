@@ -7,15 +7,17 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.nio.file.*;
 import java.util.stream.Stream;
 
-import io.github.qishr.cascara.lang.yaml.YamlDocument;
-import io.github.qishr.cascara.lang.yaml.YamlOptions;
+import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
 
 class YamlDirectoryTestSuite {
 
+    private Reporter reporter = new SimpleReporter().setLevel(Level.TRACE);
     private final YamlOptions options = new YamlOptions().setStrict(true);
-    private final YamlParser parser = new YamlParser().setOptions(options);
+    private final YamlParser parser = new YamlParser().setOptions(options).setReporter(reporter);
 
     @ParameterizedTest(name = "Validating: {0}")
     @MethodSource("getValidFiles")

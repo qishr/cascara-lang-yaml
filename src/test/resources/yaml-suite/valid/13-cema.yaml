@@ -1,0 +1,31 @@
+$id: cascara://core/schema-service/entities
+definitions:
+  item:
+    type: object
+    properties:
+      id:
+        type: integer
+      docId:
+        type: string
+        title: Hex Permalink ID
+        x-indexed:
+          name: idx_doc_id
+          unique: true
+      status:
+        type: string
+        x-tracked: true
+      timestampCreated:
+        type: integer
+      timestampUpdated:
+        type: integer
+  task:
+    parent: item
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      assigneeId:
+        type: string
+        x-tracked: true

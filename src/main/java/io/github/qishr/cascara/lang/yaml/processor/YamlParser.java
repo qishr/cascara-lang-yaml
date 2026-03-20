@@ -36,7 +36,7 @@ import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 ///   the next appropriate data node (Scalar, Map, or Sequence).
 /// * **Indentation Lifecycle**: Manages block boundaries by consuming `INDENT` and `DEDENT`
 ///   tokens through the [parseValue] dispatcher.
-public class YamlParser implements Parser<YamlDocument> {
+public class YamlParser implements Parser<YamlDocument, YamlToken> {
     private URI uri;
     private List<YamlToken> tokens;
     private int current = 0;
@@ -66,6 +66,7 @@ public class YamlParser implements Parser<YamlDocument> {
     /// {@inheritDoc}
     @Override
     public YamlDocument parse(String text) throws YamlParserException {
+        this.uri = null;
         return parse(text, null);
     }
 
@@ -77,15 +78,29 @@ public class YamlParser implements Parser<YamlDocument> {
     @Override
     public YamlDocument parse(String text, URI uri) throws YamlParserException {
         this.uri = uri;
-        // if (reporter == null) { reporter = new StandardReporter().setLevel(Level.TRACE); }
         YamlTokenizer tokenizer = new YamlTokenizer();
         tokenizer.setReporter(this.reporter);
-        // tokenizer.setIndentSize(options.getIndentSize());
         this.current = 0;
         this.tokens = tokenizer.tokenize(text, uri);
-        // if (this.tokens == null || this.tokens.isEmpty()) {
-        //     return null;
-        // }
+        return parseDocument();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public YamlDocument parse(List<YamlToken> tokens) throws YamlParserException {
+        this.uri = null;
+        this.tokens = tokens;
+        this.current = 0;
+        return parseDocument();
+    }
+
+
+    /// {@inheritDoc}
+    @Override
+    public YamlDocument parse(List<YamlToken> tokens, URI uri) throws YamlParserException {
+        this.uri = uri;
+        this.tokens = tokens;
+        this.current = 0;
         return parseDocument();
     }
 
@@ -95,8 +110,6 @@ public class YamlParser implements Parser<YamlDocument> {
             YamlMapNode map = new YamlMapNode();
             return new YamlDocument(map);
         }
-
-
 
         consume(YamlTokenType.STREAM_START, "Expected start of stream.");
         skipTrivia();
@@ -230,7 +243,7 @@ public class YamlParser implements Parser<YamlDocument> {
     /// This method captures the column of the first key encountered and ensures
     /// all subsequent sibling keys in this map align perfectly.
     ///
-    /// @throws RuntimeException if a sibling key is found at an inconsistent indentation.
+    /// @throws YamlParserException if a sibling key is found at an inconsistent indentation.
     private YamlMapNode parseMap() {
         depth++;
         trace("parseMap");
@@ -281,9 +294,8 @@ public class YamlParser implements Parser<YamlDocument> {
                     mapColumn = keyToken.getStartColumn();
                 } else if (keyToken.getStartColumn() != mapColumn) {
                     // This will catch bad-key-indent.yaml
-                    throw new RuntimeException("Inconsistent indentation for map key at line " +
-                        keyToken.getStartLine() + ". Expected column " + mapColumn +
-                        " but found " + keyToken.getStartColumn());
+                    throw new YamlParserException("Inconsistent indentation for map key",
+                        keyToken.getStartLine(), keyToken.getStartColumn(), uri);
                 }
 
 
@@ -491,6 +503,7 @@ public class YamlParser implements Parser<YamlDocument> {
             YamlScalarNode scalar = new YamlScalarNode(
                 token.getStartLine(), token.getStartColumn(), this.uri, raw, value, style
             );
+            scalar.setToken(token);
 
             if (this.check(YamlTokenType.COMMENT) && this.peek().getStartLine() == token.getStartLine()) {
                 scalar.getComments().add(this.parseComment());

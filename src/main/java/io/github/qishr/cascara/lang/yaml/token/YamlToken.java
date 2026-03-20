@@ -49,6 +49,8 @@ public class YamlToken implements Token {
         return column;
     }
 
+    public void setType(YamlTokenType type) { this.type = type; }
+
     @Override
     public String toString() {
         String displayLexeme = lexeme.replace("\n", "\\n").replace("\r", "\\r").replace("\"", "\\\"");
