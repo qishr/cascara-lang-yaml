@@ -22,6 +22,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
+import io.github.qishr.cascara.lang.yaml.exception.YamlTokenierException;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
@@ -81,7 +82,11 @@ public class YamlParser implements Parser<YamlDocument, YamlToken> {
         YamlTokenizer tokenizer = new YamlTokenizer();
         tokenizer.setReporter(this.reporter);
         this.current = 0;
-        this.tokens = tokenizer.tokenize(text, uri);
+        try {
+            this.tokens = tokenizer.tokenize(text, uri);
+        } catch (YamlTokenierException e) {
+            throw new YamlParserException(e.getMessage(), e);
+        }
         return parseDocument();
     }
 

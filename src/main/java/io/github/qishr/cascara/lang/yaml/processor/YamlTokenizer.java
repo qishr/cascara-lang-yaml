@@ -13,7 +13,7 @@ import java.util.ArrayDeque;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.lang.LanguageOptions;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
-import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
+import io.github.qishr.cascara.lang.yaml.exception.YamlTokenierException;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
@@ -138,6 +138,9 @@ public class YamlTokenizer implements Tokenizer<YamlToken> {
 
     /// Dispatches the scan to specific handlers based on the current character.
     private void scanToken() {
+        // If we have pending spaces from a previous newline, process them now
+        // resolvePendingIndentation();
+
         final String method = "scanToken";
         int tokenStartColumn = column;
         char c = advance();
@@ -152,7 +155,7 @@ public class YamlTokenizer implements Tokenizer<YamlToken> {
             trace(method, "space or tab");
             if (c == '\t') {
                 // This ensures bad-tabs.yaml triggers an exception
-                throw new YamlParserException("Tab characters are not allowed for indentation in YAML at line " + line, null);
+                throw new YamlTokenierException("Tab characters are not allowed for indentation in YAML", line, column, uri);
             }
             return;
         }
@@ -245,26 +248,41 @@ public class YamlTokenizer implements Tokenizer<YamlToken> {
     /// This method compares the observed column of the first non-whitespace character
     /// against the [indentationLevels] stack to emit `INDENT` or `DEDENT` tokens.
     private void handleNewlineAndIndentation(char c) {
-        // 1. Handle Newline Tokens
+        // 1. First Newline
         String lexeme = (c == '\r' && peek() == '\n') ? "\r\n" : "\n";
         if (lexeme.length() == 2) advance();
-        addExplicitToken(YamlTokenType.NEWLINE, lexeme, column - 1);
+
+        // Use column - lexeme.length() to point to the start of the newline
+        addExplicitToken(YamlTokenType.NEWLINE, lexeme, column - lexeme.length());
         line++;
         column = 1;
 
-        // 2. Consume all leading spaces
-        int spaces = 0;
-        while (!isAtEnd() && peek() == ' ') {
-            spaces++;
-            advance();
+        // Keep eating newlines and spaces as long as the line is "empty"
+        while (!isAtEnd()) {
+            char next = peek();
+
+            if (next == ' ') {
+                advance();
+            } else if (next == '\n' || next == '\r') {
+                // We hit another newline, so previous spaces on this line didn't matter.
+                char nc = advance();
+                String nl = (nc == '\r' && peek() == '\n') ? "\r\n" : "\n";
+                if (nl.length() == 2) advance();
+
+                addExplicitToken(YamlTokenType.NEWLINE, nl, column - nl.length());
+                line++;
+                column = 1;
+            } else {
+                // We hit actual content (or a comment)
+                break;
+            }
         }
 
-        int currentColumn = spaces + 1;
+        int currentColumn = column;
         int expectedIndent = indentationLevels.peek();
 
-        // 3. Strict Algorithmic Comparison
+        // 4. Indentation Logic (The version that passes your tests)
         if (currentColumn > expectedIndent) {
-            // Only push if we haven't already established this level on this line
             indentationLevels.push(currentColumn);
             addStructuralToken(YamlTokenType.INDENT, currentColumn - 1);
         } else if (currentColumn < expectedIndent) {
@@ -273,7 +291,9 @@ public class YamlTokenizer implements Tokenizer<YamlToken> {
                 addStructuralToken(YamlTokenType.DEDENT, currentColumn);
             }
         }
-        // Note: if currentColumn == expectedIndent, it's a sibling. No tokens.
+
+        // Sync the start pointer so the next token doesn't include the spaces
+        this.start = this.current;
     }
 
     /// Scans a quoted scalar, handling escape sequences for double quotes.
@@ -311,19 +331,26 @@ public class YamlTokenizer implements Tokenizer<YamlToken> {
         if (isAtEnd()) addToken(YamlTokenType.ERROR);
     }
 
-    /// Scans a plain (unquoted) scalar, ensuring it does not contain illegal colons.
     private void scanPlainScalar() {
         trace("scanPlainScalar");
-        while (!isAtEnd() && !isWhitespace(peek()) && !FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(peek()) && peek() != '#') {
 
-            // This is the correct YAML rule: A colon is a VALUE_INDICATOR
-            // ONLY if followed by whitespace or the end of the stream.
-            if (peek() == ':' && (isWhitespace(peekNext()) || isAtEnd())) {
+        while (!isAtEnd()) {
+            char c = peek();
+
+            // 1. Stop at Newlines
+            if (c == '\n' || c == '\r') break;
+
+            // 2. Stop at Comments (Space + #)
+            // Note: In YAML, a # is only a comment if preceded by whitespace
+            if (c == '#' && (current == start || isWhitespace(source.charAt(current - 1)))) break;
+
+            // 3. Stop at Flow Indicators
+            if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c)) break;
+
+            // 4. The Colon Rule: Stop ONLY if it's a value indicator
+            if (c == ':' && (isWhitespace(peekNext()) || isAtEnd())) {
                 break;
             }
-
-            // Removed the "Illegal colon" throw.
-            // colons like 'key:value' (no space) are valid plain scalars.
 
             advance();
         }
@@ -333,8 +360,26 @@ public class YamlTokenizer implements Tokenizer<YamlToken> {
              return;
         }
 
-        String lexeme = source.substring(start, current);
-        addToken(YamlTokenType.SCALAR, lexeme);
+        // 5. Trim trailing whitespace
+        String rawLexeme = source.substring(start, current);
+        String trimmedLexeme = rawLexeme.stripTrailing();
+
+        // 6. Backup the pointer for every character trimmed
+        int trimmedLength = rawLexeme.length() - trimmedLexeme.length();
+        for (int i = 0; i < trimmedLength; i++) {
+            backup();
+        }
+
+        addToken(YamlTokenType.SCALAR, trimmedLexeme);
+    }
+
+    private void backup() {
+        if (current > 0) {
+            current--;
+            column--;
+            // Update currentChar to the new 'current' position if needed for tracing
+            currentChar = source.charAt(current > 0 ? current - 1 : 0);
+        }
     }
 
     private void scanIdentifier(YamlTokenType type) {
@@ -450,6 +495,8 @@ public class YamlTokenizer implements Tokenizer<YamlToken> {
 
     private String currentChar(char c) {
         switch (c) {
+            case ' ':
+                return "␣";
             case '\t':
                 return "⇥";
             case '\r':

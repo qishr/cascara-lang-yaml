@@ -63,11 +63,19 @@ class YamlDirectoryTestSuite {
         // 2. First Emit
         String emitted = emitter.emit(doc);
 
+        System.out.println("===");
+        System.out.println(emitted);
+        System.out.println("===");
+
         // 3. Re-parse
         YamlDocument reParsedDoc = parser.parse(emitted);
 
         // 4. Second Emit (using the SAME emitter instance)
         String secondEmit = emitter.emit(reParsedDoc);
+
+        System.out.println("===");
+        System.out.println(secondEmit);
+        System.out.println("===");
 
         if (!emitted.equals(secondEmit)) {
             fail(generateDiffMessage(fileName, emitted, secondEmit));

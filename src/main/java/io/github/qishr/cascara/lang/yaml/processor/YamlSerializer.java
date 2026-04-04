@@ -9,8 +9,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
@@ -32,17 +32,14 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlSerializerException;
 import io.github.qishr.cascara.lang.yaml.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
-import io.github.qishr.cascara.lang.yaml.annotation.Init;
 
 /// Standard implementation for YAML serialization.
 public class YamlSerializer implements Serializer<YamlNode> {
     private final YamlParser parser = new YamlParser();
     private YamlOptions options = new YamlOptions();
-    private Reporter reporter;
 
     @Override
     public YamlSerializer setReporter(Reporter reporter) {
-        this.reporter = reporter;
         this.parser.setReporter(reporter);
         return this;
     }
@@ -93,7 +90,6 @@ public class YamlSerializer implements Serializer<YamlNode> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <C> C fromAst(YamlNode astNode, Class<C> clazz) {
         try {
             // UNWRAP: If it's a document, get the actual content
@@ -118,7 +114,14 @@ public class YamlSerializer implements Serializer<YamlNode> {
     //
 
     /// Converts a Yaml AST structure back into a Java object of the specified type.
+    @SuppressWarnings("unchecked")
     public <T> T performMapping(YamlNode yaml, Class<T> clazz) throws YamlSerializerException {
+        // If the YAML node is null, or it's a scalar representing a null value,
+        // we return null immediately. This allows 'security: ' to map to a null Object.
+        if (yaml == null || (yaml instanceof YamlScalarNode scalar && scalar.getValue() == null)) {
+            return null;
+        }
+
         Set<String> claimedKeys = new HashSet<>();
         try {
 
@@ -139,7 +142,7 @@ public class YamlSerializer implements Serializer<YamlNode> {
 
             // 1. Validation
             if (!clazz.isAnnotationPresent(Serializable.class)) {
-                throw new YamlSerializerException("Class " + clazz.getSimpleName() + " is not @YamlSerializable");
+                throw new YamlSerializerException("Class " + clazz.getSimpleName() + " is not @Serializable");
             }
 
             T instance = clazz.getConstructor().newInstance();
@@ -183,7 +186,7 @@ public class YamlSerializer implements Serializer<YamlNode> {
             return instance;
         } catch (YamlSerializerException e) {
             throw e;
-        } catch (NoSuchMethodException e) { // TODO: Do this in the serializer
+        } catch (NoSuchMethodException e) {
             throw new YamlSerializerException("Failed to deserialize " + clazz.getSimpleName() + ": " + e.getMessage(), e);
         } catch (Exception e) {
             throw new YamlSerializerException("Failed to deserialize " + clazz.getSimpleName() + ": " + e.getMessage(), e);
@@ -247,31 +250,6 @@ public class YamlSerializer implements Serializer<YamlNode> {
     //
     // Serialization Helpers
     //
-
-    /// Validates that the object is not null and is annotated with @YamlSerializable.
-    private void checkIfSerializable(Object object) throws YamlSerializerException{
-        if (Objects.isNull(object)) {
-            throw new YamlSerializerException("The object to serialize is null");
-        }
-
-        Class<?> clazz = object.getClass();
-        if (!clazz.isAnnotationPresent(Serializable.class)) {
-            throw new YamlSerializerException("The class "
-            + clazz.getSimpleName()
-            + " is not annotated with YamlSerializable");
-        }
-    }
-
-    /// Invokes any methods annotated with @Init on the object instance.
-    private void initializeObject(Object object) throws Exception {
-        Class<?> clazz = object.getClass();
-        for (Method method : clazz.getDeclaredMethods()) {
-            if (method.isAnnotationPresent(Init.class)) {
-                method.setAccessible(true);
-                method.invoke(object);
-            }
-        }
-    }
 
     /// Retrieves all declared fields for a class and all its superclasses (excluding Object).
     private List<Field> getAllFields(Class<?> clazz) {
@@ -404,7 +382,7 @@ public class YamlSerializer implements Serializer<YamlNode> {
             return deserializeUri(node);
         }
 
-        // 2. Nested @YamlSerializable objects
+        // 2. Nested @Serializable objects
         if (targetType.isAnnotationPresent(Serializable.class)) {
             if (!(node instanceof YamlNode)) {
                  throw new YamlSerializerException("Expected YamlNode for serializable type: " + targetType.getSimpleName());
@@ -467,6 +445,7 @@ public class YamlSerializer implements Serializer<YamlNode> {
     }
 
     /// Converts a primitive value (already inferred by the AST) or a raw string into the target Java type.
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private Object deserializeScalar(Object primitive, Class<?> targetType) throws YamlSerializerException {
         if (primitive == null) return null;
 
@@ -492,6 +471,8 @@ public class YamlSerializer implements Serializer<YamlNode> {
         if (targetType == String.class) return rawValue;
         if (targetType == Path.class) return Path.of(rawValue);
         if (targetType == URI.class) return URI.create(rawValue);
+        if (targetType == UUID.class) return UUID.fromString(rawValue);
+
         if (targetType.isEnum()) {
             return Enum.valueOf((Class<Enum>) targetType, rawValue);
         }

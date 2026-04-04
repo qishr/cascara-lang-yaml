@@ -2,7 +2,6 @@ package io.github.qishr.cascara.lang.yaml;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
 import io.github.qishr.cascara.common.lang.StructuredDocument;
 import io.github.qishr.cascara.common.lang.ast.QuoteStyle;

@@ -11,7 +11,9 @@ public class TestState {
     @DataField
     public List<String> disabledModules = new ArrayList<>();
 
-    public TestState() {
+    @DataField
+    public NestedConfig security; // This is the object that will be null in YAML
 
-    }
+    public TestState() {}
 }
+

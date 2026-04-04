@@ -4,8 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.lang.exception.ParserException;
-import io.github.qishr.cascara.lang.yaml.YamlDocument;
-import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
@@ -20,12 +18,12 @@ class YamlComprehensiveTest {
     private final YamlParser parser = new YamlParser();
     private final YamlTokenizer tokenizer = new YamlTokenizer();
 
-    private void assertTokenTypes(List<YamlToken> tokens, YamlTokenType... expected) {
-        for (int i = 0; i < expected.length; i++) {
-            if (i >= tokens.size()) fail("Missing token at index " + i + ". Expected " + expected[i]);
-            assertEquals(expected[i], tokens.get(i).getType(), "Mismatch at token " + i);
-        }
-    }
+    // private void assertTokenTypes(List<YamlToken> tokens, YamlTokenType... expected) {
+    //     for (int i = 0; i < expected.length; i++) {
+    //         if (i >= tokens.size()) fail("Missing token at index " + i + ". Expected " + expected[i]);
+    //         assertEquals(expected[i], tokens.get(i).getType(), "Mismatch at token " + i);
+    //     }
+    // }
 
     // --- TOKENIZATION TESTS ---
 

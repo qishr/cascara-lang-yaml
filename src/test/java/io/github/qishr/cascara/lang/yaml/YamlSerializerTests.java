@@ -2,6 +2,7 @@ package io.github.qishr.cascara.lang.yaml;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.net.URI;
 
@@ -44,7 +45,6 @@ class YamlSerializerTests {
         colordef.setRightHexColor("right");
         colordef.setLerp("lerp");
 
-        Stringy stringy = new Stringy("test");
         YamlSerializer yamlSerializer = new YamlSerializer();
         YamlNode yaml = yamlSerializer.toAst(colordef);
         String string = new YamlEmitter().emit(yaml);
@@ -108,5 +108,21 @@ class YamlSerializerTests {
         assertEquals(1, t.getValue());
     }
 
+    @Test
+    void test_nullMappingToObject() throws YamlSerializerException {
+        // 'security:' is present, but has no value (null scalar)
+        String yamlString = "disabledModules: []\n" +
+                            "security: \n";
+
+        YamlSerializer yamlSerializer = new YamlSerializer();
+
+        // This is where it currently fails:
+        // The parser returns a null scalar, but the mapper
+        // expects to see tokens for a NestedConfig object.
+        TestState t = yamlSerializer.fromText(yamlString, TestState.class);
+
+        assertNotNull(t);
+        assertNull(t.security, "The security object should be null in the Java state");
+    }
 }
 

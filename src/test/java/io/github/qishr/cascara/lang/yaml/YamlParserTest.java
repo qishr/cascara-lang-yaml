@@ -5,7 +5,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.lang.yaml.YamlDocument;
+import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
@@ -15,6 +17,22 @@ import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 class YamlParserTest {
 
     private final YamlParser parser = new YamlParser();
+
+    @Test
+    void testNewLineInsideNestedObject() throws Exception {
+        String yaml = """
+            a:
+                b: 1
+
+                c: 2
+            """;
+
+        Reporter reporter = new SimpleReporter().setLevel(Level.TRACE);
+        YamlParser parser = new YamlParser().setReporter(reporter);
+        parser.parse(yaml);
+
+    }
+
 
     @Test
     void testIndentedScalarInSequence() throws Exception {

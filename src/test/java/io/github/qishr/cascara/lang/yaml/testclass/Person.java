@@ -18,8 +18,7 @@ public class Person {
     @DataField(key = "personAge")
     private String age;
 
-    private String address;
-
+    // private Strin
     public Person(String firstName, String lastName, String age) {
         this.firstName = firstName;
         this.lastName = lastName;
