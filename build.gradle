@@ -22,13 +22,13 @@ dependencies {
     testImplementation 'org.mockito:mockito-junit-jupiter:5.18.0'
     testRuntimeOnly('org.junit.platform:junit-platform-launcher')
 
-    implementation "io.github.qishr:cascara-common:0.1.0"
+    implementation "io.github.qishr:cascara-common:0.1.1"
 }
 
 
 java {
-    // withJavadocJar()
-    // withSourcesJar()
+    withJavadocJar()
+    withSourcesJar()
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
     }
