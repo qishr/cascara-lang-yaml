@@ -1,0 +1,6 @@
+records:
+  -
+    id: 101
+    mimeTypes:
+      -
+        "text/plain"
