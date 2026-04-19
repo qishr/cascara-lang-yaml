@@ -1,0 +1,5 @@
+map: {}
+list: []
+nested_empty:
+  - []
+  - {}
