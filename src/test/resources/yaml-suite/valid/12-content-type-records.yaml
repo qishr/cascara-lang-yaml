@@ -1,0 +1,65 @@
+records:
+  - canonicalId: "text/markdown"
+    canonicalName: "Markdown"
+    mimeTypes:
+      - "text/x-markdown"
+      - "text/markdown"
+    suffixes:
+      - ".md"
+    moduleId: ""
+  - canonicalId: "text/plain"
+    canonicalName: "Text"
+    mimeTypes:
+      - "text/plain"
+    suffixes:
+      - ".text"
+    moduleId: ""
+  - canonicalId: "application/java-archive"
+    canonicalName: "Java Archive"
+    mimeTypes:
+      - "application/java-archive"
+    suffixes:
+      - ".jar"
+    moduleId: ""
+  - canonicalId: "text/json"
+    canonicalName: "JavaScript object notation"
+    mimeTypes:
+      - "application/json"
+      - "application/schema+json"
+      - "text/json"
+    suffixes:
+      - ".json"
+    moduleId: ""
+  - canonicalId: "application/java"
+    canonicalName: "Java Byte Code"
+    mimeTypes:
+      - "application/x-java-class"
+      - "application/java"
+      - "application/java-byte-code"
+    suffixes:
+      - ".class"
+    moduleId: ""
+  - canonicalId: "text/css"
+    canonicalName: "Cascading style sheet"
+    mimeTypes:
+      - "text/css"
+    suffixes:
+      - ".css"
+    moduleId: ""
+  - canonicalId: "text/yaml"
+    canonicalName: "YAML Ain't Markup Language"
+    mimeTypes:
+      - "text/x-yaml"
+      - "text/yaml"
+      - "application/yaml"
+    suffixes:
+      - ".yaml"
+    moduleId: ""
+  - canonicalId: "text/x-java"
+    canonicalName: "Java source code"
+    mimeTypes:
+      - "text/x-java"
+      - "text/x-java-source"
+    suffixes:
+      - ".java"
+    moduleId: ""
