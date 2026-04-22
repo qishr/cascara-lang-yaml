@@ -1,141 +1,28 @@
 plugins {
-    id 'java-library'
-    id 'jacoco'
-    id 'signing'
-	id 'maven-publish'
+    id 'cascara.java-library' version '0.1.0'
+    id "cascara.publish" version "0.1.0"
 }
 
 
 repositories {
-    mavenLocal()
-    mavenCentral()
-    maven { url = 'https://repo.gradle.org/gradle/libs-releases' }
+	mavenLocal()
+	mavenCentral()
 }
 
 
 dependencies {
-    testImplementation(platform('org.junit:junit-bom:5.13.3'))
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.13.4'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
-    testImplementation 'org.mockito:mockito-core:5.18.0'
-    testImplementation 'org.mockito:mockito-junit-jupiter:5.18.0'
-    testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+    implementation(platform("io.github.qishr:cascara-bom:0.1.0"))
 
-    implementation "io.github.qishr:cascara-common:0.1.1"
-}
+    // JUnit
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    // Mockito
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
 
-java {
-    withJavadocJar()
-    withSourcesJar()
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
-    }
-}
-
-
-tasks.register('runtimeModulePath', Copy) {
-    dependsOn tasks.named('jar')
-    from configurations.runtimeClasspath
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
-    // exclude "slf4j-*-module.jar"
-
-    def modulePathDir = new File(rootProject.buildDir, 'modulepath')
-    modulePathDir.mkdirs()
-    into modulePathDir
-
-    doLast {
-        println "Finished copying files to modulepath."
-    }
-}
-
-
-
-tasks.named('build') {
-    finalizedBy(tasks.named('runtimeModulePath'))
-}
-
-
-test {
-	useJUnitPlatform()
-	testLogging {
-		events "passed", "skipped", "failed"
-	}
-    finalizedBy jacocoTestReport // report is always generated after tests run
-}
-
-jacocoTestReport {
-    dependsOn test // tests are required to run before generating the report
-    reports {
-        xml.required = true
-        html.required = true
-    }
-}
-
-jacoco {
-    toolVersion = "0.8.13"
-}
-
-
-jar {
-    archiveBaseName.set(maven_name)
-    manifest {
-        attributes( 'Implementation-Title': maven_name,
-                    'Implementation-Version': version,
-                    'Implementation-Vendor': group,
-                    'Automatic-Module-Name': java_name,
-                    'Build-Date': new Date())
-    }
-}
-
-
-jar.doLast {
-    def jarFile = archiveFile.get().asFile
-    ant.checksum file: jarFile
-}
-
-
-signing {
-    sign publishing.publications
-}
-
-
-publishing {
-    publications {
-        pub(MavenPublication) {
-            from components.java
-            pom {
-                name = maven_name
-                description = title
-                url = "https://qishr.github.io/${maven_name}"
-                licenses {
-                    license {
-                        name = "Apache License, Version 2.0"
-                        url = "https://www.apache.org/licenses/LICENSE-2.0"
-                    }
-                }
-                developers {
-                    developer {
-                        id = 'qishr'
-                        name = 'Sandy Dunlop'
-                        email = 'sandy.dunlop@gmail.com'
-                    }
-                }
-                scm {
-                    connection = "scm:git:git://github.com/qishr/${maven_name}.git"
-                    developerConnection = "scm:git:ssh://github.com:qishr/${maven_name}.git"
-                    url = "https://github.com/qishr/${maven_name}"
-                }
-            }
-        }
-    }
-
-	repositories {
-        maven {
-            name = "LocalMavenWithChecksums"
-            url = uri(layout.buildDirectory.dir("staging-deploy"))
-        }
-    }
+    // Cascara
+    implementation "io.github.qishr:cascara-common"
 }

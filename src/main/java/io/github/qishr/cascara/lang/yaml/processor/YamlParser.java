@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.github.qishr.cascara.common.content.ContentType;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.lang.LanguageOptions;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
@@ -38,6 +39,10 @@ import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 /// * **Indentation Lifecycle**: Manages block boundaries by consuming `INDENT` and `DEDENT`
 ///   tokens through the [parseValue] dispatcher.
 public class YamlParser implements Parser<YamlDocument, YamlToken> {
+    static final ContentType contentType = new ContentType("YAML")
+            .withMimeType("text/yaml")
+            .withSuffix(".yaml");
+
     private URI uri;
     private List<YamlToken> tokens;
     private int current = 0;
@@ -49,6 +54,11 @@ public class YamlParser implements Parser<YamlDocument, YamlToken> {
     private final List<YamlCommentNode> pendingComments = new ArrayList<>();
 
     private final Map<String, YamlNode> anchorRegistry = new HashMap<>();
+
+    @Override
+    public ContentType getContentType() {
+        return contentType;
+    }
 
     /// {@inheritDoc}
     @Override

@@ -1,5 +1,6 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import io.github.qishr.cascara.common.content.ContentType;
 import io.github.qishr.cascara.common.lang.StructuredDocument;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
@@ -14,6 +15,11 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 
 public class YamlConverter implements AstConverter<YamlNode> {
+    @Override
+    public ContentType getContentType() {
+        return YamlParser.contentType;
+    }
+
     public String toText(AstNode ast) {
         YamlNode yamlNode = fromAst(ast);
         YamlEmitter emitter = new YamlEmitter();

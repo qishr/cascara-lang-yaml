@@ -4,7 +4,7 @@
 
     "java.test.config": {
         "modulePaths": ["${workspaceFolder}/build/modulepath"],
-        "module": "cascara.studio",
+        "module": "cascara.lang.yaml",
         "vmArgs": [
             "--module-path",
             "${workspaceFolder}/build/modulepath",
