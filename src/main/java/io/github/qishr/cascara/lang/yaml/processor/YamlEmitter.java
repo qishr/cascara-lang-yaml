@@ -7,6 +7,7 @@ import io.github.qishr.cascara.common.lang.LanguageOptions;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.common.lang.ast.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Emitter;
+import io.github.qishr.cascara.common.util.ContentType;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.lang.yaml.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
@@ -37,6 +38,11 @@ public class YamlEmitter implements Emitter {
 
     public YamlEmitter() {
         // reporter = new StandardReporter().setLevel(Level.TRACE);
+    }
+
+    @Override
+    public ContentType getContentType() {
+        return YamlParser.contentType;
     }
 
     @Override
