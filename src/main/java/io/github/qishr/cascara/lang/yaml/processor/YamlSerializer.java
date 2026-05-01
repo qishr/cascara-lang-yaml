@@ -416,6 +416,10 @@ public class YamlSerializer implements Serializer<YamlNode> {
             return node;
         }
 
+        // Likely cause of arriving here is that the target type either:
+        //   - Doesn't have the @Serializable annotation
+        //   - Is in a package that's not opened to cascara.lang.yaml
+        //
         // 5. Strictness: If we got here, the AST structure doesn't match the Java model
         throw new YamlSerializerException(
             String.format("Incompatible types: Cannot map %s to Java type %s",
