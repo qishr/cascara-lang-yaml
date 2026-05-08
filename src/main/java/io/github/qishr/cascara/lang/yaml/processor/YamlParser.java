@@ -6,14 +6,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.github.qishr.cascara.common.util.ContentType;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.lang.LanguageOptions;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.common.lang.ast.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Parser;
 import io.github.qishr.cascara.lang.yaml.YamlDocument;
-import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlCommentNode;
@@ -38,16 +34,10 @@ import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 ///   the next appropriate data node (Scalar, Map, or Sequence).
 /// * **Indentation Lifecycle**: Manages block boundaries by consuming `INDENT` and `DEDENT`
 ///   tokens through the [parseValue] dispatcher.
-public class YamlParser implements Parser<YamlDocument, YamlToken> {
-    static final ContentType contentType = new ContentType("YAML")
-            .withMimeType("text/yaml")
-            .withSuffix(".yaml");
-
+public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Parser<YamlDocument, YamlToken> {
     private URI uri;
     private List<YamlToken> tokens;
     private int current = 0;
-    private Reporter reporter;
-    private YamlOptions options = new YamlOptions(); // Default options
     private int depth = 0;
 
     /// Buffer to hold comments until a data node is created to claim them.
@@ -55,29 +45,11 @@ public class YamlParser implements Parser<YamlDocument, YamlToken> {
 
     private final Map<String, YamlNode> anchorRegistry = new HashMap<>();
 
-    @Override
-    public ContentType getContentType() {
-        return contentType;
-    }
-
-    /// {@inheritDoc}
-    @Override
-    public YamlParser setReporter(Reporter reporter) {
-        this.reporter = reporter;
-        return this;
-    }
-
-    /// {@inheritDoc}
-    @Override
-    public YamlParser setOptions(LanguageOptions<?> options) {
-        this.options = (YamlOptions) options;
-        return this;
-    }
+    @Override protected YamlParser self() { return this; }
 
     /// {@inheritDoc}
     @Override
     public YamlDocument parse(String text) throws YamlParserException {
-        this.uri = null;
         return parse(text, null);
     }
 
@@ -90,6 +62,7 @@ public class YamlParser implements Parser<YamlDocument, YamlToken> {
     public YamlDocument parse(String text, URI uri) throws YamlParserException {
         this.uri = uri;
         YamlTokenizer tokenizer = new YamlTokenizer();
+        tokenizer.setOptions(options);
         tokenizer.setReporter(this.reporter);
         this.current = 0;
         try {

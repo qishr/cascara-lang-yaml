@@ -14,7 +14,6 @@ import java.util.UUID;
 
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
-import io.github.qishr.cascara.common.lang.LanguageOptions;
 import io.github.qishr.cascara.common.lang.annotation.AnyGetter;
 import io.github.qishr.cascara.common.lang.annotation.AnySetter;
 import io.github.qishr.cascara.common.lang.annotation.DataField;
@@ -25,33 +24,17 @@ import io.github.qishr.cascara.common.lang.ast.QuoteStyle;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.processor.Serializer;
 import io.github.qishr.cascara.common.util.ReflectionUtils;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlSerializerException;
 import io.github.qishr.cascara.lang.yaml.YamlDocument;
-import io.github.qishr.cascara.lang.yaml.YamlOptions;
 
 /// Standard implementation for YAML serialization.
-public class YamlSerializer implements Serializer<YamlNode> {
+public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implements Serializer<YamlNode> {
     private final YamlParser parser = new YamlParser();
-    private YamlOptions options = new YamlOptions();
 
-    @Override
-    public YamlSerializer setReporter(Reporter reporter) {
-        this.parser.setReporter(reporter);
-        return this;
-    }
-
-    @Override
-    public YamlSerializer setOptions(LanguageOptions<?> options) {
-        if (options instanceof YamlOptions yamlOptions) {
-            this.options = yamlOptions;
-            this.parser.setOptions(yamlOptions);
-        }
-        return this;
-    }
+    @Override protected YamlSerializer self() { return this; }
 
     //
     // Serializer Implementation

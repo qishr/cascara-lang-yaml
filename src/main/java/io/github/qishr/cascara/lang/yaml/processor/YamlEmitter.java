@@ -7,8 +7,6 @@ import io.github.qishr.cascara.common.lang.LanguageOptions;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.common.lang.ast.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Emitter;
-import io.github.qishr.cascara.common.util.ContentType;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.lang.yaml.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
@@ -29,27 +27,16 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 /// The emitter maintains a virtual column through the `indent` parameters passed
 /// during recursive calls. It handles special cases like "compact" sequences where
 /// the mapping starts on the same line as the sequence dash (`- key: value`).
-public class YamlEmitter implements Emitter {
+public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements Emitter {
     private final StringBuilder sb = new StringBuilder();
     private final Set<String> writtenAnchors = new HashSet<>();
     private static final String NL = System.lineSeparator();
-    private YamlOptions options = new YamlOptions();
-    private Reporter reporter;
 
     public YamlEmitter() {
         // reporter = new StandardReporter().setLevel(Level.TRACE);
     }
 
-    @Override
-    public ContentType getContentType() {
-        return YamlParser.contentType;
-    }
-
-    @Override
-    public YamlEmitter setReporter(Reporter reporter) {
-        this.reporter = reporter;
-        return this;
-    }
+    @Override protected YamlEmitter self() { return this; }
 
     @Override
     public YamlEmitter setOptions(LanguageOptions<?> options) {

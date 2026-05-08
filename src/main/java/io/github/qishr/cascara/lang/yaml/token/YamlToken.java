@@ -3,12 +3,12 @@ package io.github.qishr.cascara.lang.yaml.token;
 import io.github.qishr.cascara.common.lang.token.Token;
 
 public class YamlToken implements Token {
-    YamlTokenType type;
-    String lexeme;
-    Object value;
-    int offset;
-    int line;
-    int column;
+    private YamlTokenType type;
+    private String lexeme;
+    private Object value;
+    private int offset;
+    private int line;
+    private int column;
 
     public YamlToken(YamlTokenType type, String lexeme, Object value,  int offset, int line, int column) {
         this.type = type;

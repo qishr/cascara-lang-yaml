@@ -10,8 +10,6 @@ import java.util.EnumSet;
 import java.net.URI;
 import java.util.ArrayDeque;
 
-import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.lang.LanguageOptions;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
 import io.github.qishr.cascara.lang.yaml.exception.YamlTokenierException;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
@@ -31,9 +29,8 @@ import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 /// ### Scalar Constraints
 /// * Plain scalars (unquoted) cannot contain a colon (`:`) unless it is a
 ///   valid value indicator followed by whitespace.
-public class YamlTokenizer implements Tokenizer<YamlToken> {
+public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implements Tokenizer<YamlToken> {
     private URI uri;
-    private Reporter reporter = null;
 
     private static final Map<Character, YamlTokenType> FLOW_CONTEXT_SINGLE_CHAR_TOKENS = new HashMap<>();
     static {
@@ -60,21 +57,11 @@ public class YamlTokenizer implements Tokenizer<YamlToken> {
         // reporter = new StandardReporter().setLevel(Level.TRACE);
     }
 
+    @Override protected YamlTokenizer self() { return this; }
+
     @Override
     public Set<YamlTokenType> getTokenTypes() {
         return EnumSet.allOf(YamlTokenType.class);
-    }
-
-    @Override
-    public YamlTokenizer setReporter(Reporter reporter) {
-        this.reporter = reporter;
-        return this;
-    }
-
-    @Override
-    public YamlTokenizer setOptions(LanguageOptions<?> options) {
-        // TODO: Options
-        return this;
     }
 
     @Override
