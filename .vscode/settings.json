@@ -1,0 +1,16 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.compile.nullAnalysis.mode": "automatic",
+
+    "java.test.config": {
+        "modulePaths": ["${workspaceFolder}/build/modulepath"],
+        "module": "cascara.lang.yaml",
+        "vmArgs": [
+            "--module-path",
+            "${workspaceFolder}/build/modulepath",
+        ],
+        "java.project.referencedLibraries": [
+            "${workspaceFolder}/build/modulepath/*.jar"
+        ]
+    },
+}

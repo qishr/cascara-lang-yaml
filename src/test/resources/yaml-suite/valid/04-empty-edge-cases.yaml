@@ -1,0 +1,4 @@
+empty_map: {}
+empty_list: []
+null_value:
+trailing_key: value
