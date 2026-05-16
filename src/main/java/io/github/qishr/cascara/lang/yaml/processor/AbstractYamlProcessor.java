@@ -22,7 +22,7 @@ public abstract class AbstractYamlProcessor<P extends Processor> implements Proc
     public Properties getCapabilities() {
         if (capabilities == null) {
             capabilities = new Properties();
-            capabilities.set("processor.contentType", "text/yaml");
+            capabilities.set("contentType", "text/yaml");
         }
         return capabilities;
     }

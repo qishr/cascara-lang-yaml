@@ -1,6 +1,6 @@
 plugins {
-    id "io.github.qishr.cascara.meta.java-library" version "0.1.0"
-    id "io.github.qishr.cascara.meta.publish" version "0.1.0"
+    id "io.github.qishr.cascara-meta.java-library" version "0.1.0"
+    id "io.github.qishr.cascara-meta.publish" version "0.1.0"
 }
 
 
@@ -11,7 +11,7 @@ repositories {
 
 
 dependencies {
-    implementation(platform("io.github.qishr:cascara-meta-bom:0.1.0"))
+    implementation(platform("io.github.qishr:cascara-meta-bom:0.1.5"))
 
     // JUnit
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
