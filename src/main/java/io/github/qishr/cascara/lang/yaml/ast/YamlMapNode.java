@@ -2,8 +2,11 @@ package io.github.qishr.cascara.lang.yaml.ast;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
@@ -56,19 +59,20 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
     public CollectionStyle getStyle() { return style; }
 
     @Override
-    public Set<YamlNode> keys() {
+    public Set<YamlNode> keySet() {
         return Set.copyOf(entries.stream().map(e -> e.getKey()).toList());
     }
 
     @Override
-    public void put(YamlNode key, YamlNode value) {
+    public YamlMapNode put(YamlNode key, YamlNode value) {
         for (YamlMapEntryNode entry : entries) {
             if (entry.getKey().equals(key)) {
                 entry.setValue(value);
-                return;
+                return this;
             }
         }
         entries.add(new YamlMapEntryNode(0, 0, getOriginUri(), key, value));
+        return this;
     }
 
     @Override
@@ -151,27 +155,44 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
     /// @param key   The string key to be associated with the value.
     /// @param value The value node to be associated with the key.
     @Override
-    public void put(String key, YamlNode value) {
+    public YamlMapNode put(String key, YamlNode value) {
         for (YamlMapEntryNode entry : entries) {
             YamlNode kNode = entry.getKey();
             // Check if the existing key's string value matches the requested key
             if (kNode instanceof YamlScalarNode scalar && key.equals(scalar.getString())) {
                 entry.setValue(value);
-                return;
+                return this;
             }
         }
         // Only if not found, create the new entry
         YamlNode keyNode = new YamlScalarNode(0, 0, getOriginUri(), key, key, QuoteStyle.PLAIN);
         entries.add(new YamlMapEntryNode(0, 0, getOriginUri(), keyNode, value));
+        return this;
     }
 
-    public void put(YamlMapEntryNode entry) {
+    public YamlMapNode put(YamlMapEntryNode entry) {
         for (YamlMapEntryNode candidate : entries) {
             if (candidate.getKey().equals(entry.getKey())) {
                 candidate.setValue(entry.getValue());
-                return;
+                return this;
             }
         }
         entries.add(entry);
+        return this;
+    }
+
+    @Override
+    public Set<YamlMapEntryNode> entrySet() {
+        return new HashSet<YamlMapEntryNode>(entries);
+    }
+
+    @Override
+    public Collection<YamlNode> values() {
+        return entries.stream().map(YamlMapEntryNode::getValue).collect(Collectors.toList());
+    }
+
+    @Override
+    public YamlNode put(String key, String value) {
+        return put(key, new YamlScalarNode(value, QuoteStyle.DOUBLE));
     }
 }
