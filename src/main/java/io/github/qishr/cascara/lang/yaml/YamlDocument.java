@@ -4,7 +4,7 @@ import java.net.URI;
 import java.util.List;
 
 import io.github.qishr.cascara.common.lang.StructuredDocument;
-import io.github.qishr.cascara.common.lang.ast.QuoteStyle;
+import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;

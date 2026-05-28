@@ -7,12 +7,13 @@ import java.util.List;
 import java.util.Map;
 
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
-import io.github.qishr.cascara.common.lang.ast.QuoteStyle;
+import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Parser;
 import io.github.qishr.cascara.lang.yaml.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlCommentNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlErrorNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
@@ -49,7 +50,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
 
     /// {@inheritDoc}
     @Override
-    public YamlDocument parse(String text) throws YamlParserException {
+    public YamlDocument parse(String text) {
         return parse(text, null);
     }
 
@@ -59,23 +60,19 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     /// @param uri Optional URI of the source file for error reporting.
     /// @return A [YamlDocument] representing the root of the AST.
     @Override
-    public YamlDocument parse(String text, URI uri) throws YamlParserException {
+    public YamlDocument parse(String text, URI uri) {
         this.uri = uri;
         YamlTokenizer tokenizer = new YamlTokenizer();
         tokenizer.setOptions(options);
         tokenizer.setReporter(this.reporter);
         this.current = 0;
-        try {
-            this.tokens = tokenizer.tokenize(text, uri);
-        } catch (YamlTokenierException e) {
-            throw new YamlParserException(e.getMessage(), e);
-        }
+        this.tokens = tokenizer.tokenize(text, uri);
         return parseDocument();
     }
 
     /// {@inheritDoc}
     @Override
-    public YamlDocument parse(List<YamlToken> tokens) throws YamlParserException {
+    public YamlDocument parse(List<YamlToken> tokens) {
         this.uri = null;
         this.tokens = tokens;
         this.current = 0;
@@ -85,7 +82,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
 
     /// {@inheritDoc}
     @Override
-    public YamlDocument parse(List<YamlToken> tokens, URI uri) throws YamlParserException {
+    public YamlDocument parse(List<YamlToken> tokens, URI uri) {
         this.uri = uri;
         this.tokens = tokens;
         this.current = 0;
@@ -117,7 +114,8 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         }
 
         if (!isAtEnd()) {
-            throw error(peek(), "Expected end of stream.");
+            // throw error(peek(), "Expected end of stream.");
+            error(peek(), "Expected end of stream.");
         }
 
         match(YamlTokenType.STREAM_END);
@@ -230,9 +228,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     ///
     /// This method captures the column of the first key encountered and ensures
     /// all subsequent sibling keys in this map align perfectly.
-    ///
-    /// @throws YamlParserException if a sibling key is found at an inconsistent indentation.
-    private YamlMapNode parseMap() {
+    private YamlNode parseMap() {
         depth++;
         trace("parseMap");
         try {
@@ -282,8 +278,10 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                     mapColumn = keyToken.getStartColumn();
                 } else if (keyToken.getStartColumn() != mapColumn) {
                     // This will catch bad-key-indent.yaml
-                    throw new YamlParserException("Inconsistent indentation for map key",
-                        keyToken.getStartLine(), keyToken.getStartColumn(), uri);
+                    error(peek(), "Inconsistent indentation for map key");
+                    // throw new YamlParserException("Inconsistent indentation for map key",
+                    //     keyToken.getStartLine(), keyToken.getStartColumn(), uri);
+                    return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Inconsistent indentation for map key");
                 }
 
 
@@ -305,7 +303,9 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 String keyString = key.getString();
 
                 if (options.isStrict() && !seenKeys.add(keyString)) {
-                    throw error(previous(), "Duplicate key: " + keyString);
+                    error(previous(), "Duplicate key: " + keyString);
+                    // return new YamlErrorNode();
+                    return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Duplicate key: " + keyString);
                 }
                 int keyColumn = key.getStartColumn(); // Capture the column of the current key
 
@@ -410,7 +410,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     /// Parses a flow map like {key: value, key2: value2}.
     /// Parses a flow-style mapping (e.g., { key: value, key2: value2 }).
     /// This method handles the explicit MAP_START and MAP_END tokens.
-    private YamlMapNode parseFlowMap() {
+    private YamlNode parseFlowMap() {
         depth++;
         trace("parseFlowMap");
         try {
@@ -450,7 +450,8 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 } else if (match(YamlTokenType.MAP_END)) {
                     break;
                 } else {
-                    throw error(peek(), "Expected ',' or '}' in flow map.");
+                    error(peek(), "Expected ',' or '}' in flow map.");
+                    return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Unexpected token");
                 }
             }
             return map;
@@ -541,7 +542,8 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
 
         // 2. Structural Check: Block scalars MUST be indented.
         if (!check(YamlTokenType.INDENT)) {
-            throw error(peek(), "Expected indentation for block scalar.");
+            error(peek(), "Expected indentation for block scalar.");
+            return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Expected indentation for block scalar.");
         }
         advance(); // Consume the INDENT
 
@@ -660,7 +662,8 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
 
     private YamlToken consume(YamlTokenType type, String message) {
         if (check(type)) return advance();
-        throw error(peek(), message);
+        error(peek(), message);
+        return null; // TODO: Make this return non-null
     }
 
     private boolean match(YamlTokenType... types) {
@@ -693,16 +696,12 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         return type == YamlTokenType.EOF || type == YamlTokenType.STREAM_END;
     }
 
-
     //
     // Errors and Diagnostics
     //
 
-    private YamlParserException error(YamlToken token, String message) {
-        if (reporter != null) {
-            reporter.errorAt(token.getStartLine(), token.getStartColumn(), uri, message);
-        }
-        return new YamlParserException(message, token.getStartLine(), token.getStartColumn(), uri);
+    private void error(YamlToken token, String message) {
+        reporter.errorAt(token, uri, message);
     }
 
     /// Log the current method name and upcoming tokens

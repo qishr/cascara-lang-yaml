@@ -5,7 +5,7 @@ import java.util.Set;
 
 import io.github.qishr.cascara.common.lang.LanguageOptions;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
-import io.github.qishr.cascara.common.lang.ast.QuoteStyle;
+import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Emitter;
 import io.github.qishr.cascara.lang.yaml.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;

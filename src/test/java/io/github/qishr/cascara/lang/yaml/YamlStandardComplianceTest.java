@@ -1,16 +1,48 @@
 package io.github.qishr.cascara.lang.yaml;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.github.qishr.cascara.common.diagnostic.Diagnostic;
+import io.github.qishr.cascara.common.diagnostic.ReportCollector;
+import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
 import io.github.qishr.cascara.lang.yaml.ast.*;
-import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
 
-class YamlStandardComplianceTest {
+class YamlStandardComplianceTest implements ReportCollector {
 
-    private final YamlOptions options = new YamlOptions().setStrict(true);
-    private final YamlParser parser = new YamlParser().setOptions(options);
+    private YamlOptions options;
+    private YamlParser parser;
+    private Reporter reporter;
+    private List<Diagnostic> diagnostics;
+
+    @Override
+    public void collect(Diagnostic diagnostic) {
+        diagnostics.add(diagnostic);
+    }
+
+    @Override
+    public void clear(URI uri) {
+        diagnostics.clear();
+    }
+
+
+    @BeforeEach
+    void init() {
+        diagnostics = new ArrayList<>();
+        reporter = new SimpleReporter(this);
+        options = new YamlOptions().setStrict(true);
+        parser = new YamlParser()
+            .setOptions(options)
+            .setReporter(reporter);
+    }
 
     // 1. NESTED EMPTY COLLECTIONS
     @Test
@@ -98,9 +130,11 @@ class YamlStandardComplianceTest {
         String yaml = "dup: first\ndup: second";
 
         // Assert that the parser fails on duplicate keys
-        assertThrows(YamlParserException.class, () -> {
+        // assertThrows(YamlParserException.class, () -> {
             parser.parse(yaml);
-        });
+        // });
+
+        assertFalse(diagnostics.isEmpty());
     }
 
     // 9. TYPE INFERENCE
