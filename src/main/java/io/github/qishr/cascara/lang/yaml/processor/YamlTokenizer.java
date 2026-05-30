@@ -11,7 +11,6 @@ import java.net.URI;
 import java.util.ArrayDeque;
 
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
-import io.github.qishr.cascara.lang.yaml.exception.YamlTokenierException;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
@@ -47,7 +46,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     private Deque<Integer> indentationLevels = new ArrayDeque<>();
     private String source;
     private List<YamlToken> tokens = new ArrayList<>();
-    private int start = 0;
+    private int offset = 0;
     private int current = 0;
     private int line = 1;
     private int column = 1;
@@ -80,7 +79,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         this.source = source;
         this.tokens = new ArrayList<>();
         this.current = 0;
-        this.start = 0;
+        this.offset = 0;
         this.line = 1;
         this.column = 1;
         this.indentationLevels.clear();
@@ -93,7 +92,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         if (!source.isEmpty() && source.charAt(0) == '\uFEFF') {
             this.current = 1;
             this.column = 1;
-            this.start = 1;
+            this.offset = 1;
         }
         return scanTokens();
     }
@@ -103,7 +102,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         addToken(YamlTokenType.STREAM_START, "");
 
         while (!isAtEnd()) {
-            start = current;
+            offset = current;
             scanToken();
         }
 
@@ -141,8 +140,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         if (c == ' ' || c == '\t') {
             trace(method, "space or tab");
             if (c == '\t') {
-                // This ensures bad-tabs.yaml triggers an exception
-                throw new YamlTokenierException("Tab characters are not allowed for indentation in YAML", line, column, uri);
+                error("Tab characters are not allowed for indentation in YAML");
+                // throw new YamlTokenierException("Tab characters are not allowed for indentation in YAML", line, column, uri);
             }
             return;
         }
@@ -280,7 +279,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         // Sync the start pointer so the next token doesn't include the spaces
-        this.start = this.current;
+        this.offset = this.current;
     }
 
     /// Scans a quoted scalar, handling escape sequences for double quotes.
@@ -299,11 +298,11 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
             if (c == quoteChar) {
                 advance();
-                String lexeme = source.substring(start, current);
-                String content = source.substring(start + 1, current - 1);
+                String lexeme = source.substring(offset, current);
+                String content = source.substring(offset + 1, current - 1);
 
                 // 2. Use the captured startColumn instead of calculating backwards
-                tokens.add(new YamlToken(YamlTokenType.SCALAR, lexeme, content, start, startLine, startColumn));
+                tokens.add(new YamlToken(YamlTokenType.SCALAR, lexeme, content, offset, startLine, startColumn));
                 return;
             }
             if (c == '\n' || c == '\r') {
@@ -329,7 +328,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
             // 2. Stop at Comments (Space + #)
             // Note: In YAML, a # is only a comment if preceded by whitespace
-            if (c == '#' && (current == start || isWhitespace(source.charAt(current - 1)))) break;
+            if (c == '#' && (current == offset || isWhitespace(source.charAt(current - 1)))) break;
 
             // 3. Stop at Flow Indicators
             if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c)) break;
@@ -342,13 +341,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             advance();
         }
 
-        if (start == current) {
+        if (offset == current) {
              addToken(YamlTokenType.ERROR);
              return;
         }
 
         // 5. Trim trailing whitespace
-        String rawLexeme = source.substring(start, current);
+        String rawLexeme = source.substring(offset, current);
         String trimmedLexeme = rawLexeme.stripTrailing();
 
         // 6. Backup the pointer for every character trimmed
@@ -380,31 +379,37 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     //
     //
 
-    private void addToken(YamlTokenType type) {
-        String text = source.substring(start, current);
-        // If we finished 'schema' at col 15, 15 - 6 = 9.
-        int tokenColumn = column - text.length();
-        addToken(new YamlToken(type, text, text, start, line, tokenColumn));
+    private void error(String message) {
+        YamlToken token = addToken(YamlTokenType.ERROR);
+        reporter.errorAt(token, uri, message);
     }
 
-    private void addToken(YamlTokenType type, String lexeme) {
+    private YamlToken addToken(YamlTokenType type) {
+        String text = source.substring(offset, current);
+        // If we finished 'schema' at col 15, 15 - 6 = 9.
+        int tokenColumn = column - text.length();
+        return addToken(new YamlToken(type, text, text, offset, line, tokenColumn));
+    }
+
+    private YamlToken addToken(YamlTokenType type, String lexeme) {
         int tokenColumn = column - lexeme.length();
-        addToken(new YamlToken(type, lexeme, lexeme, start, line, tokenColumn));
+        return addToken(new YamlToken(type, lexeme, lexeme, offset, line, tokenColumn));
     }
 
     private void addExplicitToken(YamlTokenType type, String lexeme, int tokenColumn) {
         trace("addExplicitToken");
-        addToken(new YamlToken(type, lexeme, lexeme, start, line, tokenColumn));
+        addToken(new YamlToken(type, lexeme, lexeme, offset, line, tokenColumn));
     }
 
     private void addStructuralToken(YamlTokenType type, int tokenColumn) {
         trace("addStructuralToken");
-        addToken(new YamlToken(type, "", null, start, line, tokenColumn));
+        addToken(new YamlToken(type, "", null, offset, line, tokenColumn));
     }
 
-    private void addToken(YamlToken token) {
+    private YamlToken addToken(YamlToken token) {
         trace("addToken");
         tokens.add(token);
+        return token;
     }
 
     private char advance() {
@@ -472,12 +477,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     private void trace(String method) {
         if (reporter == null) return;
-        reporter.trace("S=%03d C=%03d '%s' %03d:%03d %s", start, current, currentChar(currentChar), line, column, method);
+        reporter.trace("S=%03d C=%03d '%s' %03d:%03d %s", offset, current, currentChar(currentChar), line, column, method);
     }
 
     private void trace(String method, String info) {
         if (reporter == null) return;
-        reporter.trace("S=%03d C=%03d '%s' %03d:%03d %s: %s", start, current, currentChar(currentChar), line, column, method, info);
+        reporter.trace("S=%03d C=%03d '%s' %03d:%03d %s: %s", offset, current, currentChar(currentChar), line, column, method, info);
     }
 
     private String currentChar(char c) {

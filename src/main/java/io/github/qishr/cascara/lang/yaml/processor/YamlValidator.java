@@ -1,8 +1,8 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.lang.exception.LocatableException;
 import io.github.qishr.cascara.common.lang.processor.Validator;
-import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 
 public class YamlValidator implements Validator {
     private final YamlParser parser = new YamlParser();
@@ -19,7 +19,7 @@ public class YamlValidator implements Validator {
         try {
             parser.parse(content);
             return new ValidationResult(true, "Valid YAML", -1);
-        } catch (YamlParserException e) {
+        } catch (LocatableException e) {
             // Assuming YamlParserException has line/column info
             return new ValidationResult(false, e.getMessage(), e.getLine());
         } catch (Exception e) {

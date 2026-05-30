@@ -1,23 +1,49 @@
 package io.github.qishr.cascara.lang.yaml;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import java.net.URI;
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
 
 class YamlDirectoryTestSuite {
 
-    private Reporter reporter = new SimpleReporter().setLevel(Level.TRACE);
-    private final YamlOptions options = new YamlOptions().setStrict(true);
-    private final YamlParser parser = new YamlParser().setOptions(options).setReporter(reporter);
+    private YamlOptions options;
+    private YamlParser parser;
+    private Reporter reporter;
+    private List<Diagnostic> diagnostics;
+
+    public void collect(Diagnostic diagnostic) {
+        diagnostics.add(diagnostic);
+    }
+
+    public void clear(URI uri) {
+        diagnostics.clear();
+    }
+
+
+    @BeforeEach
+    void init() {
+        diagnostics = new ArrayList<>();
+        reporter = new SimpleReporter().setDiagnosticCollector(this::collect);
+        options = new YamlOptions().setStrict(true);
+        parser = new YamlParser()
+            .setOptions(options)
+            .setReporter(reporter);
+    }
 
     @ParameterizedTest(name = "Validating: {0}")
     @MethodSource("getValidFiles")
@@ -28,7 +54,9 @@ class YamlDirectoryTestSuite {
     @ParameterizedTest(name = "Invalidating: {0}")
     @MethodSource("getInvalidFiles")
     void testInvalidFiles(String fileName, String content) {
-        assertThrows(Exception.class, () -> parser.parse(content), "Should have failed: " + fileName);
+        // assertThrows(Exception.class, () -> parser.parse(content), "Should have failed: " + fileName);
+        parser.parse(content);
+        assertFalse(diagnostics.isEmpty(), "Should have failed: " + fileName);
     }
 
     static Stream<Arguments> getValidFiles() throws Exception {

@@ -26,7 +26,7 @@ public class ContentTypeTestClass {
 
     public ContentTypeTestClass() {}
 
-    public ContentTypeTestClass withMimeType(String mimeType) {
+    public ContentTypeTestClass withType(String mimeType) {
         mimeTypes.add(mimeType);
         return this;
     }

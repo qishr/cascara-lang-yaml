@@ -1,8 +1,13 @@
 package io.github.qishr.cascara.lang.yaml;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.github.qishr.cascara.common.diagnostic.Diagnostic;
+import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
@@ -11,12 +16,14 @@ import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 class YamlComprehensiveTest {
 
-    private final YamlParser parser = new YamlParser();
-    private final YamlTokenizer tokenizer = new YamlTokenizer();
+    // private final YamlParser parser = new YamlParser();
+    // private final YamlTokenizer tokenizer = new YamlTokenizer();
 
     // private void assertTokenTypes(List<YamlToken> tokens, YamlTokenType... expected) {
     //     for (int i = 0; i < expected.length; i++) {
@@ -24,6 +31,33 @@ class YamlComprehensiveTest {
     //         assertEquals(expected[i], tokens.get(i).getType(), "Mismatch at token " + i);
     //     }
     // }
+
+    private YamlOptions options;
+    private YamlTokenizer tokenizer;
+    private YamlParser parser;
+    private Reporter reporter;
+    private List<Diagnostic> diagnostics;
+
+    public void collect(Diagnostic diagnostic) {
+        diagnostics.add(diagnostic);
+    }
+
+    public void clear(URI uri) {
+        diagnostics.clear();
+    }
+
+
+    @BeforeEach
+    void init() {
+        diagnostics = new ArrayList<>();
+        reporter = new SimpleReporter().setDiagnosticCollector(this::collect);
+        options = new YamlOptions().setStrict(true);
+        tokenizer = new YamlTokenizer().setReporter(reporter);
+        parser = new YamlParser()
+            .setOptions(options)
+            .setReporter(reporter);
+    }
+
 
     // --- TOKENIZATION TESTS ---
 
@@ -134,11 +168,15 @@ class YamlComprehensiveTest {
         // YAML spec forbids tabs for indentation
         String yaml = "key:\n\t- item";
         // Assuming YamlParserException extends ParserException
-        assertThrows(ParserException.class, () -> parser.parse(yaml));
+        // assertThrows(ParserException.class, () -> parser.parse(yaml));
+        parser.parse(yaml);
+        assertFalse(diagnostics.isEmpty());
     }
 
     @Test
     void testMismatchedDedentFails() {
         String yaml = "parent:\n  child: val\n    - orphan_item";
-        assertThrows(ParserException.class, () -> parser.parse(yaml));
+        // assertThrows(ParserException.class, () -> parser.parse(yaml));
+        parser.parse(yaml);
+        assertFalse(diagnostics.isEmpty());
     }}

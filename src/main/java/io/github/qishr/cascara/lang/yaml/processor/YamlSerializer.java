@@ -20,7 +20,7 @@ import io.github.qishr.cascara.common.lang.annotation.DataField;
 import io.github.qishr.cascara.common.lang.annotation.DataIgnore;
 import io.github.qishr.cascara.common.lang.annotation.Serializable;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
-import io.github.qishr.cascara.common.lang.ast.QuoteStyle;
+import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.processor.Serializer;
 import io.github.qishr.cascara.common.util.ReflectionUtils;
@@ -41,7 +41,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     //
 
     @Override
-    public String toText(Object object) throws YamlSerializerException {
+    public String toText(Object object) {
         // Step 1: Object -> AST
         YamlNode ast = toAst(object);
         // Step 2: AST -> String
@@ -49,7 +49,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     }
 
     @Override
-    public <C> C fromText(String text, Class<C> clazz) throws YamlSerializerException {
+    public <C> C fromText(String text, Class<C> clazz) {
         // Step 1: String -> AST
         YamlNode ast = parser.parse(text);
         // Step 2: AST -> Object
