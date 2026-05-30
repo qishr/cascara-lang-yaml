@@ -6,7 +6,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
-import io.github.qishr.cascara.common.diagnostic.ReportCollector;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
@@ -21,7 +20,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-class YamlComprehensiveTest implements ReportCollector {
+class YamlComprehensiveTest {
 
     // private final YamlParser parser = new YamlParser();
     // private final YamlTokenizer tokenizer = new YamlTokenizer();
@@ -39,12 +38,10 @@ class YamlComprehensiveTest implements ReportCollector {
     private Reporter reporter;
     private List<Diagnostic> diagnostics;
 
-    @Override
     public void collect(Diagnostic diagnostic) {
         diagnostics.add(diagnostic);
     }
 
-    @Override
     public void clear(URI uri) {
         diagnostics.clear();
     }
@@ -53,7 +50,7 @@ class YamlComprehensiveTest implements ReportCollector {
     @BeforeEach
     void init() {
         diagnostics = new ArrayList<>();
-        reporter = new SimpleReporter(this);
+        reporter = new SimpleReporter().setDiagnosticCollector(this::collect);
         options = new YamlOptions().setStrict(true);
         tokenizer = new YamlTokenizer().setReporter(reporter);
         parser = new YamlParser()

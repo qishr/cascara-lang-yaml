@@ -9,9 +9,12 @@ import io.github.qishr.cascara.common.util.Properties;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
 
 public abstract class AbstractYamlProcessor<P extends Processor> implements Processor {
-    static final ContentType YAML_CONTENT_TYPE = new ContentType("YAML")
-            .withMimeType("text/yaml")
-            .withSuffix(".yaml");
+    static final ContentType YAML_CONTENT_TYPE =
+        new ContentType("YAML")
+            .withType("text/yaml")
+            .withType("application/yaml")
+            .withSuffix(".yaml")
+            .withSuffix(".yml");
 
     protected YamlOptions options = new YamlOptions();
     protected Reporter reporter = new NoOpReporter();

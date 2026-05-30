@@ -3,24 +3,24 @@ package io.github.qishr.cascara.lang.yaml.processor;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
+import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Parser;
 import io.github.qishr.cascara.lang.yaml.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlCommentNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlErrorNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
-import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
-import io.github.qishr.cascara.lang.yaml.exception.YamlTokenierException;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
@@ -236,9 +236,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
             YamlMapNode map = new YamlMapNode(startToken.getStartLine(), startToken.getStartColumn(), uri);
             map.setStyle(CollectionStyle.BLOCK);
 
-            // attachComments(map);
-
-            java.util.Set<String> seenKeys = new java.util.HashSet<>();
+            Set<String> seenKeys = new HashSet<>();
             boolean isFirstEntry = true;
             int mapColumn = -1;
 
@@ -279,9 +277,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 } else if (keyToken.getStartColumn() != mapColumn) {
                     // This will catch bad-key-indent.yaml
                     error(peek(), "Inconsistent indentation for map key");
-                    // throw new YamlParserException("Inconsistent indentation for map key",
-                    //     keyToken.getStartLine(), keyToken.getStartColumn(), uri);
-                    return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Inconsistent indentation for map key");
+                    // return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Inconsistent indentation for map key");
                 }
 
 
@@ -304,8 +300,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
 
                 if (options.isStrict() && !seenKeys.add(keyString)) {
                     error(previous(), "Duplicate key: " + keyString);
-                    // return new YamlErrorNode();
-                    return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Duplicate key: " + keyString);
+                    // return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Duplicate key: " + keyString);
                 }
                 int keyColumn = key.getStartColumn(); // Capture the column of the current key
 
@@ -451,7 +446,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                     break;
                 } else {
                     error(peek(), "Expected ',' or '}' in flow map.");
-                    return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Unexpected token");
+                    // return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Unexpected token");
                 }
             }
             return map;
@@ -543,7 +538,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         // 2. Structural Check: Block scalars MUST be indented.
         if (!check(YamlTokenType.INDENT)) {
             error(peek(), "Expected indentation for block scalar.");
-            return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Expected indentation for block scalar.");
+            // return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Expected indentation for block scalar.");
         }
         advance(); // Consume the INDENT
 
@@ -702,6 +697,9 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
 
     private void error(YamlToken token, String message) {
         reporter.errorAt(token, uri, message);
+        if (!reporter.collectsProblems()) {
+            throw new ParserException(message, token.getStartLine(), token.getStartColumn(), uri);
+        }
     }
 
     /// Log the current method name and upcoming tokens
@@ -732,30 +730,5 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
             sb.append(") ");
         }
         return sb.toString();
-    }
-
-    public void dumpAST(YamlNode node, int indent) {
-        String spacing = "  ".repeat(indent);
-
-        if (node instanceof YamlMapNode map) {
-            System.out.println(spacing + "YamlMapNode");
-            for (YamlMapEntryNode entry : map.getEntries()) {
-                // In the API, the key is a YamlNode (could be a scalar, map, etc.)
-                YamlNode keyNode = entry.getKey();
-                YamlNode valueNode = entry.getValue();
-                String keyDesc = (keyNode instanceof YamlScalarNode s) ? s.getString() : "Complex Key";
-                System.out.println(spacing + "  Key: " + keyDesc);
-
-                dumpAST(valueNode, indent + 4);
-            }
-        } else if (node instanceof YamlSequenceNode seq) {
-            List<YamlNode> items = seq.getElements();
-            System.out.println(spacing + "YamlSequenceNode (size: " + items.size() + ")");
-            for (YamlNode item : items) {
-                dumpAST(item, indent + 2);
-            }
-        } else if (node instanceof YamlScalarNode scalar) {
-            System.out.println(spacing + "YamlScalarNode: [" + scalar.getString() + "]");
-        }
     }
 }

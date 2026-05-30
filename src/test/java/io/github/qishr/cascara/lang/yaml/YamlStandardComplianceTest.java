@@ -10,25 +10,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
-import io.github.qishr.cascara.common.diagnostic.ReportCollector;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
 
-class YamlStandardComplianceTest implements ReportCollector {
+class YamlStandardComplianceTest {
 
     private YamlOptions options;
     private YamlParser parser;
     private Reporter reporter;
     private List<Diagnostic> diagnostics;
 
-    @Override
     public void collect(Diagnostic diagnostic) {
         diagnostics.add(diagnostic);
     }
 
-    @Override
     public void clear(URI uri) {
         diagnostics.clear();
     }
@@ -37,7 +34,7 @@ class YamlStandardComplianceTest implements ReportCollector {
     @BeforeEach
     void init() {
         diagnostics = new ArrayList<>();
-        reporter = new SimpleReporter(this);
+        reporter = new SimpleReporter().setProblemCollector(this::collect);
         options = new YamlOptions().setStrict(true);
         parser = new YamlParser()
             .setOptions(options)

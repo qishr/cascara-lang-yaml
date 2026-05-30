@@ -2,9 +2,9 @@ package io.github.qishr.cascara.lang.yaml.exception;
 
 import java.net.URI;
 
-import io.github.qishr.cascara.common.lang.exception.ParserException;
+import io.github.qishr.cascara.common.lang.exception.LocatableException;
 
-public class YamlEmitterException extends ParserException {
+public class YamlEmitterException extends LocatableException {
 
     public YamlEmitterException(String message, Throwable cause) {
         super(message, cause, UNKNOWN_COORD, UNKNOWN_COORD, null);

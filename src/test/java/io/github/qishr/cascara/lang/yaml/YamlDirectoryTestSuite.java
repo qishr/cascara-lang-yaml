@@ -16,23 +16,20 @@ import java.util.stream.Stream;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
-import io.github.qishr.cascara.common.diagnostic.ReportCollector;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
 
-class YamlDirectoryTestSuite implements ReportCollector {
+class YamlDirectoryTestSuite {
 
     private YamlOptions options;
     private YamlParser parser;
     private Reporter reporter;
     private List<Diagnostic> diagnostics;
 
-    @Override
     public void collect(Diagnostic diagnostic) {
         diagnostics.add(diagnostic);
     }
 
-    @Override
     public void clear(URI uri) {
         diagnostics.clear();
     }
@@ -41,7 +38,7 @@ class YamlDirectoryTestSuite implements ReportCollector {
     @BeforeEach
     void init() {
         diagnostics = new ArrayList<>();
-        reporter = new SimpleReporter(this);
+        reporter = new SimpleReporter().setDiagnosticCollector(this::collect);
         options = new YamlOptions().setStrict(true);
         parser = new YamlParser()
             .setOptions(options)
