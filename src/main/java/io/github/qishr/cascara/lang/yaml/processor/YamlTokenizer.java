@@ -381,7 +381,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     private void error(String message) {
         YamlToken token = addToken(YamlTokenType.ERROR);
-        reporter.errorAt(token, uri, message);
+        reporter.errorAt(uri, token,null, message);
     }
 
     private YamlToken addToken(YamlTokenType type) {

@@ -696,7 +696,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     //
 
     private void error(YamlToken token, String message) {
-        reporter.errorAt(token, uri, message);
+        reporter.errorAt(uri, token, null, message);
         if (!reporter.collectsProblems()) {
             throw new ParserException(message, token.getStartLine(), token.getStartColumn(), uri);
         }

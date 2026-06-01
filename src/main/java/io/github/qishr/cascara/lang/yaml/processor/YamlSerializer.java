@@ -23,6 +23,10 @@ import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.processor.Serializer;
+import io.github.qishr.cascara.common.service.CapabilityQueries;
+import io.github.qishr.cascara.common.service.ServiceProviderLayer;
+import io.github.qishr.cascara.common.service.ServiceProviderMetadata;
+import io.github.qishr.cascara.common.type.TypeDescriptor;
 import io.github.qishr.cascara.common.util.ReflectionUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
@@ -275,20 +279,53 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             return serializeMap(map);
         }
 
-        if (value instanceof Path path) {
-            // Path is serialized as a double quoted String of its absolute path
-            return new YamlScalarNode(path.toAbsolutePath().toString(), QuoteStyle.DOUBLE);
-        }
-
-        if (value instanceof URI uri) {
-            return new YamlScalarNode(uri.toString(), QuoteStyle.DOUBLE);
-        }
-
-        // heck if this is a nested serializable object
+        // Check if this is a nested serializable object
         if (value.getClass().isAnnotationPresent(Serializable.class)) {
             // Turn this object into a nested YAML Mapping
             return getYamlRootMap(value);
         }
+
+        ServiceProviderLayer rootLayer = ServiceProviderLayer.getRootLayer();
+        List<ServiceProviderMetadata> typeDescriptors = rootLayer.getProviders(
+            TypeDescriptor.class,
+            capabilities -> {
+                String registeredTypeName = capabilities.getString("type");
+                if (registeredTypeName == null) return false;
+                try {
+                    // Check if the runtime object's class can be assigned to the descriptor's target type
+                    Class<?> registeredType = Class.forName(registeredTypeName);
+                    return registeredType.isAssignableFrom(value.getClass());
+                } catch (ClassNotFoundException e) {
+                    return false;
+                }
+            }
+        );
+
+        if (!typeDescriptors.isEmpty()) {
+            ServiceProviderMetadata metadata = typeDescriptors.getFirst();
+
+            TypeDescriptor descriptor = ServiceProviderLayer.loadProvider(TypeDescriptor.class, metadata);
+
+            String text;
+
+            try {
+                text = descriptor.toText(value);
+            } catch (Exception e) {
+                String msg = String.format("Failed to map YAML AST to %s: %s", value.getClass(), e.getMessage());
+                throw new YamlSerializerException(msg, e);
+            }
+
+            // Inspect the type properties to choose the right style
+            QuoteStyle quoteStyle = QuoteStyle.PLAIN;
+            String schemaType = metadata.getCapabilities().getString("schemaType");
+
+            if ("string".equals(schemaType)) {
+                quoteStyle = QuoteStyle.DOUBLE;
+            }
+
+            return new YamlScalarNode(text, quoteStyle);
+        }
+
 
         // Default to the existing scalar creation logic for primitives/strings
         return createValueScalar(value);
@@ -357,13 +394,13 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     private Object deserializeNode(YamlNode node, Field field, Class<?> targetType) throws Exception {
         if (node == null) return null;
 
-        // 1. Path Handling (Preserved)
-        if (targetType == Path.class) {
-            return deserializePath(node);
-        }
-        if (targetType == URI.class) {
-            return deserializeUri(node);
-        }
+        // // 1. Path Handling (Preserved)
+        // if (targetType == Path.class) {
+        //     return deserializePath(node);
+        // }
+        // if (targetType == URI.class) {
+        //     return deserializeUri(node);
+        // }
 
         // 2. Nested @Serializable objects
         if (targetType.isAnnotationPresent(Serializable.class)) {
@@ -381,8 +418,56 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             return deserializeMap(node, field);
         }
 
+
+
+
+
+
+
+
         // 4. Scalars (Primitives, Strings, Enums)
         if (node instanceof ScalarAstNode scalar) {
+
+            // TypeDescriptor
+
+            ServiceProviderLayer rootLayer = ServiceProviderLayer.getRootLayer();
+            List<ServiceProviderMetadata> typeDescriptors = rootLayer.getProviders(
+                TypeDescriptor.class,
+
+                capabilities -> {
+                    String registeredTypeName = capabilities.getString("type");
+                    if (registeredTypeName == null) return false;
+                    try {
+                        // Check if the runtime object's class can be assigned to the descriptor's target type
+                        Class<?> registeredType = Class.forName(registeredTypeName);
+                        boolean isAssignable = registeredType.isAssignableFrom(targetType);
+                        return isAssignable;
+                    } catch (ClassNotFoundException e) {
+                        return false;
+                    }
+                }
+
+                // CapabilityQueries.allOf(
+                //     CapabilityQueries.hasExactValue("type", targetType.getName())
+                // )
+            );
+
+            if (!typeDescriptors.isEmpty()) {
+                TypeDescriptor descriptor = ServiceProviderLayer.loadProvider(TypeDescriptor.class, typeDescriptors.getFirst());
+
+
+                Object val = scalar.getPrimitiveValue();
+                String stringValue = val != null ? val.toString() : "";
+
+                try {
+                    Object object = descriptor.toType(stringValue);
+                    return object;
+                } catch (Exception e) {
+                    String msg = String.format("Failed to map %s to YAML AST: %s", targetType.getSimpleName(), e.getMessage());
+                    throw new YamlSerializerException(msg, e);
+                }
+            }
+
             return deserializeScalar(scalar.getPrimitiveValue(), targetType);
         }
 
@@ -403,7 +488,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         //   - Doesn't have the @Serializable annotation
         //   - Is in a package that's not opened to cascara.lang.yaml
         //
-        // 5. Strictness: If we got here, the AST structure doesn't match the Java model
+        // Strictness: If we got here, the AST structure doesn't match the Java model
         throw new YamlSerializerException(
             String.format("Incompatible types: Cannot map %s to Java type %s",
                 node.getClass().getSimpleName(), targetType.getSimpleName())
