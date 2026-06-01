@@ -206,7 +206,8 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
                     ? field.getAnnotation(DataField.class).key() : field.getName();
                 if (keyName == null || keyName.isEmpty()) keyName = field.getName();
 
-                YamlScalarNode keyNode = createValueScalar(keyName, QuoteStyle.PLAIN);
+                YamlScalarNode keyNode = new YamlScalarNode(keyName, QuoteStyle.PLAIN);
+
                 YamlNode valueNode = createValueNode(value);
                 rootMap.put(keyNode, valueNode);
             }
@@ -284,27 +285,8 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             return getYamlRootMap(value);
         }
 
-        ServiceProviderLayer rootLayer = ServiceProviderLayer.getRootLayer();
-        List<ServiceProviderMetadata> typeDescriptors = rootLayer.getProviders(
-            TypeDescriptor.class,
-            capabilities -> {
-                String registeredTypeName = capabilities.getString("type");
-                if (registeredTypeName == null) return false;
-                try {
-                    // Check if the runtime object's class can be assigned to the descriptor's target type
-                    Class<?> registeredType = Class.forName(registeredTypeName);
-                    return registeredType.isAssignableFrom(value.getClass());
-                } catch (ClassNotFoundException e) {
-                    return false;
-                }
-            }
-        );
-
-        if (!typeDescriptors.isEmpty()) {
-            ServiceProviderMetadata metadata = typeDescriptors.getFirst();
-
-            TypeDescriptor descriptor = ServiceProviderLayer.loadProvider(TypeDescriptor.class, metadata);
-
+        TypeDescriptor descriptor = getTypeDescriptor(value);
+        if (descriptor != null) {
             String text;
 
             try {
@@ -316,7 +298,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
             // Inspect the type properties to choose the right style
             QuoteStyle quoteStyle = QuoteStyle.PLAIN;
-            String schemaType = metadata.getCapabilities().getString("schemaType");
+            String schemaType = descriptor.getCapabilities().getString("schemaType");
 
             if ("string".equals(schemaType)) {
                 quoteStyle = QuoteStyle.DOUBLE;
@@ -325,28 +307,9 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             return new YamlScalarNode(text, quoteStyle);
         }
 
-
         // Default to the existing scalar creation logic for primitives/strings
-        return createValueScalar(value);
-    }
-
-    /// Creates a YamlScalar node with a specific, forced style.
-    private YamlScalarNode createValueScalar(Object value, QuoteStyle quoteStyle) {
-        if (value == null) return new YamlScalarNode("", QuoteStyle.PLAIN);
-        return new YamlScalarNode(value.toString(), quoteStyle);
-    }
-
-    /// Creates a YamlScalar node with an inferred style (the original logic).
-    private YamlScalarNode createValueScalar(Object value) {
-        if (value == null) return new YamlScalarNode("", QuoteStyle.PLAIN);
-
-        // Default to DOUBLE for Strings/Paths to be safe, PLAIN for numbers/booleans
-        // TODO: Path, URI, etc are handled by TypeDescriptor. We should remove all trace of them from here.
-        QuoteStyle style = (value instanceof String || value instanceof Path || value instanceof URI)
-            ? QuoteStyle.DOUBLE
-            : QuoteStyle.PLAIN;
-
-        return createValueScalar(value, style);
+        // return createValueScalar(value);
+        return new YamlScalarNode(value);
     }
 
     /// Serializes a List into a YamlSequence.
@@ -367,9 +330,9 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         return sequence;
     }
 
-    private YamlMapNode serializeMap(java.util.Map<?, ?> map) throws Exception {
+    private YamlMapNode serializeMap(Map<?, ?> map) throws Exception {
         YamlMapNode yamlMap = new YamlMapNode();
-        for (java.util.Map.Entry<?, ?> entry : map.entrySet()) {
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
             if (entry.getKey() == null) continue;
 
             YamlScalarNode keyNode = new YamlScalarNode(entry.getKey().toString(), QuoteStyle.PLAIN);
@@ -569,23 +532,6 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         throw new YamlSerializerException("Unsupported field type: " + targetType.getSimpleName());
     }
 
-    // /// Specifically handles Path deserialization.
-    // private Path deserializePath(AstNode node) throws YamlSerializerException {
-    //     if (node instanceof ScalarAstNode scalar) {
-    //         Object val = scalar.getPrimitive();
-    //         return Path.of(val != null ? val.toString() : "");
-    //     }
-    //     throw new YamlSerializerException("Expected a scalar for Path field, but found " + node.getClass().getSimpleName());
-    // }
-
-    // private URI deserializeUri(AstNode node) throws YamlSerializerException {
-    //     if (node instanceof ScalarAstNode scalar) {
-    //         Object val = scalar.getPrimitive();
-    //         return URI.create(val != null ? val.toString() : "");
-    //     }
-    //     throw new YamlSerializerException("Expected a scalar for URI field, but found " + node.getClass().getSimpleName());
-    // }
-
     private List<?> deserializeList(YamlNode node, Field field) throws Exception {
         if (node == null) return new ArrayList<>();
         Class<?> itemType = ReflectionUtils.getGenericTypeOfListField(field);
@@ -628,6 +574,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             Object val = deserializeNode(entry.getValue(), field, valType);
             if (key != null) result.put(key, val != null ? val : "");
         }
+
         return result;
     }
 
@@ -665,6 +612,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             }
         }
     }
+
 
     /// Converts a raw scalar string from the YAML AST into the target Java field type.
     /// Supports String, Boolean, and common Number types.
@@ -747,6 +695,9 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     private Object inferValueType(String value) {
         if (value == null) return "";
 
+        // TODO: values are missing (yes/no, on/off)
+        // We need to avoid doing this converting here
+
         // Explicit Boolean Check
         if (value.equalsIgnoreCase("true")) return Boolean.TRUE;
         if (value.equalsIgnoreCase("false")) return Boolean.FALSE;
@@ -762,5 +713,31 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             // Fallback to String
             return value;
         }
+    }
+
+    private TypeDescriptor getTypeDescriptor(Object value) {
+        ServiceProviderLayer rootLayer = ServiceProviderLayer.getRootLayer();
+        List<ServiceProviderMetadata> typeDescriptors = rootLayer.getProviders(
+            TypeDescriptor.class,
+            capabilities -> {
+                String registeredTypeName = capabilities.getString("type");
+                if (registeredTypeName == null) return false;
+                try {
+                    // Check if the runtime object's class can be assigned to the descriptor's target type
+                    Class<?> registeredType = Class.forName(registeredTypeName);
+                    return registeredType.isAssignableFrom(value.getClass());
+                } catch (ClassNotFoundException e) {
+                    return false;
+                }
+            }
+        );
+
+        if (!typeDescriptors.isEmpty()) {
+            ServiceProviderMetadata metadata = typeDescriptors.getFirst();
+            TypeDescriptor descriptor = ServiceProviderLayer.loadProvider(TypeDescriptor.class, metadata);
+            return descriptor;
+        }
+
+        return null;
     }
 }

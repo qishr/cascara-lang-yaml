@@ -5,8 +5,20 @@ import io.github.qishr.cascara.common.lang.QuoteStyle;
 
 public class YamlPrimitive extends AbstractPrimitive {
 
-    public YamlPrimitive(Object primitive, QuoteStyle quoteStyle) {
-        super(primitive, quoteStyle);
+    public YamlPrimitive(Object primitiveValue, QuoteStyle quoteStyle) {
+        this(primitiveValue, quoteStyle, true);
+    }
+
+    public YamlPrimitive(Object primitiveValue) {
+        super(primitiveValue);
+    }
+
+    public static YamlPrimitive fromString(String unescapedContent, QuoteStyle quoteStyle) {
+        return new YamlPrimitive(unescapedContent, quoteStyle, false);
+    }
+
+    private YamlPrimitive(Object input, QuoteStyle quoteStyle, boolean isNative) {
+        super(input, quoteStyle, isNative);
     }
 
     @Override
@@ -15,8 +27,17 @@ public class YamlPrimitive extends AbstractPrimitive {
         if (lowered.equals("true") || lowered.equals("yes") || lowered.equals("on")) return Boolean.TRUE;
         if (lowered.equals("false") || lowered.equals("no") || lowered.equals("off")) return Boolean.FALSE;
         if (lowered.equals("null") || lowered.equals("~")) return null;
-
         return null;
+    }
+
+    @Override
+    protected QuoteStyle inferQuoteStyle(Object value) {
+        QuoteStyle style = QuoteStyle.PLAIN;
+        if (value instanceof CharSequence || value instanceof Character) {
+
+            style = QuoteStyle.DOUBLE;
+        }
+        return style;
     }
 
     /// Overrides the hook from AbstractPrimitive to handle YAML-specific string formatting

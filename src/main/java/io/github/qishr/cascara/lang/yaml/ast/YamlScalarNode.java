@@ -20,7 +20,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         super(uri, line, column);
         this.raw = raw;
         // This constructor signature treats the input as text content to be parsed
-        this.primitive = new YamlPrimitive(unescapedContent, quoteStyle);
+        this.primitive = YamlPrimitive.fromString(unescapedContent, quoteStyle);
         this.quoteStyle = quoteStyle;
     }
 
@@ -33,6 +33,16 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         // Pass the object directly into the primitive wrapper
         this.primitive = new YamlPrimitive(primitiveValue, quoteStyle);
         this.quoteStyle = quoteStyle;
+    }
+
+    /// 2.5 THE PROGRAMMATIC / SERIALIZER CONSTRUCTOR
+    /// Used when building an AST dynamically in code.
+    /// Takes a pre-typed Object and skips text-based type inference.
+    public YamlScalarNode(Object primitiveValue) {
+        super(null, 0, 0);
+        this.raw = null; // Cleared cache marks it as dirty for the emitter
+        this.primitive = new YamlPrimitive(primitiveValue);
+        this.quoteStyle = primitive.getQuoteStyle();
     }
 
     /// 3. THE DEFAULT CONSTRUCTOR
