@@ -10,8 +10,8 @@ public class YamlCommentNode extends YamlNode implements CommentAstNode {
     private final String text;
     private final boolean multiLine;
 
-    public YamlCommentNode(int line, int column, URI uri, String text, boolean multiLine) {
-        super(line, column, uri);
+    public YamlCommentNode(URI uri, int line, int column, String text, boolean multiLine) {
+        super(uri, line, column);
         this.text = text;
         this.multiLine = multiLine;
     }
@@ -26,7 +26,7 @@ public class YamlCommentNode extends YamlNode implements CommentAstNode {
     @Override public List<YamlNode> getChildren() { return List.of(); }
 
     @Override
-    public String getRawValue() {
+    public String getRaw() {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getRawValue'");
     }

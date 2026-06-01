@@ -154,24 +154,81 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             return; // Caller handles the final NL
         }
 
-        // 3. Plain/Quoted
         if (!isFlow) sb.append(" ".repeat(indent));
-        String content;
-        if (style == QuoteStyle.DOUBLE) {
-            content = "\"" + indentSubsequentLines(escapeDoubleQuotes(val), indent) + "\"";
-        } else if (style == QuoteStyle.SINGLE) {
-            content = "'" + indentSubsequentLines(val.replace("'", "''"), indent) + "'";
-        } else {
-            content = isSafePlain(val) ? indentSubsequentLines(val, indent)
-                                       : "\"" + indentSubsequentLines(escapeDoubleQuotes(val), indent) + "\"";
-        }
+
+        // Pass the style directly down so the lines are escaped individually
+        // before being joined together with indentation.
+        String content = formatAndIndentMultiline(val, style, indent);
+
         sb.append(content);
+
+
 
         // IF NOT IS FLOW, this is a standalone root scalar or similar
         if (!isFlow) {
             handleInlineComments(scalar);
             sb.append(NL);
         }
+    }
+
+    private String formatAndIndentMultiline(String text, QuoteStyle style, int amount) {
+        if (text == null) return "";
+
+        // Match the original plain scalar fallback rule:
+        // If it's plain but unsafe (like containing a newline), force it to DOUBLE quotes.
+        if (style == QuoteStyle.PLAIN && !isSafePlain(text)) {
+            style = QuoteStyle.DOUBLE;
+        }
+
+        if (text.isEmpty()) {
+            if (style == QuoteStyle.DOUBLE) return "\"\"";
+            if (style == QuoteStyle.SINGLE) return "''";
+            return "";
+        }
+
+        // Split preserving trailing empty lines
+        String[] lines = text.split("\\R", -1);
+        String indentation = " ".repeat(amount);
+        StringBuilder result = new StringBuilder();
+
+        if (style == QuoteStyle.DOUBLE) {
+            result.append("\"");
+        } else if (style == QuoteStyle.SINGLE) {
+            result.append("'");
+        }
+
+        for (int i = 0; i < lines.length; i++) {
+            String processedLine;
+            if (style == QuoteStyle.DOUBLE) {
+                processedLine = escapeDoubleQuotesInline(lines[i]);
+            } else if (style == QuoteStyle.SINGLE) {
+                processedLine = lines[i].replace("'", "''");
+            } else {
+                processedLine = lines[i];
+            }
+
+            result.append(processedLine);
+
+            // Only append line breaks and indentation if this isn't the absolute last element
+            if (i < lines.length - 1) {
+                result.append(NL).append(indentation);
+            }
+        }
+
+        if (style == QuoteStyle.DOUBLE) {
+            result.append("\"");
+        } else if (style == QuoteStyle.SINGLE) {
+            result.append("'");
+        }
+
+        return result.toString();
+    }
+
+    private String escapeDoubleQuotesInline(String value) {
+        if (value == null) return "";
+        // Only escape literal backslashes and quotes; literal inline \n and \r checks are omitted
+        // here because they are handled structurally by the line splitter.
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     /// Iterates over map entries, managing key-value pairs and block/flow transitions.
@@ -342,26 +399,10 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         }
     }
 
-    private String indentSubsequentLines(String text, int amount) {
-        if (text == null || text.isEmpty()) return "";
-        String[] lines = text.split("\\R");
-        if (lines.length <= 1) return text;
-        String indentation = " ".repeat(amount);
-        StringBuilder result = new StringBuilder(lines[0]);
-        for (int i = 1; i < lines.length; i++) {
-            result.append(NL).append(indentation).append(lines[i]);
-        }
-        return result.toString();
-    }
-
-    private String escapeDoubleQuotes(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
-    }
-
     private boolean isSafePlain(String s) {
         if (s == null || s.isEmpty()) return false;
         if (s.contains("\n") || s.contains("\r")) return false;
-        if (s.matches("^(true|false|null|True|False|NULL)$")) return true;
+        if (s.matches("^(true|false|null|True|False|NULL)$")) return true; // TOOO: Values are missing from here
         char first = s.charAt(0);
         if ("-?:,[]{}#&*!|>'\"%@` ".indexOf(first) != -1) return false;
         if (s.contains(": ") || s.contains(" #") || s.endsWith(":")) return false;

@@ -23,7 +23,6 @@ import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.processor.Serializer;
-import io.github.qishr.cascara.common.service.CapabilityQueries;
 import io.github.qishr.cascara.common.service.ServiceProviderLayer;
 import io.github.qishr.cascara.common.service.ServiceProviderMetadata;
 import io.github.qishr.cascara.common.type.TypeDescriptor;
@@ -105,7 +104,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     public <T> T performMapping(YamlNode yaml, Class<T> clazz) throws YamlSerializerException {
         // If the YAML node is null, or it's a scalar representing a null value,
         // we return null immediately. This allows 'security: ' to map to a null Object.
-        if (yaml == null || (yaml instanceof YamlScalarNode scalar && scalar.getValue() == null)) {
+        if (yaml == null || (yaml instanceof YamlScalarNode scalar && scalar.getPrimitive() == null)) {
             return null;
         }
 
@@ -342,6 +341,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         if (value == null) return new YamlScalarNode("", QuoteStyle.PLAIN);
 
         // Default to DOUBLE for Strings/Paths to be safe, PLAIN for numbers/booleans
+        // TODO: Path, URI, etc are handled by TypeDescriptor. We should remove all trace of them from here.
         QuoteStyle style = (value instanceof String || value instanceof Path || value instanceof URI)
             ? QuoteStyle.DOUBLE
             : QuoteStyle.PLAIN;
@@ -394,14 +394,6 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     private Object deserializeNode(YamlNode node, Field field, Class<?> targetType) throws Exception {
         if (node == null) return null;
 
-        // // 1. Path Handling (Preserved)
-        // if (targetType == Path.class) {
-        //     return deserializePath(node);
-        // }
-        // if (targetType == URI.class) {
-        //     return deserializeUri(node);
-        // }
-
         // 2. Nested @Serializable objects
         if (targetType.isAnnotationPresent(Serializable.class)) {
             if (!(node instanceof YamlNode)) {
@@ -417,13 +409,6 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         if (Map.class.isAssignableFrom(targetType)) {
             return deserializeMap(node, field);
         }
-
-
-
-
-
-
-
 
         // 4. Scalars (Primitives, Strings, Enums)
         if (node instanceof ScalarAstNode scalar) {
@@ -456,7 +441,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
                 TypeDescriptor descriptor = ServiceProviderLayer.loadProvider(TypeDescriptor.class, typeDescriptors.getFirst());
 
 
-                Object val = scalar.getPrimitiveValue();
+                Object val = scalar.getPrimitive();
                 String stringValue = val != null ? val.toString() : "";
 
                 try {
@@ -468,7 +453,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
                 }
             }
 
-            return deserializeScalar(scalar.getPrimitiveValue(), targetType);
+            return deserializeScalar(scalar.getPrimitive(), targetType);
         }
 
         if (targetType == Object.class) {
@@ -479,7 +464,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
                 return convertYamlSequenceToStandardList(seqNode);
             }
             if (node instanceof ScalarAstNode scalar) {
-                return scalar.getPrimitiveValue();
+                return scalar.getPrimitive();
             }
             return node;
         }
@@ -541,6 +526,8 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         String rawValue = primitive.toString().trim();
 
         if (targetType == String.class) return rawValue;
+
+        // TODO: These should be removed. TypeDescriptor should be handling this now.
         if (targetType == Path.class) return Path.of(rawValue);
         if (targetType == URI.class) return URI.create(rawValue);
         if (targetType == UUID.class) return UUID.fromString(rawValue);
@@ -582,22 +569,22 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         throw new YamlSerializerException("Unsupported field type: " + targetType.getSimpleName());
     }
 
-    /// Specifically handles Path deserialization.
-    private Path deserializePath(AstNode node) throws YamlSerializerException {
-        if (node instanceof ScalarAstNode scalar) {
-            Object val = scalar.getPrimitiveValue();
-            return Path.of(val != null ? val.toString() : "");
-        }
-        throw new YamlSerializerException("Expected a scalar for Path field, but found " + node.getClass().getSimpleName());
-    }
+    // /// Specifically handles Path deserialization.
+    // private Path deserializePath(AstNode node) throws YamlSerializerException {
+    //     if (node instanceof ScalarAstNode scalar) {
+    //         Object val = scalar.getPrimitive();
+    //         return Path.of(val != null ? val.toString() : "");
+    //     }
+    //     throw new YamlSerializerException("Expected a scalar for Path field, but found " + node.getClass().getSimpleName());
+    // }
 
-    private URI deserializeUri(AstNode node) throws YamlSerializerException {
-        if (node instanceof ScalarAstNode scalar) {
-            Object val = scalar.getPrimitiveValue();
-            return URI.create(val != null ? val.toString() : "");
-        }
-        throw new YamlSerializerException("Expected a scalar for URI field, but found " + node.getClass().getSimpleName());
-    }
+    // private URI deserializeUri(AstNode node) throws YamlSerializerException {
+    //     if (node instanceof ScalarAstNode scalar) {
+    //         Object val = scalar.getPrimitive();
+    //         return URI.create(val != null ? val.toString() : "");
+    //     }
+    //     throw new YamlSerializerException("Expected a scalar for URI field, but found " + node.getClass().getSimpleName());
+    // }
 
     private List<?> deserializeList(YamlNode node, Field field) throws Exception {
         if (node == null) return new ArrayList<>();
@@ -605,7 +592,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
         // Fallback for single values in YAML where a list was expected
         if (node instanceof YamlScalarNode scalar) {
-            Object val = deserializeScalar(scalar.getPrimitiveValue(), itemType);
+            Object val = deserializeScalar(scalar.getPrimitive(), itemType);
             // FIX: If the value is null (like an empty key), return an empty mutable list
             if (val == null) return new ArrayList<>();
 

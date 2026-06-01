@@ -21,7 +21,7 @@ module cascara.lang.yaml {
         with io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
     provides io.github.qishr.cascara.common.lang.processor.Parser
         with io.github.qishr.cascara.lang.yaml.processor.YamlParser;
-    // provides io.github.qishr.cascara.common.lang.processor.Tokenizer
-    provides io.github.qishr.cascara.common.service.ServiceProvider
+    provides io.github.qishr.cascara.common.lang.processor.Tokenizer
+    // provides io.github.qishr.cascara.common.service.ServiceProvider
         with io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 }

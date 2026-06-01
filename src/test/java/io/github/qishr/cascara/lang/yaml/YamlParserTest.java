@@ -59,7 +59,7 @@ class YamlParserTest {
         assertTrue(firstItem instanceof YamlScalarNode, "Expected a ScalarNode inside the sequence");
 
         YamlScalarNode scalar = (YamlScalarNode) firstItem;
-        // ScalarAstNode uses getString() or getPrimitiveValue()
+        // ScalarAstNode uses getString() or getPrimitive()
         assertEquals("text/css", scalar.getString(), "Should parse indented scalar without quotes");
     }
 

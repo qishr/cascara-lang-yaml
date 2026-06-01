@@ -168,15 +168,15 @@ class YamlComprehensiveTest {
         // YAML spec forbids tabs for indentation
         String yaml = "key:\n\t- item";
         // Assuming YamlParserException extends ParserException
-        // assertThrows(ParserException.class, () -> parser.parse(yaml));
-        parser.parse(yaml);
-        assertFalse(diagnostics.isEmpty());
+        assertThrows(ParserException.class, () -> parser.parse(yaml));
+        // parser.parse(yaml);
+        // assertFalse(diagnostics.isEmpty());
     }
 
     @Test
     void testMismatchedDedentFails() {
         String yaml = "parent:\n  child: val\n    - orphan_item";
-        // assertThrows(ParserException.class, () -> parser.parse(yaml));
-        parser.parse(yaml);
-        assertFalse(diagnostics.isEmpty());
+        assertThrows(ParserException.class, () -> parser.parse(yaml));
+        // parser.parse(yaml);
+        // assertFalse(diagnostics.isEmpty());
     }}

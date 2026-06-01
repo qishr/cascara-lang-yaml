@@ -10,7 +10,7 @@ public class LongObject {
         return value;
     }
 
-    public void setValue(Long value) {
+    public void setRaw(Long value) {
         this.value = value;
     }
 }

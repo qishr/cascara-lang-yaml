@@ -32,10 +32,10 @@ public class ParserTests {
         if (statusValue instanceof YamlAnchorNode wrapper) {
             YamlNode inner = wrapper.getInnerNode();
             assertInstanceOf(YamlScalarNode.class, inner);
-            assertEquals("active", ((YamlScalarNode)inner).getValue()); // or .getString() if it exists there
+            assertEquals("active", ((YamlScalarNode)inner).getPrimitive()); // or .getString() if it exists there
         } else {
             // If it's not a wrapper, it must be the scalar itself
-            assertEquals("active", ((YamlScalarNode)statusValue).getValue());
+            assertEquals("active", ((YamlScalarNode)statusValue).getPrimitive());
         }
 
         // Check Alias

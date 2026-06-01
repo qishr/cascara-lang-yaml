@@ -21,7 +21,7 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
     }
 
     public YamlSequenceNode(int line, int column, URI uri) {
-        super(line, column, uri);
+        super(uri, line, column);
     }
 
     @Override

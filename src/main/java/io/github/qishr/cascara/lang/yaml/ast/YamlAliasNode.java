@@ -7,8 +7,8 @@ public class YamlAliasNode extends YamlNode {
     private final String alias;
     private YamlNode resolvedNode; // This is what the parser needs
 
-    public YamlAliasNode(int line, int column, URI uri, String alias) {
-        super(line, column, uri);
+    public YamlAliasNode(URI uri, int line, int column, String alias) {
+        super(uri, line, column);
         this.alias = alias;
     }
 

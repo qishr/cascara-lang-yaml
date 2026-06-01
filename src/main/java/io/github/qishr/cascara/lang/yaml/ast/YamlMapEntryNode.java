@@ -10,14 +10,14 @@ public class YamlMapEntryNode extends YamlNode implements MapEntryAstNode<YamlNo
     private final YamlNode key;
     private YamlNode value;
 
-    public YamlMapEntryNode(int line, int column, URI uri, YamlNode key, YamlNode value) {
-        super(line, column, uri);
+    public YamlMapEntryNode(URI uri, int line, int column, YamlNode key, YamlNode value) {
+        super(uri, line, column);
         this.key = key;
         this.value = value;
     }
 
     public YamlMapEntryNode(YamlNode key, YamlNode value) {
-        super(0, 0, null);
+        super(null, 0, 0);
         this.key = key;
         this.value = value;
     }
@@ -29,7 +29,7 @@ public class YamlMapEntryNode extends YamlNode implements MapEntryAstNode<YamlNo
     @Override public YamlNode getValue() { return value; }
 
     /// {@inheritDoc}
-    @Override public void setValue(YamlNode value) {
+    @Override public void setRaw(YamlNode value) {
         this.value = (YamlNode) value;
     }
 

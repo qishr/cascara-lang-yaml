@@ -16,7 +16,7 @@ public class YamlDocument extends YamlNode implements StructuredDocument {
     private URI schemaUri = null;
 
     public YamlDocument(YamlNode root) {
-        super(root.getStartLine(), root.getStartColumn(), root.getOriginUri());
+        super(root.getOriginUri(), root.getStartLine(), root.getStartColumn());
         this.root = root;
     }
 

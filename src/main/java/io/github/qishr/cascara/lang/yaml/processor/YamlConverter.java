@@ -34,7 +34,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
                     AstNode astValue = astMapEntry.getValue();
                     if (astKey instanceof ScalarAstNode astScalarKey) {
                         YamlScalarNode yamlKey = new YamlScalarNode();
-                        yamlKey.setValue(astScalarKey.getString());
+                        yamlKey.setPrimitive(astScalarKey.getString());
                         YamlNode yamlValue = fromAst(astValue);
                         yamlMap.put(yamlKey, yamlValue);
                     }
@@ -51,8 +51,8 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             return yamlSeq;
         } else if (ast instanceof ScalarAstNode astScalar) {
             YamlScalarNode yamlScalar = new YamlScalarNode();
-            yamlScalar.setPrimitiveValue(astScalar.getPrimitiveValue());
-            // yamlScalar.setValue(astScalar.getString());
+            yamlScalar.setPrimitive(astScalar.getPrimitive());
+            // yamlScalar.setRaw(astScalar.getString());
             return yamlScalar;
         } else {
             System.err.println("Unknown AST node");

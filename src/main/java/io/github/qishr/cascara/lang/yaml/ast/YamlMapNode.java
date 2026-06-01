@@ -21,7 +21,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
     }
 
     public YamlMapNode(int line, int column, URI uri) {
-        super(line, column, uri);
+        super(uri, line, column);
     }
 
     @Override public boolean containsKey(YamlNode key) {
@@ -67,11 +67,11 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
     public YamlMapNode put(YamlNode key, YamlNode value) {
         for (YamlMapEntryNode entry : entries) {
             if (entry.getKey().equals(key)) {
-                entry.setValue(value);
+                entry.setRaw(value);
                 return this;
             }
         }
-        entries.add(new YamlMapEntryNode(0, 0, getOriginUri(), key, value));
+        entries.add(new YamlMapEntryNode(getOriginUri(), 0, 0, key, value));
         return this;
     }
 
@@ -160,20 +160,20 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
             YamlNode kNode = entry.getKey();
             // Check if the existing key's string value matches the requested key
             if (kNode instanceof YamlScalarNode scalar && key.equals(scalar.getString())) {
-                entry.setValue(value);
+                entry.setRaw(value);
                 return this;
             }
         }
         // Only if not found, create the new entry
-        YamlNode keyNode = new YamlScalarNode(0, 0, getOriginUri(), key, key, QuoteStyle.PLAIN);
-        entries.add(new YamlMapEntryNode(0, 0, getOriginUri(), keyNode, value));
+        YamlNode keyNode = new YamlScalarNode(getOriginUri(), 0, 0, key, key, QuoteStyle.PLAIN);
+        entries.add(new YamlMapEntryNode(getOriginUri(), 0, 0, keyNode, value));
         return this;
     }
 
     public YamlMapNode put(YamlMapEntryNode entry) {
         for (YamlMapEntryNode candidate : entries) {
             if (candidate.getKey().equals(entry.getKey())) {
-                candidate.setValue(entry.getValue());
+                candidate.setRaw(entry.getValue());
                 return this;
             }
         }

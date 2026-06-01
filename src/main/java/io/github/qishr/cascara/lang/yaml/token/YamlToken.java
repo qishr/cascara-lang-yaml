@@ -5,12 +5,12 @@ import io.github.qishr.cascara.common.lang.token.Token;
 public class YamlToken implements Token {
     private YamlTokenType type;
     private String lexeme;
-    private Object value;
+    private String value;
     private int offset;
     private int line;
     private int column;
 
-    public YamlToken(YamlTokenType type, String lexeme, Object value,  int offset, int line, int column) {
+    public YamlToken(YamlTokenType type, String lexeme, String value,  int offset, int line, int column) {
         this.type = type;
         this.lexeme = lexeme;
         this.value = value;
@@ -30,7 +30,7 @@ public class YamlToken implements Token {
     }
 
     @Override
-    public Object getValue() {
+    public String getContent() {
         return value;
     }
 

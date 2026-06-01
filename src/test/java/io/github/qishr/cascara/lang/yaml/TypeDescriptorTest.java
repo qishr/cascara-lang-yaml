@@ -42,7 +42,8 @@ public class TypeDescriptorTest {
 
         String dateTimeString = dt.toString();
 
-        assertEquals("dateTime: \"" + dateTimeString + "\"\n", string);
+        assertEquals("dateTime: " + dateTimeString + "\n", string);
+        // assertEquals("dateTime: \"" + dateTimeString + "\"\n", string);
 
     }
 

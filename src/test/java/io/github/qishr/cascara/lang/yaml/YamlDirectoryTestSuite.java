@@ -54,9 +54,9 @@ class YamlDirectoryTestSuite {
     @ParameterizedTest(name = "Invalidating: {0}")
     @MethodSource("getInvalidFiles")
     void testInvalidFiles(String fileName, String content) {
-        // assertThrows(Exception.class, () -> parser.parse(content), "Should have failed: " + fileName);
-        parser.parse(content);
-        assertFalse(diagnostics.isEmpty(), "Should have failed: " + fileName);
+        assertThrows(Exception.class, () -> parser.parse(content), "Should have failed: " + fileName);
+        // parser.parse(content);
+        // assertFalse(diagnostics.isEmpty(), "Should have failed: " + fileName);
     }
 
     static Stream<Arguments> getValidFiles() throws Exception {

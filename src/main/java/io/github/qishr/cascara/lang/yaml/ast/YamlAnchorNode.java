@@ -7,8 +7,8 @@ public class YamlAnchorNode extends YamlNode {
     private final String anchorName;
     private final YamlNode innerNode;
 
-    public YamlAnchorNode(int line, int column, URI uri, String name, YamlNode node) {
-        super(line, column, uri);
+    public YamlAnchorNode(URI uri, int line, int column, String name, YamlNode node) {
+        super(uri, line, column);
         this.anchorName = name;
         this.innerNode = node;
         // This is the missing link!

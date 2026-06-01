@@ -32,13 +32,13 @@ public abstract class YamlNode implements AstNode {
 
     /// Constructs a new YamlNode with specific source coordinates.
     ///
+    /// @param uri    The URI of the source document.
     /// @param line   The 1-based line number in the source document.
     /// @param column The 1-based column number in the source document.
-    /// @param uri    The URI of the source document.
-    protected YamlNode(int line, int column, URI uri) {
+    protected YamlNode(URI uri, int line, int column) {
+        this.originUri = uri;
         this.startLine = line;
         this.startColumn = column;
-        this.originUri = uri;
     }
 
     /// Gets the YAML anchor associated with this node (e.g., &anchorName).
