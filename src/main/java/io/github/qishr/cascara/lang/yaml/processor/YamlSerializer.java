@@ -2,42 +2,50 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.URI;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.annotation.AnyGetter;
 import io.github.qishr.cascara.common.lang.annotation.AnySetter;
 import io.github.qishr.cascara.common.lang.annotation.DataField;
 import io.github.qishr.cascara.common.lang.annotation.DataIgnore;
 import io.github.qishr.cascara.common.lang.annotation.Serializable;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
-import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.processor.Serializer;
 import io.github.qishr.cascara.common.service.ServiceProviderLayer;
 import io.github.qishr.cascara.common.service.ServiceProviderMetadata;
 import io.github.qishr.cascara.common.type.TypeDescriptor;
 import io.github.qishr.cascara.common.util.ReflectionUtils;
+
+import io.github.qishr.cascara.lang.yaml.YamlDocument;
+import io.github.qishr.cascara.lang.yaml.YamlPrimitive;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlSerializerException;
-import io.github.qishr.cascara.lang.yaml.YamlDocument;
 
 /// Standard implementation for YAML serialization.
 public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implements Serializer<YamlNode> {
     private final YamlParser parser = new YamlParser();
 
     @Override protected YamlSerializer self() { return this; }
+
+    /// {@inheritDoc}
+    @Override
+    public YamlSerializer setReporter(Reporter reporter) {
+        this.reporter = reporter;
+        parser.setReporter(reporter);
+        return self();
+    }
 
     //
     // Serializer Implementation
@@ -62,9 +70,6 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     @Override
     public YamlNode toAst(Object object) {
         try {
-            // checkIfSerializable(object);
-            // initializeObject(object);
-            // return getYamlRootMap(object);
             return createValueNode(object);
         } catch (Exception e) {
             String message = String.format(
@@ -285,7 +290,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             return getYamlRootMap(value);
         }
 
-        TypeDescriptor descriptor = getTypeDescriptor(value);
+        TypeDescriptor descriptor = getTypeDescriptor(value.getClass());
         if (descriptor != null) {
             String text;
 
@@ -335,9 +340,9 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         for (Map.Entry<?, ?> entry : map.entrySet()) {
             if (entry.getKey() == null) continue;
 
-            YamlScalarNode keyNode = new YamlScalarNode(entry.getKey().toString(), QuoteStyle.PLAIN);
+            YamlScalarNode keyNode = new YamlScalarNode(entry.getKey(), QuoteStyle.PLAIN);
             YamlNode valueNode = (entry.getValue() == null)
-                ? new YamlScalarNode("", QuoteStyle.PLAIN)
+                ? new YamlScalarNode("")
                 : createValueNode(entry.getValue());
 
             yamlMap.put(keyNode, valueNode);
@@ -377,36 +382,10 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         if (node instanceof ScalarAstNode scalar) {
 
             // TypeDescriptor
-
-            ServiceProviderLayer rootLayer = ServiceProviderLayer.getRootLayer();
-            List<ServiceProviderMetadata> typeDescriptors = rootLayer.getProviders(
-                TypeDescriptor.class,
-
-                capabilities -> {
-                    String registeredTypeName = capabilities.getString("type");
-                    if (registeredTypeName == null) return false;
-                    try {
-                        // Check if the runtime object's class can be assigned to the descriptor's target type
-                        Class<?> registeredType = Class.forName(registeredTypeName);
-                        boolean isAssignable = registeredType.isAssignableFrom(targetType);
-                        return isAssignable;
-                    } catch (ClassNotFoundException e) {
-                        return false;
-                    }
-                }
-
-                // CapabilityQueries.allOf(
-                //     CapabilityQueries.hasExactValue("type", targetType.getName())
-                // )
-            );
-
-            if (!typeDescriptors.isEmpty()) {
-                TypeDescriptor descriptor = ServiceProviderLayer.loadProvider(TypeDescriptor.class, typeDescriptors.getFirst());
-
-
+            TypeDescriptor descriptor = getTypeDescriptor(targetType);
+            if (descriptor != null) {
                 Object val = scalar.getPrimitive();
                 String stringValue = val != null ? val.toString() : "";
-
                 try {
                     Object object = descriptor.toType(stringValue);
                     return object;
@@ -485,50 +464,37 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             if (targetType == short.class || targetType == Short.class) return num.shortValue();
         }
 
-        // 3. String-Based Parsing (Fallback for quoted values or string-only types)
-        String rawValue = primitive.toString().trim();
+        // 3. TypeDescriptor
+        String text = primitive.toString().trim();
+        TypeDescriptor descriptor = getTypeDescriptor(targetType);
+        if (descriptor != null) {
+            try {
+                return descriptor.toType(text);
+            } catch (Exception e) {
+                String msg = String.format("Failed to deserialize scalar to %s: %s", primitive.getClass(), e.getMessage());
+                throw new YamlSerializerException(msg, e);
+            }
+        }
 
-        if (targetType == String.class) return rawValue;
-
-        // TODO: These should be removed. TypeDescriptor should be handling this now.
-        if (targetType == Path.class) return Path.of(rawValue);
-        if (targetType == URI.class) return URI.create(rawValue);
-        if (targetType == UUID.class) return UUID.fromString(rawValue);
+        // 4. String-Based Parsing (Fallback for quoted values or string-only types)
+        if (targetType == String.class) return text;
 
         if (targetType.isEnum()) {
-            return Enum.valueOf((Class<Enum>) targetType, rawValue);
+            return Enum.valueOf((Class<Enum>) targetType, text);
         }
 
-        try {
-            if (targetType == boolean.class || targetType == Boolean.class) {
-                return Boolean.parseBoolean(rawValue);
-            }
-
-            // Robust Number Parsing (handling scientific notation and float-to-long)
-            if (targetType == Integer.class || targetType == int.class) {
-                return (int) Double.parseDouble(rawValue); // Double parse handles "1.0" -> 1
-            }
-
-            if (targetType == Long.class || targetType == long.class) {
-                if (rawValue.contains(".") || rawValue.toLowerCase().contains("e")) {
-                    return (long) Double.parseDouble(rawValue);
-                }
-                return Long.parseLong(rawValue);
-            }
-
-            if (targetType == Double.class || targetType == double.class) {
-                return Double.parseDouble(rawValue);
-            }
-
-            if (targetType == Float.class || targetType == float.class) {
-                return Float.parseFloat(rawValue);
-            }
-        } catch (NumberFormatException e) {
-            throw new YamlSerializerException(
-                String.format("Value '%s' cannot be converted to %s", rawValue, targetType.getSimpleName())
-            );
+        YamlPrimitive yamlPrimitive = new YamlPrimitive(primitive);
+        if (targetType == boolean.class || targetType == Boolean.class) {
+            return yamlPrimitive.asBoolean(false);
+        } else if (targetType == int.class || targetType == Integer.class) {
+            return yamlPrimitive.asInteger(0);
+        } else if (targetType == long.class || targetType == Long.class) {
+            return (long) yamlPrimitive.asInteger(0); // TODO: add asLong to YamlPrimitive
+        } else if (targetType == float.class || targetType == Float.class) {
+            return (float) yamlPrimitive.asDouble(0); // TODO: add asFloat to YamlPrimitive
+        } else if (targetType == double.class || targetType == Double.class) {
+            return yamlPrimitive.asDouble(0);
         }
-
         throw new YamlSerializerException("Unsupported field type: " + targetType.getSimpleName());
     }
 
@@ -539,7 +505,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         // Fallback for single values in YAML where a list was expected
         if (node instanceof YamlScalarNode scalar) {
             Object val = deserializeScalar(scalar.getPrimitive(), itemType);
-            // FIX: If the value is null (like an empty key), return an empty mutable list
+            // FIf the value is null (like an empty key), return an empty mutable list
             if (val == null) return new ArrayList<>();
 
             // Otherwise, return a mutable list with the single item
@@ -570,7 +536,11 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         Map<Object, Object> result = new LinkedHashMap<>();
 
         for (YamlMapEntryNode entry : mapNode.getEntries()) {
-            Object key = convertScalarToType(entry.getKey().toString(), keyType);
+            Object primitiveKey = (entry.getKey() instanceof ScalarAstNode scalar)
+                    ? scalar.getPrimitive()
+                    : entry.getKey().toString();
+
+            Object key = deserializeScalar(primitiveKey, keyType);
             Object val = deserializeNode(entry.getValue(), field, valType);
             if (key != null) result.put(key, val != null ? val : "");
         }
@@ -598,9 +568,8 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
                     if (!claimedKeys.contains(key)) {
                         Object value;
                         YamlNode valueNode = entry.getValue();
-
                         if (valueNode instanceof YamlScalarNode scalar) {
-                            value = inferValueType(scalar.getString());
+                            value = scalar.getPrimitive();
                         } else {
                             // If it's a complex object (Map/List), for now we pass the AST node
                             // or we'd need a recursive "astToMap" helper.
@@ -613,109 +582,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         }
     }
 
-
-    /// Converts a raw scalar string from the YAML AST into the target Java field type.
-    /// Supports String, Boolean, and common Number types.
-    private Object convertScalarToType(String rawValue, Class<?> targetType) throws YamlSerializerException {
-
-        if (rawValue == null) {
-            // If the target is a String or Object, return empty string or null
-            if (targetType == String.class || targetType == Object.class) return "";
-            // For primitives/Numbers, we can't return null, so we return a default or throw
-            if (targetType.isPrimitive()) {
-                if (targetType == boolean.class) return false;
-                return 0;
-            }
-            return null;
-        }
-
-        // Trim input just in case of whitespace issues from the parser
-        String processedValue = rawValue.trim();
-
-        if (targetType == Object.class || targetType == String.class) {
-            return inferValueType(processedValue);
-        }
-
-        // Specific Type: String
-        if (targetType == String.class) {
-            return processedValue;
-        }
-
-        try {
-            // Handle Boolean
-            if (targetType == Boolean.class || targetType == boolean.class) {
-                // Allows "true", "True", "TRUE", etc.
-                return Boolean.parseBoolean(rawValue);
-            }
-
-            // Handle Number Types
-            if (targetType == Integer.class || targetType == int.class) {
-                return Integer.parseInt(rawValue);
-            } else if (targetType == Long.class || targetType == long.class) {
-
-                // CRITICAL FIX FOR LARGE TIMESTAMPS/INTEGERS PARSED AS FLOATS
-
-                // 1. Check if the value contains floating point notation ('.', 'e', or 'E')
-                if (processedValue.contains(".") || processedValue.contains("e") || processedValue.contains("E")) {
-                    try {
-                        // Attempt to parse it as a Double first (which handles scientific notation)
-                        Double d = Double.parseDouble(processedValue);
-
-                        // 2. Safely convert the Double to a Long, truncating the fractional part.
-                        //    This is safe for YAML-parsed large integers.
-                        return d.longValue();
-                    } catch (NumberFormatException e) {
-                        // If parsing as Double fails, fall through and try as a standard Long later
-                        // This handles cases where it's a non-numeric string, like a boolean disguised as a float.
-                    }
-                }
-
-                // 3. If no float notation was found, or if the Double parsing failed,
-                //    attempt standard Long parsing (e.g., "1765538348553" or "1.5E12" that failed to be a double).
-                return Long.parseLong(processedValue);
-
-            } else if (targetType == Double.class || targetType == double.class) {
-                return Double.parseDouble(rawValue);
-            } else if (targetType == Float.class || targetType == float.class) {
-                return Float.parseFloat(rawValue);
-            }
-        } catch (NumberFormatException e) {
-             throw new YamlSerializerException(
-                 String.format("YAML value '%s' could not be converted to target numeric type %s.",
-                               rawValue, targetType.getSimpleName()), e
-             );
-        }
-
-        // Fallback for unsupported types
-        throw new YamlSerializerException(
-            String.format("Unsupported field type '%s' during deserialization.", targetType.getSimpleName())
-        );
-    }
-
-    private Object inferValueType(String value) {
-        if (value == null) return "";
-
-        // TODO: values are missing (yes/no, on/off)
-        // We need to avoid doing this converting here
-
-        // Explicit Boolean Check
-        if (value.equalsIgnoreCase("true")) return Boolean.TRUE;
-        if (value.equalsIgnoreCase("false")) return Boolean.FALSE;
-
-        // Try Number
-        try {
-            if (value.contains(".")) {
-                return Double.parseDouble(value);
-            } else {
-                return Long.parseLong(value);
-            }
-        } catch (NumberFormatException e) {
-            // Fallback to String
-            return value;
-        }
-    }
-
-    private TypeDescriptor getTypeDescriptor(Object value) {
+    private TypeDescriptor getTypeDescriptor(Class<?> clazz) {
         ServiceProviderLayer rootLayer = ServiceProviderLayer.getRootLayer();
         List<ServiceProviderMetadata> typeDescriptors = rootLayer.getProviders(
             TypeDescriptor.class,
@@ -725,19 +592,17 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
                 try {
                     // Check if the runtime object's class can be assigned to the descriptor's target type
                     Class<?> registeredType = Class.forName(registeredTypeName);
-                    return registeredType.isAssignableFrom(value.getClass());
+                    return registeredType.isAssignableFrom(clazz);
                 } catch (ClassNotFoundException e) {
                     return false;
                 }
             }
         );
-
         if (!typeDescriptors.isEmpty()) {
             ServiceProviderMetadata metadata = typeDescriptors.getFirst();
             TypeDescriptor descriptor = ServiceProviderLayer.loadProvider(TypeDescriptor.class, metadata);
             return descriptor;
         }
-
         return null;
     }
 }

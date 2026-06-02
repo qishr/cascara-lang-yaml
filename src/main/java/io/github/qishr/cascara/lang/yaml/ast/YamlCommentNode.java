@@ -17,7 +17,7 @@ public class YamlCommentNode extends YamlNode implements CommentAstNode {
     }
 
     /// {@inheritDoc}
-    @Override public String getString() { return text; }
+    @Override public String asString() { return text; }
 
     /// {@inheritDoc}
     @Override public boolean isMultiLine() { return multiLine; }

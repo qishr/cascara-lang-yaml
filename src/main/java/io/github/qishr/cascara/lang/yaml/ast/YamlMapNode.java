@@ -84,7 +84,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
     public void remove(String key) {
         entries.removeIf(e -> {
             if (e.getKey() instanceof YamlScalarNode scalar) {
-                if (scalar.getString().equals(key)) {
+                if (scalar.asString().equals(key)) {
                     return true;
                 }
             }
@@ -101,7 +101,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
     @Override
     public boolean containsKey(String key) {
         for (YamlMapEntryNode entry : entries) {
-            if (entry.getKey() instanceof YamlScalarNode scalar && key.equals(scalar.getString())) {
+            if (entry.getKey() instanceof YamlScalarNode scalar && key.equals(scalar.asString())) {
                 return true;
             }
         }
@@ -115,7 +115,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
             YamlNode kNode = entry.getKey();
             String entryKey = null;
             if (kNode instanceof YamlScalarNode scalar) {
-                entryKey = scalar.getString();
+                entryKey = scalar.asString();
             } else {
                 entryKey = kNode.toString();
             }
@@ -159,7 +159,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
         for (YamlMapEntryNode entry : entries) {
             YamlNode kNode = entry.getKey();
             // Check if the existing key's string value matches the requested key
-            if (kNode instanceof YamlScalarNode scalar && key.equals(scalar.getString())) {
+            if (kNode instanceof YamlScalarNode scalar && key.equals(scalar.asString())) {
                 entry.setRaw(value);
                 return this;
             }

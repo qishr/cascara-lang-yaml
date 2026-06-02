@@ -25,7 +25,7 @@ public class YamlAnchorNode extends YamlNode {
     @Override public List<YamlNode> getChildren() { return List.of(innerNode); }
 
     @Override
-    public String getString() {
+    public String asString() {
         return innerNode == null ? "" : innerNode.toString();
     }
 

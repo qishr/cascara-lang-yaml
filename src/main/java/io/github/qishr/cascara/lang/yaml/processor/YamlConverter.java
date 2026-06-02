@@ -34,7 +34,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
                     AstNode astValue = astMapEntry.getValue();
                     if (astKey instanceof ScalarAstNode astScalarKey) {
                         YamlScalarNode yamlKey = new YamlScalarNode();
-                        yamlKey.setPrimitive(astScalarKey.getString());
+                        yamlKey.setPrimitive(astScalarKey.asString());
                         YamlNode yamlValue = fromAst(astValue);
                         yamlMap.put(yamlKey, yamlValue);
                     }

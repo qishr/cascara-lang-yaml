@@ -130,7 +130,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     /// Handles scalar formatting including Literal (|) and quoted styles.
     private void emitScalarInternal(YamlScalarNode scalar, int indent, boolean isFlow) {
         if (scalar == null) return; // TODO: literal null
-        String val = scalar.getString();
+        String val = scalar.asString();
 
         // 1. Implicit Null
         if (val == null) {
@@ -248,7 +248,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                 if (c instanceof YamlCommentNode ycn && ycn.getStartLine() < key.getStartLine()) {
                     // If it's not the first entry, we already added indentation.
                     // If it is, we need to add it now for the comment.
-                    sb.append("# ").append(ycn.getString()).append(NL).append(" ".repeat(indent));
+                    sb.append("# ").append(ycn.asString()).append(NL).append(" ".repeat(indent));
                 }
             }
 
@@ -337,7 +337,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     }
 
     private boolean isImplicitNull(YamlNode node) {
-        return node instanceof YamlScalarNode s && s.getString() == null;
+        return node instanceof YamlScalarNode s && s.asString() == null;
     }
 
     private void handleExpandedItem(YamlNode item, int indent) {
@@ -359,7 +359,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         var entries = map.getEntries();
         for (int i = 0; i < entries.size(); i++) {
             var entry = entries.get(i);
-            if (entry.getKey() instanceof YamlScalarNode s) sb.append(s.getString());
+            if (entry.getKey() instanceof YamlScalarNode s) sb.append(s.asString());
             sb.append(": ");
             emitNode(entry.getValue(), 0, false, true);
             if (i < entries.size() - 1) sb.append(", ");
@@ -383,7 +383,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         if (node == null) return;
         for (CommentAstNode comment : node.getComments()) {
             if (comment instanceof YamlCommentNode ycn && ycn.getStartColumn() <= 1) {
-                sb.append(" ".repeat(indent)).append("# ").append(ycn.getString()).append(NL);
+                sb.append(" ".repeat(indent)).append("# ").append(ycn.asString()).append(NL);
             }
         }
     }
@@ -393,7 +393,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         if (node == null) return;
         for (CommentAstNode comment : node.getComments()) {
             if (comment instanceof YamlCommentNode ycn && ycn.getStartColumn() > 1) {
-                sb.append(" # ").append(ycn.getString());
+                sb.append(" # ").append(ycn.asString());
                 break;
             }
         }

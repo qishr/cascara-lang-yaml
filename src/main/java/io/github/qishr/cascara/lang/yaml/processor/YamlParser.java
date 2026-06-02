@@ -223,9 +223,6 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     }
 
     /// Parses a block-level mapping and enforces strict key indentation.
-    ///
-    ///
-    ///
     /// This method captures the column of the first key encountered and ensures
     /// all subsequent sibling keys in this map align perfectly.
     private YamlNode parseMap() {
@@ -277,7 +274,6 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 } else if (keyToken.getStartColumn() != mapColumn) {
                     // This will catch bad-key-indent.yaml
                     error(peek(), "Inconsistent indentation for map key");
-                    // return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Inconsistent indentation for map key");
                 }
 
 
@@ -296,11 +292,10 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 }
 
 
-                String keyString = key.getString();
+                String keyString = key.asString();
 
                 if (options.isStrict() && !seenKeys.add(keyString)) {
                     error(previous(), "Duplicate key: " + keyString);
-                    // return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Duplicate key: " + keyString);
                 }
                 int keyColumn = key.getStartColumn(); // Capture the column of the current key
 
@@ -446,7 +441,6 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                     break;
                 } else {
                     error(peek(), "Expected ',' or '}' in flow map.");
-                    // return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), uri, "Unexpected token");
                 }
             }
             return map;
@@ -454,49 +448,6 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
             depth--;
         }
     }
-
-    // /// Parses a scalar value and checks for same-line (inline) comments.
-    // private YamlScalarNode parseScalar() {
-    //     ++this.depth;
-    //     this.trace("parseScalar");
-
-    //     try {
-    //         YamlToken token = this.consume(YamlTokenType.SCALAR, "Expected scalar.");
-    //         String raw = token.getLexeme();
-    //         // This is the working unescaped text base
-    //         String text = (String) token.getValue();
-    //         Object primitive;
-
-    //         QuoteStyle style;
-    //         if (raw.startsWith("\"")) {
-    //             style = QuoteStyle.DOUBLE;
-    //             primitive = this.unescapeDoubleQuotes(text);
-    //         } else if (raw.startsWith("'")) {
-    //             style = QuoteStyle.SINGLE;
-    //             primitive = this.unescapeSingleQuotes(text);
-    //         } else {
-    //             style = QuoteStyle.PLAIN;
-    //             // Directly returns an Integer, Boolean, Double, etc.
-    //             // primitive = this.coercePlainScalar(text);
-    //             primitive = new YamlPrimitive(text, style).unwrap();
-    //         }
-
-    //         YamlScalarNode scalar = new YamlScalarNode(
-    //             token.getStartLine(), token.getStartColumn(), this.uri, raw, primitive, style
-    //         );
-    //         scalar.setToken(token);
-
-    //         if (this.check(YamlTokenType.COMMENT) && this.peek().getStartLine() == token.getStartLine()) {
-    //             scalar.getComments().add(this.parseComment());
-    //         }
-
-    //         this.parseInlineComment(scalar);
-    //         return scalar;
-    //     } finally {
-    //         --this.depth;
-    //     }
-    // }
-
 
     private YamlScalarNode parseScalar() {
         ++this.depth;
@@ -520,7 +471,6 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 token.getStartLine(),
                 token.getStartColumn(),
                 raw,
-                // TODO: Change Object to String in Token...
                 token.getContent(), // Passes the raw unescaped base token text
                 style
             );
@@ -536,40 +486,6 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
             --this.depth;
         }
     }
-
-
-
-    // The following code was moved into YamlPrimitive...
-
-    // /// Simple unescaper for double-quoted YAML strings
-    // private String unescapeDoubleQuotes(String input) {
-    //     if (input == null) return null;
-    //     return input.replace("\\\"", "\"")
-    //                 .replace("\\\\", "\\")
-    //                 .replace("\\n", "\n")
-    //                 .replace("\\r", "\r");
-    // }
-
-    // /// YAML single quotes unescape by replacing doubled single quotes with one.
-    // private String unescapeSingleQuotes(String input) {
-    //     return input == null ? null : input.replace("''", "'");
-    // }
-
-    // /// Evaluates plain scalars for boolean values to avoid type-bleeding.
-    // private Object coercePlainScalar(String input) {
-    //     if (input == null) return null;
-    //     String lowered = input.toLowerCase().trim();
-
-    //     // Standard YAML 1.2 boolean set
-    //     if (lowered.equals("true") || lowered.equals("yes") || lowered.equals("on")) return Boolean.TRUE;
-    //     if (lowered.equals("false") || lowered.equals("no") || lowered.equals("off")) return Boolean.FALSE;
-
-    //     // Add number parsing here if needed later
-    //     return input;
-    // }
-
-
-
 
     private YamlNode parseBlockScalar(boolean isLiteral) {
         YamlToken indicator = advance(); // Consume '|' or '>'

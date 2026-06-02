@@ -3,6 +3,7 @@ package io.github.qishr.cascara.lang.yaml.ast;
 import java.net.URI;
 import java.util.List;
 import java.util.Objects;
+
 import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.lang.yaml.YamlPrimitive;
@@ -80,13 +81,13 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return (raw != null) ? raw : primitive.asString();
     }
 
-    @Deprecated
-    @Override
-    public void setRaw(String raw) {
-        // TODO: Should we really be setting the primitive here?
-        this.primitive = new YamlPrimitive(raw, quoteStyle);
-        this.raw = raw;
-    }
+    // // TODO: Remove this
+    // @Deprecated
+    // @Override
+    // public void setRaw(String raw) {
+    //     this.primitive = new YamlPrimitive(raw, quoteStyle);
+    //     this.raw = raw;
+    // }
 
     /// {@inheritDoc}
     /// Performs basic type inference to return the most appropriate Java object.
@@ -103,43 +104,43 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
     /// {@inheritDoc}
     @Override
-    public String getString() {
+    public String asString() {
         return primitive.asString();
     }
 
     /// {@inheritDoc}
     @Override
-    public int getInteger() {
-        return getInteger(0);
+    public int asInteger() {
+        return asInteger(0);
     }
 
     /// {@inheritDoc}
     @Override
-    public int getInteger(int defaultValue) {
+    public int asInteger(int defaultValue) {
         return primitive.asInteger(defaultValue);
     }
 
     /// {@inheritDoc}
     @Override
-    public double getDouble() {
-        return getDouble(0.0);
+    public double asDouble() {
+        return asDouble(0.0);
     }
 
     /// {@inheritDoc}
     @Override
-    public double getDouble(double defaultValue) {
+    public double asDouble(double defaultValue) {
         return primitive.asDouble(defaultValue);
     }
 
     /// {@inheritDoc}
     @Override
-    public boolean getBoolean() {
-        return getBoolean(false);
+    public boolean asBoolean() {
+        return asBoolean(false);
     }
 
     /// {@inheritDoc}
     @Override
-    public boolean getBoolean(boolean defaultValue) {
+    public boolean asBoolean(boolean defaultValue) {
         return primitive.asBoolean(defaultValue);
     }
 
@@ -167,6 +168,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// {@inheritDoc}
     @Override
     public String toString() {
-        return getString();
+        return asString();
     }
 }

@@ -10,6 +10,7 @@ import java.util.EnumSet;
 import java.net.URI;
 import java.util.ArrayDeque;
 
+import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
@@ -267,7 +268,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         int currentColumn = column;
         int expectedIndent = indentationLevels.peek();
 
-        // 4. Indentation Logic (The version that passes your tests)
+        // 4. Indentation Logic
         if (currentColumn > expectedIndent) {
             indentationLevels.push(currentColumn);
             addStructuralToken(YamlTokenType.INDENT, currentColumn - 1);
