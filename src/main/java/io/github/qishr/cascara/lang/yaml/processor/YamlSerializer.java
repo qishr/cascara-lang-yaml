@@ -20,7 +20,7 @@ import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.processor.Serializer;
 import io.github.qishr.cascara.common.service.ServiceProviderLayer;
-import io.github.qishr.cascara.common.service.ServiceProviderMetadata;
+import io.github.qishr.cascara.common.service.ServiceMetadata;
 import io.github.qishr.cascara.common.type.TypeDescriptor;
 import io.github.qishr.cascara.common.util.ReflectionUtils;
 
@@ -303,7 +303,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
             // Inspect the type properties to choose the right style
             QuoteStyle quoteStyle = QuoteStyle.PLAIN;
-            String schemaType = descriptor.getCapabilities().getString("schemaType");
+            String schemaType = descriptor.getServiceProperties().getString("schemaType");
 
             if ("string".equals(schemaType)) {
                 quoteStyle = QuoteStyle.DOUBLE;
@@ -584,10 +584,10 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
     private TypeDescriptor getTypeDescriptor(Class<?> clazz) {
         ServiceProviderLayer rootLayer = ServiceProviderLayer.getRootLayer();
-        List<ServiceProviderMetadata> typeDescriptors = rootLayer.getProviders(
+        List<ServiceMetadata> typeDescriptors = rootLayer.getProviders(
             TypeDescriptor.class,
             capabilities -> {
-                String registeredTypeName = capabilities.getString("type");
+                String registeredTypeName = capabilities.getString("javaType");
                 if (registeredTypeName == null) return false;
                 try {
                     // Check if the runtime object's class can be assigned to the descriptor's target type
@@ -599,7 +599,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             }
         );
         if (!typeDescriptors.isEmpty()) {
-            ServiceProviderMetadata metadata = typeDescriptors.getFirst();
+            ServiceMetadata metadata = typeDescriptors.getFirst();
             TypeDescriptor descriptor = ServiceProviderLayer.loadProvider(TypeDescriptor.class, metadata);
             return descriptor;
         }
