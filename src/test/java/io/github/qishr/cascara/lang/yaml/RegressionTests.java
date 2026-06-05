@@ -21,12 +21,12 @@ public class RegressionTests {
               line:one
               line:two
             """;
-        YamlDocument doc = parser.parse(yaml);
-        YamlMapNode root = (YamlMapNode) doc.getRoot();
+        YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
+        YamlMapNode root = (YamlMapNode) doc;
         YamlScalarNode script = (YamlScalarNode) root.get("script");
 
         // CURRENT EXPECTATION (Failing): "line : one \nline : two \n"
         // REAL YAML EXPECTATION: "line:one\nline:two\n"
-        assertEquals("line:one\nline:two\n", script.getString());
+        assertEquals("line:one\nline:two\n", script.asString());
     }
 }

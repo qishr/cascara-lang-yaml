@@ -1,6 +1,5 @@
 package io.github.qishr.cascara.lang.yaml.ast;
 
-import java.net.URI;
 import java.util.List;
 
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
@@ -10,8 +9,8 @@ public class YamlCommentNode extends YamlNode implements CommentAstNode {
     private final String text;
     private final boolean multiLine;
 
-    public YamlCommentNode(URI uri, int line, int column, String text, boolean multiLine) {
-        super(uri, line, column);
+    public YamlCommentNode(int line, int column, String text, boolean multiLine) {
+        super(line, column);
         this.text = text;
         this.multiLine = multiLine;
     }

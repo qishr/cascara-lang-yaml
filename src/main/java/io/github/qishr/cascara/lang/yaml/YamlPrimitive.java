@@ -13,6 +13,7 @@ public class YamlPrimitive extends AbstractPrimitive {
         super(primitiveValue);
     }
 
+    /// Parses unescaped text and infers its type.
     public static YamlPrimitive fromString(String unescapedContent, QuoteStyle quoteStyle) {
         return new YamlPrimitive(unescapedContent, quoteStyle, false);
     }

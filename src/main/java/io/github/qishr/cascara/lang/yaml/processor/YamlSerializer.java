@@ -24,7 +24,6 @@ import io.github.qishr.cascara.common.service.ServiceMetadata;
 import io.github.qishr.cascara.common.type.TypeDescriptor;
 import io.github.qishr.cascara.common.util.ReflectionUtils;
 
-import io.github.qishr.cascara.lang.yaml.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.YamlPrimitive;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
@@ -83,13 +82,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     @Override
     public <C> C fromAst(YamlNode astNode, Class<C> clazz) {
         try {
-            // UNWRAP: If it's a document, get the actual content
-            YamlNode actualNode = astNode;
-            if (astNode instanceof YamlDocument doc) {
-                actualNode = doc.getRoot();
-            }
-
-            return (C) performMapping(actualNode, clazz);
+            return (C) performMapping(astNode, clazz);
         } catch (Exception e) {
             String message = String.format(
                 "Failed to map YAML AST to %s: %s",
@@ -584,7 +577,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
     private TypeDescriptor getTypeDescriptor(Class<?> clazz) {
         ServiceProviderLayer rootLayer = ServiceProviderLayer.getRootLayer();
-        List<ServiceMetadata> typeDescriptors = rootLayer.getProviders(
+        List<ServiceMetadata> typeDescriptors = rootLayer.findAllProviders(
             TypeDescriptor.class,
             capabilities -> {
                 String registeredTypeName = capabilities.getString("javaType");

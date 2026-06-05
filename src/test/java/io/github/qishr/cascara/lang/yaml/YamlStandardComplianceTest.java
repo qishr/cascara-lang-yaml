@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
 
@@ -34,7 +34,7 @@ class YamlStandardComplianceTest {
     @BeforeEach
     void init() {
         diagnostics = new ArrayList<>();
-        reporter = new SimpleReporter().setProblemCollector(this::collect);
+        reporter = new StandardReporter().setProblemCollector(this::collect);
         options = new YamlOptions().setStrict(true);
         parser = new YamlParser()
             .setOptions(options)
@@ -45,9 +45,7 @@ class YamlStandardComplianceTest {
     @Test
     void testNestedEmptyCollections() throws Exception {
         String yaml = "empty_map: {}\nempty_seq: []\nnested: [[]]";
-        YamlDocument doc = parser.parse(yaml);
-        assertNotNull(doc);
-        YamlMapNode root = (YamlMapNode) doc.getRoot();
+        YamlMapNode root = (YamlMapNode)parser.parse(yaml);
 
         assertTrue(((YamlMapNode)root.get("empty_map")).getEntries().isEmpty());
         assertEquals(0, ((YamlSequenceNode)root.get("empty_seq")).size());
@@ -62,8 +60,7 @@ class YamlStandardComplianceTest {
               inner_block:
                 - item
             """;
-        YamlDocument doc = parser.parse(yaml);
-        YamlMapNode root = (YamlMapNode) doc.getRoot();
+        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
 
         // The root contains one key "block_map" which is itself a map
         YamlMapNode blockMap = (YamlMapNode) root.get("block_map");
@@ -74,22 +71,20 @@ class YamlStandardComplianceTest {
     @Test
     void testLiteralBlockScalar() throws Exception {
         String yaml = "content: |\n  line one\n  line two";
-        YamlDocument doc = parser.parse(yaml);
-        YamlMapNode root = (YamlMapNode) doc.getRoot();
+        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
 
         YamlScalarNode scalar = (YamlScalarNode) root.get("content");
-        assertTrue(scalar.getString().contains("\n"));
+        assertTrue(scalar.asString().contains("\n"));
     }
 
     // 4. THE "RECORDS" REGRESSION (EXPANDED STYLE)
     @Test
     void testExpandedScalarRegression() throws Exception {
         String yaml = "key:\n  -\n    indented_value";
-        YamlDocument doc = parser.parse(yaml);
-        YamlMapNode root = (YamlMapNode) doc.getRoot();
+        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
 
         YamlSequenceNode seq = (YamlSequenceNode) root.get("key");
-        assertEquals("indented_value", ((YamlScalarNode)seq.get(0)).getString());
+        assertEquals("indented_value", ((YamlScalarNode)seq.get(0)).asString());
     }
 
     // 5. TRAILING COMMENTS AT END OF FILE
@@ -103,9 +98,7 @@ class YamlStandardComplianceTest {
     @Test
     void testDeepNesting() throws Exception {
         String yaml = "a: { b: { c: { d: { e: final } } } }";
-        YamlDocument doc = parser.parse(yaml);
-        assertNotNull(doc);
-        YamlMapNode root = (YamlMapNode) doc.getRoot();
+        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
         assertNotNull(root.get("a"));
     }
 
@@ -113,8 +106,7 @@ class YamlStandardComplianceTest {
     @Test
     void testComplexKeys() throws Exception {
         String yaml = "\"quoted key\": value\n'single quoted': value";
-        YamlDocument doc = parser.parse(yaml);
-        YamlMapNode root = (YamlMapNode) doc.getRoot();
+        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
 
         assertEquals(2, root.getEntries().size());
         assertEquals("value", root.getString("quoted key"));
@@ -138,8 +130,7 @@ class YamlStandardComplianceTest {
     @Test
     void testTypeInference() throws Exception {
         String yaml = "bool: true\nnum: 123.45";
-        YamlDocument doc = parser.parse(yaml);
-        YamlMapNode root = (YamlMapNode) doc.getRoot();
+        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
 
         assertTrue(root.getBoolean("bool"));
         assertEquals(123.45, root.getDouble("num"), 0.001);
@@ -150,8 +141,7 @@ class YamlStandardComplianceTest {
     void testEmptyLinesAndTabs() throws Exception {
         String yaml = "key: value\n\n\n    \nnext: value";
         assertDoesNotThrow(() -> {
-            YamlDocument doc = parser.parse(yaml);
-            YamlMapNode root = (YamlMapNode) doc.getRoot();
+            YamlMapNode root = (YamlMapNode) parser.parse(yaml);
             assertEquals(2, root.getEntries().size());
         });
     }

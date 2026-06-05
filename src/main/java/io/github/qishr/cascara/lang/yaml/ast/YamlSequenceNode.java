@@ -1,7 +1,6 @@
 // YamlSequence.java (Extends YamlNode)
 package io.github.qishr.cascara.lang.yaml.ast;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -19,8 +18,8 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
         // This method intentionally left blank
     }
 
-    public YamlSequenceNode(int line, int column, URI uri) {
-        super(uri, line, column);
+    public YamlSequenceNode(int line, int column) {
+        super(line, column);
     }
 
     @Override

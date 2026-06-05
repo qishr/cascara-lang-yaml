@@ -1,6 +1,5 @@
 package io.github.qishr.cascara.lang.yaml.ast;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 
@@ -14,43 +13,44 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     private YamlPrimitive primitive;
     private QuoteStyle quoteStyle;
 
-    /// 1. THE PARSER CONSTRUCTOR
+    /// Constructor for use in parsers.
     /// Used when reading raw text from a file stream.
     /// Takes a String and triggers full lexical dialect type inference.
-    public YamlScalarNode(URI uri, int line, int column, String raw, String unescapedContent, QuoteStyle quoteStyle) {
-        super(uri, line, column);
+    public YamlScalarNode(int line, int column, String raw, String unescapedContent, QuoteStyle quoteStyle) {
+        super(line, column);
         this.raw = raw;
-        // This constructor signature treats the input as text content to be parsed
+        // fromString treats the input as text content to be parsed
         this.primitive = YamlPrimitive.fromString(unescapedContent, quoteStyle);
         this.quoteStyle = quoteStyle;
     }
 
-    /// 2. THE PROGRAMMATIC / SERIALIZER CONSTRUCTOR
+    /// A programmatic and serializer constructor.
     /// Used when building an AST dynamically in code.
     /// Takes a pre-typed Object and skips text-based type inference.
     public YamlScalarNode(Object primitiveValue, QuoteStyle quoteStyle) {
-        super(null, 0, 0);
+        super( 0, 0);
         this.raw = null; // Cleared cache marks it as dirty for the emitter
         // Pass the object directly into the primitive wrapper
         this.primitive = new YamlPrimitive(primitiveValue, quoteStyle);
         this.quoteStyle = quoteStyle;
     }
 
-    /// 2.5 THE PROGRAMMATIC / SERIALIZER CONSTRUCTOR
+    /// A programmatic and serializer constructor.
     /// Used when building an AST dynamically in code.
     /// Takes a pre-typed Object and skips text-based type inference.
     public YamlScalarNode(Object primitiveValue) {
-        super(null, 0, 0);
+        super( 0, 0);
         this.raw = null; // Cleared cache marks it as dirty for the emitter
         this.primitive = new YamlPrimitive(primitiveValue);
         this.quoteStyle = primitive.getQuoteStyle();
     }
 
-    /// 3. THE DEFAULT CONSTRUCTOR
+    /// The default constructor
     public YamlScalarNode() {
-        super(null, 0, 0);
+        super( 0, 0);
         this.raw = null;
         this.quoteStyle = QuoteStyle.PLAIN;
+        this.primitive = new YamlPrimitive(null, QuoteStyle.PLAIN);
     }
 
     /// {@inheritDoc}

@@ -7,13 +7,13 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
 
 class SingleFileTest {
 
-    private Reporter reporter = new SimpleReporter().setLevel(Level.TRACE);
+    private Reporter reporter = new StandardReporter().setLevel(Level.TRACE);
     private final YamlOptions options = new YamlOptions().setStrict(true);
     private final YamlParser parser = new YamlParser().setOptions(options).setReporter(reporter);
 

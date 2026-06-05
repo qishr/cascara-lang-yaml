@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.QuoteStyle;
-import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
@@ -41,11 +41,11 @@ public class YamlEmitterTests {
 
         YamlParser parser = new YamlParser();
 
-        parser.setReporter(new SimpleReporter((s) -> {
+        parser.setReporter(new StandardReporter((s) -> {
             System.err.print(s);
         }).setLevel(Level.TRACE));
 
-        YamlDocument yaml = parser.parse(original);
+        YamlMapNode yaml = (YamlMapNode)parser.parse(original);
 
         YamlEmitter emitter = new YamlEmitter();
         String result = emitter.emit(yaml);

@@ -1,6 +1,5 @@
 package io.github.qishr.cascara.lang.yaml.ast;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -20,8 +19,8 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
         // This method intentionally left blank
     }
 
-    public YamlMapNode(int line, int column, URI uri) {
-        super(uri, line, column);
+    public YamlMapNode(int line, int column) {
+        super(line, column);
     }
 
     @Override public boolean containsKey(YamlNode key) {
@@ -71,7 +70,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
                 return this;
             }
         }
-        entries.add(new YamlMapEntryNode(getOriginUri(), 0, 0, key, value));
+        entries.add(new YamlMapEntryNode(0, 0, key, value));
         return this;
     }
 
@@ -165,8 +164,8 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
             }
         }
         // Only if not found, create the new entry
-        YamlNode keyNode = new YamlScalarNode(getOriginUri(), 0, 0, key, key, QuoteStyle.PLAIN);
-        entries.add(new YamlMapEntryNode(getOriginUri(), 0, 0, keyNode, value));
+        YamlNode keyNode = new YamlScalarNode(0, 0, key, key, QuoteStyle.PLAIN);
+        entries.add(new YamlMapEntryNode(0, 0, keyNode, value));
         return this;
     }
 

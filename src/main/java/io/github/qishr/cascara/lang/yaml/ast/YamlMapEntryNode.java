@@ -1,6 +1,5 @@
 package io.github.qishr.cascara.lang.yaml.ast;
 
-import java.net.URI;
 import java.util.List;
 
 import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
@@ -10,14 +9,14 @@ public class YamlMapEntryNode extends YamlNode implements MapEntryAstNode<YamlNo
     private final YamlNode key;
     private YamlNode value;
 
-    public YamlMapEntryNode(URI uri, int line, int column, YamlNode key, YamlNode value) {
-        super(uri, line, column);
+    public YamlMapEntryNode(int line, int column, YamlNode key, YamlNode value) {
+        super(line, column);
         this.key = key;
         this.value = value;
     }
 
     public YamlMapEntryNode(YamlNode key, YamlNode value) {
-        super(null, 0, 0);
+        super(0, 0);
         this.key = key;
         this.value = value;
     }

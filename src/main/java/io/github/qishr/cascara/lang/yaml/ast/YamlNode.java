@@ -1,6 +1,5 @@
 package io.github.qishr.cascara.lang.yaml.ast;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -19,7 +18,6 @@ public abstract class YamlNode implements AstNode {
     private final int startColumn;
     private final int endLine = 0;
     private final int endColumn = 0;
-    private final URI originUri;
     private final List<CommentAstNode> comments = new ArrayList<>();
     private String anchor;
     private YamlToken token;
@@ -27,16 +25,13 @@ public abstract class YamlNode implements AstNode {
     protected YamlNode() {
         startLine = 0;
         startColumn = 0;
-        originUri = null;
     }
 
     /// Constructs a new YamlNode with specific source coordinates.
     ///
-    /// @param uri    The URI of the source document.
     /// @param line   The 1-based line number in the source document.
     /// @param column The 1-based column number in the source document.
-    protected YamlNode(URI uri, int line, int column) {
-        this.originUri = uri;
+    protected YamlNode(int line, int column) {
         this.startLine = line;
         this.startColumn = column;
     }
@@ -69,9 +64,6 @@ public abstract class YamlNode implements AstNode {
 
     /// {@inheritDoc}
     @Override public int getEndColumn() { return endColumn; }
-
-    /// {@inheritDoc}
-    @Override public URI getOriginUri() { return originUri; }
 
     /// {@inheritDoc}
     @Override public List<CommentAstNode> getComments() { return comments; }

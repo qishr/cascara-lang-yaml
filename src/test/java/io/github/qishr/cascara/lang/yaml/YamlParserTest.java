@@ -6,7 +6,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
@@ -27,7 +27,7 @@ class YamlParserTest {
                 c: 2
             """;
 
-        Reporter reporter = new SimpleReporter().setLevel(Level.TRACE);
+        Reporter reporter = new StandardReporter().setLevel(Level.TRACE);
         YamlParser parser = new YamlParser().setReporter(reporter);
         parser.parse(yaml);
 
@@ -42,11 +42,7 @@ class YamlParserTest {
                     "text/css"
                 """;
 
-        YamlDocument doc = parser.parse(yaml);
-
-        // Access the root map via doc.getRoot()
-        assertTrue(doc.getRoot() instanceof YamlMapNode);
-        YamlMapNode rootMap = (YamlMapNode) doc.getRoot();
+        YamlMapNode rootMap = (YamlMapNode)parser.parse(yaml);
 
         // Use the get(String key) helper from MapAstNode
         YamlNode rootValue = rootMap.get("mimeTypes");
@@ -60,16 +56,16 @@ class YamlParserTest {
 
         YamlScalarNode scalar = (YamlScalarNode) firstItem;
         // ScalarAstNode uses getString() or getPrimitive()
-        assertEquals("text/css", scalar.getString(), "Should parse indented scalar without quotes");
+        assertEquals("text/css", scalar.asString(), "Should parse indented scalar without quotes");
     }
 
     @Test
     void testEmptyFileDoesNotCrash() throws Exception {
         String yaml = "";
         assertDoesNotThrow(() -> {
-            YamlDocument doc = parser.parse(yaml);
+            YamlNode doc = parser.parse(yaml);
             // doc.getRoot() might be a MapNode with no entries
-            if (doc.getRoot() instanceof YamlMapNode map) {
+            if (doc instanceof YamlMapNode map) {
                 assertTrue(map.getEntries().isEmpty());
             }
         });
@@ -84,8 +80,7 @@ class YamlParserTest {
                     name: "test"
                 """;
 
-        YamlDocument doc = parser.parse(yaml);
-        YamlMapNode rootMap = (YamlMapNode) doc.getRoot();
+        YamlMapNode rootMap = (YamlMapNode) parser.parse(yaml);
 
         YamlSequenceNode seq = (YamlSequenceNode) rootMap.get("records");
         // Get the first item in sequence, then cast to map
@@ -106,8 +101,7 @@ class YamlParserTest {
                   -
                     2
                 """;
-        YamlDocument doc = parser.parse(yaml);
-        YamlMapNode root = (YamlMapNode) doc.getRoot();
+        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
 
         // Accessing values by key and checking style
         YamlSequenceNode compact = (YamlSequenceNode) root.get("compact");

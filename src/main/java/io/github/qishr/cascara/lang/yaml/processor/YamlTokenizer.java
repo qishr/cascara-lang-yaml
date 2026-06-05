@@ -7,10 +7,8 @@ import java.util.Set;
 import java.util.HashMap;
 import java.util.Deque;
 import java.util.EnumSet;
-import java.net.URI;
 import java.util.ArrayDeque;
 
-import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
@@ -30,7 +28,6 @@ import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 /// * Plain scalars (unquoted) cannot contain a colon (`:`) unless it is a
 ///   valid value indicator followed by whitespace.
 public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implements Tokenizer<YamlToken> {
-    private URI uri;
 
     private static final Map<Character, YamlTokenType> FLOW_CONTEXT_SINGLE_CHAR_TOKENS = new HashMap<>();
     static {
@@ -53,9 +50,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     private int column = 1;
     private char currentChar = 0;
 
-    public YamlTokenizer() {
-        // reporter = new StandardReporter().setLevel(Level.TRACE);
-    }
+    /// Default constructor for SPI
+    public YamlTokenizer() {}
 
     @Override protected YamlTokenizer self() { return this; }
 
@@ -64,19 +60,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         return EnumSet.allOf(YamlTokenType.class);
     }
 
-    @Override
-    public List<YamlToken> tokenize(String source) {
-        return tokenize(source, null);
-    }
-
     /// Entry point for the tokenization process.
     ///
     /// @param source The YAML text to process.
-    /// @param uri The source URI for diagnostic reporting.
     /// @return A list of tokens including structural start/end markers.
     @Override
-    public List<YamlToken> tokenize(String source, URI uri) {
-        this.uri = uri;
+    public List<YamlToken> tokenize(String source) {
         this.source = source;
         this.tokens = new ArrayList<>();
         this.current = 0;
@@ -382,7 +371,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     private void error(String message) {
         YamlToken token = addToken(YamlTokenType.ERROR);
-        reporter.errorAt(uri, token,null, message);
+        reporter.errorAt(token,null, message);
     }
 
     private YamlToken addToken(YamlTokenType type) {

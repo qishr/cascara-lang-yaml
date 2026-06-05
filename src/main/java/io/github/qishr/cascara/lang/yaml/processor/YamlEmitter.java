@@ -7,7 +7,6 @@ import io.github.qishr.cascara.common.lang.LanguageOptions;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Emitter;
-import io.github.qishr.cascara.lang.yaml.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
@@ -17,7 +16,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 
-/// Responsible for converting a [YamlDocument] AST back into a valid YAML string.
+/// Responsible for converting a [YamlNode] AST back into a valid YAML string.
 ///
 /// This emitter is high-fidelity: it prioritizes preserving the original [CollectionStyle]
 /// and [QuoteStyle] of nodes while ensuring that comments are placed correctly relative
@@ -60,21 +59,9 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
     /// Primary entry point for emitting a full document.
     ///
-    /// @param doc The [YamlDocument] containing the AST and header comments.
+    /// @param root AST root.
     /// @return A formatted YAML string.
-    public String emit(YamlDocument doc) {
-        if (doc == null) return "";
-        sb.setLength(0);
-        emitBlockComments(doc, 0);
-        if (doc.getRoot() != null) {
-            emitNode(doc.getRoot(), 0, false, false);
-        }
-        debugOutput(sb.toString());
-        return sb.toString();
-    }
-
     public String emit(YamlNode root) {
-        if (root instanceof YamlDocument doc) return emit(doc);
         writtenAnchors.clear();
         sb.setLength(0);
         emitNode(root, 0, false, false);
