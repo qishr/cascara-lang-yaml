@@ -6,20 +6,24 @@ import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.type.LocalDateTimeDescriptor;
+import io.github.qishr.cascara.common.type.LocalDateTimeTypeDescriptor;
+import io.github.qishr.cascara.common.type.UriTypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
-import io.github.qishr.cascara.lang.yaml.testclass.TestTypeDescriptor1;
 import io.github.qishr.cascara.lang.yaml.testclass.TestTypeDescriptor2;
+import io.github.qishr.cascara.lang.yaml.testclass.TypeDescriptorTestClass;
 
 public class TypeDescriptorTest {
     @Test
     void t1() {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
+        LocalDateTimeTypeDescriptor dateTypeDescriptor = new LocalDateTimeTypeDescriptor();
+        yamlSerializer.registerTypeDescriptor(dateTypeDescriptor);
+
         LocalDateTime dt = LocalDateTime.now();
-        TestTypeDescriptor1 test = new TestTypeDescriptor1(dt);
+        TypeDescriptorTestClass test = new TypeDescriptorTestClass(dt);
 
         YamlNode yaml = yamlSerializer.toAst(test);
         String string = new YamlEmitter().emit(yaml);

@@ -5,10 +5,10 @@ import java.time.LocalDateTime;
 import io.github.qishr.cascara.common.lang.annotation.Serializable;
 
 @Serializable
-public class TestTypeDescriptor1 {
+public class TypeDescriptorTestClass {
     private LocalDateTime dateTime;
 
-    public TestTypeDescriptor1(LocalDateTime dt) {
+    public TypeDescriptorTestClass(LocalDateTime dt) {
         dateTime = dt;
     }
 }

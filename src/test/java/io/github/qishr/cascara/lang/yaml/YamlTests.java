@@ -24,7 +24,10 @@ class YamlTests {
                             "  - value1\n" +
                             "  - value2\n" +
                             "";
-        YamlParser parser = new YamlParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
+
+        // TODO: diagnostic level in one place for all tests?
+        // YamlParser parser = new YamlParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
+        YamlParser parser = new YamlParser();
         YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
         List<YamlNode> array = yaml.getSequence("array").getChildren();
         assertEquals(2, array.size());

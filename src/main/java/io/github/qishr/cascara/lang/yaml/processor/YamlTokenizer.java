@@ -10,6 +10,7 @@ import java.util.EnumSet;
 import java.util.ArrayDeque;
 
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
+import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
@@ -130,7 +131,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         if (c == ' ' || c == '\t') {
             trace(method, "space or tab");
             if (c == '\t') {
-                error("Tab characters are not allowed for indentation in YAML");
+                error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
                 // throw new YamlTokenierException("Tab characters are not allowed for indentation in YAML", line, column, uri);
             }
             return;
@@ -277,7 +278,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         trace("scanQuotedScalar");
         // 1. Capture the starting position BEFORE the loop
         int startLine = line;
-        int startColumn = column;
+
+        // cascara://organizer/CASC-000416DF
+        // We use the column of the opening quote, not the first value character.
+        int startColumn = column - 1;
 
         while (!isAtEnd()) {
             char c = peek();
@@ -369,9 +373,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     //
     //
 
-    private void error(String message) {
+    private void error(YamlDiagnosticCode msgCode, Object... details) {
         YamlToken token = addToken(YamlTokenType.ERROR);
-        reporter.errorAt(token,null, message);
+        reporter.errorAt(token, msgCode, details);
     }
 
     private YamlToken addToken(YamlTokenType type) {

@@ -1,8 +1,10 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.annotation.AnyGetter;
 import io.github.qishr.cascara.common.lang.annotation.AnySetter;
@@ -30,11 +33,13 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlSerializerException;
 
 /// Standard implementation for YAML serialization.
 public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implements Serializer<YamlNode> {
     private final YamlParser parser = new YamlParser();
+    private Map<Class<?>,TypeDescriptor> typeDescriptors = new HashMap<>();
 
     @Override protected YamlSerializer self() { return this; }
 
@@ -49,6 +54,11 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     //
     // Serializer Implementation
     //
+
+    @Override
+    public void registerTypeDescriptor(TypeDescriptor typeDescriptor) {
+        typeDescriptors.put(typeDescriptor.getType(), typeDescriptor);
+    }
 
     @Override
     public String toText(Object object) {
@@ -68,29 +78,12 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
     @Override
     public YamlNode toAst(Object object) {
-        try {
-            return createValueNode(object);
-        } catch (Exception e) {
-            String message = String.format(
-                "Failed to map object to YAML AST: %s",
-                e.getMessage()
-            );
-            throw new YamlSerializerException(message, e);
-        }
+        return createValueNode(object);
     }
 
     @Override
     public <C> C fromAst(YamlNode astNode, Class<C> clazz) {
-        try {
-            return (C) performMapping(astNode, clazz);
-        } catch (Exception e) {
-            String message = String.format(
-                "Failed to map YAML AST to %s: %s",
-                clazz.getSimpleName(),
-                e.getMessage()
-            );
-            throw new YamlSerializerException(message, e);
-        }
+        return (C) performMapping(astNode, clazz);
     }
 
     //
@@ -126,14 +119,14 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
             // 1. Validation
             if (!clazz.isAnnotationPresent(Serializable.class)) {
-                throw new YamlSerializerException("Class " + clazz.getSimpleName() + " is not @Serializable");
+                throw new YamlSerializerException(yaml, YamlDiagnosticCode.CLASS_NOT_SERIALIZABLE, clazz.getSimpleName());
             }
 
             T instance = clazz.getConstructor().newInstance();
 
             // 2. We now check against the generic MapAstNode interface
             if (!(yaml instanceof YamlMapNode mapNode)) {
-                throw new YamlSerializerException("Expected a map structure for class " + clazz.getSimpleName());
+                throw new YamlSerializerException(yaml, YamlDiagnosticCode.EXPECTED_MAP_STRUCTURE, clazz.getSimpleName());
             }
 
             // 3. Process Declared Fields
@@ -168,16 +161,14 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             processAnySetter(instance, (YamlMapNode)yaml, claimedKeys, clazz);
 
             return instance;
-        } catch (YamlSerializerException e) {
-            throw e;
         } catch (NoSuchMethodException e) {
-            throw new YamlSerializerException("Failed to deserialize " + clazz.getSimpleName() + ": " + e.getMessage(), e);
+            throw new YamlSerializerException(yaml, e, YamlDiagnosticCode.NO_SUCH_METHOD, clazz.getSimpleName());
         } catch (Exception e) {
-            throw new YamlSerializerException("Failed to deserialize " + clazz.getSimpleName() + ": " + e.getMessage(), e);
+            throw new YamlSerializerException(yaml, e, YamlDiagnosticCode.FAILED_DESERIALIZE, clazz.getSimpleName(), e.getMessage());
         }
     }
 
-    private YamlMapNode getYamlRootMap(Object object) throws Exception {
+    private YamlMapNode getYamlRootMap(Object object) {
         Class<?> clazz = object.getClass();
         // New: YamlDocument now requires a root node (usually a Map)
         YamlMapNode rootMap = new YamlMapNode();
@@ -187,7 +178,12 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             if (field.isAnnotationPresent(DataIgnore.class)) continue;
 
             if (field.isAnnotationPresent(AnySetter.class)) {
-                Map<?, ?> map = (Map<?, ?>) field.get(object);
+                Map<?, ?> map;
+                try {
+                    map = (Map<?, ?>) field.get(object);
+                } catch (IllegalAccessException e) {
+                    throw new YamlSerializerException(e, YamlDiagnosticCode.FIELD_NOT_ACCESSIBLE, field.getName());
+                }
                 if (map != null) {
                     for (Map.Entry<?, ?> entry : map.entrySet()) {
                         YamlNode keyNode = createValueNode(entry.getKey());
@@ -198,7 +194,12 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
                 continue;
             }
 
-            Object value = field.get(object);
+            Object value;
+			try {
+				value = field.get(object);
+			} catch (IllegalAccessException e) {
+                throw new YamlSerializerException(e, YamlDiagnosticCode.FIELD_NOT_ACCESSIBLE, field.getName());
+			}
             if (value != null) {
                 String keyName = field.isAnnotationPresent(DataField.class)
                     ? field.getAnnotation(DataField.class).key() : field.getName();
@@ -217,7 +218,24 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
                 method.setAccessible(true);
 
                 // Invoke the method to get the Map
-                Object result = method.invoke(object);
+                Object result;
+
+				try {
+					result = method.invoke(object);
+
+                    // TODO: Handle these gracefully
+
+                    // IllegalAccessException - if this Method object is enforcing Java language access control and the underlying method is inaccessible.
+                    // IllegalArgumentException - if the method is an instance method and the specified object argument is not an instance of the class or interface declaring the underlying method (or of a subclass or implementor thereof); if the number of actual and formal parameters differ; if an unwrapping conversion for primitive arguments fails; or if, after possible unwrapping, a parameter value cannot be converted to the corresponding formal parameter type by a method invocation conversion.
+                    // InvocationTargetException - if the underlying method throws an exception.
+                    // NullPointerException - if the specified object is null and the method is an instance method.
+                    // ExceptionInInitializerError - if the initialization provoked by this method fails.
+
+                } catch (IllegalAccessException e) {
+                    throw new YamlSerializerException(e, YamlDiagnosticCode.FIELD_NOT_ACCESSIBLE, method.getName());
+				} catch (InvocationTargetException e) {
+                    throw new YamlSerializerException(e, YamlDiagnosticCode.INVOCATION_TARGET_EXCEPTION, method.getName());
+				}
 
                 if (result instanceof Map<?, ?> map) {
                     for (Map.Entry<?, ?> entry : map.entrySet()) {
@@ -268,7 +286,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     }
 
     /// Creates the appropriate YamlNode (Scalar, Sequence, or Map) based on the Java value type.
-    private YamlNode createValueNode(Object value) throws Exception {
+    private YamlNode createValueNode(Object value) {
         if (value instanceof List<?> list) {
             return serializeList(list);
         }
@@ -290,8 +308,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             try {
                 text = descriptor.toText(value);
             } catch (Exception e) {
-                String msg = String.format("Failed to map YAML AST to %s: %s", value.getClass(), e.getMessage());
-                throw new YamlSerializerException(msg, e);
+                throw new YamlSerializerException(e, YamlDiagnosticCode.FAILED_TO_MAP_AST, value.getClass().getSimpleName(), e.getMessage());
             }
 
             // Inspect the type properties to choose the right style
@@ -311,7 +328,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     }
 
     /// Serializes a List into a YamlSequence.
-    private YamlSequenceNode serializeList(List<?> list) throws Exception {
+    private YamlSequenceNode serializeList(List<?> list) {
         YamlSequenceNode sequence = new YamlSequenceNode();
         for (Object item : list) {
             if (item == null) continue;
@@ -328,7 +345,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         return sequence;
     }
 
-    private YamlMapNode serializeMap(Map<?, ?> map) throws Exception {
+    private YamlMapNode serializeMap(Map<?, ?> map) {
         YamlMapNode yamlMap = new YamlMapNode();
         for (Map.Entry<?, ?> entry : map.entrySet()) {
             if (entry.getKey() == null) continue;
@@ -358,7 +375,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         // 2. Nested @Serializable objects
         if (targetType.isAnnotationPresent(Serializable.class)) {
             if (!(node instanceof YamlNode)) {
-                 throw new YamlSerializerException("Expected YamlNode for serializable type: " + targetType.getSimpleName());
+                 throw new YamlSerializerException(node, YamlDiagnosticCode.EXPECTED_YAML_NODE, targetType.getSimpleName());
             }
             return performMapping((YamlNode)node, targetType);
         }
@@ -383,12 +400,11 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
                     Object object = descriptor.toType(stringValue);
                     return object;
                 } catch (Exception e) {
-                    String msg = String.format("Failed to map %s to YAML AST: %s", targetType.getSimpleName(), e.getMessage());
-                    throw new YamlSerializerException(msg, e);
+                    throw new YamlSerializerException(node, e, YamlDiagnosticCode.FAILED_TO_MAP_TYPE, targetType.getSimpleName(), e.getMessage());
                 }
             }
 
-            return deserializeScalar(scalar.getPrimitive(), targetType);
+            return deserializeScalar(scalar, targetType);
         }
 
         if (targetType == Object.class) {
@@ -409,9 +425,8 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         //   - Is in a package that's not opened to cascara.lang.yaml
         //
         // Strictness: If we got here, the AST structure doesn't match the Java model
-        throw new YamlSerializerException(
-            String.format("Incompatible types: Cannot map %s to Java type %s",
-                node.getClass().getSimpleName(), targetType.getSimpleName())
+        throw new YamlSerializerException(node, YamlDiagnosticCode.INCOMPATIBLE_TYPES,
+            node.getClass().getSimpleName(), targetType.getSimpleName()
         );
     }
 
@@ -438,7 +453,8 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
     /// Converts a primitive value (already inferred by the AST) or a raw string into the target Java type.
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private Object deserializeScalar(Object primitive, Class<?> targetType) throws YamlSerializerException {
+    private Object deserializeScalar(ScalarAstNode scalar, Class<?> targetType) throws YamlSerializerException {
+        Object primitive = scalar.getPrimitive();
         if (primitive == null) return null;
 
         // 1. Exact Match / Wrapper Match
@@ -464,8 +480,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             try {
                 return descriptor.toType(text);
             } catch (Exception e) {
-                String msg = String.format("Failed to deserialize scalar to %s: %s", primitive.getClass(), e.getMessage());
-                throw new YamlSerializerException(msg, e);
+                throw new YamlSerializerException(scalar, e, YamlDiagnosticCode.FAILED_DESERIALIZE_SCALAR, primitive.getClass(), e.getMessage());
             }
         }
 
@@ -488,7 +503,13 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         } else if (targetType == double.class || targetType == Double.class) {
             return yamlPrimitive.asDouble(0);
         }
-        throw new YamlSerializerException("Unsupported field type: " + targetType.getSimpleName());
+
+        // TODO:
+        // We reach here through non-JPSM tests run through Gradle.
+        // Proper solution is black box testing, make the tests their own module.
+        // Quick fix might be to let the caller tell the serializer what type descriptors to use.
+
+        throw new YamlSerializerException(scalar, YamlDiagnosticCode.UNSUPPORTED_TYPE, targetType.getSimpleName());
     }
 
     private List<?> deserializeList(YamlNode node, Field field) throws Exception {
@@ -497,7 +518,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
         // Fallback for single values in YAML where a list was expected
         if (node instanceof YamlScalarNode scalar) {
-            Object val = deserializeScalar(scalar.getPrimitive(), itemType);
+            Object val = deserializeScalar(scalar, itemType);
             // FIf the value is null (like an empty key), return an empty mutable list
             if (val == null) return new ArrayList<>();
 
@@ -508,7 +529,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         }
 
         if (!(node instanceof YamlSequenceNode sequence)) {
-            throw new YamlSerializerException("Expected a sequence for field: " + field.getName());
+            throw new YamlSerializerException(node, YamlDiagnosticCode.EXPECTED_SEQUENCE, field.getName());
         }
 
         List<Object> result = new ArrayList<>();
@@ -529,13 +550,21 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         Map<Object, Object> result = new LinkedHashMap<>();
 
         for (YamlMapEntryNode entry : mapNode.getEntries()) {
-            Object primitiveKey = (entry.getKey() instanceof ScalarAstNode scalar)
-                    ? scalar.getPrimitive()
-                    : entry.getKey().toString();
+            // Object primitiveKey = (entry.getKey() instanceof ScalarAstNode scalar)
+            //         ? scalar.getPrimitive()
+            //         : entry.getKey().toString();
+            // Object key = deserializeScalar(primitiveKey, keyType);
 
-            Object key = deserializeScalar(primitiveKey, keyType);
+
+            Object key;
+            if (entry.getKey() instanceof YamlScalarNode scalarKey) {
+                key = deserializeScalar(scalarKey, keyType);
+            } else {
+                throw new YamlSerializerException(node, GenericDiagnosticCode.ERROR, "Non-scalar key not implemented");
+            }
+
             Object val = deserializeNode(entry.getValue(), field, valType);
-            if (key != null) result.put(key, val != null ? val : "");
+            if (key != null) result.put(key, val != null ? val : ""); // TODO: Is "" okay here?
         }
 
         return result;
@@ -576,6 +605,13 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     }
 
     private TypeDescriptor getTypeDescriptor(Class<?> clazz) {
+        // 1. First check if one has been registered locally
+        TypeDescriptor descriptor = typeDescriptors.get(clazz);
+        if (descriptor != null) {
+            return descriptor;
+        }
+
+        // 2. Use service provider layer to get one
         ServiceProviderLayer rootLayer = ServiceProviderLayer.getRootLayer();
         List<ServiceMetadata> typeDescriptors = rootLayer.findAllProviders(
             TypeDescriptor.class,
@@ -593,8 +629,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         );
         if (!typeDescriptors.isEmpty()) {
             ServiceMetadata metadata = typeDescriptors.getFirst();
-            TypeDescriptor descriptor = ServiceProviderLayer.loadProvider(TypeDescriptor.class, metadata);
-            return descriptor;
+            return ServiceProviderLayer.loadProvider(TypeDescriptor.class, metadata);
         }
         return null;
     }

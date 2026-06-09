@@ -1,0 +1,4 @@
+"key": "value"
+plain: value
+mixed:
+  "quoted": true
