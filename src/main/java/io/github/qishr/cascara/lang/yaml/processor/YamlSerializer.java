@@ -56,7 +56,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     //
 
     @Override
-    public void registerTypeDescriptor(TypeDescriptor typeDescriptor) {
+    public void addTypeDescriptor(TypeDescriptor typeDescriptor) {
         typeDescriptors.put(typeDescriptor.getType(), typeDescriptor);
     }
 

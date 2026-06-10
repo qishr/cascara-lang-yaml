@@ -104,11 +104,11 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         while (indentationLevels.size() > 1) {
             indentationLevels.pop();
-            tokens.add(new YamlToken(YamlTokenType.DEDENT, "", null, finalOffset, finalLine, finalCol));
+            tokens.add(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.DEDENT, "", null));
         }
 
-        tokens.add(new YamlToken(YamlTokenType.EOF, "", null, finalOffset, finalLine, finalCol));
-        tokens.add(new YamlToken(YamlTokenType.STREAM_END, "", "", finalOffset, finalLine, finalCol));
+        tokens.add(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.EOF, "", null));
+        tokens.add(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.STREAM_END, "", ""));
 
         return tokens;
     }
@@ -296,7 +296,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 String content = source.substring(offset + 1, current - 1);
 
                 // 2. Use the captured startColumn instead of calculating backwards
-                tokens.add(new YamlToken(YamlTokenType.SCALAR, lexeme, content, offset, startLine, startColumn));
+                tokens.add(new YamlToken(startLine, startColumn, offset, YamlTokenType.SCALAR, lexeme, content));
                 return;
             }
             if (c == '\n' || c == '\r') {
@@ -382,22 +382,22 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         String text = source.substring(offset, current);
         // If we finished 'schema' at col 15, 15 - 6 = 9.
         int tokenColumn = column - text.length();
-        return addToken(new YamlToken(type, text, text, offset, line, tokenColumn));
+        return addToken(new YamlToken(line, tokenColumn, offset, type, text, text));
     }
 
     private YamlToken addToken(YamlTokenType type, String lexeme) {
         int tokenColumn = column - lexeme.length();
-        return addToken(new YamlToken(type, lexeme, lexeme, offset, line, tokenColumn));
+        return addToken(new YamlToken(line, tokenColumn, offset, type, lexeme, lexeme));
     }
 
     private void addExplicitToken(YamlTokenType type, String lexeme, int tokenColumn) {
         trace("addExplicitToken");
-        addToken(new YamlToken(type, lexeme, lexeme, offset, line, tokenColumn));
+        addToken(new YamlToken(line, tokenColumn, offset, type, lexeme, lexeme));
     }
 
     private void addStructuralToken(YamlTokenType type, int tokenColumn) {
         trace("addStructuralToken");
-        addToken(new YamlToken(type, "", null, offset, line, tokenColumn));
+        addToken(new YamlToken(line, tokenColumn, offset, type, "", null));
     }
 
     private YamlToken addToken(YamlToken token) {

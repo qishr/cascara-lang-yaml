@@ -93,7 +93,7 @@ class YamlSerializerTests {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
         UriTypeDescriptor uriTypeDescriptor = new UriTypeDescriptor();
-        yamlSerializer.registerTypeDescriptor(uriTypeDescriptor);
+        yamlSerializer.addTypeDescriptor(uriTypeDescriptor);
 
         String yaml = yamlSerializer.toText(uri);
         UriTestClass answer = yamlSerializer.fromText(yaml, UriTestClass.class);

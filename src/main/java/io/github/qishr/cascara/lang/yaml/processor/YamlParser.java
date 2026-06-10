@@ -441,12 +441,12 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 style = QuoteStyle.SINGLE;
             }
 
-            // Let YamlPrimitive handle unescaping, coercing, and type resolution!
+            // Let YamlPrimitive handle unescaping, coercing, and type resolution
             YamlScalarNode scalar = new YamlScalarNode(
                 token.getStartLine(),
                 token.getStartColumn(),
                 raw,
-                token.getContent(), // Passes the raw unescaped base token text
+                token.getContent(), // Passes the unescaped base token text
                 style
             );
             scalar.setToken(token);

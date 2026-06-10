@@ -147,6 +147,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
 
 
+    // TODO: Same anchor
     /// Compares this scalar with another for equality.
     ///
     /// Two scalars are considered equal if they share the same anchor

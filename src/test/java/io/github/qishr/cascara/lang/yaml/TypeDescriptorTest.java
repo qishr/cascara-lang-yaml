@@ -20,7 +20,7 @@ public class TypeDescriptorTest {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
         LocalDateTimeTypeDescriptor dateTypeDescriptor = new LocalDateTimeTypeDescriptor();
-        yamlSerializer.registerTypeDescriptor(dateTypeDescriptor);
+        yamlSerializer.addTypeDescriptor(dateTypeDescriptor);
 
         LocalDateTime dt = LocalDateTime.now();
         TypeDescriptorTestClass test = new TypeDescriptorTestClass(dt);
