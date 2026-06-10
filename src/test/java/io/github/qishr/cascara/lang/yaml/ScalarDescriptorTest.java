@@ -1,6 +1,7 @@
 package io.github.qishr.cascara.lang.yaml;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.time.LocalDateTime;
 
@@ -104,5 +105,15 @@ public class ScalarDescriptorTest {
                 bytes: "AQID"
                 """;
         assertEquals(expected, yaml);
+
+        Person copy = yamlSerializer.fromText(yaml, Person.class);
+
+        assertNotNull(copy);
+        assertEquals(person.getFirstName(), copy.getFirstName());
+        assertEquals(person.getLastName(), copy.getLastName());
+        assertEquals(person.getAge(), copy.getAge());
+        assertEquals(person.getBytes()[0], copy.getBytes()[0]);
+        assertEquals(person.getBytes()[1], copy.getBytes()[1]);
+        assertEquals(person.getBytes()[2], copy.getBytes()[2]);
     }
 }

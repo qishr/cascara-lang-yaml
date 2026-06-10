@@ -20,6 +20,9 @@ public class Person {
 
     byte[] bytes;
 
+    // TODO: Remove this constructor. The serializer shouldn't need it.
+    public Person() {}
+
     public Person(String firstName, String lastName, String age) {
         this.firstName = firstName;
         this.lastName = lastName;
@@ -36,6 +39,10 @@ public class Person {
 
     public String getAge() {
         return age;
+    }
+
+    public byte[] getBytes() {
+        return bytes;
     }
 
     public void setBytes(byte[] b) {

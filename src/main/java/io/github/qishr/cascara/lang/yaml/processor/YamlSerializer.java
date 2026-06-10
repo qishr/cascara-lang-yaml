@@ -323,7 +323,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
     /// Converts a Yaml AST structure back into a Java object of the specified type.
     @SuppressWarnings("unchecked")
-    public <T> T deserialize(YamlNode yaml, Class<T> clazz) throws YamlSerializerException {
+    private <T> T deserialize(YamlNode yaml, Class<T> clazz) throws YamlSerializerException {
         // If the YAML node is null, or it's a scalar representing a null value,
         // we return null immediately. This allows 'security: ' to map to a null Object.
         if (yaml == null || (yaml instanceof YamlScalarNode scalar && scalar.getPrimitive() == null)) {
@@ -407,6 +407,12 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     private Object deserializeNode(YamlNode node, Field field, Class<?> targetType) throws Exception {
         if (node == null) return null;
 
+        // 1. High Priority Symmetrical Check: Intercept custom YAML type serializers
+        TypeDescriptor typeDescriptor = getTypeDescriptor(targetType);
+        if (typeDescriptor instanceof YamlTypeSerializer<?> typeSerializer) {
+            return typeSerializer.deserialize(node);
+        }
+
         // 2. Nested @Serializable objects
         if (targetType.isAnnotationPresent(Serializable.class)) {
             if (!(node instanceof YamlNode)) {
@@ -427,7 +433,6 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         if (node instanceof ScalarAstNode scalar) {
 
             // ScalarDescriptor
-            TypeDescriptor typeDescriptor = getTypeDescriptor(targetType);
             if (typeDescriptor instanceof ScalarDescriptor descriptor) {
                 Object val = scalar.getPrimitive();
                 String stringValue = val != null ? val.toString() : "";
