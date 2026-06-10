@@ -24,9 +24,9 @@ import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.processor.Serializer;
 import io.github.qishr.cascara.common.service.ServiceProviderLayer;
 import io.github.qishr.cascara.common.service.ServiceMetadata;
+import io.github.qishr.cascara.common.type.ScalarDescriptor;
 import io.github.qishr.cascara.common.type.TypeDescriptor;
 import io.github.qishr.cascara.common.util.ReflectionUtils;
-
 import io.github.qishr.cascara.lang.yaml.YamlPrimitive;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
@@ -35,11 +35,17 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlSerializerException;
+import io.github.qishr.cascara.lang.yaml.type.ByteArraySerializer;
+import io.github.qishr.cascara.lang.yaml.type.YamlTypeSerializer;
 
 /// Standard implementation for YAML serialization.
 public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implements Serializer<YamlNode> {
     private final YamlParser parser = new YamlParser();
     private Map<Class<?>,TypeDescriptor> typeDescriptors = new HashMap<>();
+
+    public YamlSerializer() {
+        addTypeDescriptor(new ByteArraySerializer());
+    }
 
     @Override protected YamlSerializer self() { return this; }
 
@@ -57,7 +63,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
     @Override
     public void addTypeDescriptor(TypeDescriptor typeDescriptor) {
-        typeDescriptors.put(typeDescriptor.getType(), typeDescriptor);
+        typeDescriptors.put(typeDescriptor.getJavaType(), typeDescriptor);
     }
 
     @Override
@@ -89,59 +95,61 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
 
 
-
-
-
+    //
+    // Serialization Methods
+    //
 
     /// Creates the appropriate YamlNode (Scalar, Sequence, or Map) based on the Java value type.
+	@SuppressWarnings("unchecked")
     private YamlNode serialize(Object value) {
+        if (isPrimitive(value)) {
+            return new YamlScalarNode(value);
+        }
+
+        TypeDescriptor typeDescriptor = getTypeDescriptor(value.getClass());
+
+        if (typeDescriptor != null) {
+            if (typeDescriptor instanceof YamlTypeSerializer typeSerializer) {
+				return typeSerializer.serialize(value);
+            }
+
+            if (typeDescriptor instanceof ScalarDescriptor descriptor) {
+                String text;
+
+                try {
+                    text = descriptor.toText(value);
+                } catch (Exception e) {
+                    throw new YamlSerializerException(e, YamlDiagnosticCode.FAILED_TO_MAP_AST, value.getClass().getSimpleName(), e.getMessage());
+                }
+
+                // Inspect the type properties to choose the right style
+                QuoteStyle quoteStyle = QuoteStyle.PLAIN;
+                String type = descriptor.getType();
+
+                if ("string".equals(type)) {
+                    quoteStyle = QuoteStyle.DOUBLE;
+                }
+                return new YamlScalarNode(text, quoteStyle);
+            }
+        }
+
         if (value instanceof List<?> list) {
             return serializeList(list);
         }
 
-        if (value instanceof java.util.Map<?, ?> map) {
+        if (value instanceof Map<?, ?> map) {
             return serializeMap(map);
         }
 
-        // TODO: ALL OBJECTS should be handled this way
-        // Check if this is a nested serializable object
+        // We now fall back to object, rather than scalar like before.
+        // This lets us try to serialize anything.
+
+        // TODO: ALL OBJECTS should be handled this way. @Serializable should not be neccesary
         if (value.getClass().isAnnotationPresent(Serializable.class)) {
-            // Turn this object into a nested YAML Mapping
             return serializeObject(value);
         }
 
-        //===========================================================
-        //
-        // TODO: ScalarTypeDescriptor is a better name for the currect TypeDescriptor
-        // But we need a similar concept for objects, lists, and maps.
-        //
-        //===========================================================
-
-        TypeDescriptor descriptor = getTypeDescriptor(value.getClass());
-        if (descriptor != null) {
-            String text;
-
-            try {
-                text = descriptor.toText(value);
-            } catch (Exception e) {
-                throw new YamlSerializerException(e, YamlDiagnosticCode.FAILED_TO_MAP_AST, value.getClass().getSimpleName(), e.getMessage());
-            }
-
-            // TODO: Should the TypeDescriptor not be doing this quote stuff?
-            // Inspect the type properties to choose the right style
-            QuoteStyle quoteStyle = QuoteStyle.PLAIN;
-            String schemaType = descriptor.getServiceProperties().getString("schemaType");
-
-            if ("string".equals(schemaType)) {
-                quoteStyle = QuoteStyle.DOUBLE;
-            }
-
-            return new YamlScalarNode(text, quoteStyle);
-        }
-
-        // Default to the existing scalar creation logic for primitives/strings
-        // return createValueScalar(value);
-        return new YamlScalarNode(value);
+        throw new YamlSerializerException(YamlDiagnosticCode.FAILED_SERIALIZE, value.getClass());
     }
 
     private YamlMapNode serializeObject(Object object) {
@@ -258,6 +266,13 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         }
         return yamlMap;
     }
+
+
+
+
+
+
+
 
     //
     // Serialization Helpers
@@ -384,6 +399,78 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         }
     }
 
+    /// Dispatches a node to the correct deserialization logic.
+    /// @param node The AST node to convert.
+    /// @param field The field being populated (can be null for nested elements).
+    /// @param targetType The class type to convert to.
+    /// Dispatches a node to the correct deserialization logic based on target type.
+    private Object deserializeNode(YamlNode node, Field field, Class<?> targetType) throws Exception {
+        if (node == null) return null;
+
+        // 2. Nested @Serializable objects
+        if (targetType.isAnnotationPresent(Serializable.class)) {
+            if (!(node instanceof YamlNode)) {
+                 throw new YamlSerializerException(node, YamlDiagnosticCode.EXPECTED_YAML_NODE, targetType.getSimpleName());
+            }
+            return deserialize((YamlNode)node, targetType);
+        }
+
+        // 3. Collections
+        if (List.class.isAssignableFrom(targetType)) {
+            return deserializeList(node, field);
+        }
+        if (Map.class.isAssignableFrom(targetType)) {
+            return deserializeMap(node, field);
+        }
+
+        // 4. Scalars (Primitives, Strings, Enums)
+        if (node instanceof ScalarAstNode scalar) {
+
+            // ScalarDescriptor
+            TypeDescriptor typeDescriptor = getTypeDescriptor(targetType);
+            if (typeDescriptor instanceof ScalarDescriptor descriptor) {
+                Object val = scalar.getPrimitive();
+                String stringValue = val != null ? val.toString() : "";
+                try {
+                    Object object = descriptor.toType(stringValue);
+                    return object;
+                } catch (Exception e) {
+                    throw new YamlSerializerException(node, e, YamlDiagnosticCode.FAILED_TO_MAP_TYPE, targetType.getSimpleName(), e.getMessage());
+                }
+            }
+
+            return deserializeScalar(scalar, targetType);
+        }
+
+        if (targetType == Object.class) {
+            if (node instanceof YamlMapNode mapNode) {
+                return convertYamlMapToStandardMap(mapNode);
+            }
+            if (node instanceof YamlSequenceNode seqNode) {
+                return convertYamlSequenceToStandardList(seqNode);
+            }
+            if (node instanceof ScalarAstNode scalar) {
+                return scalar.getPrimitive();
+            }
+            return node;
+        }
+
+        // Likely cause of arriving here is that the target type either:
+        //   - Doesn't have the @Serializable annotation
+        //   - Is in a package that's not opened to cascara.lang.yaml
+        //
+        // Strictness: If we got here, the AST structure doesn't match the Java model
+        throw new YamlSerializerException(node, YamlDiagnosticCode.INCOMPATIBLE_TYPES,
+            node.getClass().getSimpleName(), targetType.getSimpleName()
+        );
+    }
+
+
+
+
+
+
+
     private List<?> deserializeList(YamlNode node, Field field) throws Exception {
         if (node == null) return new ArrayList<>();
         Class<?> itemType = ReflectionUtils.getGenericTypeOfListField(field);
@@ -454,6 +541,11 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             return primitive;
         }
 
+
+
+
+        // TODO: Might want to do this after type descriptor check
+
         // 2. Numeric Narrowing (If AST already inferred a Number but target is different)
         if (primitive instanceof Number num) {
             if (targetType == int.class || targetType == Integer.class) return num.intValue();
@@ -464,10 +556,13 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             if (targetType == short.class || targetType == Short.class) return num.shortValue();
         }
 
-        // 3. TypeDescriptor
+
+
+
+        // 3. ScalarDescriptor
         String text = primitive.toString().trim();
-        TypeDescriptor descriptor = getTypeDescriptor(targetType);
-        if (descriptor != null) {
+        TypeDescriptor typeDescriptor = getTypeDescriptor(targetType);
+        if (typeDescriptor instanceof ScalarDescriptor descriptor) {
             try {
                 return descriptor.toType(text);
             } catch (Exception e) {
@@ -509,75 +604,14 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
 
 
+
+
+
+
+
     //
     // Deserialization Helpers
     //
-
-    /// Dispatches a node to the correct deserialization logic.
-    /// @param node The AST node to convert.
-    /// @param field The field being populated (can be null for nested elements).
-    /// @param targetType The class type to convert to.
-    /// Dispatches a node to the correct deserialization logic based on target type.
-    private Object deserializeNode(YamlNode node, Field field, Class<?> targetType) throws Exception {
-        if (node == null) return null;
-
-        // 2. Nested @Serializable objects
-        if (targetType.isAnnotationPresent(Serializable.class)) {
-            if (!(node instanceof YamlNode)) {
-                 throw new YamlSerializerException(node, YamlDiagnosticCode.EXPECTED_YAML_NODE, targetType.getSimpleName());
-            }
-            return deserialize((YamlNode)node, targetType);
-        }
-
-        // 3. Collections
-        if (List.class.isAssignableFrom(targetType)) {
-            return deserializeList(node, field);
-        }
-        if (Map.class.isAssignableFrom(targetType)) {
-            return deserializeMap(node, field);
-        }
-
-        // 4. Scalars (Primitives, Strings, Enums)
-        if (node instanceof ScalarAstNode scalar) {
-
-            // TypeDescriptor
-            TypeDescriptor descriptor = getTypeDescriptor(targetType);
-            if (descriptor != null) {
-                Object val = scalar.getPrimitive();
-                String stringValue = val != null ? val.toString() : "";
-                try {
-                    Object object = descriptor.toType(stringValue);
-                    return object;
-                } catch (Exception e) {
-                    throw new YamlSerializerException(node, e, YamlDiagnosticCode.FAILED_TO_MAP_TYPE, targetType.getSimpleName(), e.getMessage());
-                }
-            }
-
-            return deserializeScalar(scalar, targetType);
-        }
-
-        if (targetType == Object.class) {
-            if (node instanceof YamlMapNode mapNode) {
-                return convertYamlMapToStandardMap(mapNode);
-            }
-            if (node instanceof YamlSequenceNode seqNode) {
-                return convertYamlSequenceToStandardList(seqNode);
-            }
-            if (node instanceof ScalarAstNode scalar) {
-                return scalar.getPrimitive();
-            }
-            return node;
-        }
-
-        // Likely cause of arriving here is that the target type either:
-        //   - Doesn't have the @Serializable annotation
-        //   - Is in a package that's not opened to cascara.lang.yaml
-        //
-        // Strictness: If we got here, the AST structure doesn't match the Java model
-        throw new YamlSerializerException(node, YamlDiagnosticCode.INCOMPATIBLE_TYPES,
-            node.getClass().getSimpleName(), targetType.getSimpleName()
-        );
-    }
 
     private Map<String, Object> convertYamlMapToStandardMap(YamlMapNode mapNode) throws Exception {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -638,6 +672,14 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     // Shared Helpers
     //
 
+    private boolean isPrimitive(Object thing) {
+        return (thing instanceof String ||
+            thing instanceof Number ||
+            thing instanceof Byte ||
+            thing instanceof Character ||
+            thing instanceof Boolean);
+    }
+
     private TypeDescriptor getTypeDescriptor(Class<?> clazz) {
         // 1. First check if one has been registered locally
         TypeDescriptor descriptor = typeDescriptors.get(clazz);
@@ -663,7 +705,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         );
         if (!typeDescriptors.isEmpty()) {
             ServiceMetadata metadata = typeDescriptors.getFirst();
-            return ServiceProviderLayer.loadProvider(TypeDescriptor.class, metadata);
+            return ServiceProviderLayer.loadProvider(ScalarDescriptor.class, metadata);
         }
         return null;
     }

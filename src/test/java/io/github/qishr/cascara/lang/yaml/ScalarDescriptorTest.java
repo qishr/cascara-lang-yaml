@@ -7,19 +7,23 @@ import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.type.LocalDateTimeTypeDescriptor;
+import io.github.qishr.cascara.common.type.TypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
 import io.github.qishr.cascara.lang.yaml.testclass.LongInstant;
+import io.github.qishr.cascara.lang.yaml.testclass.Person;
+import io.github.qishr.cascara.lang.yaml.testclass.PersonSerializer;
 import io.github.qishr.cascara.lang.yaml.testclass.TypeDescriptorTestClass;
+import io.github.qishr.cascara.lang.yaml.type.ByteArraySerializer;
 
-public class TypeDescriptorTest {
+public class ScalarDescriptorTest {
     @Test
-    void testDateTypeDescriptor() {
+    void testDateScalarDescriptor() {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
-        LocalDateTimeTypeDescriptor dateTypeDescriptor = new LocalDateTimeTypeDescriptor();
-        yamlSerializer.addTypeDescriptor(dateTypeDescriptor);
+        LocalDateTimeTypeDescriptor dateScalarDescriptor = new LocalDateTimeTypeDescriptor();
+        yamlSerializer.addTypeDescriptor(dateScalarDescriptor);
 
         LocalDateTime dt = LocalDateTime.now();
         TypeDescriptorTestClass test = new TypeDescriptorTestClass(dt);
@@ -60,5 +64,45 @@ public class TypeDescriptorTest {
 
         assertEquals(dt, test.getValue());
 
+    }
+
+    @Test
+    void testCustomSerializer() {
+        YamlSerializer yamlSerializer = new YamlSerializer();
+
+        TypeDescriptor personSerializer = new PersonSerializer();
+
+        yamlSerializer.addTypeDescriptor(personSerializer);
+
+        Person person = new Person("Dave", "Smith", "31");
+
+        String yaml = yamlSerializer.toText(person);
+
+        String expected = """
+                firstName: "Dave"
+                lastName: "Smith"
+                age: "31"
+                """;
+        assertEquals(expected, yaml);
+    }
+
+    @Test
+    void testByteArray() {
+        YamlSerializer yamlSerializer = new YamlSerializer();
+
+        yamlSerializer.addTypeDescriptor(new ByteArraySerializer());
+
+        Person person = new Person("Dave", "Smith", "31");
+        person.setBytes(new byte[]{1,2,3});
+
+        String yaml = yamlSerializer.toText(person);
+
+        String expected = """
+                firstName: "Dave"
+                lastName: "Smith"
+                personAge: "31"
+                bytes: "AQID"
+                """;
+        assertEquals(expected, yaml);
     }
 }

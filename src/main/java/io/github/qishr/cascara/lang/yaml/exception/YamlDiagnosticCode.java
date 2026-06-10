@@ -30,6 +30,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     INVOCATION_TARGET_EXCEPTION("", "Method {0} threw an exception"),
 
     EXPECTED_MAP_STRUCTURE("YAML-", "Expected a map structure for class {0}"),
+    FAILED_SERIALIZE("YAML-", "Failed to serialize: {0}"),
     FAILED_DESERIALIZE("YAML-", "Failed to deserialize: {0}: {1}."),
     EXPECTED_YAML_NODE("YAML-", "Expected YamlNode for serializable type: {0}"),
     INCOMPATIBLE_TYPES("YAML-", "Incompatible types: Cannot map {0} to Java type {1}"),
