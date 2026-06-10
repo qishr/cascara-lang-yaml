@@ -7,16 +7,15 @@ import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.type.LocalDateTimeTypeDescriptor;
-import io.github.qishr.cascara.common.type.UriTypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
-import io.github.qishr.cascara.lang.yaml.testclass.TestTypeDescriptor2;
+import io.github.qishr.cascara.lang.yaml.testclass.LongInstant;
 import io.github.qishr.cascara.lang.yaml.testclass.TypeDescriptorTestClass;
 
 public class TypeDescriptorTest {
     @Test
-    void t1() {
+    void testDateTypeDescriptor() {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
         LocalDateTimeTypeDescriptor dateTypeDescriptor = new LocalDateTimeTypeDescriptor();
@@ -31,35 +30,32 @@ public class TypeDescriptorTest {
         String dateTimeString = dt.toString();
 
         assertEquals("dateTime: \"" + dateTimeString + "\"\n", string);
-
     }
 
     @Test
-    void t2() {
+    void testLongInstant0() {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
+        // TODO: This is essentially the same as testLongInstant1 and should be remvoed.
         Long dt = 1L;
-        TestTypeDescriptor2 test = new TestTypeDescriptor2(dt);
+        LongInstant test = new LongInstant(dt);
 
         YamlNode yaml = yamlSerializer.toAst(test);
         String string = new YamlEmitter().emit(yaml);
 
         String dateTimeString = dt.toString();
 
-        assertEquals("dateTime: " + dateTimeString + "\n", string);
-        // assertEquals("dateTime: \"" + dateTimeString + "\"\n", string);
-
+        assertEquals("value: " + dateTimeString + "\n", string);
     }
 
     @Test
-    void t22() {
+    void testLongInstant1() {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
         Long dt = 1L;
-        // String dateTimeString = dt.toString();
-        String text = "dateTime: 1\n";
+        String text = "value: 1\n";
 
-        TestTypeDescriptor2 test = yamlSerializer.fromText(text, TestTypeDescriptor2.class);
+        LongInstant test = yamlSerializer.fromText(text, LongInstant.class);
 
 
         assertEquals(dt, test.getValue());
