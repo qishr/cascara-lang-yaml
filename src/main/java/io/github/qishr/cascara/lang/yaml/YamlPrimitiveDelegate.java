@@ -1,7 +1,7 @@
 package io.github.qishr.cascara.lang.yaml;
 
 import io.github.qishr.cascara.common.lang.QuoteStyle;
-import io.github.qishr.cascara.common.type.PrimitiveDelegate;
+import io.github.qishr.cascara.common.lang.type.PrimitiveDelegate;
 
 public class YamlPrimitiveDelegate implements PrimitiveDelegate {
     @Override

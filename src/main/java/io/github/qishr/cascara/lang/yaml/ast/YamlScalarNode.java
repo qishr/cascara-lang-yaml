@@ -5,7 +5,7 @@ import java.util.Objects;
 
 import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
-import io.github.qishr.cascara.common.type.Primitive;
+import io.github.qishr.cascara.common.lang.type.Primitive;
 import io.github.qishr.cascara.lang.yaml.YamlPrimitiveDelegate;
 
 /// Represents a leaf node in the YAML AST containing a single scalar value.

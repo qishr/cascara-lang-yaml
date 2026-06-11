@@ -3,8 +3,8 @@ package io.github.qishr.cascara.lang.yaml.type;
 import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.exception.SerializerException;
-import io.github.qishr.cascara.common.type.AbstractTypeDescriptor;
-import io.github.qishr.cascara.common.type.TypeSerializer;
+import io.github.qishr.cascara.common.lang.type.AbstractTypeDescriptor;
+import io.github.qishr.cascara.common.lang.type.TypeSerializer;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlSerializerException;
 
@@ -19,9 +19,9 @@ public abstract class YamlTypeSerializer<T> extends AbstractTypeDescriptor<T> im
 
     /// Transforms a concrete Java object into its structural AST representation.
     ///
-    /// @param value    The live runtime object instance to serialize.
+    /// @param jvmInstance    The live runtime object instance to serialize.
     /// @return         The matching structural AstNode graph.
-    public YamlNode serialize(T value) throws SerializerException {
+    public YamlNode serialize(T jvmInstance) throws SerializerException {
         return null;
     }
 

@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.type.LocalDateTimeTypeDescriptor;
-import io.github.qishr.cascara.common.type.ByteArrayDescriptor;
-import io.github.qishr.cascara.common.type.TypeDescriptor;
+import io.github.qishr.cascara.common.lang.type.LocalDateTimeTypeDescriptor;
+import io.github.qishr.cascara.common.lang.type.ByteArrayDescriptor;
+import io.github.qishr.cascara.common.lang.type.TypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
