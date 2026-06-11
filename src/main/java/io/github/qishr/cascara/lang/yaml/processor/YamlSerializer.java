@@ -24,10 +24,11 @@ import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.processor.Serializer;
 import io.github.qishr.cascara.common.service.ServiceProviderLayer;
 import io.github.qishr.cascara.common.service.ServiceMetadata;
+import io.github.qishr.cascara.common.type.Primitive;
 import io.github.qishr.cascara.common.type.ScalarDescriptor;
 import io.github.qishr.cascara.common.type.TypeDescriptor;
 import io.github.qishr.cascara.common.util.ReflectionUtils;
-import io.github.qishr.cascara.lang.yaml.YamlPrimitive;
+import io.github.qishr.cascara.lang.yaml.YamlPrimitiveDelegate;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
@@ -35,16 +36,15 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlSerializerException;
-import io.github.qishr.cascara.lang.yaml.type.ByteArraySerializer;
 import io.github.qishr.cascara.lang.yaml.type.YamlTypeSerializer;
 
 /// Standard implementation for YAML serialization.
 public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implements Serializer<YamlNode> {
-    private final YamlParser parser = new YamlParser();
-    private Map<Class<?>,TypeDescriptor> typeDescriptors = new HashMap<>();
+    private static YamlPrimitiveDelegate YAML_PRIMITIVE_DELEGATE = new YamlPrimitiveDelegate();
+    private final YamlParser parser = new YamlParser(); // TODO: Not thread safe
+    private Map<Class<?>,TypeDescriptor<?>> typeDescriptors = new HashMap<>();
 
     public YamlSerializer() {
-        addTypeDescriptor(new ByteArraySerializer());
     }
 
     @Override protected YamlSerializer self() { return this; }
@@ -62,8 +62,8 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
     //
 
     @Override
-    public void addTypeDescriptor(TypeDescriptor typeDescriptor) {
-        typeDescriptors.put(typeDescriptor.getJavaType(), typeDescriptor);
+    public void registerTypeDescriptor(TypeDescriptor<?> typeDescriptor) {
+        typeDescriptors.put(typeDescriptor.getJvmType(), typeDescriptor);
     }
 
     @Override
@@ -92,9 +92,6 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         return (C) deserialize(astNode, clazz);
     }
 
-
-
-
     //
     // Serialization Methods
     //
@@ -106,7 +103,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             return new YamlScalarNode(value);
         }
 
-        TypeDescriptor typeDescriptor = getTypeDescriptor(value.getClass());
+        TypeDescriptor<?> typeDescriptor = getTypeDescriptor(value.getClass());
 
         if (typeDescriptor != null) {
             if (typeDescriptor instanceof YamlTypeSerializer typeSerializer) {
@@ -114,22 +111,15 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             }
 
             if (typeDescriptor instanceof ScalarDescriptor descriptor) {
-                String text;
-
+                Primitive primitive;
                 try {
-                    text = descriptor.toText(value);
+                    // If you're wondering why this is not a String,
+                    // an Instant is not a String - it's a Long
+                    primitive = descriptor.toPrimitive(value).setDelegate(YAML_PRIMITIVE_DELEGATE);
                 } catch (Exception e) {
                     throw new YamlSerializerException(e, YamlDiagnosticCode.FAILED_TO_MAP_AST, value.getClass().getSimpleName(), e.getMessage());
                 }
-
-                // Inspect the type properties to choose the right style
-                QuoteStyle quoteStyle = QuoteStyle.PLAIN;
-                String type = descriptor.getType();
-
-                if ("string".equals(type)) {
-                    quoteStyle = QuoteStyle.DOUBLE;
-                }
-                return new YamlScalarNode(text, quoteStyle);
+                return YamlScalarNode.fromPrimitive(primitive);
             }
         }
 
@@ -140,9 +130,6 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         if (value instanceof Map<?, ?> map) {
             return serializeMap(map);
         }
-
-        // We now fall back to object, rather than scalar like before.
-        // This lets us try to serialize anything.
 
         // TODO: ALL OBJECTS should be handled this way. @Serializable should not be neccesary
         if (value.getClass().isAnnotationPresent(Serializable.class)) {
@@ -267,13 +254,6 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         return yamlMap;
     }
 
-
-
-
-
-
-
-
     //
     // Serialization Helpers
     //
@@ -308,14 +288,6 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         }
         return methods;
     }
-
-
-
-
-
-
-
-
 
     //
     // Deserialization Methods
@@ -408,7 +380,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
         if (node == null) return null;
 
         // 1. High Priority Symmetrical Check: Intercept custom YAML type serializers
-        TypeDescriptor typeDescriptor = getTypeDescriptor(targetType);
+        TypeDescriptor<?> typeDescriptor = getTypeDescriptor(targetType);
         if (typeDescriptor instanceof YamlTypeSerializer<?> typeSerializer) {
             return typeSerializer.deserialize(node);
         }
@@ -437,7 +409,7 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
                 Object val = scalar.getPrimitive();
                 String stringValue = val != null ? val.toString() : "";
                 try {
-                    Object object = descriptor.toType(stringValue);
+                    Object object = descriptor.toJvmType(stringValue);
                     return object;
                 } catch (Exception e) {
                     throw new YamlSerializerException(node, e, YamlDiagnosticCode.FAILED_TO_MAP_TYPE, targetType.getSimpleName(), e.getMessage());
@@ -469,12 +441,6 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             node.getClass().getSimpleName(), targetType.getSimpleName()
         );
     }
-
-
-
-
-
-
 
     private List<?> deserializeList(YamlNode node, Field field) throws Exception {
         if (node == null) return new ArrayList<>();
@@ -546,9 +512,6 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             return primitive;
         }
 
-
-
-
         // TODO: Might want to do this after type descriptor check
 
         // 2. Numeric Narrowing (If AST already inferred a Number but target is different)
@@ -561,15 +524,12 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             if (targetType == short.class || targetType == Short.class) return num.shortValue();
         }
 
-
-
-
         // 3. ScalarDescriptor
         String text = primitive.toString().trim();
         TypeDescriptor typeDescriptor = getTypeDescriptor(targetType);
         if (typeDescriptor instanceof ScalarDescriptor descriptor) {
             try {
-                return descriptor.toType(text);
+                return descriptor.toJvmType(text);
             } catch (Exception e) {
                 throw new YamlSerializerException(scalar, e, YamlDiagnosticCode.FAILED_DESERIALIZE_SCALAR, primitive.getClass(), e.getMessage());
             }
@@ -582,7 +542,8 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             return Enum.valueOf((Class<Enum>) targetType, text);
         }
 
-        YamlPrimitive yamlPrimitive = new YamlPrimitive(primitive);
+        Primitive yamlPrimitive = Primitive.of(primitive);
+        yamlPrimitive.setDelegate(YAML_PRIMITIVE_DELEGATE);
         if (targetType == boolean.class || targetType == Boolean.class) {
             return yamlPrimitive.asBoolean(false);
         } else if (targetType == int.class || targetType == Integer.class) {
@@ -602,17 +563,6 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
         throw new YamlSerializerException(scalar, YamlDiagnosticCode.UNSUPPORTED_TYPE, targetType.getSimpleName());
     }
-
-
-
-
-
-
-
-
-
-
-
 
     //
     // Deserialization Helpers
@@ -685,9 +635,9 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
             thing instanceof Boolean);
     }
 
-    private TypeDescriptor getTypeDescriptor(Class<?> clazz) {
+    private TypeDescriptor<?> getTypeDescriptor(Class<?> clazz) {
         // 1. First check if one has been registered locally
-        TypeDescriptor descriptor = typeDescriptors.get(clazz);
+        TypeDescriptor<?> descriptor = typeDescriptors.get(clazz);
         if (descriptor != null) {
             return descriptor;
         }

@@ -8,9 +8,13 @@ import io.github.qishr.cascara.common.type.TypeSerializer;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlSerializerException;
 
-public abstract class YamlTypeSerializer<T> extends AbstractTypeDescriptor implements TypeSerializer<T> {
+public abstract class YamlTypeSerializer<T> extends AbstractTypeDescriptor<T> implements TypeSerializer<T> {
     protected YamlTypeSerializer(Class<T> javaType) {
-        super(javaType);
+        super(javaType, "object");
+    }
+
+    protected YamlTypeSerializer(Class<T> javaType, String schemaType) {
+        super(javaType, schemaType);
     }
 
     /// Transforms a concrete Java object into its structural AST representation.

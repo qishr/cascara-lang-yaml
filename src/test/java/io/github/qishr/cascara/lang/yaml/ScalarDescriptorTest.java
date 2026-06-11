@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.type.LocalDateTimeTypeDescriptor;
+import io.github.qishr.cascara.common.type.ByteArrayDescriptor;
 import io.github.qishr.cascara.common.type.TypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
@@ -16,7 +17,6 @@ import io.github.qishr.cascara.lang.yaml.testclass.LongInstant;
 import io.github.qishr.cascara.lang.yaml.testclass.Person;
 import io.github.qishr.cascara.lang.yaml.testclass.PersonSerializer;
 import io.github.qishr.cascara.lang.yaml.testclass.TypeDescriptorTestClass;
-import io.github.qishr.cascara.lang.yaml.type.ByteArraySerializer;
 
 public class ScalarDescriptorTest {
     @Test
@@ -24,7 +24,7 @@ public class ScalarDescriptorTest {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
         LocalDateTimeTypeDescriptor dateScalarDescriptor = new LocalDateTimeTypeDescriptor();
-        yamlSerializer.addTypeDescriptor(dateScalarDescriptor);
+        yamlSerializer.registerTypeDescriptor(dateScalarDescriptor);
 
         LocalDateTime dt = LocalDateTime.now();
         TypeDescriptorTestClass test = new TypeDescriptorTestClass(dt);
@@ -71,9 +71,9 @@ public class ScalarDescriptorTest {
     void testCustomSerializer() {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
-        TypeDescriptor personSerializer = new PersonSerializer();
+        TypeDescriptor<?> personSerializer = new PersonSerializer();
 
-        yamlSerializer.addTypeDescriptor(personSerializer);
+        yamlSerializer.registerTypeDescriptor(personSerializer);
 
         Person person = new Person("Dave", "Smith", "31");
 
@@ -91,7 +91,8 @@ public class ScalarDescriptorTest {
     void testByteArray() {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
-        yamlSerializer.addTypeDescriptor(new ByteArraySerializer());
+        // THis is called here because tests runnig from Gradle don't have SPI
+        yamlSerializer.registerTypeDescriptor(new ByteArrayDescriptor());
 
         Person person = new Person("Dave", "Smith", "31");
         person.setBytes(new byte[]{1,2,3});

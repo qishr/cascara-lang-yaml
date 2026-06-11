@@ -5,12 +5,15 @@ import java.util.Objects;
 
 import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
-import io.github.qishr.cascara.lang.yaml.YamlPrimitive;
+import io.github.qishr.cascara.common.type.Primitive;
+import io.github.qishr.cascara.lang.yaml.YamlPrimitiveDelegate;
 
 /// Represents a leaf node in the YAML AST containing a single scalar value.
 public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> {
+    private static YamlPrimitiveDelegate YAML_PRIMITIVE_DELEGATE = new YamlPrimitiveDelegate();
+
     private String raw;
-    private YamlPrimitive primitive;
+    private Primitive primitive;
     private QuoteStyle quoteStyle;
 
     /// Constructor for use in parsers.
@@ -20,7 +23,8 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         super(line, column);
         this.raw = raw;
         // fromString treats the input as text content to be parsed
-        this.primitive = YamlPrimitive.fromString(unescapedContent, quoteStyle);
+        this.primitive = Primitive.fromString(unescapedContent, quoteStyle)
+            .setDelegate(YAML_PRIMITIVE_DELEGATE);
         this.quoteStyle = quoteStyle;
     }
 
@@ -31,7 +35,9 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         super( 0, 0);
         this.raw = null; // Cleared cache marks it as dirty for the emitter
         // Pass the object directly into the primitive wrapper
-        this.primitive = new YamlPrimitive(primitiveValue, quoteStyle);
+        this.primitive = Primitive.of(primitiveValue)
+            .setQuoteStyle(quoteStyle)
+            .setDelegate(YAML_PRIMITIVE_DELEGATE);
         this.quoteStyle = quoteStyle;
     }
 
@@ -41,7 +47,8 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     public YamlScalarNode(Object primitiveValue) {
         super( 0, 0);
         this.raw = null; // Cleared cache marks it as dirty for the emitter
-        this.primitive = new YamlPrimitive(primitiveValue);
+        this.primitive = Primitive.of(primitiveValue)
+            .setDelegate(YAML_PRIMITIVE_DELEGATE);
         this.quoteStyle = primitive.getQuoteStyle();
     }
 
@@ -50,7 +57,18 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         super( 0, 0);
         this.raw = null;
         this.quoteStyle = QuoteStyle.PLAIN;
-        this.primitive = new YamlPrimitive(null, QuoteStyle.PLAIN);
+        // this.primitive = new Primitive(null, QuoteStyle.PLAIN);
+        this.primitive = Primitive.of(null)
+            .setDelegate(YAML_PRIMITIVE_DELEGATE);
+    }
+
+    public static YamlScalarNode fromPrimitive(Primitive primitive) {
+        YamlScalarNode node = new YamlScalarNode();
+        node.raw = null; // Cleared cache marks it as dirty for the emitter
+        node.primitive = primitive;
+        node.primitive.setDelegate(YAML_PRIMITIVE_DELEGATE);
+        node.quoteStyle = primitive.getQuoteStyle();
+        return node;
     }
 
     /// {@inheritDoc}
@@ -73,21 +91,13 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// Sets the quoting style and clears the raw cache.
     public void setQuoteStyle(QuoteStyle quoteStyle) {
         this.quoteStyle = quoteStyle;
-        this.primitive.setQuoteStyle(quoteStyle);
+        // this.primitive.setQuoteStyle(quoteStyle);
     }
 
     /// Returns the original raw (unescaped) string as seen in the source file.
     public String getRaw() {
         return (raw != null) ? raw : primitive.asString();
     }
-
-    // // TODO: Remove this
-    // @Deprecated
-    // @Override
-    // public void setRaw(String raw) {
-    //     this.primitive = new YamlPrimitive(raw, quoteStyle);
-    //     this.raw = raw;
-    // }
 
     /// {@inheritDoc}
     /// Performs basic type inference to return the most appropriate Java object.
@@ -98,7 +108,9 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
     @Override
     public void setPrimitive(Object primitive) {
-        this.primitive = new YamlPrimitive(primitive, quoteStyle);
+        this.primitive = Primitive.of(primitive)
+            .setQuoteStyle(quoteStyle)
+            .setDelegate(YAML_PRIMITIVE_DELEGATE);
         this.raw = null; // If the primitive is updated, we no longer have a valid raw value.
     }
 
