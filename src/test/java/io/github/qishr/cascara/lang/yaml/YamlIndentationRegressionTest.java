@@ -27,7 +27,8 @@ class YamlIndentationRegressionTest extends YamlTokenizerTestBase {
         YamlTokenizer tokenizer = new YamlTokenizer();
         List<YamlToken> tokens = tokenizer.tokenize(yaml);
 
-        debugTokenGrid(yaml, tokens);
+        // TODO: Make this configurable
+        // debugTokenGrid(yaml, tokens);
 
         assertTokenTypes(tokens,
             YamlTokenType.SCALAR, YamlTokenType.VALUE_INDICATOR, YamlTokenType.NEWLINE,
@@ -77,7 +78,8 @@ class YamlIndentationRegressionTest extends YamlTokenizerTestBase {
                 .findFirst()
                 .orElseThrow();
 
-        debugTokenGrid(yaml, tokens);
+        // TODO: Make this configurable
+        // debugTokenGrid(yaml, tokens);
 
         assertEquals(5, schemaToken.getStartLine(), "Schema should be on line 5");
         assertEquals(9, schemaToken.getStartColumn(), "Schema key must align with 'files' (Col 9)");

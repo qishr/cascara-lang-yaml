@@ -5,18 +5,18 @@ import io.github.qishr.cascara.common.lang.token.Token;
 public class YamlToken implements Token {
     private YamlTokenType type;
     private String lexeme;
-    private Object value;
+    private String content;
     private int offset;
     private int line;
     private int column;
 
-    public YamlToken(YamlTokenType type, String lexeme, Object value,  int offset, int line, int column) {
-        this.type = type;
-        this.lexeme = lexeme;
-        this.value = value;
-        this.offset = offset;
+    public YamlToken(int line, int column, int startOffset, YamlTokenType type, String lexeme, String content) {
         this.line = line;
         this.column = column;
+        this.offset = startOffset;
+        this.type = type;
+        this.lexeme = lexeme;
+        this.content = content;
     }
 
     @Override
@@ -30,8 +30,8 @@ public class YamlToken implements Token {
     }
 
     @Override
-    public Object getValue() {
-        return value;
+    public String getContent() {
+        return content;
     }
 
     @Override
@@ -54,7 +54,7 @@ public class YamlToken implements Token {
     @Override
     public String toString() {
         String displayLexeme = lexeme.replace("\n", "\\n").replace("\r", "\\r").replace("\"", "\\\"");
-        String valuePart = (value != null) ? " (Value: " + value + ")" : "";
+        String valuePart = (content != null) ? " (Value: " + content + ")" : "";
 
         return String.format("[%-20s | '%-15s'%s | L:%d C:%d]",
             type,

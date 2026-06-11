@@ -18,10 +18,10 @@ public class ParserTests {
     void test_parser_anchoredScalar() {
         String yaml = "status: &val active\nlink: *val";
         YamlParser parser = new YamlParser();
-        YamlDocument doc = parser.parse(yaml);
+        YamlNode doc = parser.parse(yaml);
 
-        assertInstanceOf(YamlMapNode.class, doc.getRoot());
-        YamlMapNode map = (YamlMapNode) doc.getRoot();
+        assertInstanceOf(YamlMapNode.class, doc);
+        YamlMapNode map = (YamlMapNode) doc;
         YamlNode statusValue = map.get("status");
 
         // Check Anchor
@@ -32,10 +32,10 @@ public class ParserTests {
         if (statusValue instanceof YamlAnchorNode wrapper) {
             YamlNode inner = wrapper.getInnerNode();
             assertInstanceOf(YamlScalarNode.class, inner);
-            assertEquals("active", ((YamlScalarNode)inner).getValue()); // or .getString() if it exists there
+            assertEquals("active", ((YamlScalarNode)inner).getPrimitive()); // or .getString() if it exists there
         } else {
             // If it's not a wrapper, it must be the scalar itself
-            assertEquals("active", ((YamlScalarNode)statusValue).getValue());
+            assertEquals("active", ((YamlScalarNode)statusValue).getPrimitive());
         }
 
         // Check Alias
@@ -51,7 +51,7 @@ public class ParserTests {
                       "  level: 1\n" +
                       "current: *settings";
         YamlParser parser = new YamlParser();
-        YamlDocument doc = parser.parse(yaml);
+        YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
 
         YamlNode defaults = doc.get("defaults");
 

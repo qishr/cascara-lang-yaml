@@ -1,14 +1,13 @@
 package io.github.qishr.cascara.lang.yaml.ast;
 
-import java.net.URI;
 import java.util.List;
 
 public class YamlAliasNode extends YamlNode {
     private final String alias;
     private YamlNode resolvedNode; // This is what the parser needs
 
-    public YamlAliasNode(int line, int column, URI uri, String alias) {
-        super(line, column, uri);
+    public YamlAliasNode(int line, int column, String alias) {
+        super(line, column);
         this.alias = alias;
     }
 

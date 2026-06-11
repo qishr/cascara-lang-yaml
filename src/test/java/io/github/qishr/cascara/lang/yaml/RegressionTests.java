@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
@@ -21,12 +22,12 @@ public class RegressionTests {
               line:one
               line:two
             """;
-        YamlDocument doc = parser.parse(yaml);
-        YamlMapNode root = (YamlMapNode) doc.getRoot();
+        YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
+        YamlMapNode root = (YamlMapNode) doc;
         YamlScalarNode script = (YamlScalarNode) root.get("script");
 
         // CURRENT EXPECTATION (Failing): "line : one \nline : two \n"
         // REAL YAML EXPECTATION: "line:one\nline:two\n"
-        assertEquals("line:one\nline:two\n", script.getString());
+        assertEquals("line:one\nline:two\n", script.asString());
     }
 }
