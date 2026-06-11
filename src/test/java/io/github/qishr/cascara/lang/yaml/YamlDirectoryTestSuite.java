@@ -14,8 +14,11 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
+import io.github.qishr.cascara.lang.yaml.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
 
@@ -24,21 +27,21 @@ class YamlDirectoryTestSuite {
     private YamlOptions options;
     private YamlParser parser;
     private Reporter reporter;
-    private List<Diagnostic> diagnostics;
+    // private List<Diagnostic> diagnostics;
 
-    public void collect(Diagnostic diagnostic) {
-        diagnostics.add(diagnostic);
-    }
+    // public void collect(Diagnostic diagnostic) {
+    //     diagnostics.add(diagnostic);
+    // }
 
-    public void clear(URI uri) {
-        diagnostics.clear();
-    }
+    // public void clear(URI uri) {
+    //     diagnostics.clear();
+    // }
 
 
     @BeforeEach
     void init() {
-        diagnostics = new ArrayList<>();
-        reporter = new SimpleReporter().setDiagnosticCollector(this::collect);
+        // diagnostics = new ArrayList<>();
+        reporter = new StandardReporter(); //.setDiagnosticCollector(this::collect);
         options = new YamlOptions().setStrict(true);
         parser = new YamlParser()
             .setOptions(options)
@@ -54,9 +57,9 @@ class YamlDirectoryTestSuite {
     @ParameterizedTest(name = "Invalidating: {0}")
     @MethodSource("getInvalidFiles")
     void testInvalidFiles(String fileName, String content) {
-        // assertThrows(Exception.class, () -> parser.parse(content), "Should have failed: " + fileName);
-        parser.parse(content);
-        assertFalse(diagnostics.isEmpty(), "Should have failed: " + fileName);
+        assertThrows(Exception.class, () -> parser.parse(content), "Should have failed: " + fileName);
+        // parser.parse(content);
+        // assertFalse(diagnostics.isEmpty(), "Should have failed: " + fileName);
     }
 
     static Stream<Arguments> getValidFiles() throws Exception {
@@ -81,7 +84,11 @@ class YamlDirectoryTestSuite {
     @ParameterizedTest(name = "Round Trip: {0}")
     @MethodSource("getValidFiles")
     void testRoundTripStability(String fileName, String content) throws Exception {
-        YamlDocument doc = parser.parse(content);
+
+        // TODO: diagnostic level in one place for all tests?
+        // reporter.setLevel(Level.TRACE);
+
+        YamlMapNode doc = (YamlMapNode)parser.parse(content);
 
         // 1. Setup ONE emitter with your desired options
         YamlOptions testOptions = new YamlOptions().setExpandedStyle(true);
@@ -91,19 +98,19 @@ class YamlDirectoryTestSuite {
         // 2. First Emit
         String emitted = emitter.emit(doc);
 
-        System.out.println("===");
-        System.out.println(emitted);
-        System.out.println("===");
+        // System.out.println("===");
+        // System.out.println(emitted);
+        // System.out.println("===");
 
         // 3. Re-parse
-        YamlDocument reParsedDoc = parser.parse(emitted);
+        YamlMapNode reParsedDoc = (YamlMapNode)parser.parse(emitted);
 
         // 4. Second Emit (using the SAME emitter instance)
         String secondEmit = emitter.emit(reParsedDoc);
 
-        System.out.println("===");
-        System.out.println(secondEmit);
-        System.out.println("===");
+        // System.out.println("===");
+        // System.out.println(secondEmit);
+        // System.out.println("===");
 
         if (!emitted.equals(secondEmit)) {
             fail(generateDiffMessage(fileName, emitted, secondEmit));

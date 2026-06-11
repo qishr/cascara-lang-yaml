@@ -1,13 +1,11 @@
 // YamlSequence.java (Extends YamlNode)
 package io.github.qishr.cascara.lang.yaml.ast;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
-import io.github.qishr.cascara.common.lang.simple.SimpleNode;
 
 /// Represents a YAML sequence (a list of items).
 public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNode> {
@@ -20,8 +18,8 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
         // This method intentionally left blank
     }
 
-    public YamlSequenceNode(int line, int column, URI uri) {
-        super(line, column, uri);
+    public YamlSequenceNode(int line, int column) {
+        super(line, column);
     }
 
     @Override
@@ -72,7 +70,7 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
 
     /// Returns Iterator instance
     public Iterator<YamlNode> iterator() {
-        return new SequenceIterator<SimpleNode>(this);
+        return new SequenceIterator<YamlNode>(this);
     }
 
     static class SequenceIterator<T> implements Iterator<YamlNode> {

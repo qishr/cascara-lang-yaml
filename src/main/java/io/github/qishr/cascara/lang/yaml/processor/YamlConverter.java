@@ -1,13 +1,11 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.lang.StructuredDocument;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
 import io.github.qishr.cascara.common.lang.processor.AstConverter;
-import io.github.qishr.cascara.lang.yaml.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
@@ -23,10 +21,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
     }
 
     public YamlNode fromAst(AstNode ast) {
-        if (ast instanceof StructuredDocument astDoc) {
-            YamlDocument yamlDoc = new YamlDocument(fromAst(astDoc.getRoot()));
-            return yamlDoc;
-        } else if (ast instanceof MapAstNode astMap) {
+        if (ast instanceof MapAstNode astMap) {
             YamlMapNode yamlMap = new YamlMapNode();
             for (Object entry : astMap.getEntries()) {
                 if (entry instanceof MapEntryAstNode astMapEntry) {
@@ -34,7 +29,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
                     AstNode astValue = astMapEntry.getValue();
                     if (astKey instanceof ScalarAstNode astScalarKey) {
                         YamlScalarNode yamlKey = new YamlScalarNode();
-                        yamlKey.setValue(astScalarKey.getString());
+                        yamlKey.setPrimitive(astScalarKey.asString());
                         YamlNode yamlValue = fromAst(astValue);
                         yamlMap.put(yamlKey, yamlValue);
                     }
@@ -51,8 +46,8 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             return yamlSeq;
         } else if (ast instanceof ScalarAstNode astScalar) {
             YamlScalarNode yamlScalar = new YamlScalarNode();
-            yamlScalar.setPrimitiveValue(astScalar.getPrimitiveValue());
-            // yamlScalar.setValue(astScalar.getString());
+            yamlScalar.setPrimitive(astScalar.getPrimitive());
+            // yamlScalar.setRaw(astScalar.getString());
             return yamlScalar;
         } else {
             System.err.println("Unknown AST node");

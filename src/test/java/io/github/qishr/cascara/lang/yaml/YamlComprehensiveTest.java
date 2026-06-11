@@ -7,8 +7,9 @@ import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
+import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
@@ -50,7 +51,7 @@ class YamlComprehensiveTest {
     @BeforeEach
     void init() {
         diagnostics = new ArrayList<>();
-        reporter = new SimpleReporter().setDiagnosticCollector(this::collect);
+        reporter = new StandardReporter().setDiagnosticCollector(this::collect);
         options = new YamlOptions().setStrict(true);
         tokenizer = new YamlTokenizer().setReporter(reporter);
         parser = new YamlParser()
@@ -80,20 +81,16 @@ class YamlComprehensiveTest {
     void testImplicitNullValues() throws Exception {
         // Common in config: key followed by newline and another key
         String yaml = "empty_key:\nnext_key: value";
-        YamlDocument doc = parser.parse(yaml);
+        YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
         YamlNode val = doc.get("empty_key");
         assertTrue(val instanceof YamlScalarNode);
-        assertNull(((YamlScalarNode)val).getString(), "Value-less key should result in null scalar");
+        assertNull(((YamlScalarNode)val).asString(), "Value-less key should result in null scalar");
     }
 
     @Test
     void testNestedFlowCollectionsInBlock() throws Exception {
         String yaml = "matrix: [[1, 2], [3, 4]]";
-        YamlDocument doc = parser.parse(yaml);
-
-        // 1. The root is a Map
-        assertTrue(doc.getRoot() instanceof YamlMapNode);
-        YamlMapNode rootMap = (YamlMapNode) doc.getRoot();
+        YamlMapNode rootMap = (YamlMapNode)parser.parse(yaml);
 
         // 2. Get the value for "matrix"
         YamlNode matrixNode = rootMap.get("matrix");
@@ -118,7 +115,7 @@ class YamlComprehensiveTest {
                 default: &def "base"
                 custom: *def
                 """;
-        YamlDocument doc = parser.parse(yaml);
+        YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
 
         // Use the common MapAstNode 'get' to find the alias node
         YamlNode customVal = doc.get("custom");
@@ -134,24 +131,21 @@ class YamlComprehensiveTest {
         String original = "records:\n  -\n    id: \"1\"\n    tags:\n      -\n        a";
 
         // 1. Parse
-        YamlDocument doc = parser.parse(original);
+        YamlMapNode originalMap = (YamlMapNode)parser.parse(original);
 
 
         YamlOptions options = new YamlOptions().setExpandedStyle(true);
 
         // 2. Emit
-        String emitted = new YamlEmitter().setOptions(options).emit(doc);
+        String emitted = new YamlEmitter().setOptions(options).emit(originalMap);
         System.out.println("--- EMITTED START ---");
         System.out.println(emitted);
         System.out.println("--- EMITTED END ---");
 
         // 3. Re-Parse
-        YamlDocument reParsedDoc = parser.parse(emitted);
+        YamlMapNode reParsedMap = (YamlMapNode)parser.parse(emitted);
 
         // 4. Verify logical equality
-        YamlMapNode originalMap = (YamlMapNode) doc.getRoot();
-        YamlMapNode reParsedMap = (YamlMapNode) reParsedDoc.getRoot();
-
         assertEquals(originalMap.getEntries().size(), reParsedMap.getEntries().size());
 
         // Compare the first record's ID:
@@ -168,15 +162,15 @@ class YamlComprehensiveTest {
         // YAML spec forbids tabs for indentation
         String yaml = "key:\n\t- item";
         // Assuming YamlParserException extends ParserException
-        // assertThrows(ParserException.class, () -> parser.parse(yaml));
-        parser.parse(yaml);
-        assertFalse(diagnostics.isEmpty());
+        assertThrows(ParserException.class, () -> parser.parse(yaml));
+        // parser.parse(yaml);
+        // assertFalse(diagnostics.isEmpty());
     }
 
     @Test
     void testMismatchedDedentFails() {
         String yaml = "parent:\n  child: val\n    - orphan_item";
-        // assertThrows(ParserException.class, () -> parser.parse(yaml));
-        parser.parse(yaml);
-        assertFalse(diagnostics.isEmpty());
+        assertThrows(ParserException.class, () -> parser.parse(yaml));
+        // parser.parse(yaml);
+        // assertFalse(diagnostics.isEmpty());
     }}

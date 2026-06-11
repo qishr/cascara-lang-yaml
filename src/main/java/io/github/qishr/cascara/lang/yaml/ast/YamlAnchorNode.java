@@ -1,14 +1,13 @@
 package io.github.qishr.cascara.lang.yaml.ast;
 
-import java.net.URI;
 import java.util.List;
 
 public class YamlAnchorNode extends YamlNode {
     private final String anchorName;
     private final YamlNode innerNode;
 
-    public YamlAnchorNode(int line, int column, URI uri, String name, YamlNode node) {
-        super(line, column, uri);
+    public YamlAnchorNode(int line, int column, String name, YamlNode node) {
+        super(line, column);
         this.anchorName = name;
         this.innerNode = node;
         // This is the missing link!
@@ -25,7 +24,7 @@ public class YamlAnchorNode extends YamlNode {
     @Override public List<YamlNode> getChildren() { return List.of(innerNode); }
 
     @Override
-    public String getString() {
+    public String asString() {
         return innerNode == null ? "" : innerNode.toString();
     }
 

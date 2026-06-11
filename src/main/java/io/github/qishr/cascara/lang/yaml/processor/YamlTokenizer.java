@@ -7,10 +7,10 @@ import java.util.Set;
 import java.util.HashMap;
 import java.util.Deque;
 import java.util.EnumSet;
-import java.net.URI;
 import java.util.ArrayDeque;
 
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
+import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
@@ -29,7 +29,6 @@ import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 /// * Plain scalars (unquoted) cannot contain a colon (`:`) unless it is a
 ///   valid value indicator followed by whitespace.
 public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implements Tokenizer<YamlToken> {
-    private URI uri;
 
     private static final Map<Character, YamlTokenType> FLOW_CONTEXT_SINGLE_CHAR_TOKENS = new HashMap<>();
     static {
@@ -52,9 +51,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     private int column = 1;
     private char currentChar = 0;
 
-    public YamlTokenizer() {
-        // reporter = new StandardReporter().setLevel(Level.TRACE);
-    }
+    /// Default constructor for SPI
+    public YamlTokenizer() {}
 
     @Override protected YamlTokenizer self() { return this; }
 
@@ -63,19 +61,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         return EnumSet.allOf(YamlTokenType.class);
     }
 
-    @Override
-    public List<YamlToken> tokenize(String source) {
-        return tokenize(source, null);
-    }
-
     /// Entry point for the tokenization process.
     ///
     /// @param source The YAML text to process.
-    /// @param uri The source URI for diagnostic reporting.
     /// @return A list of tokens including structural start/end markers.
     @Override
-    public List<YamlToken> tokenize(String source, URI uri) {
-        this.uri = uri;
+    public List<YamlToken> tokenize(String source) {
         this.source = source;
         this.tokens = new ArrayList<>();
         this.current = 0;
@@ -113,11 +104,11 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         while (indentationLevels.size() > 1) {
             indentationLevels.pop();
-            tokens.add(new YamlToken(YamlTokenType.DEDENT, "", null, finalOffset, finalLine, finalCol));
+            tokens.add(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.DEDENT, "", null));
         }
 
-        tokens.add(new YamlToken(YamlTokenType.EOF, "", null, finalOffset, finalLine, finalCol));
-        tokens.add(new YamlToken(YamlTokenType.STREAM_END, "", "", finalOffset, finalLine, finalCol));
+        tokens.add(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.EOF, "", null));
+        tokens.add(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.STREAM_END, "", ""));
 
         return tokens;
     }
@@ -140,7 +131,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         if (c == ' ' || c == '\t') {
             trace(method, "space or tab");
             if (c == '\t') {
-                error("Tab characters are not allowed for indentation in YAML");
+                error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
                 // throw new YamlTokenierException("Tab characters are not allowed for indentation in YAML", line, column, uri);
             }
             return;
@@ -267,7 +258,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         int currentColumn = column;
         int expectedIndent = indentationLevels.peek();
 
-        // 4. Indentation Logic (The version that passes your tests)
+        // 4. Indentation Logic
         if (currentColumn > expectedIndent) {
             indentationLevels.push(currentColumn);
             addStructuralToken(YamlTokenType.INDENT, currentColumn - 1);
@@ -287,7 +278,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         trace("scanQuotedScalar");
         // 1. Capture the starting position BEFORE the loop
         int startLine = line;
-        int startColumn = column;
+
+        // cascara://organizer/CASC-000416DF
+        // We use the column of the opening quote, not the first value character.
+        int startColumn = column - 1;
 
         while (!isAtEnd()) {
             char c = peek();
@@ -302,7 +296,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 String content = source.substring(offset + 1, current - 1);
 
                 // 2. Use the captured startColumn instead of calculating backwards
-                tokens.add(new YamlToken(YamlTokenType.SCALAR, lexeme, content, offset, startLine, startColumn));
+                tokens.add(new YamlToken(startLine, startColumn, offset, YamlTokenType.SCALAR, lexeme, content));
                 return;
             }
             if (c == '\n' || c == '\r') {
@@ -379,31 +373,31 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     //
     //
 
-    private void error(String message) {
+    private void error(YamlDiagnosticCode msgCode, Object... details) {
         YamlToken token = addToken(YamlTokenType.ERROR);
-        reporter.errorAt(token, uri, message);
+        reporter.errorAt(token, msgCode, details);
     }
 
     private YamlToken addToken(YamlTokenType type) {
         String text = source.substring(offset, current);
         // If we finished 'schema' at col 15, 15 - 6 = 9.
         int tokenColumn = column - text.length();
-        return addToken(new YamlToken(type, text, text, offset, line, tokenColumn));
+        return addToken(new YamlToken(line, tokenColumn, offset, type, text, text));
     }
 
     private YamlToken addToken(YamlTokenType type, String lexeme) {
         int tokenColumn = column - lexeme.length();
-        return addToken(new YamlToken(type, lexeme, lexeme, offset, line, tokenColumn));
+        return addToken(new YamlToken(line, tokenColumn, offset, type, lexeme, lexeme));
     }
 
     private void addExplicitToken(YamlTokenType type, String lexeme, int tokenColumn) {
         trace("addExplicitToken");
-        addToken(new YamlToken(type, lexeme, lexeme, offset, line, tokenColumn));
+        addToken(new YamlToken(line, tokenColumn, offset, type, lexeme, lexeme));
     }
 
     private void addStructuralToken(YamlTokenType type, int tokenColumn) {
         trace("addStructuralToken");
-        addToken(new YamlToken(type, "", null, offset, line, tokenColumn));
+        addToken(new YamlToken(line, tokenColumn, offset, type, "", null));
     }
 
     private YamlToken addToken(YamlToken token) {

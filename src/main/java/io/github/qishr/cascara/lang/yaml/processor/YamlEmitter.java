@@ -7,7 +7,6 @@ import io.github.qishr.cascara.common.lang.LanguageOptions;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Emitter;
-import io.github.qishr.cascara.lang.yaml.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
@@ -17,7 +16,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 
-/// Responsible for converting a [YamlDocument] AST back into a valid YAML string.
+/// Responsible for converting a [YamlNode] AST back into a valid YAML string.
 ///
 /// This emitter is high-fidelity: it prioritizes preserving the original [CollectionStyle]
 /// and [QuoteStyle] of nodes while ensuring that comments are placed correctly relative
@@ -60,21 +59,9 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
     /// Primary entry point for emitting a full document.
     ///
-    /// @param doc The [YamlDocument] containing the AST and header comments.
+    /// @param root AST root.
     /// @return A formatted YAML string.
-    public String emit(YamlDocument doc) {
-        if (doc == null) return "";
-        sb.setLength(0);
-        emitBlockComments(doc, 0);
-        if (doc.getRoot() != null) {
-            emitNode(doc.getRoot(), 0, false, false);
-        }
-        debugOutput(sb.toString());
-        return sb.toString();
-    }
-
     public String emit(YamlNode root) {
-        if (root instanceof YamlDocument doc) return emit(doc);
         writtenAnchors.clear();
         sb.setLength(0);
         emitNode(root, 0, false, false);
@@ -130,7 +117,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     /// Handles scalar formatting including Literal (|) and quoted styles.
     private void emitScalarInternal(YamlScalarNode scalar, int indent, boolean isFlow) {
         if (scalar == null) return; // TODO: literal null
-        String val = scalar.getString();
+        String val = scalar.asString();
 
         // 1. Implicit Null
         if (val == null) {
@@ -141,7 +128,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         // 2. Block Literal (|)
         QuoteStyle style = scalar.getQuoteStyle();
-        if (style == QuoteStyle.LITERAL && !isFlow) {
+        if (style == QuoteStyle.LITERAL_BLOCK && !isFlow) {
             sb.append("|").append(NL);
             int blockIndent = indent + options.getIndentSize();
             String indentation = " ".repeat(blockIndent);
@@ -154,24 +141,81 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             return; // Caller handles the final NL
         }
 
-        // 3. Plain/Quoted
         if (!isFlow) sb.append(" ".repeat(indent));
-        String content;
-        if (style == QuoteStyle.DOUBLE) {
-            content = "\"" + indentSubsequentLines(escapeDoubleQuotes(val), indent) + "\"";
-        } else if (style == QuoteStyle.SINGLE) {
-            content = "'" + indentSubsequentLines(val.replace("'", "''"), indent) + "'";
-        } else {
-            content = isSafePlain(val) ? indentSubsequentLines(val, indent)
-                                       : "\"" + indentSubsequentLines(escapeDoubleQuotes(val), indent) + "\"";
-        }
+
+        // Pass the style directly down so the lines are escaped individually
+        // before being joined together with indentation.
+        String content = formatAndIndentMultiline(val, style, indent);
+
         sb.append(content);
+
+
 
         // IF NOT IS FLOW, this is a standalone root scalar or similar
         if (!isFlow) {
             handleInlineComments(scalar);
             sb.append(NL);
         }
+    }
+
+    private String formatAndIndentMultiline(String text, QuoteStyle style, int amount) {
+        if (text == null) return "";
+
+        // Match the original plain scalar fallback rule:
+        // If it's plain but unsafe (like containing a newline), force it to DOUBLE quotes.
+        if (style == QuoteStyle.PLAIN && !isSafePlain(text)) {
+            style = QuoteStyle.DOUBLE;
+        }
+
+        if (text.isEmpty()) {
+            if (style == QuoteStyle.DOUBLE) return "\"\"";
+            if (style == QuoteStyle.SINGLE) return "''";
+            return "";
+        }
+
+        // Split preserving trailing empty lines
+        String[] lines = text.split("\\R", -1);
+        String indentation = " ".repeat(amount);
+        StringBuilder result = new StringBuilder();
+
+        if (style == QuoteStyle.DOUBLE) {
+            result.append("\"");
+        } else if (style == QuoteStyle.SINGLE) {
+            result.append("'");
+        }
+
+        for (int i = 0; i < lines.length; i++) {
+            String processedLine;
+            if (style == QuoteStyle.DOUBLE) {
+                processedLine = escapeDoubleQuotesInline(lines[i]);
+            } else if (style == QuoteStyle.SINGLE) {
+                processedLine = lines[i].replace("'", "''");
+            } else {
+                processedLine = lines[i];
+            }
+
+            result.append(processedLine);
+
+            // Only append line breaks and indentation if this isn't the absolute last element
+            if (i < lines.length - 1) {
+                result.append(NL).append(indentation);
+            }
+        }
+
+        if (style == QuoteStyle.DOUBLE) {
+            result.append("\"");
+        } else if (style == QuoteStyle.SINGLE) {
+            result.append("'");
+        }
+
+        return result.toString();
+    }
+
+    private String escapeDoubleQuotesInline(String value) {
+        if (value == null) return "";
+        // Only escape literal backslashes and quotes; literal inline \n and \r checks are omitted
+        // here because they are handled structurally by the line splitter.
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     /// Iterates over map entries, managing key-value pairs and block/flow transitions.
@@ -191,7 +235,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                 if (c instanceof YamlCommentNode ycn && ycn.getStartLine() < key.getStartLine()) {
                     // If it's not the first entry, we already added indentation.
                     // If it is, we need to add it now for the comment.
-                    sb.append("# ").append(ycn.getString()).append(NL).append(" ".repeat(indent));
+                    sb.append("# ").append(ycn.asString()).append(NL).append(" ".repeat(indent));
                 }
             }
 
@@ -280,7 +324,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     }
 
     private boolean isImplicitNull(YamlNode node) {
-        return node instanceof YamlScalarNode s && s.getString() == null;
+        return node instanceof YamlScalarNode s && s.asString() == null;
     }
 
     private void handleExpandedItem(YamlNode item, int indent) {
@@ -302,7 +346,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         var entries = map.getEntries();
         for (int i = 0; i < entries.size(); i++) {
             var entry = entries.get(i);
-            if (entry.getKey() instanceof YamlScalarNode s) sb.append(s.getString());
+            if (entry.getKey() instanceof YamlScalarNode s) sb.append(s.asString());
             sb.append(": ");
             emitNode(entry.getValue(), 0, false, true);
             if (i < entries.size() - 1) sb.append(", ");
@@ -326,7 +370,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         if (node == null) return;
         for (CommentAstNode comment : node.getComments()) {
             if (comment instanceof YamlCommentNode ycn && ycn.getStartColumn() <= 1) {
-                sb.append(" ".repeat(indent)).append("# ").append(ycn.getString()).append(NL);
+                sb.append(" ".repeat(indent)).append("# ").append(ycn.asString()).append(NL);
             }
         }
     }
@@ -336,32 +380,16 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         if (node == null) return;
         for (CommentAstNode comment : node.getComments()) {
             if (comment instanceof YamlCommentNode ycn && ycn.getStartColumn() > 1) {
-                sb.append(" # ").append(ycn.getString());
+                sb.append(" # ").append(ycn.asString());
                 break;
             }
         }
     }
 
-    private String indentSubsequentLines(String text, int amount) {
-        if (text == null || text.isEmpty()) return "";
-        String[] lines = text.split("\\R");
-        if (lines.length <= 1) return text;
-        String indentation = " ".repeat(amount);
-        StringBuilder result = new StringBuilder(lines[0]);
-        for (int i = 1; i < lines.length; i++) {
-            result.append(NL).append(indentation).append(lines[i]);
-        }
-        return result.toString();
-    }
-
-    private String escapeDoubleQuotes(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
-    }
-
     private boolean isSafePlain(String s) {
         if (s == null || s.isEmpty()) return false;
         if (s.contains("\n") || s.contains("\r")) return false;
-        if (s.matches("^(true|false|null|True|False|NULL)$")) return true;
+        if (s.matches("^(true|false|null|True|False|NULL)$")) return true; // TOOO: Values are missing from here
         char first = s.charAt(0);
         if ("-?:,[]{}#&*!|>'\"%@` ".indexOf(first) != -1) return false;
         if (s.contains(": ") || s.contains(" #") || s.endsWith(":")) return false;
