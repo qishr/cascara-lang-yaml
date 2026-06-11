@@ -10,13 +10,13 @@ public class YamlToken implements Token {
     private int line;
     private int column;
 
-    public YamlToken(YamlTokenType type, String lexeme, String value,  int offset, int line, int column) {
-        this.type = type;
-        this.lexeme = lexeme;
-        this.content = value;
-        this.offset = offset;
+    public YamlToken(int line, int column, int startOffset, YamlTokenType type, String lexeme, String content) {
         this.line = line;
         this.column = column;
+        this.offset = startOffset;
+        this.type = type;
+        this.lexeme = lexeme;
+        this.content = content;
     }
 
     @Override

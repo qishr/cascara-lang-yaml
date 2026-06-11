@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
+import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.QuoteStyle;
@@ -19,6 +21,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
@@ -70,7 +73,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
             return new YamlMapNode();
         }
 
-        consume(YamlTokenType.STREAM_START, "Expected start of stream.");
+        consume(YamlTokenType.STREAM_START, LangDiagnosticCode.EXPECTED_STREAM_START);
         skipTrivia();
 
         List<CommentAstNode> headers = new ArrayList<>(pendingComments);
@@ -89,7 +92,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
 
         if (!isAtEnd()) {
             // throw error(peek(), "Expected end of stream.");
-            error(peek(), "Expected end of stream.");
+            error(peek(), LangDiagnosticCode.UNEXPECTED_STREAM_END);
         }
 
         match(YamlTokenType.STREAM_END);
@@ -143,7 +146,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 }
 
                 skipTrivia();
-                consume(YamlTokenType.DEDENT, "Expected dedent after block content.");
+                consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT, "Expected dedent after block content.");
             }
             else if (check(YamlTokenType.ALIAS)) {
                 YamlToken tok = advance();
@@ -246,7 +249,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                     mapColumn = keyToken.getStartColumn();
                 } else if (keyToken.getStartColumn() != mapColumn) {
                     // This will catch bad-key-indent.yaml
-                    error(peek(), "Inconsistent indentation for map key");
+                    error(peek(), YamlDiagnosticCode.MAP_KEY_INDENTATION, "Inconsistent indentation for map key");
                 }
 
 
@@ -268,11 +271,11 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 String keyString = key.asString();
 
                 if (options.isStrict() && !seenKeys.add(keyString)) {
-                    error(previous(), "Duplicate key: " + keyString);
+                    error(previous(), YamlDiagnosticCode.DUPLICATE_KEY, "Duplicate key: {0}", keyString);
                 }
                 int keyColumn = key.getStartColumn(); // Capture the column of the current key
 
-                consume(YamlTokenType.VALUE_INDICATOR, "Expected ':' after key.");
+                consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_MAP_KEY, "Expected ':' after key.");
                 parseInlineComment(key);
 
                 YamlNode value;
@@ -352,7 +355,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         depth++;
         trace("parseFlowSequence");
         try {
-            YamlToken start = consume(YamlTokenType.SEQUENCE_START, "Expected '['");
+            YamlToken start = consume(YamlTokenType.SEQUENCE_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACKET, "Expected '['");
             YamlSequenceNode sequence = new YamlSequenceNode(start.getStartLine(), start.getStartColumn());
             sequence.setStyle(CollectionStyle.FLOW);
 
@@ -363,7 +366,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 if (!match(YamlTokenType.COMMA)) break;
             }
 
-            consume(YamlTokenType.SEQUENCE_END, "Expected ']'");
+            consume(YamlTokenType.SEQUENCE_END, YamlDiagnosticCode.EXPECTED_CLOSE_BRACKET, "Expected ']'");
             return attachComments(sequence);
         } finally {
             depth--;
@@ -377,7 +380,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         depth++;
         trace("parseFlowMap");
         try {
-            YamlToken startToken = consume(YamlTokenType.MAP_START, "Expected '{' to start flow map.");
+            YamlToken startToken = consume(YamlTokenType.MAP_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACE_FLOW_MAP, "Expected '{' to start flow map.");
             YamlMapNode map = new YamlMapNode(startToken.getStartLine(), startToken.getStartColumn());
 
             // Handle empty flow map {}
@@ -392,7 +395,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 YamlScalarNode key = parseScalar();
 
                 // 2. Consume Value Indicator
-                consume(YamlTokenType.VALUE_INDICATOR, "Expected ':' after key in flow map.");
+                consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP, "Expected ':' after key in flow map.");
 
                 // 3. Parse Value
                 YamlNode value = parseValue();
@@ -413,7 +416,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 } else if (match(YamlTokenType.MAP_END)) {
                     break;
                 } else {
-                    error(peek(), "Expected ',' or '}' in flow map.");
+                    error(peek(), YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP, "Expected ',' or '}' in flow map.");
                 }
             }
             return map;
@@ -427,7 +430,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         this.trace("parseScalar");
 
         try {
-            YamlToken token = this.consume(YamlTokenType.SCALAR, "Expected scalar.");
+            YamlToken token = this.consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR, "Expected scalar.");
 
             // Determine the style cleanly based on the token lexeme
             String raw = token.getLexeme();
@@ -438,12 +441,12 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 style = QuoteStyle.SINGLE;
             }
 
-            // Let YamlPrimitive handle unescaping, coercing, and type resolution!
+            // Let YamlPrimitive handle unescaping, coercing, and type resolution
             YamlScalarNode scalar = new YamlScalarNode(
                 token.getStartLine(),
                 token.getStartColumn(),
                 raw,
-                token.getContent(), // Passes the raw unescaped base token text
+                token.getContent(), // Passes the unescaped base token text
                 style
             );
             scalar.setToken(token);
@@ -469,7 +472,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
 
         // 2. Structural Check: Block scalars MUST be indented.
         if (!check(YamlTokenType.INDENT)) {
-            error(peek(), "Expected indentation for block scalar.");
+            error(peek(), YamlDiagnosticCode.EXPECTED_INDENTATION_BLOCK_SCALAR, "Expected indentation for block scalar.");
             // return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), "Expected indentation for block scalar.");
         }
         advance(); // Consume the INDENT
@@ -586,9 +589,9 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     // Navigation Helpers
     //
 
-    private YamlToken consume(YamlTokenType type, String message) {
+    private YamlToken consume(YamlTokenType type, DiagnosticCode msgCode, Object... details) {
         if (check(type)) return advance();
-        error(peek(), message);
+        error(peek(), msgCode, details);
         return null; // TODO: Make this return non-null
     }
 
@@ -626,10 +629,10 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     // Errors and Diagnostics
     //
 
-    private void error(YamlToken token, String message) {
-        reporter.errorAt(token, null, message);
+    private void error(YamlToken token, DiagnosticCode code, Object... details) {
+        reporter.errorAt(token, code, details);
         if (!reporter.collectsProblems()) {
-            throw new ParserException(message, token.getStartLine(), token.getStartColumn());
+            throw new ParserException(token, code, details);
         }
     }
 

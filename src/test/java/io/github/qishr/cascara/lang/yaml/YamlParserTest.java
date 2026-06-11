@@ -27,8 +27,11 @@ class YamlParserTest {
                 c: 2
             """;
 
-        Reporter reporter = new StandardReporter().setLevel(Level.TRACE);
-        YamlParser parser = new YamlParser().setReporter(reporter);
+        // TODO: diagnostic level in one place for all tests?
+        // Reporter reporter = new StandardReporter().setLevel(Level.TRACE);
+        // YamlParser parser = new YamlParser().setReporter(reporter);
+
+        YamlParser parser = new YamlParser();
         parser.parse(yaml);
 
     }

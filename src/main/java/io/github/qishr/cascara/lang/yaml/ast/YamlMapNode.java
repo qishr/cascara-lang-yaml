@@ -191,7 +191,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
     }
 
     @Override
-    public YamlNode put(String key, String value) {
+    public YamlMapNode put(String key, String value) {
         return put(key, new YamlScalarNode(value, QuoteStyle.DOUBLE));
     }
 }

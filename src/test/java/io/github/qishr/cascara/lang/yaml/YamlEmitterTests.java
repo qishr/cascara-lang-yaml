@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
@@ -41,9 +42,10 @@ public class YamlEmitterTests {
 
         YamlParser parser = new YamlParser();
 
-        parser.setReporter(new StandardReporter((s) -> {
-            System.err.print(s);
-        }).setLevel(Level.TRACE));
+        // TODO: make diagnostics for all tests configurable in one place
+        // parser.setReporter(new StandardReporter((s) -> {
+        //     System.err.print(s);
+        // }).setLevel(Level.TRACE));
 
         YamlMapNode yaml = (YamlMapNode)parser.parse(original);
 

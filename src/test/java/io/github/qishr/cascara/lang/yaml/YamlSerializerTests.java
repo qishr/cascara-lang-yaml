@@ -8,6 +8,7 @@ import java.net.URI;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.qishr.cascara.common.lang.type.UriTypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlSerializerException;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
@@ -85,8 +86,14 @@ class YamlSerializerTests {
     void test_uri() throws YamlSerializerException {
         UriTestClass uri = new UriTestClass();
 
+        System.out.println("Is named module: " + UriTestClass.class.getModule().isNamed());
+
         uri.uri = URI.create("http://io.com");
         YamlSerializer yamlSerializer = new YamlSerializer();
+
+        UriTypeDescriptor uriTypeDescriptor = new UriTypeDescriptor();
+        yamlSerializer.registerTypeDescriptor(uriTypeDescriptor);
+
         String yaml = yamlSerializer.toText(uri);
         UriTestClass answer = yamlSerializer.fromText(yaml, UriTestClass.class);
         assertEquals("http://io.com", answer.uri.toString());

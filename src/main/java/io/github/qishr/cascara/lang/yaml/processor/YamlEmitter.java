@@ -128,7 +128,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         // 2. Block Literal (|)
         QuoteStyle style = scalar.getQuoteStyle();
-        if (style == QuoteStyle.LITERAL && !isFlow) {
+        if (style == QuoteStyle.LITERAL_BLOCK && !isFlow) {
             sb.append("|").append(NL);
             int blockIndent = indent + options.getIndentSize();
             String indentation = " ".repeat(blockIndent);
