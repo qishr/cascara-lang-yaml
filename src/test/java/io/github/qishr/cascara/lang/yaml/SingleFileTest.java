@@ -4,24 +4,45 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
-import io.github.qishr.cascara.lang.yaml.YamlOptions;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
 
 class SingleFileTest {
 
-    // private Reporter reporter = new StandardReporter().setLevel(Level.TRACE);
     private final YamlOptions options = new YamlOptions().setStrict(true);
-    // private final YamlParser parser = new YamlParser().setOptions(options).setReporter(reporter);
 
     // TODO: diagnostic level in one place for all tests?
-    // YamlParser parser = new YamlParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
-    private final YamlParser parser = new YamlParser().setOptions(options);
+
+    // private final YamlParser parser = new YamlParser().setOptions(options);
+    private final YamlParser parser = new YamlParser()
+            .setOptions(options)
+            .setReporter(new StandardReporter().setLevel(Level.TRACE));
 
     @Test
-    void testValidFiles() throws IOException {
-        String content = "a: b c";
-        assertDoesNotThrow(() -> parser.parse(content), "Should have parsed");
+    void testExplicitKeys() {
+        String content = """
+            mapping:
+              ? foo
+              : 1
+              ? bar baz
+              : 2
+              ? "qux:quux"
+              : 3
+            tiles:
+              ? X: -10
+                Y: -10
+              : 2
+            """;
+        YamlNode root = parser.parse(content);
+
+        if (root instanceof YamlMapNode map) {
+            YamlMapNode tiles = map.getMap("tiles");
+            assertEquals(1, tiles.entrySet().size());
+        }
+
+        // assertDoesNotThrow(() -> parser.parse(content), "Should have parsed");
     }
 }

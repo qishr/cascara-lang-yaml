@@ -6,14 +6,16 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
 
     TAB_NOT_ALLOWED("YAML-101", "Tab characters are not allowed for indentation in YAML"),
 
+    // Parser
     EXPECTED_COMMA_OR_CLOSE_BRACE("YAML-201", "Expected ',' or '}' in flow map"),
     EXPECTED_EOS("YAML-203", "Expected end of stream"),
     EXPECTED_SCALAR("YAML-204", "Expected scalar"),
-    EXPECTED_COLON_FLOW_MAP("YAML-205", "Expected ':' after key in flow map"),
+    EXPECTED_MAP_KEY("YAML-205", "Expected map key"),
     EXPECTED_OPEN_BRACE_FLOW_MAP("YAML-206", "Expected '{' to start flow map"),
     EXPECTED_CLOSE_BRACKET("YAML-207", "Expected ']'"),
     EXPECTED_OPEN_BRACKET("YAML-208", "Expected '['"),
     EXPECTED_COLON_MAP_KEY("YAML-209", "Expected ':' after key"),
+    EXPECTED_COLON_FLOW_MAP("YAML-210", "Expected ':' after key in flow map"),
 
     MAP_KEY_INDENTATION("YAML-302", "Inconsistent indentation for map key"),
     EXPECTED_INDENTATION_BLOCK_SCALAR("YAML-303", "Inconsistent indentation for block scalar"),
@@ -24,6 +26,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     FAILED_TO_MAP_TYPE("YAML-501", "Failed to map {0} to YAML AST: {1}"),
     FAILED_TO_MAP_AST("YAML-502", "Failed to map YAML AST to {0}: {1}"),
 
+    // Serializer
     CLASS_NOT_SERIALIZABLE("YAML-503", "Class {0} is not serializable"),
     FIELD_NOT_ACCESSIBLE("", "Field {0} is not accessible"),
     NO_SUCH_METHOD("YAML-", "No such method: {0}"),

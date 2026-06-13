@@ -26,3 +26,8 @@ dependencies {
     // Cascara
     implementation "io.github.qishr:cascara-common"
 }
+
+
+tasks.withType(Javadoc).configureEach {
+    options.addStringOption('Xdoclint:-missing', '-quiet')
+}

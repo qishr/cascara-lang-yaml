@@ -233,21 +233,34 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
             for (CommentAstNode c : key.getComments()) {
                 if (c instanceof YamlCommentNode ycn && ycn.getStartLine() < key.getStartLine()) {
-                    // If it's not the first entry, we already added indentation.
-                    // If it is, we need to add it now for the comment.
                     sb.append("# ").append(ycn.asString()).append(NL).append(" ".repeat(indent));
                 }
             }
 
-            emitNode(key, 0, false, true); // Clean text emission
-            sb.append(":");
+            // Determine if this key requires an explicit complex layout block ('?')
+            boolean isComplexKey = (key instanceof YamlMapNode m && m.getStyle() == CollectionStyle.BLOCK) ||
+                                  (key instanceof YamlSequenceNode s && s.getStyle() == CollectionStyle.BLOCK);
+
+            if (isComplexKey) {
+                sb.append("?").append(NL);
+                // Emit the nested block key with deeper indentation
+                emitNode(key, indent + options.getIndentSize(), false, false);
+                // Align the property indicator back to the current map entry indentation level
+                sb.append(" ".repeat(indent)).append(":");
+            } else {
+                // Keep standard flat emission for plain scalar labels
+                emitNode(key, 0, false, true);
+                sb.append(":");
+            }
 
             YamlNode value = entry.getValue();
             boolean isBlock = (value instanceof YamlMapNode m && m.getStyle() == CollectionStyle.BLOCK) ||
                               (value instanceof YamlSequenceNode s && s.getStyle() == CollectionStyle.BLOCK);
 
             if (isBlock) {
-                handleInlineComments(key); // Comment for the key line
+                if (!isComplexKey) {
+                    handleInlineComments(key); // Comment for the key line
+                }
                 sb.append(NL);
                 emitNode(value, indent + options.getIndentSize(), false, false);
             } else {
