@@ -18,17 +18,17 @@ public abstract class AbstractYamlProcessor<P extends Processor> implements Proc
 
     protected YamlOptions options = new YamlOptions();
     protected Reporter reporter = new NoOpReporter();
-    private Properties capabilities;
+    private Properties properties;
 
     protected abstract P self();
 
     @Override
     public Properties getServiceProperties() {
-        if (capabilities == null) {
-            capabilities = new Properties();
-            capabilities.set("contentType", "text/yaml");
+        if (properties == null) {
+            properties = new Properties();
+            properties.set("contentType", "text/yaml");
         }
-        return capabilities;
+        return properties;
     }
 
     @Override

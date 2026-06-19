@@ -29,8 +29,10 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     // Serializer
     CLASS_NOT_SERIALIZABLE("YAML-503", "Class {0} is not serializable"),
     FIELD_NOT_ACCESSIBLE("", "Field {0} is not accessible"),
-    NO_SUCH_METHOD("YAML-", "No such method: {0}"),
-    INVOCATION_TARGET_EXCEPTION("", "Method {0} threw an exception"),
+    NO_SUCH_METHOD("", "No such method: {0}"),
+    INVOCATION_TARGET_EXCEPTION("", "Method {0} threw an invocation target exception"),
+    ILLEGAL_ARGUMENT_EXCEPTION("", "Field {0} threw an illegal argument exception"),
+    INSTANTIATION_EXCEPTION("", "Field {0} threw an instantiation exception"),
 
     EXPECTED_MAP_STRUCTURE("YAML-", "Expected a map structure for class {0}"),
     FAILED_SERIALIZE("YAML-", "Failed to serialize: {0}"),
