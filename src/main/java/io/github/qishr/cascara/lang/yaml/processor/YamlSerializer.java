@@ -41,6 +41,7 @@ import io.github.qishr.cascara.lang.yaml.type.YamlTypeSerializer;
 public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implements Serializer<YamlNode> {
     private static YamlPrimitiveDelegate YAML_PRIMITIVE_DELEGATE = new YamlPrimitiveDelegate();
     private final Map<Class<?>,TypeDescriptor<?>> typeDescriptors = new HashMap<>();
+    private final ServiceProviderFactory typeDescriptorFactory = new ServiceProviderFactory();
     private YamlParser parser;
 
     public YamlSerializer() {
@@ -675,13 +676,13 @@ public class YamlSerializer extends AbstractYamlProcessor<YamlSerializer> implem
 
     private TypeDescriptor<?> getTypeDescriptor(Class<?> jvmType) {
         // 1. First check if one has been registered locally
-        TypeDescriptor<?> descriptor = typeDescriptors.get(jvmType);
-        if (descriptor != null) {
-            return descriptor;
+        if (typeDescriptors.containsKey(jvmType)) {
+            return typeDescriptors.get(jvmType);
         }
 
         // 2. Use service provider layer to get one
-        ServiceProviderFactory factory = new ServiceProviderFactory();
-        return factory.createTypeDescriptor(jvmType);
+        TypeDescriptor<?> descriptor = typeDescriptorFactory.createTypeDescriptor(jvmType);
+        typeDescriptors.put(jvmType, descriptor);
+        return descriptor;
     }
 }
