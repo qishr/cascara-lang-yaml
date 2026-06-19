@@ -217,6 +217,15 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             return;
         }
 
+        if (c == '?') {
+            trace(method, "question mark");
+            // A '?' is only a structural marker if followed by whitespace/newline/EOF
+            if (isWhitespace(peek()) || isAtEnd()) {
+                addExplicitToken(YamlTokenType.KEY_INDICATOR, "?", tokenStartColumn);
+                return;
+            }
+        }
+
         scanPlainScalar();
     }
 
@@ -329,6 +338,11 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
             // 4. The Colon Rule: Stop ONLY if it's a value indicator
             if (c == ':' && (isWhitespace(peekNext()) || isAtEnd())) {
+                break;
+            }
+
+            // 4b. The Explicit Key Rule: Stop if this is a block key indicator
+            if (c == '?' && (isWhitespace(peekNext()) || isAtEnd())) {
                 break;
             }
 
