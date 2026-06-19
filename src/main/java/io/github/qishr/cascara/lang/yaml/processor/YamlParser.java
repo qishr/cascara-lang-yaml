@@ -10,7 +10,6 @@ import java.util.Set;
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
-import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Parser;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
@@ -22,6 +21,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
+import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
@@ -137,7 +137,10 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
                     result = parseSequence();
                 }
-                // Check if it's actually a map key before calling parseMap
+                // FIX 1: An explicit key marker inside an indented block implies a Map
+                else if (check(YamlTokenType.KEY_INDICATOR)) {
+                    result = parseMap();
+                }
                 else if (check(YamlTokenType.SCALAR) && lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
                     result = parseMap();
                 } else {
@@ -146,7 +149,11 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 }
 
                 skipTrivia();
-                consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT, "Expected dedent after block content.");
+                consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
+            }
+            else if (check(YamlTokenType.KEY_INDICATOR)) {
+                // FIX 2: Root-level un-indented explicit key marker implies a Map
+                result = parseMap();
             }
             else if (check(YamlTokenType.ALIAS)) {
                 YamlToken tok = advance();
@@ -173,7 +180,6 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 if ("|".equals(val) || ">".equals(val)) {
                     result = parseBlockScalar("|".equals(val));
                 }
-                // Use a smarter lookahead that skips comments/newlines
                 else if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
                     result = parseMap();
                 } else {
@@ -181,8 +187,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 }
             }
             else {
-                // Handle empty values / implicit nulls
-                result = new YamlScalarNode( peek().getStartLine(), peek().getStartColumn(),"", null, QuoteStyle.PLAIN);
+                result = new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(),"", null, QuoteStyle.PLAIN);
             }
 
             // 3. Apply the anchor to whatever node was produced
@@ -227,62 +232,79 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                     }
                 }
 
-                // 1. If we see a DEDENT, the map is definitely over.
                 if (check(YamlTokenType.DEDENT)) break;
 
-                // 2. If we see an INDENT, it means the NEXT key is indented.
-                // This happens in block maps. We should consume it and stay in the loop.
                 if (check(YamlTokenType.INDENT)) {
                     advance();
                     skipTrivia();
                 }
 
-                // Peek at the token that should be our key
-                YamlToken keyToken = peek();
+                // Peek at the token that will tell us if an entry is actually here
+                YamlToken markerToken = peek();
+                boolean isExplicitKey = check(YamlTokenType.KEY_INDICATOR);
 
-                // 3. Now check for the key
-                if (!check(YamlTokenType.SCALAR)) break;
-
-
-
-                if (mapColumn == -1) {
-                    mapColumn = keyToken.getStartColumn();
-                } else if (keyToken.getStartColumn() != mapColumn) {
-                    // This will catch bad-key-indent.yaml
-                    error(peek(), YamlDiagnosticCode.MAP_KEY_INDENTATION, "Inconsistent indentation for map key");
+                // A map entry must start with an explicit indicator '?' OR a standard key 'SCALAR'
+                if (!isExplicitKey && !check(YamlTokenType.SCALAR)) {
+                    break;
                 }
 
+                if (mapColumn == -1) {
+                    mapColumn = markerToken.getStartColumn();
+                } else if (markerToken.getStartColumn() != mapColumn) {
+                    error(markerToken, YamlDiagnosticCode.MAP_KEY_INDENTATION);
+                }
 
+                YamlNode key;
 
-                YamlScalarNode key = parseScalar();
+                if (isExplicitKey) {
+                    advance(); // Consume '?'
+                    skipTrivia();
 
+                    // Multi-line nested block keys drop down via INDENT or start on a fresh NEWLINE
+                    if (check(YamlTokenType.INDENT) || check(YamlTokenType.NEWLINE)) {
+                        key = parseValue();
+                    } else {
+                        // Inline key evaluation: check if a colon belongs to the same line context
+                        if (hasInlineValueIndicator()) {
+                            key = parseValue(); // Parse inline nested map/sequence
+                        } else {
+                            key = parseScalar(); // Parse inline simple scalar key
+                        }
+                    }
+                } else {
+                    // Standard implicit key
+                    key = parseScalar();
+                }
 
-
-                // If it's the first entry, it should claim the
-                // comments that were buffered before the map technically started.
                 if (isFirstEntry) {
                     attachComments(key);
                     isFirstEntry = false;
                 } else {
-                    attachComments(key); // Standard attachment for subsequent keys
+                    attachComments(key);
                 }
 
-
-                String keyString = key.asString();
+                String keyString = (key instanceof YamlScalarNode scalarKey) ? scalarKey.asString() : key.toString();
 
                 if (options.isStrict() && !seenKeys.add(keyString)) {
-                    error(previous(), YamlDiagnosticCode.DUPLICATE_KEY, "Duplicate key: {0}", keyString);
+                    error(previous(), YamlDiagnosticCode.DUPLICATE_KEY, keyString);
                 }
-                int keyColumn = key.getStartColumn(); // Capture the column of the current key
 
-                consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_MAP_KEY, "Expected ':' after key.");
+                int keyColumn = key.getStartColumn();
+
+                skipTrivia();
+
+                // Clear any leftover indentation noise caused by the complex key block structure
+                while (check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
+                    advance();
+                    skipTrivia();
+                }
+
+                consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_MAP_KEY);
                 parseInlineComment(key);
 
                 YamlNode value;
-                // Is the next line indented DEEPER than the current key?
                 if (check(YamlTokenType.NEWLINE) && !isIndentedDeeperThan(keyColumn)) {
                     value = new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), "", null, QuoteStyle.PLAIN);
-                    // Don't advance here, let the loop's skipTrivia handle the newline
                 } else {
                     value = parseValue();
                 }
@@ -295,23 +317,6 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         } finally {
             depth--;
         }
-    }
-
-    /// Determines if the next non-trivia token is indented deeper than the [parentColumn].
-    private boolean isIndentedDeeperThan(int parentColumn) {
-        int i = 1;
-        while (current + i < tokens.size()) {
-            YamlToken t = tokens.get(current + i);
-            if (t.getType() == YamlTokenType.INDENT) {
-                // It's only a nested value if the indent column is > parent key column
-                return t.getStartColumn() > parentColumn;
-            }
-            if (t.getType() != YamlTokenType.NEWLINE && t.getType() != YamlTokenType.COMMENT) {
-                return false;
-            }
-            i++;
-        }
-        return false;
     }
 
     /// Parses a block sequence (list) indicated by leading dashes.
@@ -355,7 +360,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         depth++;
         trace("parseFlowSequence");
         try {
-            YamlToken start = consume(YamlTokenType.SEQUENCE_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACKET, "Expected '['");
+            YamlToken start = consume(YamlTokenType.SEQUENCE_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACKET);
             YamlSequenceNode sequence = new YamlSequenceNode(start.getStartLine(), start.getStartColumn());
             sequence.setStyle(CollectionStyle.FLOW);
 
@@ -366,7 +371,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 if (!match(YamlTokenType.COMMA)) break;
             }
 
-            consume(YamlTokenType.SEQUENCE_END, YamlDiagnosticCode.EXPECTED_CLOSE_BRACKET, "Expected ']'");
+            consume(YamlTokenType.SEQUENCE_END, YamlDiagnosticCode.EXPECTED_CLOSE_BRACKET);
             return attachComments(sequence);
         } finally {
             depth--;
@@ -380,7 +385,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         depth++;
         trace("parseFlowMap");
         try {
-            YamlToken startToken = consume(YamlTokenType.MAP_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACE_FLOW_MAP, "Expected '{' to start flow map.");
+            YamlToken startToken = consume(YamlTokenType.MAP_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACE_FLOW_MAP);
             YamlMapNode map = new YamlMapNode(startToken.getStartLine(), startToken.getStartColumn());
 
             // Handle empty flow map {}
@@ -395,7 +400,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 YamlScalarNode key = parseScalar();
 
                 // 2. Consume Value Indicator
-                consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP, "Expected ':' after key in flow map.");
+                consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP);
 
                 // 3. Parse Value
                 YamlNode value = parseValue();
@@ -416,7 +421,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 } else if (match(YamlTokenType.MAP_END)) {
                     break;
                 } else {
-                    error(peek(), YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP, "Expected ',' or '}' in flow map.");
+                    error(peek(), YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP);
                 }
             }
             return map;
@@ -430,7 +435,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         this.trace("parseScalar");
 
         try {
-            YamlToken token = this.consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR, "Expected scalar.");
+            YamlToken token = this.consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
 
             // Determine the style cleanly based on the token lexeme
             String raw = token.getLexeme();
@@ -472,7 +477,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
 
         // 2. Structural Check: Block scalars MUST be indented.
         if (!check(YamlTokenType.INDENT)) {
-            error(peek(), YamlDiagnosticCode.EXPECTED_INDENTATION_BLOCK_SCALAR, "Expected indentation for block scalar.");
+            error(peek(), YamlDiagnosticCode.EXPECTED_INDENTATION_BLOCK_SCALAR);
             // return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), "Expected indentation for block scalar.");
         }
         advance(); // Consume the INDENT
@@ -547,6 +552,41 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     // Helpers
     //
 
+    /// Determines if the next non-trivia token is indented deeper than the [parentColumn].
+    private boolean isIndentedDeeperThan(int parentColumn) {
+        int i = 1;
+        while (current + i < tokens.size()) {
+            YamlToken t = tokens.get(current + i);
+            if (t.getType() == YamlTokenType.INDENT) {
+                // It's only a nested value if the indent column is > parent key column
+                return t.getStartColumn() > parentColumn;
+            }
+            if (t.getType() != YamlTokenType.NEWLINE && t.getType() != YamlTokenType.COMMENT) {
+                return false;
+            }
+            i++;
+        }
+        return false;
+    }
+
+    private boolean hasInlineValueIndicator() {
+        int offset = 0;
+        while (true) {
+            YamlTokenType type = peek(offset).getType();
+
+            // If we cross a line boundary or hit the end of the file,
+            // there is no inline value indicator for this explicit key.
+            if (type == YamlTokenType.NEWLINE || type == YamlTokenType.EOF) {
+                return false;
+            }
+
+            if (type == YamlTokenType.VALUE_INDICATOR) {
+                return true;
+            }
+            offset++;
+        }
+    }
+
     /// Peeks ahead to find a specific token type while ignoring irrelevant trivia.
     private boolean lookAheadIgnoringComments(YamlTokenType targetType) {
         int lookahead = current + 1;
@@ -617,6 +657,15 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
 
     private YamlToken peek() { return tokens.get(current); }
 
+    private YamlToken peek(int offset) {
+        int targetIndex = current + offset;
+        if (targetIndex >= tokens.size()) {
+            // Return an EOF token or a safe boundary token
+            return tokens.get(tokens.size() - 1);
+        }
+        return tokens.get(targetIndex);
+    }
+
     private YamlToken previous() { return tokens.get(current - 1); }
 
     private boolean isAtEnd() {
@@ -632,7 +681,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     private void error(YamlToken token, DiagnosticCode code, Object... details) {
         reporter.errorAt(token, code, details);
         if (!reporter.collectsProblems()) {
-            throw new ParserException(token, code, details);
+            throw new YamlParserException(token, code, details);
         }
     }
 
