@@ -3,11 +3,9 @@ package io.github.qishr.cascara.lang.yaml.processor;
 import java.util.HashSet;
 import java.util.Set;
 
-import io.github.qishr.cascara.common.lang.LanguageOptions;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.common.lang.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Emitter;
-import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlCommentNode;
@@ -32,18 +30,9 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     private static final String NL = System.lineSeparator();
 
     public YamlEmitter() {
-        // reporter = new StandardReporter().setLevel(Level.TRACE);
     }
 
     @Override protected YamlEmitter self() { return this; }
-
-    @Override
-    public YamlEmitter setOptions(LanguageOptions<?> options) {
-        if (options instanceof YamlOptions yamlOptions) {
-            this.options = yamlOptions;
-        }
-        return this;
-    }
 
     @Override public void emitScalar(String value) { sb.append(value); }
     @Override public void emitMapStart() {}
