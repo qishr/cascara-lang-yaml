@@ -22,18 +22,23 @@ public class YamlMapEntryNode extends YamlNode implements MapEntryAstNode<YamlNo
     }
 
     /// {@inheritDoc}
-    @Override public YamlNode getKey() { return key; }
+    @Override
+    public YamlNode getKey() { return key; }
 
     /// {@inheritDoc}
-    @Override public YamlNode getValue() { return value; }
+    @Override
+    public YamlNode getValue() { return value; }
 
     /// {@inheritDoc}
-    @Override public void setRaw(YamlNode value) {
+    @Override
+    public YamlMapEntryNode setRaw(YamlNode value) {
         this.value = (YamlNode) value;
+        return this;
     }
 
     /// {@inheritDoc}
-    @Override public List<YamlNode> getChildren() {
+    @Override
+    public List<YamlNode> getChildren() {
         return List.of(key, value);
     }
 }

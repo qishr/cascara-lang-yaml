@@ -68,6 +68,8 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     public YamlNode parse(List<YamlToken> tokens) {
         this.tokens = tokens;
         this.current = 0;
+        this.anchorRegistry.clear();
+        this.pendingComments.clear();
 
         if (this.tokens == null || this.tokens.isEmpty()) {
             return new YamlMapNode();

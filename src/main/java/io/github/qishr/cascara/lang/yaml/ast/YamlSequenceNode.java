@@ -13,7 +13,6 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
     private CollectionStyle style = CollectionStyle.BLOCK;
     private boolean isExpanded = false; // Default to compact
 
-
     public YamlSequenceNode() {
         // This method intentionally left blank
     }
@@ -22,6 +21,7 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
         super(line, column);
     }
 
+    /// {@inheritDoc}
     @Override
     public YamlSequenceNode remove(int index) {
         if (index >= 0 && index < elements.size()) {
@@ -30,9 +30,11 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
         return this;
     }
 
+    /// {@inheritDoc}
     @Override
-    public void clear() {
+    public YamlSequenceNode clear() {
         elements.clear();
+        return this;
     }
 
     /// Appends an item to the sequence.
@@ -40,30 +42,35 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
     public YamlSequenceNode add(YamlNode item) { elements.add(item); return this; }
 
     /// {@inheritDoc}
-    @Override public int size() { return elements.size(); }
+    @Override
+    public int size() { return elements.size(); }
 
     /// {@inheritDoc}
-    @Override public YamlNode get(int index) { return elements.get(index); }
+    @Override
+    public YamlNode get(int index) { return elements.get(index); }
 
     /// {@inheritDoc}
-    @Override public List<YamlNode> getElements() {
+    @Override
+    public List<YamlNode> getElements() {
         return elements;
     }
 
+    /// {@inheritDoc}
     @Override
     public YamlSequenceNode remove(YamlNode node) {
         elements.remove(node);
         return this;
     }
 
-    // /// {@inheritDoc}
-    // @Override public Iterable<YamlNode> items() { return items; }
-
     /// {@inheritDoc}
-    @Override public List<YamlNode> getChildren() { return elements; }
+    @Override
+    public List<YamlNode> getChildren() { return elements; }
 
     public CollectionStyle getStyle() { return style; }
-    public void setStyle(CollectionStyle style) { this.style = style; }
+    public YamlSequenceNode setStyle(CollectionStyle style) {
+         this.style = style;
+         return this;
+    }
 
     public boolean isExpanded() { return isExpanded; }
     public void setExpanded(boolean expanded) { this.isExpanded = expanded; }

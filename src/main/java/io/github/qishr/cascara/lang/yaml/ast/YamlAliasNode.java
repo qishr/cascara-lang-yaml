@@ -22,10 +22,13 @@ public class YamlAliasNode extends YamlNode {
         return resolvedNode;
     }
 
-    @Override public List<YamlNode> getChildren() {
+    /// {@inheritDoc}
+    @Override
+    public List<YamlNode> getChildren() {
         return resolvedNode != null ? List.of(resolvedNode) : List.of();
     }
 
+    /// {@inheritDoc}
     @Override
     public String getAnchor() {
         // In the context of an alias node, the 'anchor' it's interested in
