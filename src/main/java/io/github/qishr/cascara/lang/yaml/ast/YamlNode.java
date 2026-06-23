@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
@@ -54,19 +55,24 @@ public abstract class YamlNode implements AstNode {
     public abstract List<? extends YamlNode> getChildren();
 
     /// {@inheritDoc}
-    @Override public int getStartLine() { return startLine; }
+    @Override
+    public int getStartLine() { return startLine; }
 
     /// {@inheritDoc}
-    @Override public int getStartColumn() { return startColumn; }
+    @Override
+    public int getStartColumn() { return startColumn; }
 
     /// {@inheritDoc}
-    @Override public int getEndLine() { return endLine; }
+    @Override
+    public int getEndLine() { return endLine; }
 
     /// {@inheritDoc}
-    @Override public int getEndColumn() { return endColumn; }
+    @Override
+    public int getEndColumn() { return endColumn; }
 
     /// {@inheritDoc}
-    @Override public List<CommentAstNode> getComments() { return comments; }
+    @Override
+    public List<CommentAstNode> getComments() { return comments; }
 
     /// Associates a comment node with this specific AST node.
     ///
@@ -75,8 +81,11 @@ public abstract class YamlNode implements AstNode {
         this.comments.add(comment);
     }
 
+    /// {@inheritDoc}
     @Override
+    @Nullable
     public YamlToken getToken() { return token; }
+
     public void setToken(YamlToken token) { this.token = token; }
 
     /// Compares this node with another for equality based on its content.

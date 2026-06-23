@@ -31,3 +31,13 @@ dependencies {
 tasks.withType(Javadoc).configureEach {
     options.addStringOption('Xdoclint:-missing', '-quiet')
 }
+
+
+tasks.withType(Test).configureEach {
+    // This is for benchmarking.
+    // Without forkEvery, the new jvmArgs won't do anything.
+
+    // forkEvery = 1
+    // jvmArgs '-XX:StartFlightRecording=duration=20s,filename=yaml_profile.jfr'
+}
+
