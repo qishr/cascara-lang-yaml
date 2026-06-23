@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.qishr.cascara.common.lang.QuoteStyle;
+import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.type.Primitive;
 import io.github.qishr.cascara.lang.yaml.YamlPrimitiveDelegate;
@@ -102,16 +103,18 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// {@inheritDoc}
     /// Performs basic type inference to return the most appropriate Java object.
     @Override
+    @Nullable
     public Object getPrimitive() {
         return primitive != null ? primitive.unwrap() : null;
     }
 
     @Override
-    public void setPrimitive(Object primitive) {
+    public YamlScalarNode setPrimitive(Object primitive) {
         this.primitive = Primitive.of(primitive)
             .setQuoteStyle(quoteStyle)
             .setDelegate(YAML_PRIMITIVE_DELEGATE);
         this.raw = null; // If the primitive is updated, we no longer have a valid raw value.
+        return this;
     }
 
     /// {@inheritDoc}

@@ -1,9 +1,9 @@
 package io.github.qishr.cascara.lang.yaml.ast;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -13,7 +13,7 @@ import io.github.qishr.cascara.common.lang.QuoteStyle;
 
 public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMapEntryNode> {
     private CollectionStyle style = CollectionStyle.BLOCK;
-    private final List<YamlMapEntryNode> entries = new ArrayList<>();
+    private final LinkedHashMap<YamlNode,YamlMapEntryNode> entriesByKey = new LinkedHashMap<>();
 
     public YamlMapNode() {
         // This method intentionally left blank
@@ -23,11 +23,15 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
         super(line, column);
     }
 
-    @Override public boolean containsKey(YamlNode key) {
+    /// {@inheritDoc}
+    @Override
+    public boolean containsKey(YamlNode key) {
         return getEntry(key) != null;
     }
 
+    /// {@inheritDoc}
     @Override
+    @Nullable
     public YamlNode get(YamlNode key) {
         YamlMapEntryNode value = getEntry(key);
         return value == null ? null : value.getValue();
@@ -36,82 +40,97 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
     /// {@inheritDoc}
     @Override
     public List<YamlMapEntryNode> getChildren() {
-        return entries;
-    }
-
-    @Override
-    @Nullable
-    public YamlMapEntryNode getEntry(YamlNode key) {
-        for (YamlMapEntryNode entry : entries) {
-            if (entry.getKey().equals(key)) return entry;
-        }
-        return null;
+        return List.copyOf(entriesByKey.values());
     }
 
     /// {@inheritDoc}
-    /// We use an unmodifiable view or a cast to satisfy the wildcard contract.
+    @Override
+    @Nullable
+    public YamlMapEntryNode getEntry(YamlNode key) {
+        return entriesByKey.get(key);
+    }
+
+    /// {@inheritDoc}
     @Override
     public List<YamlMapEntryNode> getEntries() {
-        return entries;
+        return List.copyOf(entriesByKey.values());
     }
 
+    /// {@inheritDoc}
     public CollectionStyle getStyle() { return style; }
 
+    /// {@inheritDoc}
     @Override
     public Set<YamlNode> keySet() {
-        return Set.copyOf(entries.stream().map(e -> e.getKey()).toList());
+        return entriesByKey.keySet();
     }
 
+    /// {@inheritDoc}
     @Override
     public YamlMapNode put(YamlNode key, YamlNode value) {
-        for (YamlMapEntryNode entry : entries) {
-            if (entry.getKey().equals(key)) {
-                entry.setRaw(value);
-                return this;
-            }
+        YamlMapEntryNode entry = getEntry(key);
+        if (entry == null) {
+            entry = new YamlMapEntryNode(0, 0, key, value);
+            entriesByKey.put(key, entry);
+            return this;
+
         }
-        entries.add(new YamlMapEntryNode(0, 0, key, value));
+        entry.setRaw(value);
         return this;
     }
 
+    /// {@inheritDoc}
     @Override
-    public void remove(YamlNode key) {
-        entries.removeIf(e -> e.getKey().equals(key));
+    public YamlMapNode remove(YamlNode key) {
+        entriesByKey.remove(key);
+        return this;
     }
 
+    /// {@inheritDoc}
     @Override
-    public void remove(String key) {
-        entries.removeIf(e -> {
-            if (e.getKey() instanceof YamlScalarNode scalar) {
+    public YamlMapNode remove(String key) {
+        for (Map.Entry<YamlNode,YamlMapEntryNode> entry : entriesByKey.entrySet()) {
+            if (entry.getKey() instanceof YamlScalarNode scalar) {
                 if (scalar.asString().equals(key)) {
-                    return true;
+                    entriesByKey.remove(scalar);
+                    return this;
                 }
             }
-            return false;
-        });
+        }
+        return this;
     }
 
-    public void setStyle(CollectionStyle style) { this.style = style; }
+    /// {@inheritDoc}
+    public YamlMapNode setStyle(CollectionStyle style) {
+        this.style = style;
+        return this;
+    }
 
     //
     // Convenience Methods
     //
 
+    /// {@inheritDoc}
     @Override
     public boolean containsKey(String key) {
-        for (YamlMapEntryNode entry : entries) {
-            if (entry.getKey() instanceof YamlScalarNode scalar && key.equals(scalar.asString())) {
+        for (YamlNode keyNode : entriesByKey.keySet()) {
+            if (keyNode instanceof YamlScalarNode scalar && key.equals(scalar.asString())) {
                 return true;
             }
         }
         return false;
     }
 
+    /// {@inheritDoc}
     @Override
+    @Nullable
     public YamlNode get(String key) {
         if (key == null) return null;
-        for (YamlMapEntryNode entry : entries) {
-            YamlNode kNode = entry.getKey();
+
+        for (Map.Entry<YamlNode,YamlMapEntryNode> entry : entriesByKey.entrySet()) {
+            YamlMapEntryNode entryNode = entry.getValue();
+
+            YamlNode kNode = entryNode.getKey();
             String entryKey = null;
             if (kNode instanceof YamlScalarNode scalar) {
                 entryKey = scalar.asString();
@@ -120,29 +139,31 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
             }
 
             if (key.equals(entryKey)) {
-                YamlNode val = entry.getValue();
+                YamlNode val = entryNode.getValue();
                 return (val instanceof YamlAnchorNode a) ? a.getInnerNode() : val;
             }
         }
         return null;
     }
 
+    /// {@inheritDoc}
     @Override
+    @Nullable
     public YamlMapNode getMap(String key) {
-        YamlNode node = this.get(key);
-        if (node instanceof YamlMapNode map) {
+        if (get(key) instanceof YamlMapNode map) {
             return map;
         }
-        return new YamlMapNode();
+        return null;
     }
 
+    /// {@inheritDoc}
     @Override
+    @Nullable
     public YamlSequenceNode getSequence(String key) {
-        YamlNode node = this.get(key);
-        if (node instanceof YamlSequenceNode seq) {
+        if (get(key) instanceof YamlSequenceNode seq) {
             return seq;
         }
-        return new YamlSequenceNode();
+        return null;
     }
 
     /// Associates the specified value with the specified string key.
@@ -155,7 +176,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
     /// @param value The value node to be associated with the key.
     @Override
     public YamlMapNode put(String key, YamlNode value) {
-        for (YamlMapEntryNode entry : entries) {
+        for (YamlMapEntryNode entry : entriesByKey.values()) {
             YamlNode kNode = entry.getKey();
             // Check if the existing key's string value matches the requested key
             if (kNode instanceof YamlScalarNode scalar && key.equals(scalar.asString())) {
@@ -163,33 +184,33 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
                 return this;
             }
         }
+
         // Only if not found, create the new entry
         YamlNode keyNode = new YamlScalarNode(0, 0, key, key, QuoteStyle.PLAIN);
-        entries.add(new YamlMapEntryNode(0, 0, keyNode, value));
+        YamlMapEntryNode entry = new YamlMapEntryNode(0, 0, keyNode, value);
+        entriesByKey.put(entry.getKey(), entry);
         return this;
     }
 
+    /// {@inheritDoc}
     public YamlMapNode put(YamlMapEntryNode entry) {
-        for (YamlMapEntryNode candidate : entries) {
-            if (candidate.getKey().equals(entry.getKey())) {
-                candidate.setRaw(entry.getValue());
-                return this;
-            }
-        }
-        entries.add(entry);
+        entriesByKey.put(entry.getKey(), entry);
         return this;
     }
 
+    /// {@inheritDoc}
     @Override
     public Set<YamlMapEntryNode> entrySet() {
-        return new HashSet<YamlMapEntryNode>(entries);
+        return new HashSet<YamlMapEntryNode>(entriesByKey.values());
     }
 
+    /// {@inheritDoc}
     @Override
-    public Collection<YamlNode> values() {
-        return entries.stream().map(YamlMapEntryNode::getValue).collect(Collectors.toList());
+    public List<YamlNode> values() {
+        return entriesByKey.values().stream().map(YamlMapEntryNode::getValue).collect(Collectors.toList());
     }
 
+    /// {@inheritDoc}
     @Override
     public YamlMapNode put(String key, String value) {
         return put(key, new YamlScalarNode(value, QuoteStyle.DOUBLE));
