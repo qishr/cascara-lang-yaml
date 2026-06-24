@@ -8,9 +8,9 @@ import java.net.URI;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.qishr.cascara.common.lang.exception.SerializerException;
 import io.github.qishr.cascara.common.lang.type.UriTypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.exception.YamlSerializerException;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
 import io.github.qishr.cascara.lang.yaml.testclass.ColorDefinition;
@@ -24,7 +24,7 @@ import io.github.qishr.cascara.lang.yaml.testclass.UriTestClass;
 class YamlSerializerTests {
 
     @Test
-    void test_stringy() throws YamlSerializerException {
+    void test_stringy() throws SerializerException {
         Stringy stringy = new Stringy("test");
         YamlSerializer yamlSerializer = new YamlSerializer();
         YamlNode yaml = yamlSerializer.toAst(stringy);
@@ -33,7 +33,7 @@ class YamlSerializerTests {
     }
 
     @Test
-    void test_colordef() throws YamlSerializerException {
+    void test_colordef() throws SerializerException {
         ColorDefinition colordef = new ColorDefinition();
         colordef.setId("id");
         colordef.setName("name");
@@ -55,7 +55,7 @@ class YamlSerializerTests {
 
 
     @Test
-    void test_stringy_quotes() throws YamlSerializerException {
+    void test_stringy_quotes() throws SerializerException {
         Stringy stringy = new Stringy("one \"two\" three");
         YamlSerializer yamlSerializer = new YamlSerializer();
         YamlNode yaml = yamlSerializer.toAst(stringy);
@@ -64,7 +64,7 @@ class YamlSerializerTests {
     }
 
     @Test
-    void test_quotedSequenceItem() throws YamlSerializerException {
+    void test_quotedSequenceItem() throws SerializerException {
         String yamlString = "disabledModules: \n" + //
                         "  - \"cascara.module.toolbar\"\n";
         YamlSerializer yamlSerializer = new YamlSerializer();
@@ -74,7 +74,7 @@ class YamlSerializerTests {
     }
 
     @Test
-    void test_stringWithLongValue() throws YamlSerializerException {
+    void test_stringWithLongValue() throws SerializerException {
         Stringy stringy = new Stringy("00000555");
         YamlSerializer yamlSerializer = new YamlSerializer();
         String yaml = yamlSerializer.toText(stringy);
@@ -83,7 +83,7 @@ class YamlSerializerTests {
     }
 
     @Test
-    void test_uri() throws YamlSerializerException {
+    void test_uri() throws SerializerException {
         UriTestClass uri = new UriTestClass();
 
         System.out.println("Is named module: " + UriTestClass.class.getModule().isNamed());
@@ -100,7 +100,7 @@ class YamlSerializerTests {
     }
 
     @Test
-    void test_map_boolean() throws YamlSerializerException {
+    void test_map_boolean() throws SerializerException {
         String yamlString = "dumpCss: true\n";
         YamlSerializer yamlSerializer = new YamlSerializer();
         SettingsTestClass t = yamlSerializer.fromText(yamlString, SettingsTestClass.class);
@@ -108,7 +108,7 @@ class YamlSerializerTests {
     }
 
     @Test
-    void test_long_object() throws YamlSerializerException {
+    void test_long_object() throws SerializerException {
         String yamlString = "value: 1\n";
         YamlSerializer yamlSerializer = new YamlSerializer();
         LongObject t = yamlSerializer.fromText(yamlString, LongObject.class);
@@ -116,7 +116,7 @@ class YamlSerializerTests {
     }
 
     @Test
-    void test_nullMappingToObject() throws YamlSerializerException {
+    void test_nullMappingToObject() throws SerializerException {
         // 'security:' is present, but has no value (null scalar)
         String yamlString = "disabledModules: []\n" +
                             "security: \n";

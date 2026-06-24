@@ -26,6 +26,9 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     FAILED_TO_MAP_TYPE("YAML-501", "Failed to map {0} to YAML AST: {1}"),
     FAILED_TO_MAP_AST("YAML-502", "Failed to map YAML AST to {0}: {1}"),
 
+
+    // TODO: These are no longer YAML-specific
+
     // Serializer
     CLASS_NOT_SERIALIZABLE("YAML-503", "Class {0} is not serializable"),
     FIELD_NOT_ACCESSIBLE("", "Field {0} is not accessible"),
