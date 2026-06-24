@@ -43,6 +43,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     }
 
     private Deque<Integer> indentationLevels = new ArrayDeque<>();
+    private int flowDepth = 0; // Tracks nesting level of flow context [ ] and { }
     private String source;
     private List<YamlToken> tokens = new ArrayList<>();
     private int offset = 0;
@@ -73,6 +74,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         this.offset = 0;
         this.line = 1;
         this.column = 1;
+        this.flowDepth = 0;
         this.indentationLevels.clear();
         this.indentationLevels.push(0);
 
@@ -161,7 +163,16 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c)) {
-            addToken(FLOW_CONTEXT_SINGLE_CHAR_TOKENS.get(c));
+            YamlTokenType type = FLOW_CONTEXT_SINGLE_CHAR_TOKENS.get(c);
+
+            // Track entering/leaving flow context
+            if (type == YamlTokenType.SEQUENCE_START || type == YamlTokenType.MAP_START) {
+                flowDepth++;
+            } else if (type == YamlTokenType.SEQUENCE_END || type == YamlTokenType.MAP_END) {
+                flowDepth--;
+            }
+
+            addToken(type);
             return;
         }
 
@@ -255,7 +266,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 String nl = (nc == '\r' && peek() == '\n') ? "\r\n" : "\n";
                 if (nl.length() == 2) advance();
 
-                addExplicitToken(YamlTokenType.NEWLINE, nl, column - nl.length());
+                if (flowDepth == 0) {
+                    addExplicitToken(YamlTokenType.NEWLINE, nl, column - nl.length());
+                }
+
                 line++;
                 column = 1;
             } else {
@@ -267,14 +281,18 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         int currentColumn = column;
         int expectedIndent = indentationLevels.peek();
 
-        // 4. Indentation Logic
+        // // 4. Indentation Logic
         if (currentColumn > expectedIndent) {
             indentationLevels.push(currentColumn);
-            addStructuralToken(YamlTokenType.INDENT, currentColumn - 1);
+            if (flowDepth == 0) {
+                addStructuralToken(YamlTokenType.INDENT, currentColumn - 1);
+            }
         } else if (currentColumn < expectedIndent) {
             while (indentationLevels.size() > 1 && indentationLevels.peek() > currentColumn) {
                 indentationLevels.pop();
-                addStructuralToken(YamlTokenType.DEDENT, currentColumn);
+                if (flowDepth == 0) {
+                    addStructuralToken(YamlTokenType.DEDENT, currentColumn);
+                }
             }
         }
 

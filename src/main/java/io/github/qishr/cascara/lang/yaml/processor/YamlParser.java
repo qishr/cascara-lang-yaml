@@ -11,6 +11,7 @@ import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.common.lang.QuoteStyle;
+import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.processor.Parser;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
@@ -88,12 +89,14 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
 
         // Consume any remaining structural trivia
         skipTrivia();
-        while (!isAtEnd() && (check(YamlTokenType.DEDENT) || check(YamlTokenType.NEWLINE))) {
+
+        while (!isAtEnd() && (check(YamlTokenType.DEDENT) ||
+                      check(YamlTokenType.INDENT) ||
+                      check(YamlTokenType.NEWLINE))) {
             advance();
         }
 
         if (!isAtEnd()) {
-            // throw error(peek(), "Expected end of stream.");
             error(peek(), LangDiagnosticCode.UNEXPECTED_STREAM_END);
         }
 
@@ -370,6 +373,8 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 skipTrivia();
                 sequence.add(parseValue());
 
+                skipTrivia();
+
                 if (!match(YamlTokenType.COMMA)) break;
             }
 
@@ -389,6 +394,9 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         try {
             YamlToken startToken = consume(YamlTokenType.MAP_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACE_FLOW_MAP);
             YamlMapNode map = new YamlMapNode(startToken.getStartLine(), startToken.getStartColumn());
+
+            // Clear any whitespace/newlines before checking for an empty map exit
+            skipTrivia();
 
             // Handle empty flow map {}
             if (match(YamlTokenType.MAP_END)) {
@@ -631,9 +639,11 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     // Navigation Helpers
     //
 
-    private YamlToken consume(YamlTokenType type, DiagnosticCode msgCode, Object... details) {
+    @Nullable
+    private YamlToken consume(YamlTokenType type, DiagnosticCode msgCode) {
         if (check(type)) return advance();
-        error(peek(), msgCode, details);
+        YamlToken token = peek();
+        error(peek(), msgCode, token.getType());
         return null; // TODO: Make this return non-null
     }
 

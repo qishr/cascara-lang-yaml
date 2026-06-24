@@ -1,17 +1,20 @@
 package io.github.qishr.cascara.lang.yaml;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
 
 class YamlTests {
@@ -85,6 +88,92 @@ class YamlTests {
         YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
         String value = yaml.getString("key");
         assertEquals("value", value);
+    }
+
+    @Test
+    void test_startsWithBracket() {
+        String yamlString = """
+            [
+              {
+                "key": value
+              }
+            ]
+            """;
+        YamlParser parser = new YamlParser()
+                .setReporter(new StandardReporter().setLevel(Level.TRACE));
+
+        YamlSequenceNode seq = (YamlSequenceNode)parser.parse(yamlString);
+        YamlNode first = seq.get(0);
+        assertInstanceOf(YamlMapNode.class, first);
+
+        YamlMapNode map = (YamlMapNode) first;
+
+        String value = map.getString("key");
+        assertEquals("value", value);
+    }
+
+    @Test
+    void test_startsWithBracket2() {
+        String yamlString = """
+            [
+                {
+                    "jmhVersion" : "1.37",
+                    "benchmark" : "net.vansencool.benchmark.runner.HotBenchmark.cascaraYaml_complex",
+                    "mode" : "thrpt",
+                    "threads" : 1,
+                    "forks" : 1,
+                    "jvm" : "/Library/Java/JavaVirtualMachines/zulu-25.jdk/Contents/Home/bin/java",
+                    "jvmArgs" : [
+                    ],
+                    "jdkVersion" : "25",
+                    "vmName" : "OpenJDK 64-Bit Server VM",
+                    "vmVersion" : "25+36-LTS",
+                    "warmupIterations" : 3,
+                    "warmupTime" : "1 s",
+                    "warmupBatchSize" : 1,
+                    "measurementIterations" : 3,
+                    "measurementTime" : "2 s",
+                    "measurementBatchSize" : 1,
+                    "primaryMetric" : {
+                        "score" : 0.06774655987453963,
+                        "scoreError" : 0.06074857274996886,
+                        "scoreConfidence" : [
+                            0.0069979871245707745,
+                            0.12849513262450848
+                        ],
+                        "scorePercentiles" : {
+                            "0.0" : 0.06419552824878388,
+                            "50.0" : 0.06824519394305273,
+                            "90.0" : 0.07079895743178226,
+                            "95.0" : 0.07079895743178226,
+                            "99.0" : 0.07079895743178226,
+                            "99.9" : 0.07079895743178226,
+                            "99.99" : 0.07079895743178226,
+                            "99.999" : 0.07079895743178226,
+                            "99.9999" : 0.07079895743178226,
+                            "100.0" : 0.07079895743178226
+                        },
+                        "scoreUnit" : "ops/ms",
+                        "rawData" : [
+                            [
+                                0.06419552824878388,
+                                0.07079895743178226,
+                                0.06824519394305273
+                            ]
+                        ]
+                    },
+                    "secondaryMetrics" : {
+                    }
+                }
+            ]
+            """;
+        YamlParser parser = new YamlParser()
+                .setReporter(new StandardReporter().setLevel(Level.TRACE));
+
+        YamlSequenceNode seq = (YamlSequenceNode)parser.parse(yamlString);
+        YamlNode first = seq.get(0);
+        assertInstanceOf(YamlMapNode.class, first);
+        assertNotNull(seq);
     }
 }
 
