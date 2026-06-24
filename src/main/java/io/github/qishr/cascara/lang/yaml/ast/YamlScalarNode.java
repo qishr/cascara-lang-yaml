@@ -42,15 +42,21 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         this.quoteStyle = quoteStyle;
     }
 
+    public YamlScalarNode(Object primitiveValue) {
+        this(primitiveValue, false);
+    }
+
     /// A programmatic and serializer constructor.
     /// Used when building an AST dynamically in code.
     /// Takes a pre-typed Object and skips text-based type inference.
-    public YamlScalarNode(Object primitiveValue) {
+    /// isKey has no effect on YAML nodes
+    public YamlScalarNode(Object primitiveValue, boolean isKey) {
         super( 0, 0);
         this.raw = null; // Cleared cache marks it as dirty for the emitter
         this.primitive = Primitive.of(primitiveValue)
             .setDelegate(YAML_PRIMITIVE_DELEGATE);
         this.quoteStyle = primitive.getQuoteStyle();
+        // this.quoteStyle = isKey ? QuoteStyle.DOUBLE : primitive.getQuoteStyle();
     }
 
     /// The default constructor

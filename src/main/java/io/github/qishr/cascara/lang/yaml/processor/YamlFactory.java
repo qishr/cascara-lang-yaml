@@ -21,8 +21,18 @@ public class YamlFactory implements AstFactory<YamlNode,YamlScalarNode,YamlSeque
     }
 
     @Override
+    public YamlScalarNode createScalarNode(Object key, QuoteStyle quoteStyle) {
+        return new YamlScalarNode(key, quoteStyle);
+    }
+
+    @Override
     public YamlScalarNode createScalarNode(Primitive primitive) {
         return YamlScalarNode.fromPrimitive(primitive);
+    }
+
+    @Override
+    public YamlScalarNode createScalarKeyNode(Object key) {
+        return new YamlScalarNode(key, true);
     }
 
     @Override
@@ -33,9 +43,5 @@ public class YamlFactory implements AstFactory<YamlNode,YamlScalarNode,YamlSeque
     @Override
     public YamlMapNode createMapNode() {
         return new YamlMapNode();
-    }
-
-    public YamlScalarNode createScalarNode(Object key, QuoteStyle quoteStyle) {
-        return new YamlScalarNode(key, quoteStyle);
     }
 }

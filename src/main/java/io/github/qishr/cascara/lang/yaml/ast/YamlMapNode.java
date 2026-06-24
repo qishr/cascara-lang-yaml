@@ -213,6 +213,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
     /// {@inheritDoc}
     @Override
     public YamlMapNode put(String key, String value) {
-        return put(key, new YamlScalarNode(value, QuoteStyle.DOUBLE));
+        // TODO: This should not be forcing double quotes
+        return put(key, new YamlScalarNode(value));
     }
 }

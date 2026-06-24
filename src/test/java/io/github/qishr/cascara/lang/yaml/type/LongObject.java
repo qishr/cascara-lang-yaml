@@ -1,4 +1,4 @@
-package io.github.qishr.cascara.lang.yaml.testclass;
+package io.github.qishr.cascara.lang.yaml.type;
 
 import io.github.qishr.cascara.common.lang.annotation.Serializable;
 

@@ -13,12 +13,12 @@ import io.github.qishr.cascara.common.lang.type.UriTypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
-import io.github.qishr.cascara.lang.yaml.testclass.ColorDefinition;
-import io.github.qishr.cascara.lang.yaml.testclass.LongObject;
-import io.github.qishr.cascara.lang.yaml.testclass.SettingsTestClass;
-import io.github.qishr.cascara.lang.yaml.testclass.Stringy;
-import io.github.qishr.cascara.lang.yaml.testclass.TestState;
-import io.github.qishr.cascara.lang.yaml.testclass.UriTestClass;
+import io.github.qishr.cascara.lang.yaml.type.ColorDefinition;
+import io.github.qishr.cascara.lang.yaml.type.LongObject;
+import io.github.qishr.cascara.lang.yaml.type.SettingsTestClass;
+import io.github.qishr.cascara.lang.yaml.type.Stringy;
+import io.github.qishr.cascara.lang.yaml.type.TestState;
+import io.github.qishr.cascara.lang.yaml.type.UriTestClass;
 
 
 class YamlSerializerTests {
@@ -29,7 +29,7 @@ class YamlSerializerTests {
         YamlSerializer yamlSerializer = new YamlSerializer();
         YamlNode yaml = yamlSerializer.toAst(stringy);
         String string = new YamlEmitter().emit(yaml);
-        assertEquals("string: \"test\"\n", string);
+        assertEquals("string: test\n", string);
     }
 
     @Test
@@ -60,7 +60,7 @@ class YamlSerializerTests {
         YamlSerializer yamlSerializer = new YamlSerializer();
         YamlNode yaml = yamlSerializer.toAst(stringy);
         String string = new YamlEmitter().emit(yaml);
-        assertEquals("string: \"one \\\"two\\\" three\"\n", string);
+        assertEquals("string: one \"two\" three\n", string);
     }
 
     @Test
