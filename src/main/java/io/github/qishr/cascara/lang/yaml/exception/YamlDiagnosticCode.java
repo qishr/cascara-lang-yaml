@@ -9,7 +9,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     // Parser
     EXPECTED_COMMA_OR_CLOSE_BRACE("YAML-201", "Expected ',' or '}' in flow map"),
     EXPECTED_EOS("YAML-203", "Expected end of stream"),
-    EXPECTED_SCALAR("YAML-204", "Expected scalar"),
+    EXPECTED_SCALAR("YAML-204", "Expected scalar but got: {0}"),
     EXPECTED_MAP_KEY("YAML-205", "Expected map key"),
     EXPECTED_OPEN_BRACE_FLOW_MAP("YAML-206", "Expected '{' to start flow map"),
     EXPECTED_CLOSE_BRACKET("YAML-207", "Expected ']'"),
