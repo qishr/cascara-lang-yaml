@@ -9,6 +9,8 @@ import io.github.qishr.cascara.common.util.Properties;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
 
 public abstract class AbstractYamlProcessor<P extends Processor> implements Processor {
+    static final String YAML_CONTENT_TYPE_STRING = "text/yaml";
+
     static final ContentType YAML_CONTENT_TYPE =
         new ContentType("YAML")
             .withType("text/yaml")
@@ -26,7 +28,7 @@ public abstract class AbstractYamlProcessor<P extends Processor> implements Proc
     public Properties getServiceProperties() {
         if (properties == null) {
             properties = new Properties();
-            properties.set("contentType", "text/yaml");
+            properties.set("contentType", YAML_CONTENT_TYPE_STRING);
         }
         return properties;
     }
