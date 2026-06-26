@@ -1,6 +1,6 @@
 package io.github.qishr.cascara.lang.yaml;
 
-import io.github.qishr.cascara.common.lang.LanguageOptions;
+import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 
 public class YamlOptions extends LanguageOptions<YamlOptions> {
     private boolean allowUnicode = true;

@@ -21,21 +21,10 @@ class YamlDirectoryTestSuite {
     private YamlOptions options;
     private YamlParser parser;
     private Reporter reporter;
-    // private List<Diagnostic> diagnostics;
-
-    // public void collect(Diagnostic diagnostic) {
-    //     diagnostics.add(diagnostic);
-    // }
-
-    // public void clear(URI uri) {
-    //     diagnostics.clear();
-    // }
-
 
     @BeforeEach
     void init() {
-        // diagnostics = new ArrayList<>();
-        reporter = new StandardReporter(); //.setDiagnosticCollector(this::collect);
+        reporter = new StandardReporter();
         options = new YamlOptions().setStrict(true);
         parser = new YamlParser()
             .setOptions(options)
@@ -52,8 +41,6 @@ class YamlDirectoryTestSuite {
     @MethodSource("getInvalidFiles")
     void testInvalidFiles(String fileName, String content) {
         assertThrows(Exception.class, () -> parser.parse(content), "Should have failed: " + fileName);
-        // parser.parse(content);
-        // assertFalse(diagnostics.isEmpty(), "Should have failed: " + fileName);
     }
 
     static Stream<Arguments> getValidFiles() throws Exception {

@@ -1,5 +1,6 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,7 +11,7 @@ import java.util.Set;
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
-import io.github.qishr.cascara.common.lang.QuoteStyle;
+import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.processor.Parser;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
@@ -64,6 +65,14 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         return parse(tokenizer.tokenize(text));
     }
 
+    @Override
+    public YamlNode parse(InputStream is) {
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        tokenizer.setOptions(options);
+        tokenizer.setReporter(reporter);
+        return parse(tokenizer.tokenize(is));
+    }
+
     /// {@inheritDoc}
     @Override
     public YamlNode parse(List<YamlToken> tokens) {
@@ -97,7 +106,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         }
 
         if (!isAtEnd()) {
-            error(peek(), LangDiagnosticCode.UNEXPECTED_STREAM_END);
+            error(peek(), LangDiagnosticCode.EXPECTED_STREAM_END);
         }
 
         match(YamlTokenType.STREAM_END);

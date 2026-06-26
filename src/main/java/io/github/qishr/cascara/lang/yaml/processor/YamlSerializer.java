@@ -1,9 +1,11 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import java.io.InputStream;
+
 import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
-import io.github.qishr.cascara.common.lang.LanguageOptions;
+import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.lang.exception.SerializerException;
 import io.github.qishr.cascara.common.lang.processor.AbstractSerializer;
 import io.github.qishr.cascara.common.lang.processor.Parser;
@@ -24,7 +26,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private Reporter reporter = new NoOpReporter();
 
     public YamlSerializer() {
-        super(AbstractYamlProcessor.YAML_CONTENT_TYPE_STRING, new YamlFactory(), new YamlPrimitiveDelegate());
+        super(AbstractYamlProcessor.YAML_CONTENT_TYPE_STRING, new YamlNodeFactory(), new YamlPrimitiveDelegate());
     }
 
     @Override
@@ -76,6 +78,14 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     public <C> C fromText(String text, Class<C> jvmType) {
         // Step 1: String -> AST
         YamlNode ast = getParser().parse(text);
+        // Step 2: AST -> Object
+        return fromAst(ast, jvmType);
+    }
+
+    @Override
+    public <C> C fromStream(InputStream is, Class<C> jvmType) {
+        // Step 1: String -> AST
+        YamlNode ast = getParser().parse(is);
         // Step 2: AST -> Object
         return fromAst(ast, jvmType);
     }

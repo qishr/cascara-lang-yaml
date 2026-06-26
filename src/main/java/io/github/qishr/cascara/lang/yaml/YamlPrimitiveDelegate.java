@@ -1,6 +1,6 @@
 package io.github.qishr.cascara.lang.yaml;
 
-import io.github.qishr.cascara.common.lang.QuoteStyle;
+import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.type.PrimitiveDelegate;
 
 public class YamlPrimitiveDelegate implements PrimitiveDelegate {
@@ -12,15 +12,6 @@ public class YamlPrimitiveDelegate implements PrimitiveDelegate {
         if (lowered.equals("null") || lowered.equals("~")) return null;
         return null;
     }
-
-    // @Override
-    // public QuoteStyle inferQuoteStyle(Object value) {
-    //     QuoteStyle style = QuoteStyle.PLAIN;
-    //     if (value instanceof CharSequence || value instanceof Character) {
-    //         style = QuoteStyle.DOUBLE;
-    //     }
-    //     return style;
-    // }
 
     @Override
     public QuoteStyle inferQuoteStyle(Object value) {

@@ -11,6 +11,9 @@ import java.io.InputStream;
 import java.util.ArrayDeque;
 
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
+import io.github.qishr.cascara.common.lang.util.SourceBuffer;
+import io.github.qishr.cascara.common.lang.util.SourceInputStreamBuffer;
+import io.github.qishr.cascara.common.lang.util.SourceStringBuffer;
 import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
@@ -154,6 +157,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     /// Dispatches the scan to specific handlers based on the current character.
     private void scanToken() {
+        trace("scanToken");
+
         // If we have pending spaces from a previous newline, process them now
         // resolvePendingIndentation();
 
