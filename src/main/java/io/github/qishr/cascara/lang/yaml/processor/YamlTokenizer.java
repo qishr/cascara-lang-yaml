@@ -10,6 +10,7 @@ import java.util.EnumSet;
 import java.io.InputStream;
 import java.util.ArrayDeque;
 
+import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
 import io.github.qishr.cascara.common.lang.util.SourceBuffer;
 import io.github.qishr.cascara.common.lang.util.SourceInputStreamBuffer;
@@ -543,14 +544,14 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     //
 
     private void trace(String method) {
-        if (reporter == null) return;
+        if (reporter == null || reporter instanceof NoOpReporter) return;
         char c = buffer.peek();
         reporter.trace("S=%03d C=%03d '%s' %03d:%03d %s",
             buffer.offset(), buffer.offset(), currentChar(c), buffer.line(), buffer.column(), method);
     }
 
     private void trace(String method, String info) {
-        if (reporter == null) return;
+        if (reporter == null || reporter instanceof NoOpReporter) return;
         char c = buffer.peek();
         reporter.trace("S=%03d C=%03d '%s' %03d:%03d %s: %s",
             buffer.offset(), buffer.offset(), currentChar(c), buffer.line(), buffer.column(), method, info);
