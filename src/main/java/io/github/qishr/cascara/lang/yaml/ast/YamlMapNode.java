@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
-import io.github.qishr.cascara.common.lang.QuoteStyle;
+import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 
 public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMapEntryNode> {
     private CollectionStyle style = CollectionStyle.BLOCK;
@@ -73,7 +73,6 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
             entry = new YamlMapEntryNode(0, 0, key, value);
             entriesByKey.put(key, entry);
             return this;
-
         }
         entry.setRaw(value);
         return this;

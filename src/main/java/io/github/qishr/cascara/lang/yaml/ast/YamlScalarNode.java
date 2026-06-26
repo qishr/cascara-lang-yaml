@@ -3,7 +3,7 @@ package io.github.qishr.cascara.lang.yaml.ast;
 import java.util.List;
 import java.util.Objects;
 
-import io.github.qishr.cascara.common.lang.QuoteStyle;
+import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.type.Primitive;
