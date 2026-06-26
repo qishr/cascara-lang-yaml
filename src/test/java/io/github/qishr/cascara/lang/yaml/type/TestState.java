@@ -1,4 +1,4 @@
-package io.github.qishr.cascara.lang.yaml.testclass;
+package io.github.qishr.cascara.lang.yaml.type;
 
 import java.util.ArrayList;
 import java.util.List;

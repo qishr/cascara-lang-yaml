@@ -10,7 +10,6 @@ public class YamlAnchorNode extends YamlNode {
         super(line, column);
         this.anchorName = name;
         this.innerNode = node;
-        // This is the missing link!
         this.setAnchor(name);
         // Also ensure the inner node knows it's anchored
         if (node != null) {

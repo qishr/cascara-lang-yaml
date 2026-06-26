@@ -4,10 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.lang.QuoteStyle;
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.lang.yaml.YamlOptions;
+import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;

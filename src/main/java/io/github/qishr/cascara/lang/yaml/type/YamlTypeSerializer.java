@@ -6,7 +6,6 @@ import io.github.qishr.cascara.common.lang.exception.SerializerException;
 import io.github.qishr.cascara.common.lang.type.AbstractTypeDescriptor;
 import io.github.qishr.cascara.common.lang.type.TypeSerializer;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.exception.YamlSerializerException;
 
 public abstract class YamlTypeSerializer<T> extends AbstractTypeDescriptor<T> implements TypeSerializer<T> {
     protected YamlTypeSerializer(Class<T> javaType) {
@@ -40,7 +39,7 @@ public abstract class YamlTypeSerializer<T> extends AbstractTypeDescriptor<T> im
         if (node instanceof YamlNode yamlNode) {
             return this.deserialize(yamlNode); // Safely forwards to your abstract method
         }
-        throw new YamlSerializerException(
+        throw new SerializerException(
             GenericDiagnosticCode.ERROR,
             "Expected a YamlNode branch, but received: " + node.getClass().getSimpleName()
         );

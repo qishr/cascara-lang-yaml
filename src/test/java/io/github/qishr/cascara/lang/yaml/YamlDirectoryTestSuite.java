@@ -7,17 +7,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.net.URI;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Stream;
 
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.Diagnostic;
-import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
@@ -27,21 +21,10 @@ class YamlDirectoryTestSuite {
     private YamlOptions options;
     private YamlParser parser;
     private Reporter reporter;
-    // private List<Diagnostic> diagnostics;
-
-    // public void collect(Diagnostic diagnostic) {
-    //     diagnostics.add(diagnostic);
-    // }
-
-    // public void clear(URI uri) {
-    //     diagnostics.clear();
-    // }
-
 
     @BeforeEach
     void init() {
-        // diagnostics = new ArrayList<>();
-        reporter = new StandardReporter(); //.setDiagnosticCollector(this::collect);
+        reporter = new StandardReporter();
         options = new YamlOptions().setStrict(true);
         parser = new YamlParser()
             .setOptions(options)
@@ -58,8 +41,6 @@ class YamlDirectoryTestSuite {
     @MethodSource("getInvalidFiles")
     void testInvalidFiles(String fileName, String content) {
         assertThrows(Exception.class, () -> parser.parse(content), "Should have failed: " + fileName);
-        // parser.parse(content);
-        // assertFalse(diagnostics.isEmpty(), "Should have failed: " + fileName);
     }
 
     static Stream<Arguments> getValidFiles() throws Exception {

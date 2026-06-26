@@ -13,10 +13,10 @@ import io.github.qishr.cascara.common.lang.type.TypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
-import io.github.qishr.cascara.lang.yaml.testclass.LongInstant;
-import io.github.qishr.cascara.lang.yaml.testclass.Person;
-import io.github.qishr.cascara.lang.yaml.testclass.PersonSerializer;
-import io.github.qishr.cascara.lang.yaml.testclass.TypeDescriptorTestClass;
+import io.github.qishr.cascara.lang.yaml.type.LongInstant;
+import io.github.qishr.cascara.lang.yaml.type.Person;
+import io.github.qishr.cascara.lang.yaml.type.PersonSerializer;
+import io.github.qishr.cascara.lang.yaml.type.TypeDescriptorTestClass;
 
 public class ScalarDescriptorTest {
     @Test
@@ -34,7 +34,7 @@ public class ScalarDescriptorTest {
 
         String dateTimeString = dt.toString();
 
-        assertEquals("dateTime: \"" + dateTimeString + "\"\n", string);
+        assertEquals("dateTime: " + dateTimeString + "\n", string);
     }
 
     @Test
@@ -80,8 +80,8 @@ public class ScalarDescriptorTest {
         String yaml = yamlSerializer.toText(person);
 
         String expected = """
-                firstName: "Dave"
-                lastName: "Smith"
+                firstName: Dave
+                lastName: Smith
                 age: "31"
                 """;
         assertEquals(expected, yaml);
@@ -90,6 +90,9 @@ public class ScalarDescriptorTest {
     @Test
     void testByteArray() {
         YamlSerializer yamlSerializer = new YamlSerializer();
+
+        // TODO: Remove this...
+        // yamlSerializer.setReporter(new StandardReporter().setLevel(Level.DEBUG));
 
         // THis is called here because tests runnig from Gradle don't have SPI
         yamlSerializer.registerTypeDescriptor(new ByteArrayDescriptor());
@@ -100,10 +103,10 @@ public class ScalarDescriptorTest {
         String yaml = yamlSerializer.toText(person);
 
         String expected = """
-                firstName: "Dave"
-                lastName: "Smith"
+                firstName: Dave
+                lastName: Smith
                 personAge: "31"
-                bytes: "AQID"
+                bytes: AQID
                 """;
         assertEquals(expected, yaml);
 
