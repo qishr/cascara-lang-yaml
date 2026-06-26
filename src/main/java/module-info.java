@@ -15,6 +15,8 @@ module cascara.lang.yaml {
     opens io.github.qishr.cascara.lang.yaml.processor;
     opens io.github.qishr.cascara.lang.yaml.token;
 
+    opens io.github.qishr.cascara.lang.yaml.type to cascara.common;
+
     provides io.github.qishr.cascara.common.lang.processor.AstConverter
         with io.github.qishr.cascara.lang.yaml.processor.YamlConverter;
     provides io.github.qishr.cascara.common.lang.processor.Emitter

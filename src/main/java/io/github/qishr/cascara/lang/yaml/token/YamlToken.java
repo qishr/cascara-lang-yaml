@@ -3,12 +3,12 @@ package io.github.qishr.cascara.lang.yaml.token;
 import io.github.qishr.cascara.common.lang.token.Token;
 
 public class YamlToken implements Token {
+    private int line;
+    private int column;
+    private int offset;
     private YamlTokenType type;
     private String lexeme;
     private String content;
-    private int offset;
-    private int line;
-    private int column;
 
     public YamlToken(int line, int column, int startOffset, YamlTokenType type, String lexeme, String content) {
         this.line = line;

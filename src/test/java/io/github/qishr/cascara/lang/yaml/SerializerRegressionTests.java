@@ -5,17 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.qishr.cascara.common.lang.exception.SerializerException;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
-import io.github.qishr.cascara.lang.yaml.exception.YamlSerializerException;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
-import io.github.qishr.cascara.lang.yaml.testclass.ContentTypeRegistryTestClass;
-import io.github.qishr.cascara.lang.yaml.testclass.ContentTypeTestClass;
+import io.github.qishr.cascara.lang.yaml.type.ContentTypeRegistryTestClass;
+import io.github.qishr.cascara.lang.yaml.type.ContentTypeTestClass;
 
 public class SerializerRegressionTests {
     @Test
-    void test_contentTypes() throws YamlSerializerException {
+    void test_contentTypes() throws SerializerException {
 
         ContentTypeRegistryTestClass registry = new ContentTypeRegistryTestClass();
         ContentTypeTestClass type1 = new ContentTypeTestClass();

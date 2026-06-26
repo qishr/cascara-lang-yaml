@@ -1,9 +1,8 @@
-package io.github.qishr.cascara.lang.yaml.testclass;
+package io.github.qishr.cascara.lang.yaml.type;
 
 import io.github.qishr.cascara.common.lang.exception.SerializerException;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.type.YamlTypeSerializer;
 
 public class PersonSerializer extends YamlTypeSerializer<Person> {
     public PersonSerializer() {
