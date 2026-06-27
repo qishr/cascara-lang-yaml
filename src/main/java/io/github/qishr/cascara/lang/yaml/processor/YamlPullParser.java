@@ -3,9 +3,9 @@ package io.github.qishr.cascara.lang.yaml.processor;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.PullParser;
 import io.github.qishr.cascara.common.lang.streaming.Event;
-import io.github.qishr.cascara.lang.yaml.YamlOptions;
 
 import java.io.InputStream;
+import java.util.NoSuchElementException;
 
 public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implements PullParser {
     private YamlStreamEngine engine;
@@ -24,26 +24,22 @@ public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implem
     }
 
     @Override
-    public boolean hasNext() throws ParserException {
-        ensureEngine();
-        return engine.hashNextEvent();
+    public boolean hasNext() {
+        try {
+            ensureEngine();
+            return engine.hashNextEvent();
+        } catch (ParserException e) {
+            throw new RuntimeException("Error scanning for next streaming event", e);
+        }
     }
 
     @Override
-    public Event nextEvent() throws ParserException {
-        ensureEngine();
-        return engine.nextEvent();
+    public Event next() {
+        if (!hasNext()) {
+            throw new NoSuchElementException("No more YAML streaming events available.");
+        }
+        return engine.nextEvent(); // Throws ParserException, which is a RuntimeException
     }
-
-    // @Override
-    // public boolean hasNext() throws ParserException {
-    //     return engine.hashNextEvent();
-    // }
-
-    // @Override
-    // public Event nextEvent() throws ParserException {
-    //     return engine.nextEvent();
-    // }
 
     @Override
     public void close() throws Exception {

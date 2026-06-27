@@ -33,18 +33,11 @@ public class YamlPullParserTest {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = new YamlPullParser(inputStream)) {
 
-            parser.setOptions(options);
-            parser.setReporter(reporter);
-
             List<Event> events = new ArrayList<>();
 
-            while (parser.hasNext()) {
-                Event event = parser.nextEvent();
-                if (event != null) {
-                    events.add(event);
-                    reporter.debug("Event: " + event.getType() + ": " + event.getContent());
-                }
-            }
+            parser.setOptions(options);
+            parser.setReporter(reporter);
+            parser.forEachRemaining(events::add);
 
             // Assertions to verify our translated token-stream boundaries
             assertFalse(events.isEmpty());
