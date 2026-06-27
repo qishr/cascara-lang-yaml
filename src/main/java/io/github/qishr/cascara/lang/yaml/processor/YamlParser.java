@@ -83,7 +83,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         this.tokenizer = tokenizer;
 
         // clear() preserves the internal array capacity—zero allocations!
-        this.tokenBuffer.clear(); 
+        this.tokenBuffer.clear();
         this.current = 0;
         this.anchorRegistry.clear();
         this.pendingComments.clear();
@@ -328,7 +328,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 if (mapColumn == -1) {
                     mapColumn = markerToken.getStartColumn();
                 } else if (markerToken.getStartColumn() != mapColumn) {
-                    error(markerToken, YamlDiagnosticCode.MAP_KEY_INDENTATION);
+                    error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                 }
 
                 YamlNode key;
