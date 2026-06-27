@@ -15,7 +15,7 @@ public class YamlPushParser extends AbstractYamlProcessor<YamlPushParser> implem
 
     @Override
     public void parse(InputStream input, StreamHandler handler) throws ParserException {
-        YamlStreamEngine executionEngine = new YamlStreamEngine(input);
+        YamlStreamEngine executionEngine = new YamlStreamEngine(input, getReporter(), getOptions().isIncludeComments());
 
         while (executionEngine.hashNextEvent()) {
             Event event = executionEngine.nextEvent();

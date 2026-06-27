@@ -7,6 +7,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> {
     private boolean explicitStart = false; // Writes '---' if true
     private boolean expandedStyle = false;
     private boolean strict = false;
+    private boolean includeComments = false;
 
     /// Sets whether unicode characters are allowed in scalars.
     public YamlOptions setAllowUnicode(boolean val) {
@@ -30,8 +31,14 @@ public class YamlOptions extends LanguageOptions<YamlOptions> {
         return this;
     }
 
+    public YamlOptions setIncludeComments(boolean val) {
+        this.includeComments = val;
+        return this;
+    }
+
     public boolean isAllowUnicode() { return allowUnicode; }
     public boolean isExplicitStart() { return explicitStart; }
     public boolean isExpandedStyle() { return expandedStyle; }
     public boolean isStrict() { return strict; }
+    public boolean isIncludeComments() { return includeComments; }
 }

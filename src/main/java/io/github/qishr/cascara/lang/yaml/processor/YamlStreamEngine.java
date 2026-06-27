@@ -2,6 +2,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.common.lang.streaming.Event;
 import io.github.qishr.cascara.common.lang.streaming.EventType;
+import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.token.Token;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
@@ -15,15 +16,17 @@ class YamlStreamEngine {
     private final Deque<Integer> indentStack = new ArrayDeque<>();
 
     private Token currentToken;
-    private Token bufferedToken; // Single-token lookahead cache
+    private Token bufferedToken;
 
     private int targetDedentCount = 0;
     private boolean isDocumentEnded = false;
+    private final boolean includeComments;
 
-    YamlStreamEngine(InputStream input) {
-        this.tokenizer = new YamlTokenizer();
+    YamlStreamEngine(InputStream input, Reporter reporter, boolean includeComments) {
+        this.tokenizer = new YamlTokenizer().setReporter(reporter);
         this.tokenizer.open(input);
         this.indentStack.push(-1);
+        this.includeComments = includeComments;
     }
 
     boolean hashNextEvent() {
@@ -60,29 +63,43 @@ class YamlStreamEngine {
         }
 
         if (currentToken.getType() == YamlTokenType.COMMENT) {
-            return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.COMMENT, currentToken.getContent());
+            if (includeComments) {
+                return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.COMMENT, currentToken.getContent());
+            }
+            return nextEvent();
         }
 
-        // Lookahead Check: Is this SCALAR actually a map key?
         if (currentToken.getType() == YamlTokenType.SCALAR) {
-            peekToken(); // Fill bufferedToken
+            // Check if a KEY_INDICATOR follows this scalar, ignoring formatting syntax
+            if (isNextContentTokenValueIndicator()) {
+                int startLine = currentToken.getStartLine();
+                int startColumn = currentToken.getStartColumn();
+                String fieldName = currentToken.getContent();
 
-            if (bufferedToken != null && bufferedToken.getType() == YamlTokenType.KEY_INDICATOR) {
-                // Consume the KEY_INDICATOR so it's skipped on the next iteration
-                advanceToken();
-                return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.FIELD_NAME, currentToken.getContent());
+                // Advance past the scalar itself; the subsequent loops will drain the indicators safely
+                return new StreamingEvent(startLine, startColumn, EventType.FIELD_NAME, fieldName);
             }
 
-            // Standalone scalar value
             return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.VALUE_SCALAR, currentToken.getContent());
         }
 
-        // Skip structural punctuation that has been translated or handled implicitly
-        if (currentToken.getType() == YamlTokenType.KEY_INDICATOR || currentToken.getType() == YamlTokenType.VALUE_INDICATOR) {
+        // Safely skip standalone structural indicators since they are resolved by context shifts
+        if (currentToken.getType() == YamlTokenType.KEY_INDICATOR
+            || currentToken.getType() == YamlTokenType.VALUE_INDICATOR
+            || currentToken.getType() == YamlTokenType.NEWLINE
+            || currentToken.getType() == YamlTokenType.STREAM_START) {
             return nextEvent();
         }
 
         return null;
+    }
+
+    private boolean isNextContentTokenValueIndicator() throws ParserException {
+        if (bufferedToken == null) {
+            bufferedToken = tokenizer.nextToken();
+        }
+
+        return bufferedToken != null && bufferedToken.getType() == YamlTokenType.VALUE_INDICATOR;
     }
 
     private void advanceToken() throws ParserException {
@@ -91,12 +108,6 @@ class YamlStreamEngine {
             this.bufferedToken = null;
         } else {
             this.currentToken = tokenizer.nextToken();
-        }
-    }
-
-    private void peekToken() throws ParserException {
-        if (this.bufferedToken == null) {
-            this.bufferedToken = tokenizer.nextToken();
         }
     }
 }
