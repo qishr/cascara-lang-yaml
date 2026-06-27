@@ -17,7 +17,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     EXPECTED_COLON_MAP_KEY("YAML-209", "Expected ':' after key"),
     EXPECTED_COLON_FLOW_MAP("YAML-210", "Expected ':' after key in flow map"),
 
-    MAP_KEY_INDENTATION("YAML-302", "Inconsistent indentation for map key"),
+    INCONSISTENT_INDENTATION("YAML-302", "Inconsistent indentation"),
     EXPECTED_INDENTATION_BLOCK_SCALAR("YAML-303", "Inconsistent indentation for block scalar"),
     EXPECTED_DEDENT_BLOCK_COMMENT("YAML-304", "Expected dedent after block content"),
 

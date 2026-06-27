@@ -63,6 +63,14 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     @Override protected YamlTokenizer self() { return this; }
 
+    public int getLine() {
+        return buffer.line();
+    }
+
+    public int getColumn() {
+        return buffer.column();
+    }
+
     @Override
     public void open(String text) {
         this.buffer = new SourceStringBuffer(text);
