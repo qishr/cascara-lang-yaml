@@ -67,7 +67,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         return parse(tz);
     }
 
-    /// Entry point for parsing an InputStream via the new streaming API.
+    /// Entry point for parsing an InputStream via the streaming API.
     @Override
     public YamlNode parse(InputStream is) {
         YamlTokenizer tz = new YamlTokenizer();
@@ -77,18 +77,33 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         return parse(tz);
     }
 
-    /// Primary parsing core driven directly by the new Tokenizer interface structure.
-    /// Primary parsing core driven directly by the new Tokenizer interface structure.
+    /// Parse a list of `YamlToken`s
+    @Override
+    public YamlNode parse(List<YamlToken> tokens) {
+        this.tokenizer = null;
+        this.tokenBuffer.clear();
+        if (tokens != null) {
+            this.tokenBuffer.addAll(tokens);
+        }
+        this.current = 0;
+        this.anchorRegistry.clear();
+        this.pendingComments.clear();
+
+        // Redirect directly into the baseline parser structure logic
+        return parseInternal();
+    }
+
+    /// Primary parsing core driven directly by the Tokenizer interface structure.
     public YamlNode parse(Tokenizer<YamlToken> tokenizer) {
         this.tokenizer = tokenizer;
 
-        // clear() preserves the internal array capacity—zero allocations!
+        // clear() preserves the internal array capacity—zero allocations
         this.tokenBuffer.clear();
         this.current = 0;
         this.anchorRegistry.clear();
         this.pendingComments.clear();
 
-        // Drain the tokenizer directly into the pre-allocated backing array
+        // 1. Drain the tokenizer directly into the pre-allocated backing array
         YamlToken next;
         while ((next = tokenizer.nextToken()) != null) {
             tokenBuffer.add(next);
@@ -128,22 +143,6 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         root.getComments().addAll(headers);
 
         return root;
-    }
-
-    /// Retained for backwards compatibility or list-based test runners
-    @Override
-    public YamlNode parse(List<YamlToken> tokens) {
-        this.tokenizer = null;
-        this.tokenBuffer.clear();
-        if (tokens != null) {
-            this.tokenBuffer.addAll(tokens);
-        }
-        this.current = 0;
-        this.anchorRegistry.clear();
-        this.pendingComments.clear();
-
-        // Redirect directly into the baseline parser structure logic
-        return parseInternal();
     }
 
     private YamlNode parseInternal() {
