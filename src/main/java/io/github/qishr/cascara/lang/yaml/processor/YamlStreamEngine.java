@@ -19,15 +19,20 @@ class YamlStreamEngine {
     private Token currentToken;
     private Token bufferedToken;
 
+    private final boolean includeComments;
+
     private int targetDedentCount = 0;
     private boolean isDocumentEnded = false;
     private boolean rootOpened = false;
-    private final boolean includeComments;
+    private boolean insideExplicitKey = false;
+
+    private boolean insideBlockScalar = false;
+    private boolean isFoldedBlock = false;
+    private final StringBuilder blockScalarBuffer = new StringBuilder();
 
     YamlStreamEngine(InputStream input, Reporter reporter, boolean includeComments) {
         this.tokenizer = new YamlTokenizer().setReporter(reporter);
         this.tokenizer.open(input);
-        // Seed with 0 so root level content (width 0) doesn't push a new layer
         this.indentStack.push(0);
         this.contextStack.push(EventType.START_OBJECT);
         this.includeComments = includeComments;
@@ -54,7 +59,14 @@ class YamlStreamEngine {
         advanceToken();
 
         if (currentToken == null || currentToken.getType() == YamlTokenType.EOF) {
-            // Drain remaining open containers (including the root scope)
+            if (insideBlockScalar) {
+                insideBlockScalar = false;
+                blockScalarBuffer.append("\n");
+                String finalContent = blockScalarBuffer.toString();
+                blockScalarBuffer.setLength(0);
+                return new StreamingEvent(tokenizer.getLine(), tokenizer.getColumn(), EventType.VALUE_SCALAR, finalContent);
+            }
+
             if (contextStack.size() > 0) {
                 targetDedentCount = contextStack.size();
                 return nextEvent();
@@ -63,8 +75,36 @@ class YamlStreamEngine {
             return new StreamingEvent(tokenizer.getLine(), tokenizer.getColumn(), EventType.END_DOCUMENT, "");
         }
 
+        // 1. Structural drops flush block scalars naturally
+        if (currentToken.getType() == YamlTokenType.DEDENT || currentToken.getType() == YamlTokenType.BLOCK_END) {
+            if (insideBlockScalar) {
+                insideBlockScalar = false;
+                blockScalarBuffer.append("\n");
+                String finalContent = blockScalarBuffer.toString();
+                blockScalarBuffer.setLength(0);
+
+                // Buffer this token so the layout engine executes it on the next loop turn
+                bufferedToken = currentToken;
+                return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.VALUE_SCALAR, finalContent);
+            }
+
+            if (indentStack.size() > 1) {
+                indentStack.pop();
+                EventType closedContext = contextStack.pop();
+                EventType endType = (closedContext == EventType.START_ARRAY) ? EventType.END_ARRAY : EventType.END_OBJECT;
+                return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), endType, "");
+            }
+            return nextEvent();
+        }
+
         if (currentToken.getType() == YamlTokenType.INDENT) {
-            int indentWidth = currentToken.getLexeme().length();
+            // If we are gathering a block scalar, ignore indentation increases
+            // as they are just deep text line content inside the literal block.
+            if (insideBlockScalar) {
+                return nextEvent();
+            }
+
+            int indentWidth = currentToken.getStartColumn() - 1;
 
             if (indentWidth > indentStack.peek()) {
                 indentStack.push(indentWidth);
@@ -80,16 +120,6 @@ class YamlStreamEngine {
             return nextEvent();
         }
 
-        if (currentToken.getType() == YamlTokenType.DEDENT || currentToken.getType() == YamlTokenType.BLOCK_END) {
-            if (indentStack.size() > 1) {
-                indentStack.pop();
-                EventType closedContext = contextStack.pop();
-                EventType endType = (closedContext == EventType.START_ARRAY) ? EventType.END_ARRAY : EventType.END_OBJECT;
-                return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), endType, "");
-            }
-            return nextEvent();
-        }
-
         if (currentToken.getType() == YamlTokenType.COMMENT) {
             if (includeComments) {
                 return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.COMMENT, currentToken.getContent());
@@ -97,32 +127,56 @@ class YamlStreamEngine {
             return nextEvent();
         }
 
-        if (currentToken.getType() == YamlTokenType.SCALAR) {
-            if (isNextTokenValueIndicator()) {
-                int startLine = currentToken.getStartLine();
-                int startColumn = currentToken.getStartColumn();
-                String fieldName = currentToken.getContent();
-                return new StreamingEvent(startLine, startColumn, EventType.FIELD_NAME, fieldName);
-            }
-            return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.VALUE_SCALAR, currentToken.getContent());
-        }
-
-        if (currentToken.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR) {
-            // If we aren't inside an array context yet, this hyphen opens it!
-            if (contextStack.peek() != EventType.START_ARRAY) {
-                contextStack.push(EventType.START_ARRAY);
-                // Push a placeholder indent tracker to stay in alignment with dedent drops
-                indentStack.push(currentToken.getStartColumn() - 1);
-
-                return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.START_ARRAY, "");
-            }
-            // Sibling entry item—skip the layout dash and fetch the scalar value
+        if (currentToken.getType() == YamlTokenType.KEY_INDICATOR) {
+            insideExplicitKey = true;
             return nextEvent();
         }
 
-        if (currentToken.getType() == YamlTokenType.KEY_INDICATOR
-                || currentToken.getType() == YamlTokenType.VALUE_INDICATOR
-                || currentToken.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR
+        if (currentToken.getType() == YamlTokenType.SCALAR) {
+            String value = currentToken.getContent();
+
+            if (insideBlockScalar) {
+                // Check if this text line broke the scalar's block structure baseline
+                if ("|".equals(value) || ">".equals(value)) {
+                    // Fall through to parse structural indicator change
+                } else {
+                    if (blockScalarBuffer.length() > 0) {
+                        blockScalarBuffer.append(isFoldedBlock ? " " : "\n");
+                    }
+                    blockScalarBuffer.append(value);
+                    return nextEvent();
+                }
+            }
+
+            if (insideExplicitKey) {
+                insideExplicitKey = false;
+                return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.FIELD_NAME, value);
+            }
+
+            if (isNextTokenValueIndicator()) {
+                return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.FIELD_NAME, value);
+            }
+
+            if ("|".equals(value) || ">".equals(value)) {
+                insideBlockScalar = true;
+                isFoldedBlock = ">".equals(value);
+                blockScalarBuffer.setLength(0);
+                return nextEvent();
+            }
+
+            return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.VALUE_SCALAR, value);
+        }
+
+        if (currentToken.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR) {
+            if (contextStack.peek() != EventType.START_ARRAY) {
+                contextStack.push(EventType.START_ARRAY);
+                indentStack.push(currentToken.getStartColumn() - 1);
+                return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.START_ARRAY, "");
+            }
+            return nextEvent();
+        }
+
+        if (currentToken.getType() == YamlTokenType.VALUE_INDICATOR
                 || currentToken.getType() == YamlTokenType.NEWLINE
                 || currentToken.getType() == YamlTokenType.STREAM_START) {
             return nextEvent();
