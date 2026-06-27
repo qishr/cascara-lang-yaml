@@ -288,6 +288,16 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
         }
 
+        if (c == '%') {
+            trace(method, "directive");
+            // Directives are line-oriented metadata (e.g., %YAML 1.2)
+            while (buffer.peek() != '\n' && buffer.peek() != '\r' && !buffer.isAtEnd()) {
+                buffer.advance();
+            }
+            addToken(YamlTokenType.DIRECTIVE);
+            return;
+        }
+
         scanPlainScalar();
     }
 
