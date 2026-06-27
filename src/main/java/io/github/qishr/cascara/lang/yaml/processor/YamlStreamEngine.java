@@ -5,6 +5,7 @@ import io.github.qishr.cascara.common.lang.streaming.Event;
 import io.github.qishr.cascara.common.lang.streaming.EventType;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.token.Token;
+import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
 import java.io.InputStream;
@@ -117,6 +118,48 @@ class YamlStreamEngine {
                     return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.START_OBJECT, "");
                 }
             }
+            return nextEvent();
+        }
+
+        // ====================================================================
+        // Flow Style Structural Interceptors
+        // ====================================================================
+
+        // Flow Sequences [...]
+        if (currentToken.getType() == YamlTokenType.SEQUENCE_START) {
+            contextStack.push(EventType.START_ARRAY);
+            // Push a sentinel placeholder to protect the block indentation tracking
+            indentStack.push(-1);
+            return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.START_ARRAY, "");
+        }
+
+        if (currentToken.getType() == YamlTokenType.SEQUENCE_END) {
+            if (contextStack.peek() == EventType.START_ARRAY) {
+                contextStack.pop();
+                indentStack.pop();
+                return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.END_ARRAY, "");
+            }
+            throw new ParserException(currentToken, YamlDiagnosticCode.UNEXPECTED_CLOSE_BRACKET);
+        }
+
+        // Flow Maps {...}
+        if (currentToken.getType() == YamlTokenType.MAP_START) {
+            contextStack.push(EventType.START_OBJECT);
+            indentStack.push(-1);
+            return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.START_OBJECT, "");
+        }
+
+        if (currentToken.getType() == YamlTokenType.MAP_END) {
+            if (contextStack.peek() == EventType.START_OBJECT) {
+                contextStack.pop();
+                indentStack.pop();
+                return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.END_OBJECT, "");
+            }
+            throw new ParserException(currentToken, YamlDiagnosticCode.UNEXPECTED_CLOSE_BRACE);
+        }
+
+        if (currentToken.getType() == YamlTokenType.COMMA) { // ','
+            // Comma separates elements/pairs explicitly; advance immediately
             return nextEvent();
         }
 

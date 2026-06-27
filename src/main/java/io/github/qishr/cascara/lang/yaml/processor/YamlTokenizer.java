@@ -407,7 +407,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
 
             // 3. Stop at Flow Indicators
-            if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c)) break;
+            // if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c)) break;
+            if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c)) {
+                if (c != ',' || flowDepth > 0) {
+                    break;
+                }
+            }
 
             // 4. The Colon Rule: Stop ONLY if it's a value indicator
             if (c == ':' && (isWhitespace(buffer.peekNext()) || buffer.isAtEnd())) {

@@ -25,6 +25,18 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
 
     /// {@inheritDoc}
     @Override
+    public boolean isEmpty() {
+        return entriesByKey.isEmpty();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public int size() {
+        return entriesByKey.size();
+    }
+
+    /// {@inheritDoc}
+    @Override
     public boolean containsKey(YamlNode key) {
         return getEntry(key) != null;
     }

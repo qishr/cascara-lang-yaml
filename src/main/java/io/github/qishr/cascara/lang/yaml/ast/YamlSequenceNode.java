@@ -23,6 +23,12 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
 
     /// {@inheritDoc}
     @Override
+    public boolean isEmpty() {
+        return elements.isEmpty();
+    }
+
+    /// {@inheritDoc}
+    @Override
     public YamlSequenceNode remove(int index) {
         if (index >= 0 && index < elements.size()) {
             elements.remove(index);
