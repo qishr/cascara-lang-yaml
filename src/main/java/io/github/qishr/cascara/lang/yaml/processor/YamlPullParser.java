@@ -3,6 +3,8 @@ package io.github.qishr.cascara.lang.yaml.processor;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.PullParser;
 import io.github.qishr.cascara.common.lang.streaming.Event;
+import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 
 import java.io.InputStream;
 import java.util.NoSuchElementException;
