@@ -392,14 +392,21 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
             else if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
                 result = parseSequence();
             }
-            else if (check(YamlTokenType.SCALAR)) {
-                YamlToken tok = peek();
-                String val = tok.getContent();
+            // else if (check(YamlTokenType.SCALAR)) {
+            //     YamlToken tok = peek();
+            //     String val = tok.getContent();
 
-                if ("|".equals(val) || ">".equals(val)) {
-                    result = parseBlockScalar("|".equals(val));
-                }
-                else if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
+            //     if ("|".equals(val) || ">".equals(val)) {
+            //         result = parseBlockScalar("|".equals(val));
+            //     }
+            //     else if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
+            //         result = parseMap();
+            //     } else {
+            //         result = parseScalar();
+            //     }
+            // }
+            else if (check(YamlTokenType.SCALAR)) {
+                if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
                     result = parseMap();
                 } else {
                     result = parseScalar();
@@ -677,6 +684,43 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         }
     }
 
+    // private YamlScalarNode parseScalar() {
+    //     ++this.depth;
+    //     this.trace("parseScalar");
+
+    //     try {
+    //         YamlToken token = this.consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
+
+    //         // Determine the style cleanly based on the token lexeme
+    //         String raw = token.getLexeme();
+    //         QuoteStyle style = QuoteStyle.PLAIN;
+    //         if (raw.startsWith("\"")) {
+    //             style = QuoteStyle.DOUBLE;
+    //         } else if (raw.startsWith("'")) {
+    //             style = QuoteStyle.SINGLE;
+    //         }
+
+    //         // Let YamlPrimitive handle unescaping, coercing, and type resolution
+    //         YamlScalarNode scalar = new YamlScalarNode(
+    //             token.getStartLine(),
+    //             token.getStartColumn(),
+    //             raw,
+    //             token.getContent(), // Passes the unescaped base token text
+    //             style
+    //         );
+    //         scalar.setToken(token);
+
+    //         if (this.check(YamlTokenType.COMMENT) && this.peek().getStartLine() == token.getStartLine()) {
+    //             scalar.getComments().add(this.parseComment());
+    //         }
+
+    //         this.parseInlineComment(scalar);
+    //         return scalar;
+    //     } finally {
+    //         --this.depth;
+    //     }
+    // }
+
     private YamlScalarNode parseScalar() {
         ++this.depth;
         this.trace("parseScalar");
@@ -684,21 +728,26 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         try {
             YamlToken token = this.consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
 
-            // Determine the style cleanly based on the token lexeme
             String raw = token.getLexeme();
             QuoteStyle style = QuoteStyle.PLAIN;
+
             if (raw.startsWith("\"")) {
                 style = QuoteStyle.DOUBLE;
             } else if (raw.startsWith("'")) {
                 style = QuoteStyle.SINGLE;
+            } else if (raw.startsWith("|")) {
+                // High fidelity: Mark it as a Literal Block Scalar for the Emitter!
+                style = QuoteStyle.LITERAL_BLOCK;
+            } else if (raw.startsWith(">")) {
+                // High fidelity: Mark it as a Folded Block Scalar for the Emitter!
+                style = QuoteStyle.FOLDED;
             }
 
-            // Let YamlPrimitive handle unescaping, coercing, and type resolution
             YamlScalarNode scalar = new YamlScalarNode(
                 token.getStartLine(),
                 token.getStartColumn(),
                 raw,
-                token.getContent(), // Passes the unescaped base token text
+                token.getContent(),
                 style
             );
             scalar.setToken(token);
@@ -714,76 +763,55 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         }
     }
 
-    private YamlNode parseBlockScalar(boolean isLiteral) {
-        YamlToken indicator = advance(); // Consume '|' or '>'
-        StringBuilder content = new StringBuilder();
+    // private YamlNode parseBlockScalar(boolean isLiteral) {
+    //     YamlToken indicator = advance(); // Consume '|' or '>'
+    //     StringBuilder content = new StringBuilder();
 
-        // 1. Clear the rest of the current line (comments/whitespace)
-        // and move to the start of the indented block.
-        skipTrivia();
+    //     // 1. Clear the rest of the current line (comments/whitespace)
+    //     // and move to the start of the indented block.
+    //     skipTrivia();
 
-        // 2. Structural Check: Block scalars MUST be indented.
-        if (!check(YamlTokenType.INDENT)) {
-            error(peek(), YamlDiagnosticCode.EXPECTED_INDENTATION_BLOCK_SCALAR);
-        }
-        advance(); // Consume the INDENT
+    //     // 2. Structural Check: Block scalars MUST be indented.
+    //     if (!check(YamlTokenType.INDENT)) {
+    //         error(peek(), YamlDiagnosticCode.EXPECTED_INDENTATION_BLOCK_SCALAR);
+    //     }
+    //     advance(); // Consume the INDENT
 
-        // 3. Content Collection Loop
-        while (!isAtEnd() && !check(YamlTokenType.DEDENT)) {
-            // Collect every token on the line as raw text
-            while (!isAtEnd() && !check(YamlTokenType.NEWLINE) && !check(YamlTokenType.DEDENT)) {
-                // Use getLexeme() to preserve the exact text (like 'line:one')
-                content.append(advance().getLexeme());
-            }
+    //     // 3. Content Collection Loop
+    //     while (!isAtEnd() && !check(YamlTokenType.DEDENT)) {
+    //         // Collect every token on the line as raw text
+    //         while (!isAtEnd() && !check(YamlTokenType.NEWLINE) && !check(YamlTokenType.DEDENT)) {
+    //             // Use getLexeme() to preserve the exact text (like 'line:one')
+    //             content.append(advance().getLexeme());
+    //         }
 
-            if (match(YamlTokenType.NEWLINE)) {
-                content.append("\n");
-            }
+    //         if (match(YamlTokenType.NEWLINE)) {
+    //             content.append("\n");
+    //         }
 
-            // If there are comments inside the block, skipTrivia will
-            // handle them, but be careful: in literal blocks,
-            // indented # might be content, not a comment.
-            // For now, let's keep it simple:
-            if (check(YamlTokenType.COMMENT)) {
-                skipTrivia();
-            }
-        }
-
-        // 4. Clean up
-        if (check(YamlTokenType.DEDENT)) {
-            advance();
-        }
-
-        String result = content.toString();
-        if (!isLiteral) {
-            // Folded logic: Replace single newlines with spaces, preserve double newlines
-            result = result.replaceAll("(?<!\\n)\\n(?!\\n)", " ").trim() + "\n";
-        }
-
-        return new YamlScalarNode(
-            indicator.getStartLine(), indicator.getStartColumn(),
-            isLiteral ? "|" : ">", result, QuoteStyle.PLAIN
-        );
-    }
-
-    // private YamlCommentNode parseComment() {
-    //     YamlToken token = advance();
-    //     // 1. Safe cast from Object to String
-    //     String text = token.getContent() != null ? token.getContent().toString() : "";
-
-    //     // 2. Parser-side cleaning (The "Double Hash" Fix)
-    //     if (text.startsWith("#")) {
-    //         text = text.substring(1);
-    //         if (text.startsWith(" ")) {
-    //             text = text.substring(1);
+    //         // If there are comments inside the block, skipTrivia will
+    //         // handle them, but be careful: in literal blocks,
+    //         // indented # might be content, not a comment.
+    //         // For now, let's keep it simple:
+    //         if (check(YamlTokenType.COMMENT)) {
+    //             skipTrivia();
     //         }
     //     }
 
-    //     return new YamlCommentNode(
-    //         token.getStartLine(),
-    //         token.getStartColumn(),
-    //         text,
-    //         false
+    //     // 4. Clean up
+    //     if (check(YamlTokenType.DEDENT)) {
+    //         advance();
+    //     }
+
+    //     String result = content.toString();
+    //     if (!isLiteral) {
+    //         // Folded logic: Replace single newlines with spaces, preserve double newlines
+    //         result = result.replaceAll("(?<!\\n)\\n(?!\\n)", " ").trim() + "\n";
+    //     }
+
+    //     return new YamlScalarNode(
+    //         indicator.getStartLine(), indicator.getStartColumn(),
+    //         isLiteral ? "|" : ">", result, QuoteStyle.PLAIN
     //     );
     // }
 
@@ -906,19 +934,6 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     private YamlToken previous() {
         return tokenBuffer.get(current - 1);
     }
-
-    // /// Collects comments and skips newlines, storing comments in the buffer.
-    // private void skipTrivia() {
-    //     while (!isAtEnd()) {
-    //         if (match(YamlTokenType.NEWLINE)) continue;
-    //         if (check(YamlTokenType.COMMENT)) {
-    //             // Use the cleaner helper instead of manual creation
-    //             pendingComments.add(parseComment());
-    //             continue;
-    //         }
-    //         break;
-    //     }
-    // }
 
     /// Collects comments and skips newlines, storing comments in the buffer.
     private void skipTrivia() {

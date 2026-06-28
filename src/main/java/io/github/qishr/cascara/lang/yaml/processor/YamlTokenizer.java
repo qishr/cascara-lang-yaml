@@ -43,8 +43,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         FLOW_CONTEXT_SINGLE_CHAR_TOKENS.put('}', YamlTokenType.MAP_END);
         FLOW_CONTEXT_SINGLE_CHAR_TOKENS.put(',', YamlTokenType.COMMA);
         FLOW_CONTEXT_SINGLE_CHAR_TOKENS.put('!', YamlTokenType.TAG);
-        FLOW_CONTEXT_SINGLE_CHAR_TOKENS.put('|', YamlTokenType.SCALAR);
-        FLOW_CONTEXT_SINGLE_CHAR_TOKENS.put('>', YamlTokenType.SCALAR);
     }
 
     private Deque<Integer> indentationLevels = new ArrayDeque<>();
@@ -174,6 +172,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         final String method = "scanToken";
         int tokenStartColumn = buffer.column();
         char c = buffer.advance();
+
+        if (c == '|' || c == '>') {
+            trace(method, "block scalar");
+            scanBlockScalar(c);
+            return;
+        }
 
         if (c == '\n' || c == '\r') {
             trace("scanToken", "");
@@ -456,6 +460,145 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         addToken(YamlTokenType.SCALAR, trimmedLexeme);
+    }
+
+    private void scanBlockScalar(char headerChar) {
+        int startLine = buffer.line();
+        int startColumn = buffer.column() - 1;
+        int startOffset = buffer.offset();
+
+        // Parse optional chomping ('S'=Strip, 'K'=Keep, 'C'=Clip) and explicit indentation
+        char chomping = 'C';
+        int explicitIndent = -1;
+
+        while (!buffer.isAtEnd()) {
+            char next = buffer.peek();
+            if (next == '-') {
+                chomping = 'S';
+                buffer.advance();
+            } else if (next == '+') {
+                chomping = 'K';
+                buffer.advance();
+            } else if (next >= '1' && next <= '9') {
+                explicitIndent = next - '0';
+                buffer.advance();
+            } else {
+                break;
+            }
+        }
+
+        // Skip to the end of the header line (ignoring trailing comments/spaces)
+        while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
+            buffer.advance();
+        }
+
+        // Consume header line separator
+        if (!buffer.isAtEnd()) {
+            char next = buffer.advance();
+            if (next == '\r' && buffer.peek() == '\n') {
+                buffer.advance();
+            }
+        }
+
+        int currentMargin = indentationLevels.peek();
+        int blockIndent = explicitIndent != -1 ? (currentMargin + explicitIndent) : -1;
+
+        List<String> rawLines = new ArrayList<>();
+        List<Boolean> isLineDeeplyIndented = new ArrayList<>();
+        boolean baseIndentDetermined = (blockIndent != -1);
+
+        while (!buffer.isAtEnd()) {
+            int lineStartOffset = buffer.offset();
+            int spaces = 0;
+
+            while (!buffer.isAtEnd() && buffer.peek() == ' ') {
+                spaces++;
+                buffer.advance();
+            }
+
+            char next = buffer.peek();
+            boolean isEmptyLine = (next == '\n' || next == '\r' || buffer.isAtEnd());
+
+            if (!isEmptyLine) {
+                if (!baseIndentDetermined) {
+                    if (spaces <= currentMargin) {
+                        int rollback = buffer.offset() - lineStartOffset;
+                        for (int i = 0; i < rollback; i++) buffer.backup();
+                        break;
+                    }
+                    blockIndent = spaces;
+                    baseIndentDetermined = true;
+                }
+
+                if (spaces < blockIndent) {
+                    int rollback = buffer.offset() - lineStartOffset;
+                    for (int i = 0; i < rollback; i++) buffer.backup();
+                    break;
+                }
+            }
+
+            StringBuilder lineContent = new StringBuilder();
+            if (baseIndentDetermined && spaces > blockIndent) {
+                lineContent.append(" ".repeat(spaces - blockIndent));
+            }
+
+            while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
+                lineContent.append(buffer.advance());
+            }
+
+            rawLines.add(lineContent.toString());
+            isLineDeeplyIndented.add(baseIndentDetermined && spaces > blockIndent);
+
+            if (!buffer.isAtEnd()) {
+                char ch = buffer.advance();
+                if (ch == '\r' && buffer.peek() == '\n') {
+                    buffer.advance();
+                }
+            }
+        }
+
+        // Process chomping and literal/folded lines
+        StringBuilder result = new StringBuilder();
+        int totalLines = rawLines.size();
+        int trailingEmptyCount = 0;
+
+        for (int i = totalLines - 1; i >= 0; i--) {
+            if (rawLines.get(i).isEmpty()) trailingEmptyCount++;
+            else break;
+        }
+
+        int contentLines = totalLines - trailingEmptyCount;
+
+        for (int i = 0; i < contentLines; i++) {
+            String currentLine = rawLines.get(i);
+            result.append(currentLine);
+
+            if (headerChar == '|') {
+                result.append('\n');
+            } else { // '>' Folded Style
+                if (i == contentLines - 1) {
+                    result.append('\n');
+                } else {
+                    String nextLine = rawLines.get(i + 1);
+                    boolean currentDeep = isLineDeeplyIndented.get(i);
+                    boolean nextDeep = isLineDeeplyIndented.get(i + 1);
+
+                    if (currentLine.isEmpty() || nextLine.isEmpty() || currentDeep || nextDeep) {
+                        result.append('\n');
+                    } else {
+                        result.append(' ');
+                    }
+                }
+            }
+        }
+
+        if (chomping == 'K') {
+            result.append("\n".repeat(trailingEmptyCount));
+        } else if (chomping == 'S' && result.length() > 0 && result.charAt(result.length() - 1) == '\n') {
+            result.setLength(result.length() - 1);
+        }
+
+        addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, buffer.getTokenWindowLexeme(), result.toString()));
     }
 
     private void scanIdentifier(YamlTokenType type) {
