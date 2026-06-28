@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
@@ -38,6 +40,8 @@ public class YamlEmitterTests {
             "    - safe";
 
         YamlParser parser = new YamlParser();
+
+        parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
 
         // TODO: make diagnostics for all tests configurable in one place
         // parser.setReporter(new StandardReporter((s) -> {

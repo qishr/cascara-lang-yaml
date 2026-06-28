@@ -192,4 +192,9 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     public String toString() {
         return asString();
     }
+
+    @Override
+    public void accept(YamlVisitor visitor) {
+        visitor.visit(this);
+    }
 }

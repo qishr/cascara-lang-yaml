@@ -227,4 +227,9 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
         // TODO: This should not be forcing double quotes
         return put(key, new YamlScalarNode(value));
     }
+
+    @Override
+    public void accept(YamlVisitor visitor) {
+        visitor.visit(this);
+    }
 }

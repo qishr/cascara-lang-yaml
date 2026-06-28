@@ -111,4 +111,9 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
             throw new UnsupportedOperationException();
         }
     }
+
+    @Override
+    public void accept(YamlVisitor visitor) {
+        visitor.visit(this);
+    }
 }

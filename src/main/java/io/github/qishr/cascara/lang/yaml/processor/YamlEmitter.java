@@ -222,7 +222,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
             for (CommentAstNode c : key.getComments()) {
                 if (c instanceof YamlCommentNode ycn && ycn.getStartLine() < key.getStartLine()) {
-                    sb.append("# ").append(ycn.asString()).append(NL).append(" ".repeat(indent));
+                    sb.append("#").append(ycn.asString()).append(NL).append(" ".repeat(indent));
                 }
             }
 
@@ -372,7 +372,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         if (node == null) return;
         for (CommentAstNode comment : node.getComments()) {
             if (comment instanceof YamlCommentNode ycn && ycn.getStartColumn() <= 1) {
-                sb.append(" ".repeat(indent)).append("# ").append(ycn.asString()).append(NL);
+                sb.append(" ".repeat(indent)).append("#").append(ycn.asString()).append(NL);
             }
         }
     }
@@ -382,7 +382,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         if (node == null) return;
         for (CommentAstNode comment : node.getComments()) {
             if (comment instanceof YamlCommentNode ycn && ycn.getStartColumn() > 1) {
-                sb.append(" # ").append(ycn.asString());
+                sb.append(" #").append(ycn.asString());
                 break;
             }
         }

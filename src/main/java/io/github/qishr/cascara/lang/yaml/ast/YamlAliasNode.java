@@ -35,4 +35,9 @@ public class YamlAliasNode extends YamlNode {
         // is the string name it points to.
         return getAlias();
     }
+
+    @Override
+    public void accept(YamlVisitor visitor) {
+        visitor.visit(this);
+    }
 }
