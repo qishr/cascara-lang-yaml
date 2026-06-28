@@ -175,21 +175,43 @@ class YamlStreamEngine {
             return nextEvent();
         }
 
+        // if (currentToken.getType() == YamlTokenType.SCALAR) {
+        //     String value = currentToken.getContent();
+
+        //     if (insideBlockScalar) {
+        //         // Check if this text line broke the scalar's block structure baseline
+        //         if ("|".equals(value) || ">".equals(value)) {
+        //             // Fall through to parse structural indicator change
+        //         } else {
+        //             if (blockScalarBuffer.length() > 0) {
+        //                 blockScalarBuffer.append(isFoldedBlock ? " " : "\n");
+        //             }
+        //             blockScalarBuffer.append(value);
+        //             return nextEvent();
+        //         }
+        //     }
+
+        //     if (insideExplicitKey) {
+        //         insideExplicitKey = false;
+        //         return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.FIELD_NAME, value);
+        //     }
+
+        //     if (isNextTokenValueIndicator()) {
+        //         return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.FIELD_NAME, value);
+        //     }
+
+        //     if ("|".equals(value) || ">".equals(value)) {
+        //         insideBlockScalar = true;
+        //         isFoldedBlock = ">".equals(value);
+        //         blockScalarBuffer.setLength(0);
+        //         return nextEvent();
+        //     }
+
+        //     return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.VALUE_SCALAR, value);
+        // }
+
         if (currentToken.getType() == YamlTokenType.SCALAR) {
             String value = currentToken.getContent();
-
-            if (insideBlockScalar) {
-                // Check if this text line broke the scalar's block structure baseline
-                if ("|".equals(value) || ">".equals(value)) {
-                    // Fall through to parse structural indicator change
-                } else {
-                    if (blockScalarBuffer.length() > 0) {
-                        blockScalarBuffer.append(isFoldedBlock ? " " : "\n");
-                    }
-                    blockScalarBuffer.append(value);
-                    return nextEvent();
-                }
-            }
 
             if (insideExplicitKey) {
                 insideExplicitKey = false;
@@ -198,13 +220,6 @@ class YamlStreamEngine {
 
             if (isNextTokenValueIndicator()) {
                 return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.FIELD_NAME, value);
-            }
-
-            if ("|".equals(value) || ">".equals(value)) {
-                insideBlockScalar = true;
-                isFoldedBlock = ">".equals(value);
-                blockScalarBuffer.setLength(0);
-                return nextEvent();
             }
 
             return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.VALUE_SCALAR, value);
