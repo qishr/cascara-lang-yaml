@@ -12,11 +12,14 @@ import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.common.lang.annotation.Experimental;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.processor.Parser;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
+import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlCommentNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDirectiveNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocumentNode;
@@ -45,7 +48,6 @@ import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
 public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Parser<YamlNode, YamlToken> {
 
-    // New Streaming API State
     private Tokenizer<YamlToken> tokenizer;
     private final List<YamlToken> tokenBuffer = new ArrayList<>(256);
     private int current = 0;
@@ -55,99 +57,58 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     private final List<YamlCommentNode> pendingComments = new ArrayList<>();
     private final Map<String, YamlNode> anchorRegistry = new HashMap<>();
 
+    /// Empty default constructor for SPI.
     public YamlParser() {}
 
     @Override protected YamlParser self() { return this; }
 
-    /// Entry point for parsing a full YAML source string, returning the primary document body.
+    /// Entry point for parsing a full YAML source string.
     @Override
     public YamlNode parse(String text) {
-        YamlTokenizer tz = new YamlTokenizer();
-        tz.setOptions(options);
-        tz.setReporter(reporter);
-        tz.open(text);
-
-        // Inline token intake exactly like the old parser did
-        this.tokenBuffer.clear();
-        this.current = 0;
-        this.anchorRegistry.clear();
-        this.pendingComments.clear();
-
-        YamlToken next;
-        while ((next = tz.nextToken()) != null) {
-            tokenBuffer.add(next);
-            if (next.getType() == YamlTokenType.EOF || next.getType() == YamlTokenType.STREAM_END) {
-                break;
-            }
-        }
-
-        // Run the original parsing logic. If it returns a stream, unpack it.
-        YamlStreamNode stream = parseInternal();
-        return stream.getDocuments().isEmpty() ? new YamlMapNode() : stream.getDocuments().get(0).getBody();
+        ensureTokenBufferFilled(text);
+        return parseAndUnpack();
     }
 
-    /// Isolated high-fidelity multi-document streaming path
-    public YamlStreamNode parseStream(String text) {
-        YamlTokenizer tz = new YamlTokenizer();
-        tz.setOptions(options);
-        tz.setReporter(reporter);
-        tz.open(text);
-
-        this.tokenBuffer.clear();
-        this.current = 0;
-        this.anchorRegistry.clear();
-        this.pendingComments.clear();
-
-        YamlToken next;
-        while ((next = tz.nextToken()) != null) {
-            tokenBuffer.add(next);
-            if (next.getType() == YamlTokenType.EOF || next.getType() == YamlTokenType.STREAM_END) {
-                break;
-            }
-        }
-
-        return parseInternal();
-    }
-
-    /// Entry point for parsing an InputStream, returning the primary document body.
+    /// Entry point for parsing an InputStream.
     @Override
     public YamlNode parse(InputStream is) {
-        YamlStreamNode stream = parseStream(is);
-        return stream.getDocuments().isEmpty()
-            ? new YamlMapNode()
-            : stream.getDocuments().get(0).getBody();
+        ensureTokenBufferFilled(is);
+        return parseAndUnpack();
     }
 
-    /// New explicit entry point to get the full high-fidelity multi-document stream hierarchy.
-    public YamlStreamNode parseStream(InputStream is) {
-        YamlTokenizer tz = new YamlTokenizer();
-        tz.setOptions(options);
-        tz.setReporter(reporter);
-        tz.open(is);
-        return parseStream(tz);
+    /// Type-safe method specifically for multi-document scenarios.
+    @Experimental
+    public YamlStreamNode parseMulti(String text) {
+        YamlOptions originalOptions = this.options;
+        try {
+            this.options = originalOptions.duplicate().setMultiDocument(true);
+            return (YamlStreamNode) parse(text);
+        } finally {
+            this.options = originalOptions; // Safely restore original state
+        }
+    }
+
+    /// Type-safe method specifically for multi-document scenarios.
+    @Experimental
+    public YamlStreamNode parseMulti(InputStream is) {
+        YamlOptions originalOptions = this.options;
+        try {
+            this.options = originalOptions.duplicate().setMultiDocument(true);
+            return (YamlStreamNode) parse(is);
+        } finally {
+            this.options = originalOptions; // Safely restore original state
+        }
     }
 
     /// Primary parsing core driven directly by the Tokenizer interface structure.
-    public YamlStreamNode parseStream(Tokenizer<YamlToken> tokenizer) {
+    @Override
+    public YamlNode parse(Tokenizer<YamlToken> tokenizer) {
         this.tokenizer = tokenizer;
-
-        this.tokenBuffer.clear();
-        this.current = 0;
-        this.anchorRegistry.clear();
-        this.pendingComments.clear();
-
-        YamlToken next;
-        while ((next = tokenizer.nextToken()) != null) {
-            tokenBuffer.add(next);
-            if (next.getType() == YamlTokenType.EOF || next.getType() == YamlTokenType.STREAM_END) {
-                break;
-            }
-        }
-
-        return parseInternal();
+        ensureTokenBufferFilled();
+        return parseAndUnpack();
     }
 
-    /// Retain this fallback array parser for compatibility, routing it via parseInternal()
+    /// Entry point for parsing a list of tokens.
     @Override
     public YamlNode parse(List<YamlToken> tokens) {
         this.tokenizer = null;
@@ -159,30 +120,63 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         this.anchorRegistry.clear();
         this.pendingComments.clear();
 
-        YamlStreamNode stream = parseInternal();
-        return stream.getDocuments().isEmpty() ? new YamlMapNode() : stream.getDocuments().get(0).getBody();
+        return parseAndUnpack();
     }
 
-    // TODO: Add to interface
-    /// Primary parsing core driven directly by the Tokenizer interface structure.
-    // @Override
-    public YamlStreamNode parse(Tokenizer<YamlToken> tokenizer) {
-        this.tokenizer = tokenizer;
+    //
+    // Private Methods
+    //
 
+    /// Helper to execute internal parsing logic and unpack based on options.
+    private YamlNode parseAndUnpack() {
+        YamlStreamNode stream = parseInternal();
+
+        // If the developer wants the full multi-document structure, hand over the stream node
+        if (options.isMultiDocument()) {
+            return stream;
+        }
+
+        // Otherwise, stay backward-compatible and return the naked first document body
+        return stream.getDocuments().isEmpty()
+            ? new YamlMapNode()
+            : stream.getDocuments().get(0).getBody();
+    }
+
+    /// Helper to centralize tokenizer execution
+    private void ensureTokenBufferFilled(String text) {
+        YamlTokenizer tz = new YamlTokenizer();
+        tz.setOptions(options);
+        tz.setReporter(reporter);
+        tz.open(text);
+        fillBuffer(tz);
+    }
+
+    private void ensureTokenBufferFilled(InputStream is) {
+        YamlTokenizer tz = new YamlTokenizer();
+        tz.setOptions(options);
+        tz.setReporter(reporter);
+        tz.open(is);
+        fillBuffer(tz);
+    }
+
+    private void ensureTokenBufferFilled() {
+        if (this.tokenizer == null) return;
+        fillBuffer(this.tokenizer);
+    }
+
+    private void fillBuffer(Tokenizer<YamlToken> tz) {
         this.tokenBuffer.clear();
         this.current = 0;
         this.anchorRegistry.clear();
         this.pendingComments.clear();
 
         YamlToken next;
-        while ((next = tokenizer.nextToken()) != null) {
+        while ((next = tz.nextToken()) != null) {
             tokenBuffer.add(next);
             if (next.getType() == YamlTokenType.EOF || next.getType() == YamlTokenType.STREAM_END) {
                 break;
             }
         }
-
-        return parseInternal();
     }
 
     private YamlStreamNode parseInternal() {
@@ -415,10 +409,24 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 result = new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(),"", null, QuoteStyle.PLAIN);
             }
 
-            // 3. Apply the anchor to whatever node was produced
+            // 3. Apply the anchor to whatever node was produced by wrapping it
             if (pendingAnchor != null && result != null) {
+                // Ensure the underlying node gets its property set
                 result.setAnchor(pendingAnchor);
+
+                // Construct the decorator node using the coordinates of the current result node
+                YamlAnchorNode anchorNode = new YamlAnchorNode(
+                    result.getStartLine(),
+                    result.getStartColumn(),
+                    pendingAnchor,
+                    result
+                );
+
+                // Track the actual unwrapped value node in the registry for Alias resolution
                 anchorRegistry.put(pendingAnchor, result);
+
+                // Hand the wrapped decorator node to the comment attacher
+                result = anchorNode;
             }
 
             return attachComments(result);
