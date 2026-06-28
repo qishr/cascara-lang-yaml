@@ -11,7 +11,6 @@ import java.util.Set;
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
-import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.processor.Parser;
@@ -19,11 +18,14 @@ import io.github.qishr.cascara.common.lang.processor.Tokenizer;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlCommentNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDirectiveNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDocumentNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlStreamNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
@@ -57,27 +59,95 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
 
     @Override protected YamlParser self() { return this; }
 
-    /// Entry point for parsing a full YAML source string via the new streaming API.
+    /// Entry point for parsing a full YAML source string, returning the primary document body.
     @Override
     public YamlNode parse(String text) {
         YamlTokenizer tz = new YamlTokenizer();
         tz.setOptions(options);
         tz.setReporter(reporter);
         tz.open(text);
-        return parse(tz);
+
+        // Inline token intake exactly like the old parser did
+        this.tokenBuffer.clear();
+        this.current = 0;
+        this.anchorRegistry.clear();
+        this.pendingComments.clear();
+
+        YamlToken next;
+        while ((next = tz.nextToken()) != null) {
+            tokenBuffer.add(next);
+            if (next.getType() == YamlTokenType.EOF || next.getType() == YamlTokenType.STREAM_END) {
+                break;
+            }
+        }
+
+        // Run the original parsing logic. If it returns a stream, unpack it.
+        YamlStreamNode stream = parseInternal();
+        return stream.getDocuments().isEmpty() ? new YamlMapNode() : stream.getDocuments().get(0).getBody();
     }
 
-    /// Entry point for parsing an InputStream via the streaming API.
+    /// Isolated high-fidelity multi-document streaming path
+    public YamlStreamNode parseStream(String text) {
+        YamlTokenizer tz = new YamlTokenizer();
+        tz.setOptions(options);
+        tz.setReporter(reporter);
+        tz.open(text);
+
+        this.tokenBuffer.clear();
+        this.current = 0;
+        this.anchorRegistry.clear();
+        this.pendingComments.clear();
+
+        YamlToken next;
+        while ((next = tz.nextToken()) != null) {
+            tokenBuffer.add(next);
+            if (next.getType() == YamlTokenType.EOF || next.getType() == YamlTokenType.STREAM_END) {
+                break;
+            }
+        }
+
+        return parseInternal();
+    }
+
+    /// Entry point for parsing an InputStream, returning the primary document body.
     @Override
     public YamlNode parse(InputStream is) {
+        YamlStreamNode stream = parseStream(is);
+        return stream.getDocuments().isEmpty()
+            ? new YamlMapNode()
+            : stream.getDocuments().get(0).getBody();
+    }
+
+    /// New explicit entry point to get the full high-fidelity multi-document stream hierarchy.
+    public YamlStreamNode parseStream(InputStream is) {
         YamlTokenizer tz = new YamlTokenizer();
         tz.setOptions(options);
         tz.setReporter(reporter);
         tz.open(is);
-        return parse(tz);
+        return parseStream(tz);
     }
 
-    /// Parse a list of `YamlToken`s
+    /// Primary parsing core driven directly by the Tokenizer interface structure.
+    public YamlStreamNode parseStream(Tokenizer<YamlToken> tokenizer) {
+        this.tokenizer = tokenizer;
+
+        this.tokenBuffer.clear();
+        this.current = 0;
+        this.anchorRegistry.clear();
+        this.pendingComments.clear();
+
+        YamlToken next;
+        while ((next = tokenizer.nextToken()) != null) {
+            tokenBuffer.add(next);
+            if (next.getType() == YamlTokenType.EOF || next.getType() == YamlTokenType.STREAM_END) {
+                break;
+            }
+        }
+
+        return parseInternal();
+    }
+
+    /// Retain this fallback array parser for compatibility, routing it via parseInternal()
     @Override
     public YamlNode parse(List<YamlToken> tokens) {
         this.tokenizer = null;
@@ -89,21 +159,21 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         this.anchorRegistry.clear();
         this.pendingComments.clear();
 
-        // Redirect directly into the baseline parser structure logic
-        return parseInternal();
+        YamlStreamNode stream = parseInternal();
+        return stream.getDocuments().isEmpty() ? new YamlMapNode() : stream.getDocuments().get(0).getBody();
     }
 
+    // TODO: Add to interface
     /// Primary parsing core driven directly by the Tokenizer interface structure.
-    public YamlNode parse(Tokenizer<YamlToken> tokenizer) {
+    // @Override
+    public YamlStreamNode parse(Tokenizer<YamlToken> tokenizer) {
         this.tokenizer = tokenizer;
 
-        // clear() preserves the internal array capacity—zero allocations
         this.tokenBuffer.clear();
         this.current = 0;
         this.anchorRegistry.clear();
         this.pendingComments.clear();
 
-        // 1. Drain the tokenizer directly into the pre-allocated backing array
         YamlToken next;
         while ((next = tokenizer.nextToken()) != null) {
             tokenBuffer.add(next);
@@ -112,70 +182,145 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
             }
         }
 
-        if (tokenBuffer.isEmpty()) {
-            return new YamlMapNode();
-        }
-
-        // 2. Run the pristine layout matching logic
-        consume(YamlTokenType.STREAM_START, LangDiagnosticCode.EXPECTED_STREAM_START);
-        skipTrivia();
-
-        List<CommentAstNode> headers = new ArrayList<>(pendingComments);
-        pendingComments.clear();
-
-        match(YamlTokenType.DOCUMENT_START);
-        skipTrivia();
-
-        YamlNode root = parseValue();
-        skipTrivia();
-
-        while (!isAtEnd() && (check(YamlTokenType.DEDENT) ||
-                      check(YamlTokenType.INDENT) ||
-                      check(YamlTokenType.NEWLINE))) {
-            advance();
-        }
-
-        if (!isAtEnd()) {
-            error(peek(), LangDiagnosticCode.EXPECTED_STREAM_END);
-        }
-
-        match(YamlTokenType.STREAM_END);
-        root.getComments().addAll(headers);
-
-        return root;
+        return parseInternal();
     }
 
-    private YamlNode parseInternal() {
+    private YamlStreamNode parseInternal() {
         if (this.tokenBuffer.isEmpty()) {
-            return new YamlMapNode();
+            return new YamlStreamNode();
         }
 
         consume(YamlTokenType.STREAM_START, LangDiagnosticCode.EXPECTED_STREAM_START);
-        skipTrivia();
 
-        List<CommentAstNode> headers = new ArrayList<>(pendingComments);
+        YamlStreamNode streamNode = new YamlStreamNode(peek().getStartLine(), peek().getStartColumn());
+
+        // Multi-Document Processing Loop
+        while (!isAtEnd() && !check(YamlTokenType.STREAM_END) && !check(YamlTokenType.EOF)) {
+            int previousPosition = current;
+
+            if (check(YamlTokenType.NEWLINE) || check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
+                advance();
+                continue;
+            }
+
+            if (check(YamlTokenType.COMMENT)) {
+                // If there are no documents yet, AND there is no upcoming explicit
+                // document boundary marker or directive, let the first document body claim it.
+                if (streamNode.getDocuments().isEmpty() && !lookAheadToExplicitMarker()) {
+                    pendingComments.add(parseComment());
+                } else {
+                    streamNode.getComments().add(parseComment());
+                }
+                continue;
+            }
+
+            if (isAtEnd() || check(YamlTokenType.STREAM_END) || check(YamlTokenType.EOF)) {
+                break;
+            }
+
+            // Guard: Malformed indentations that break out of blocks cannot start documents
+            if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR) || check(YamlTokenType.VALUE_INDICATOR)) {
+                YamlToken badToken = peek();
+                error(badToken, YamlDiagnosticCode.UNEXPECTED_TOKEN, badToken.getType());
+            }
+
+            YamlDocumentNode docNode = parseDocument();
+            streamNode.addDocument(docNode);
+
+            if (current == previousPosition) {
+                break;
+            }
+        }
+
+        // Attach any loose trailing comments collected during document parsing
+        streamNode.getComments().addAll(pendingComments);
         pendingComments.clear();
 
-        match(YamlTokenType.DOCUMENT_START);
-        skipTrivia();
+        // Safely consume trailing layout artifacts and capture any trailing file footer comments
+        while (!isAtEnd() && !check(YamlTokenType.STREAM_END) && !check(YamlTokenType.EOF)) {
+            if (check(YamlTokenType.NEWLINE) || check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
+                advance();
+            } else if (check(YamlTokenType.COMMENT)) {
+                streamNode.getComments().add(parseComment());
+            } else {
+                break;
+            }
+        }
 
-        YamlNode root = parseValue();
-        skipTrivia();
-
-        while (!isAtEnd() && (check(YamlTokenType.DEDENT) ||
-                      check(YamlTokenType.INDENT) ||
-                      check(YamlTokenType.NEWLINE))) {
+        if (check(YamlTokenType.STREAM_END)) {
+            advance();
+        } else if (check(YamlTokenType.EOF)) {
             advance();
         }
 
-        if (!isAtEnd()) {
-            error(peek(), LangDiagnosticCode.EXPECTED_STREAM_END);
+        return streamNode;
+    }
+
+    /// Parses a single document context, safely handling layout tokens near explicit boundaries
+    private YamlDocumentNode parseDocument() {
+        trace("parseDocument");
+        depth++;
+
+        YamlToken startToken = peek();
+        YamlDocumentNode document = new YamlDocumentNode(startToken.getStartLine(), startToken.getStartColumn());
+
+        if (lookAheadToExplicitMarker()) {
+            while (!isAtEnd() && check(YamlTokenType.NEWLINE)) {
+                advance();
+            }
         }
 
-        match(YamlTokenType.STREAM_END);
-        root.getComments().addAll(headers);
+        while (check(YamlTokenType.DIRECTIVE)) {
+            YamlToken dirToken = advance();
+            document.addDirective(new YamlDirectiveNode(dirToken.getStartLine(), dirToken.getStartColumn(), dirToken.getContent()));
+            skipTrivia();
+        }
 
-        return root;
+        // Clean layout indentation wrapping the explicit document boundaries
+        if (check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
+            ensureBuffered(1);
+            if (current + 1 < tokenBuffer.size() && tokenBuffer.get(current + 1).getType() == YamlTokenType.DOCUMENT_START) {
+                advance();
+            }
+        }
+
+        if (match(YamlTokenType.DOCUMENT_START)) {
+            skipTrivia();
+        }
+
+        if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || isAtEnd()) {
+            document.setBody(new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), "", "", QuoteStyle.PLAIN));
+        } else {
+            document.setBody(parseValue());
+        }
+
+        if (match(YamlTokenType.DOCUMENT_END)) {
+            skipTrivia();
+        }
+
+        depth--;
+        return document;
+    }
+
+    /// Safely looks ahead to check for an explicit document boundary or directive.
+    /// Uses a clean index bound to prevent infinite spin conditions.
+    private boolean lookAheadToExplicitMarker() {
+        int index = current;
+        int max = tokenBuffer.size();
+
+        while (index < max) {
+            YamlTokenType type = tokenBuffer.get(index).getType();
+            if (type == YamlTokenType.DOCUMENT_START || type == YamlTokenType.DIRECTIVE) {
+                return true;
+            }
+            if (type == YamlTokenType.INDENT || type == YamlTokenType.DEDENT ||
+                type == YamlTokenType.NEWLINE || type == YamlTokenType.COMMENT) {
+                index++; // Guarantee progression
+            } else {
+                break; // Exit immediately on any structural data token
+            }
+        }
+        return false;
     }
 
     /// The primary dispatcher for all YAML values.
@@ -188,6 +333,10 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         depth++;
         trace("parseValue");
         try {
+            if (check(YamlTokenType.ERROR)) {
+                error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, peek().getType());
+            }
+
             skipTrivia();
 
             if (check(YamlTokenType.DEDENT) || check(YamlTokenType.EOF)) {
@@ -213,7 +362,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
                     result = parseSequence();
                 }
-                // FIX 1: An explicit key marker inside an indented block implies a Map
+                // An explicit key marker inside an indented block implies a Map
                 else if (check(YamlTokenType.KEY_INDICATOR)) {
                     result = parseMap();
                 }
@@ -228,7 +377,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
             }
             else if (check(YamlTokenType.KEY_INDICATOR)) {
-                // FIX 2: Root-level un-indented explicit key marker implies a Map
+                // Root-level un-indented explicit key marker implies a Map
                 result = parseMap();
             }
             else if (check(YamlTokenType.ALIAS)) {
@@ -291,7 +440,6 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
             map.setStyle(CollectionStyle.BLOCK);
 
             Set<String> seenKeys = new HashSet<>();
-            boolean isFirstEntry = true;
             int mapColumn = -1;
 
             while (!isAtEnd()) {
@@ -330,6 +478,15 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                     error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                 }
 
+                // 1. Harvest any block comments sitting directly above this key before it parses
+                List<YamlCommentNode> leadingBlockComments = new ArrayList<>();
+                while (check(YamlTokenType.COMMENT)) {
+                    leadingBlockComments.add((YamlCommentNode) parseComment());
+                    if (check(YamlTokenType.NEWLINE)) {
+                        advance();
+                    }
+                }
+
                 YamlNode key;
 
                 if (isExplicitKey) {
@@ -352,12 +509,13 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                     key = parseScalar();
                 }
 
-                if (isFirstEntry) {
-                    attachComments(key);
-                    isFirstEntry = false;
-                } else {
-                    attachComments(key);
+                // 2. Prepend the harvested block comments so they don't get lost
+                if (key != null && !leadingBlockComments.isEmpty()) {
+                    // Assuming key.getComments() returns a collection editable or addAll exists
+                    key.getComments().addAll(0, leadingBlockComments);
                 }
+
+                attachComments(key);
 
                 String keyString = (key instanceof YamlScalarNode scalarKey) ? scalarKey.asString() : key.toString();
 
@@ -559,7 +717,6 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         // 2. Structural Check: Block scalars MUST be indented.
         if (!check(YamlTokenType.INDENT)) {
             error(peek(), YamlDiagnosticCode.EXPECTED_INDENTATION_BLOCK_SCALAR);
-            // return new YamlErrorNode(peek().getStartLine(), peek().getStartColumn(), "Expected indentation for block scalar.");
         }
         advance(); // Consume the INDENT
 
@@ -601,17 +758,34 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         );
     }
 
+    // private YamlCommentNode parseComment() {
+    //     YamlToken token = advance();
+    //     // 1. Safe cast from Object to String
+    //     String text = token.getContent() != null ? token.getContent().toString() : "";
+
+    //     // 2. Parser-side cleaning (The "Double Hash" Fix)
+    //     if (text.startsWith("#")) {
+    //         text = text.substring(1);
+    //         if (text.startsWith(" ")) {
+    //             text = text.substring(1);
+    //         }
+    //     }
+
+    //     return new YamlCommentNode(
+    //         token.getStartLine(),
+    //         token.getStartColumn(),
+    //         text,
+    //         false
+    //     );
+    // }
+
     private YamlCommentNode parseComment() {
         YamlToken token = advance();
-        // 1. Safe cast from Object to String
         String text = token.getContent() != null ? token.getContent().toString() : "";
 
-        // 2. Parser-side cleaning (The "Double Hash" Fix)
+        // Strip the raw hash marker, but preserve the exact space fidelity for the AST
         if (text.startsWith("#")) {
             text = text.substring(1);
-            if (text.startsWith(" ")) {
-                text = text.substring(1);
-            }
         }
 
         return new YamlCommentNode(
@@ -725,17 +899,48 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         return tokenBuffer.get(current - 1);
     }
 
+    // /// Collects comments and skips newlines, storing comments in the buffer.
+    // private void skipTrivia() {
+    //     while (!isAtEnd()) {
+    //         if (match(YamlTokenType.NEWLINE)) continue;
+    //         if (check(YamlTokenType.COMMENT)) {
+    //             // Use the cleaner helper instead of manual creation
+    //             pendingComments.add(parseComment());
+    //             continue;
+    //         }
+    //         break;
+    //     }
+    // }
+
     /// Collects comments and skips newlines, storing comments in the buffer.
     private void skipTrivia() {
         while (!isAtEnd()) {
             if (match(YamlTokenType.NEWLINE)) continue;
             if (check(YamlTokenType.COMMENT)) {
+                // If it's a root-level comment at the end of the file, leave it for the stream
+                if (peek().getStartColumn() == 1 && isTrailingStreamComment(current)) {
+                    break;
+                }
                 // Use the cleaner helper instead of manual creation
                 pendingComments.add(parseComment());
                 continue;
             }
             break;
         }
+    }
+
+    private boolean isTrailingStreamComment(int startPos) {
+        int idx = startPos + 1;
+        while (idx < tokenBuffer.size()) {
+            YamlTokenType type = tokenBuffer.get(idx).getType();
+            if (type != YamlTokenType.NEWLINE && type != YamlTokenType.DEDENT
+                && type != YamlTokenType.STREAM_END && type != YamlTokenType.EOF
+                && type != YamlTokenType.COMMENT) {
+                return false;
+            }
+            idx++;
+        }
+        return true;
     }
 
     /// Clears the [pendingComments] buffer by attaching them to the given node.
