@@ -18,7 +18,7 @@ public abstract class YamlNode implements AstNode {
     private final int startColumn;
     private final int endLine = 0;
     private final int endColumn = 0;
-    private final List<YamlCommentNode> comments = new ArrayList<>();
+    private List<YamlCommentNode> comments = null;
     private String anchor;
     private YamlToken token;
 
@@ -73,13 +73,31 @@ public abstract class YamlNode implements AstNode {
 
     /// {@inheritDoc}
     @Override
-    public List<YamlCommentNode> getComments() { return comments; }
+    public List<YamlCommentNode> getComments() {
+        if (comments == null) {
+            comments = new ArrayList<>();
+        }
+        return comments;
+    }
 
     /// Associates a comment node with this specific AST node.
     ///
     /// @param comment The comment node to add.
     public void addComment(YamlCommentNode comment) {
+        if (this.comments == null) {
+            this.comments = new ArrayList<>();
+        }
         this.comments.add(comment);
+    }
+
+    /// Associates a comment node with this specific AST node.
+    ///
+    /// @param comment The comment node to add.
+    public void addComments(int pos, List<YamlCommentNode> comments) {
+        if (this.comments == null) {
+            this.comments = new ArrayList<>();
+        }
+        this.comments.addAll(pos, comments);
     }
 
     /// {@inheritDoc}

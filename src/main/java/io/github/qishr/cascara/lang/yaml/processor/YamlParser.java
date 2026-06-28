@@ -49,13 +49,20 @@ import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Parser<YamlNode, YamlToken> {
 
     private Tokenizer<YamlToken> tokenizer;
+
+    /// The list of all tokens received from the tokenizer.
+    ///
+    /// Initial capacity: 256.
     private final List<YamlToken> tokenBuffer = new ArrayList<>(256);
+
     private int current = 0;
     private int depth = 0;
 
     /// Buffer to hold comments until a data node is created to claim them.
     private final List<YamlCommentNode> pendingComments = new ArrayList<>();
     private final Map<String, YamlNode> anchorRegistry = new HashMap<>();
+
+    private int lastNewlineOrComment;
 
     /// Empty default constructor for SPI.
     public YamlParser() {}
@@ -123,6 +130,10 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         return parseAndUnpack();
     }
 
+    public List<YamlToken> getTokens() {
+        return tokenBuffer;
+    }
+
     //
     // Private Methods
     //
@@ -171,11 +182,16 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         this.pendingComments.clear();
 
         YamlToken next;
+        int idx = 0;
         while ((next = tz.nextToken()) != null) {
             tokenBuffer.add(next);
+            if (next.getType() == YamlTokenType.NEWLINE || next.getType() == YamlTokenType.COMMENT) {
+                lastNewlineOrComment = idx;
+            }
             if (next.getType() == YamlTokenType.EOF || next.getType() == YamlTokenType.STREAM_END) {
                 break;
             }
+            idx++;
         }
     }
 
@@ -392,19 +408,6 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
             else if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
                 result = parseSequence();
             }
-            // else if (check(YamlTokenType.SCALAR)) {
-            //     YamlToken tok = peek();
-            //     String val = tok.getContent();
-
-            //     if ("|".equals(val) || ">".equals(val)) {
-            //         result = parseBlockScalar("|".equals(val));
-            //     }
-            //     else if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-            //         result = parseMap();
-            //     } else {
-            //         result = parseScalar();
-            //     }
-            // }
             else if (check(YamlTokenType.SCALAR)) {
                 if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
                     result = parseMap();
@@ -454,14 +457,14 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
             YamlMapNode map = new YamlMapNode(startToken.getStartLine(), startToken.getStartColumn());
             map.setStyle(CollectionStyle.BLOCK);
 
-            Set<String> seenKeys = new HashSet<>();
+            Set<Object> seenKeys = new HashSet<>();
             int mapColumn = -1;
 
             while (!isAtEnd()) {
-                skipTrivia();
+                skipTrivia(); // TODO: PERFORMANCE: this is slow
 
                 if (check(YamlTokenType.INDENT)) {
-                    if (lookAheadIgnoringComments(YamlTokenType.NEWLINE)) {
+                    if (lookAheadIgnoringComments(YamlTokenType.NEWLINE)) { // TODO: PERFORMANCE: this is slow
                         advance(); // Consume INDENT
                         skipTrivia(); // Consume NEWLINE
                         if (check(YamlTokenType.DEDENT)) {
@@ -494,8 +497,11 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 }
 
                 // 1. Harvest any block comments sitting directly above this key before it parses
-                List<YamlCommentNode> leadingBlockComments = new ArrayList<>();
+                List<YamlCommentNode> leadingBlockComments = null;
                 while (check(YamlTokenType.COMMENT)) {
+                    if (leadingBlockComments == null) {
+                        leadingBlockComments = new ArrayList<>();
+                    }
                     leadingBlockComments.add((YamlCommentNode) parseComment());
                     if (check(YamlTokenType.NEWLINE)) {
                         advance();
@@ -525,17 +531,26 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
                 }
 
                 // 2. Prepend the harvested block comments so they don't get lost
-                if (key != null && !leadingBlockComments.isEmpty()) {
-                    // Assuming key.getComments() returns a collection editable or addAll exists
-                    key.getComments().addAll(0, leadingBlockComments);
+                if (key != null && leadingBlockComments != null && !leadingBlockComments.isEmpty()) {
+                    // key.getComments().addAll(0, leadingBlockComments);
+                    key.addComments(0, leadingBlockComments);
                 }
 
                 attachComments(key);
 
-                String keyString = (key instanceof YamlScalarNode scalarKey) ? scalarKey.asString() : key.toString();
+                if (options.isStrict()) {
+                    // For scalars, track the underlying unescaped string value.
+                    // YamlScalarNode.asString() uses Primitive.asString() - Primitive is immutable and aggressively caches things.
+                    // For complex structural nodes, track the node identity/structural equivalence.
+                    Object keyTrackingToken = (key instanceof YamlScalarNode scalarKey) ? scalarKey.asString() : key;
 
-                if (options.isStrict() && !seenKeys.add(keyString)) {
-                    error(previous(), YamlDiagnosticCode.DUPLICATE_KEY, keyString);
+                    if (!seenKeys.add(keyTrackingToken)) {
+                        String duplicateKeyRepresentation = (key instanceof YamlScalarNode scalarKey)
+                            ? scalarKey.asString()
+                            : "[Complex Key at Line " + key.getStartLine() + "]";
+
+                        error(previous(), YamlDiagnosticCode.DUPLICATE_KEY, duplicateKeyRepresentation);
+                    }
                 }
 
                 int keyColumn = key.getStartColumn();
@@ -684,49 +699,12 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         }
     }
 
-    // private YamlScalarNode parseScalar() {
-    //     ++this.depth;
-    //     this.trace("parseScalar");
-
-    //     try {
-    //         YamlToken token = this.consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
-
-    //         // Determine the style cleanly based on the token lexeme
-    //         String raw = token.getLexeme();
-    //         QuoteStyle style = QuoteStyle.PLAIN;
-    //         if (raw.startsWith("\"")) {
-    //             style = QuoteStyle.DOUBLE;
-    //         } else if (raw.startsWith("'")) {
-    //             style = QuoteStyle.SINGLE;
-    //         }
-
-    //         // Let YamlPrimitive handle unescaping, coercing, and type resolution
-    //         YamlScalarNode scalar = new YamlScalarNode(
-    //             token.getStartLine(),
-    //             token.getStartColumn(),
-    //             raw,
-    //             token.getContent(), // Passes the unescaped base token text
-    //             style
-    //         );
-    //         scalar.setToken(token);
-
-    //         if (this.check(YamlTokenType.COMMENT) && this.peek().getStartLine() == token.getStartLine()) {
-    //             scalar.getComments().add(this.parseComment());
-    //         }
-
-    //         this.parseInlineComment(scalar);
-    //         return scalar;
-    //     } finally {
-    //         --this.depth;
-    //     }
-    // }
-
     private YamlScalarNode parseScalar() {
         ++this.depth;
         this.trace("parseScalar");
 
         try {
-            YamlToken token = this.consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
+            YamlToken token = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
 
             String raw = token.getLexeme();
             QuoteStyle style = QuoteStyle.PLAIN;
@@ -736,10 +714,8 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
             } else if (raw.startsWith("'")) {
                 style = QuoteStyle.SINGLE;
             } else if (raw.startsWith("|")) {
-                // High fidelity: Mark it as a Literal Block Scalar for the Emitter!
                 style = QuoteStyle.LITERAL_BLOCK;
             } else if (raw.startsWith(">")) {
-                // High fidelity: Mark it as a Folded Block Scalar for the Emitter!
                 style = QuoteStyle.FOLDED;
             }
 
@@ -752,68 +728,16 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
             );
             scalar.setToken(token);
 
-            if (this.check(YamlTokenType.COMMENT) && this.peek().getStartLine() == token.getStartLine()) {
-                scalar.getComments().add(this.parseComment());
+            if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
+                scalar.addComment(parseComment());
             }
 
-            this.parseInlineComment(scalar);
+            parseInlineComment(scalar);
             return scalar;
         } finally {
             --this.depth;
         }
     }
-
-    // private YamlNode parseBlockScalar(boolean isLiteral) {
-    //     YamlToken indicator = advance(); // Consume '|' or '>'
-    //     StringBuilder content = new StringBuilder();
-
-    //     // 1. Clear the rest of the current line (comments/whitespace)
-    //     // and move to the start of the indented block.
-    //     skipTrivia();
-
-    //     // 2. Structural Check: Block scalars MUST be indented.
-    //     if (!check(YamlTokenType.INDENT)) {
-    //         error(peek(), YamlDiagnosticCode.EXPECTED_INDENTATION_BLOCK_SCALAR);
-    //     }
-    //     advance(); // Consume the INDENT
-
-    //     // 3. Content Collection Loop
-    //     while (!isAtEnd() && !check(YamlTokenType.DEDENT)) {
-    //         // Collect every token on the line as raw text
-    //         while (!isAtEnd() && !check(YamlTokenType.NEWLINE) && !check(YamlTokenType.DEDENT)) {
-    //             // Use getLexeme() to preserve the exact text (like 'line:one')
-    //             content.append(advance().getLexeme());
-    //         }
-
-    //         if (match(YamlTokenType.NEWLINE)) {
-    //             content.append("\n");
-    //         }
-
-    //         // If there are comments inside the block, skipTrivia will
-    //         // handle them, but be careful: in literal blocks,
-    //         // indented # might be content, not a comment.
-    //         // For now, let's keep it simple:
-    //         if (check(YamlTokenType.COMMENT)) {
-    //             skipTrivia();
-    //         }
-    //     }
-
-    //     // 4. Clean up
-    //     if (check(YamlTokenType.DEDENT)) {
-    //         advance();
-    //     }
-
-    //     String result = content.toString();
-    //     if (!isLiteral) {
-    //         // Folded logic: Replace single newlines with spaces, preserve double newlines
-    //         result = result.replaceAll("(?<!\\n)\\n(?!\\n)", " ").trim() + "\n";
-    //     }
-
-    //     return new YamlScalarNode(
-    //         indicator.getStartLine(), indicator.getStartColumn(),
-    //         isLiteral ? "|" : ">", result, QuoteStyle.PLAIN
-    //     );
-    // }
 
     private YamlCommentNode parseComment() {
         YamlToken token = advance();
@@ -835,7 +759,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     private void parseInlineComment(YamlNode node) {
         // If the very next token is a comment on the same line, it belongs to THIS node
         if (check(YamlTokenType.COMMENT) && peek().getStartLine() == node.getStartLine()) {
-            node.getComments().add(parseComment());
+            node.addComment(parseComment());
         }
     }
 
@@ -875,6 +799,12 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         }
     }
 
+    // TODO: PERFORMANCE: This is slow
+
+    /// Searches forward from `current` until it reaches a token matching `targetType`.
+    /// If it finds `targetType` it returns true.
+    /// If it finds NEWLINE or COMMENT it continues.
+    /// If if finds anything else it returns false.
     private boolean lookAheadIgnoringComments(YamlTokenType targetType) {
         int lookahead = current + 1;
         while (lookahead < tokenBuffer.size()) {
@@ -921,6 +851,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
         return type == YamlTokenType.EOF || type == YamlTokenType.STREAM_END;
     }
 
+    /// Checks the type of the token returned by `peek()`
     private boolean check(YamlTokenType type) {
         if (isAtEnd()) return false;
         return peek().getType() == type;
@@ -937,14 +868,20 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
 
     /// Collects comments and skips newlines, storing comments in the buffer.
     private void skipTrivia() {
-        while (!isAtEnd()) {
-            if (match(YamlTokenType.NEWLINE)) continue;
-            if (check(YamlTokenType.COMMENT)) {
+        while (current < tokenBuffer.size()) {
+            YamlTokenType type = peek().getType();
+            if (type == YamlTokenType.EOF || type == YamlTokenType.STREAM_END) {
+                break;
+            }
+            if (type == YamlTokenType.NEWLINE) {
+                advance();
+                continue;
+            }
+            if (type == YamlTokenType.COMMENT) {
                 // If it's a root-level comment at the end of the file, leave it for the stream
                 if (peek().getStartColumn() == 1 && isTrailingStreamComment(current)) {
                     break;
                 }
-                // Use the cleaner helper instead of manual creation
                 pendingComments.add(parseComment());
                 continue;
             }
@@ -953,17 +890,7 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     }
 
     private boolean isTrailingStreamComment(int startPos) {
-        int idx = startPos + 1;
-        while (idx < tokenBuffer.size()) {
-            YamlTokenType type = tokenBuffer.get(idx).getType();
-            if (type != YamlTokenType.NEWLINE && type != YamlTokenType.DEDENT
-                && type != YamlTokenType.STREAM_END && type != YamlTokenType.EOF
-                && type != YamlTokenType.COMMENT) {
-                return false;
-            }
-            idx++;
-        }
-        return true;
+        return startPos >= lastNewlineOrComment;
     }
 
     /// Clears the [pendingComments] buffer by attaching them to the given node.

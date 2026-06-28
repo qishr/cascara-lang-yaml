@@ -11,7 +11,7 @@ import io.github.qishr.cascara.lang.yaml.YamlPrimitiveDelegate;
 
 /// Represents a leaf node in the YAML AST containing a single scalar value.
 public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> {
-    private static YamlPrimitiveDelegate YAML_PRIMITIVE_DELEGATE = new YamlPrimitiveDelegate();
+    private static final YamlPrimitiveDelegate YAML_PRIMITIVE_DELEGATE = new YamlPrimitiveDelegate();
 
     private String raw;
     private Primitive primitive;
