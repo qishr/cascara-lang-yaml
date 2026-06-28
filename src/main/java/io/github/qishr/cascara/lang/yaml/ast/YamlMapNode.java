@@ -77,6 +77,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
         return entriesByKey.keySet();
     }
 
+    // TODO: PERFORMANCE: This is looking up the hash entry more than once
     /// {@inheritDoc}
     @Override
     public YamlMapNode put(YamlNode key, YamlNode value) {

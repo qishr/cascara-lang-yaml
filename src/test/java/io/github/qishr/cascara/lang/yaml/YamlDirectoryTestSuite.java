@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.file.*;
+import java.util.List;
 import java.util.stream.Stream;
 
 import io.github.qishr.cascara.common.diagnostic.Reporter;
@@ -16,6 +17,7 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 class YamlDirectoryTestSuite {
 
@@ -88,11 +90,20 @@ class YamlDirectoryTestSuite {
         // 2. First Emit
         String emitted = emitter.emit(doc);
 
+        List<YamlToken> list = parser.getTokens();
+        System.out.println("\n---1");
+        System.out.println(emitted);
+        System.out.println("---\n");
+
         // 3. Re-parse
         YamlMapNode reParsedDoc = (YamlMapNode)parser.parse(emitted);
 
         // 4. Second Emit (using the SAME emitter instance)
         String secondEmit = emitter.emit(reParsedDoc);
+
+        System.out.println("\n---2");
+        System.out.println(emitted);
+        System.out.println("---\n");
 
         if (!emitted.equals(secondEmit)) {
             fail(generateDiffMessage(fileName, emitted, secondEmit));
