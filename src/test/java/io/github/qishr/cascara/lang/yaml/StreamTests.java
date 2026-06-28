@@ -1,6 +1,5 @@
 package io.github.qishr.cascara.lang.yaml;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.io.ByteArrayInputStream;

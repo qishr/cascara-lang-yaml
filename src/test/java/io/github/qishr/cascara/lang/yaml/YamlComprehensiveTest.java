@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
@@ -160,6 +161,7 @@ class YamlComprehensiveTest {
     void testTabIndentationFails() {
         // YAML spec forbids tabs for indentation
         String yaml = "key:\n\t- item";
+        parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
         // Assuming YamlParserException extends ParserException
         assertThrows(ParserException.class, () -> parser.parse(yaml));
         // parser.parse(yaml);
