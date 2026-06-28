@@ -1,7 +1,6 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.lang.yaml.ast.*;
-import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
