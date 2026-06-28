@@ -2,6 +2,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import org.junit.jupiter.api.Test;
 import java.util.List;
@@ -10,7 +11,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class YamlStreamParserTest {
 
+    private final YamlOptions options = new YamlOptions().setMultiDocument(true);
     private final YamlParser parser = new YamlParser()
+            .setOptions(options)
             .setReporter(new StandardReporter().setLevel(Level.TRACE));
 
     @Test
@@ -25,7 +28,7 @@ class YamlStreamParserTest {
             "doc: 2";
 
         // Since we changed parser.parse() to return a YamlStreamNode
-        YamlStreamNode stream = (YamlStreamNode) parser.parseStream(yaml);
+        YamlStreamNode stream = (YamlStreamNode) parser.parse(yaml);
 
         assertNotNull(stream);
         List<YamlDocumentNode> docs = stream.getDocuments();
@@ -52,7 +55,7 @@ class YamlStreamParserTest {
             "payload: true\n" +
             "# File Footer Comment";
 
-        YamlStreamNode stream = (YamlStreamNode) parser.parseStream(yaml);
+        YamlStreamNode stream = (YamlStreamNode) parser.parse(yaml);
 
         assertNotNull(stream);
         assertEquals(1, stream.getDocuments().size());
@@ -67,7 +70,7 @@ class YamlStreamParserTest {
     @Test
     void testEmptyExplicitDocument() {
         String yaml = "--- ...";
-        YamlStreamNode stream = (YamlStreamNode) parser.parseStream(yaml);
+        YamlStreamNode stream = (YamlStreamNode) parser.parse(yaml);
 
         assertEquals(1, stream.getDocuments().size());
         YamlNode body = stream.getDocuments().get(0).getBody();

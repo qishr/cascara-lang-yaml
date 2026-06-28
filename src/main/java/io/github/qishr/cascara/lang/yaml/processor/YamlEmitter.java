@@ -8,11 +8,14 @@ import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Emitter;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlCommentNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDocumentNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlStreamNode;
 
 /// Responsible for converting a [YamlNode] AST back into a valid YAML string.
 ///
@@ -46,19 +49,88 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     @Override public void dedent() {}
     @Override public String getOutput() { return sb.toString(); }
 
-    /// Primary entry point for emitting a full document.
+    /// Primary entry point for emitting a full document or a multi-document stream.
     ///
-    /// @param root AST root.
+    /// @param root AST root (can be a YamlStreamNode, YamlMapNode, YamlSequenceNode, or YamlScalarNode).
     /// @return A formatted YAML string.
     public String emit(YamlNode root) {
         writtenAnchors.clear();
         sb.setLength(0);
-        emitNode(root, 0, false, false);
+
+        if (root instanceof YamlStreamNode stream) {
+            var documents = stream.getDocuments();
+            for (int i = 0; i < documents.size(); i++) {
+                YamlDocumentNode doc = documents.get(i);
+
+                // Write explicit document markers if there are multiple documents,
+                // or if the document explicitly contains directives.
+                if (documents.size() > 1 || !doc.getDirectives().isEmpty()) {
+                    sb.append("---").append(NL);
+                }
+
+                // Process the body of this specific document
+                emitNode(doc.getBody(), 0, false, false);
+
+                // Append a newline between documents if we aren't at the very end
+                if (i < documents.size() - 1 && sb.length() > 0 && sb.charAt(sb.length() - 1) != '\n') {
+                    sb.append(NL);
+                }
+            }
+        } else {
+            // Fallback for direct single-node emission
+            emitNode(root, 0, false, false);
+        }
+
         debugOutput(sb.toString());
         return sb.toString();
     }
 
-    /// Recursive dispatcher for AST nodes.
+    // /// Recursive dispatcher for AST nodes.
+    // ///
+    // /// @param node The current node to emit.
+    // /// @param indent The current base indentation level.
+    // /// @param isSequenceItem True if this node is the direct value of a sequence dash.
+    // /// @param isFlow True if we are inside a flow context (prevents forced newlines).
+    // private void emitNode(YamlNode node, int indent, boolean isSequenceItem, boolean isFlow) {
+    //     if (node == null) return;
+    //     // 1. ANCHOR CHECK
+    //     String anchor = node.getAnchor();
+    //     if (anchor != null && !anchor.isEmpty() && !(node instanceof YamlAliasNode)) {
+    //         sb.append("&").append(anchor);
+    //         if (node instanceof YamlScalarNode) sb.append(" ");
+    //     }
+
+    //     // 2. ALIAS CHECK
+    //     if (node instanceof YamlAliasNode alias) {
+    //         sb.append("*").append(alias.getAlias());
+    //         return;
+    //     }
+
+    //     if (!isFlow) emitBlockComments(node, indent);
+
+    //     if (node instanceof YamlScalarNode scalar) {
+    //         // If we are a sequence item on the same line as the dash,
+    //         // the dash and space ARE the indent for the first line.
+    //         int scalarIndent = isSequenceItem ? 0 : indent;
+    //         emitScalarInternal(scalar, scalarIndent, isFlow);
+    //     } else if (node instanceof YamlMapNode map) {
+    //         if (map.getStyle() == CollectionStyle.FLOW) {
+    //             emitFlowMap(map);
+    //             if (!isFlow) sb.append(NL);
+    //         } else {
+    //             emitMap(map, indent, isSequenceItem);
+    //         }
+    //     } else if (node instanceof YamlSequenceNode seq) {
+    //         if (seq.getStyle() == CollectionStyle.FLOW) {
+    //             emitFlowSequence(seq);
+    //             if (!isFlow) sb.append(NL);
+    //         } else {
+    //             emitSequence(seq, indent, isSequenceItem);
+    //         }
+    //     }
+    // }
+
+/// Recursive dispatcher for AST nodes.
     ///
     /// @param node The current node to emit.
     /// @param indent The current base indentation level.
@@ -66,34 +138,42 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     /// @param isFlow True if we are inside a flow context (prevents forced newlines).
     private void emitNode(YamlNode node, int indent, boolean isSequenceItem, boolean isFlow) {
         if (node == null) return;
-        // 1. ANCHOR CHECK
-        String anchor = node.getAnchor();
-        if (anchor != null && !anchor.isEmpty() && !(node instanceof YamlAliasNode)) {
-            sb.append("&").append(anchor);
-            if (node instanceof YamlScalarNode) sb.append(" ");
+
+        // 1. Extract the actual target data node if wrapped in an Anchor decorator
+        YamlNode targetNode = node;
+        while (targetNode instanceof YamlAnchorNode wrapper) {
+            targetNode = wrapper.getInnerNode();
         }
 
         // 2. ALIAS CHECK
-        if (node instanceof YamlAliasNode alias) {
+        if (targetNode instanceof YamlAliasNode alias) {
             sb.append("*").append(alias.getAlias());
             return;
         }
 
-        if (!isFlow) emitBlockComments(node, indent);
+        // 3. ANCHOR CHECK (Using targetNode to fetch anchor metadata safely)
+        String anchor = targetNode.getAnchor();
+        if (anchor != null && !anchor.isEmpty()) {
+            sb.append("&").append(anchor);
+            if (targetNode instanceof YamlScalarNode) sb.append(" ");
+        }
 
-        if (node instanceof YamlScalarNode scalar) {
+        if (!isFlow) emitBlockComments(targetNode, indent);
+
+        // 4. STRUCTURAL EVALUATION (Checking targetNode instead of node)
+        if (targetNode instanceof YamlScalarNode scalar) {
             // If we are a sequence item on the same line as the dash,
             // the dash and space ARE the indent for the first line.
             int scalarIndent = isSequenceItem ? 0 : indent;
             emitScalarInternal(scalar, scalarIndent, isFlow);
-        } else if (node instanceof YamlMapNode map) {
+        } else if (targetNode instanceof YamlMapNode map) {
             if (map.getStyle() == CollectionStyle.FLOW) {
                 emitFlowMap(map);
                 if (!isFlow) sb.append(NL);
             } else {
                 emitMap(map, indent, isSequenceItem);
             }
-        } else if (node instanceof YamlSequenceNode seq) {
+        } else if (targetNode instanceof YamlSequenceNode seq) {
             if (seq.getStyle() == CollectionStyle.FLOW) {
                 emitFlowSequence(seq);
                 if (!isFlow) sb.append(NL);

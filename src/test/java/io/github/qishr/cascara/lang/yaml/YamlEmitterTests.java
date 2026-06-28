@@ -60,7 +60,7 @@ public class YamlEmitterTests {
     @Test
     void test_emitter_anchorRoundTrip() {
         String yaml = "key: &myAnchor value\ncopy: *myAnchor\n";
-        YamlParser parser = new YamlParser();
+        YamlParser parser = new YamlParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
         YamlNode root = parser.parse(yaml);
 
         YamlEmitter emitter = new YamlEmitter();
