@@ -16,6 +16,8 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     private String raw;
     private Primitive primitive;
     private QuoteStyle quoteStyle;
+    private ScalarStyle scalarStyle;
+    private ChompingStyle chompingStyle;
 
     /// Constructor for use in parsers.
     /// Used when reading raw text from a file stream.
@@ -56,7 +58,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         this.primitive = Primitive.of(primitiveValue)
             .setDelegate(YAML_PRIMITIVE_DELEGATE);
         this.quoteStyle = primitive.getQuoteStyle();
-        // this.quoteStyle = isKey ? QuoteStyle.DOUBLE : primitive.getQuoteStyle();
     }
 
     /// The default constructor
@@ -64,7 +65,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         super( 0, 0);
         this.raw = null;
         this.quoteStyle = QuoteStyle.PLAIN;
-        // this.primitive = new Primitive(null, QuoteStyle.PLAIN);
         this.primitive = Primitive.of(null)
             .setDelegate(YAML_PRIMITIVE_DELEGATE);
     }
@@ -78,11 +78,9 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return node;
     }
 
-    /// {@inheritDoc}
-    /// Scalars are leaf nodes and have no children.
-    @Override
-    public List<YamlNode> getChildren() {
-        return List.of();
+    // Updated getter to derive from style
+    public boolean isQuoted() {
+        return quoteStyle != QuoteStyle.PLAIN;
     }
 
     /// Gets the quoting style used for this scalar.
@@ -90,15 +88,40 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return quoteStyle;
     }
 
-    // Updated getter to derive from style
-    public boolean isQuoted() {
-        return quoteStyle != QuoteStyle.PLAIN;
+    /// Sets the quoting style and clears the raw cache.
+    public YamlScalarNode setQuoteStyle(QuoteStyle quoteStyle) {
+        this.quoteStyle = quoteStyle;
+        this.primitive.setQuoteStyle(quoteStyle);
+        return this;
     }
 
-    /// Sets the quoting style and clears the raw cache.
-    public void setQuoteStyle(QuoteStyle quoteStyle) {
-        this.quoteStyle = quoteStyle;
-        // this.primitive.setQuoteStyle(quoteStyle);
+    public ScalarStyle getScalarStyle() {
+        return scalarStyle;
+    }
+
+    public YamlScalarNode setScalarStyle(ScalarStyle style) {
+        this.scalarStyle = style;
+        return this;
+    }
+
+    public ChompingStyle getChompingStyle() {
+        return chompingStyle;
+    }
+
+    public YamlScalarNode setChompingStyle(ChompingStyle style) {
+        this.chompingStyle = style;
+        return this;
+    }
+
+    //
+    //
+    //
+
+    /// {@inheritDoc}
+    /// Scalars are leaf nodes and have no children.
+    @Override
+    public List<YamlNode> getChildren() {
+        return List.of();
     }
 
     /// Returns the original raw (unescaped) string as seen in the source file.
@@ -165,8 +188,9 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return primitive.asBoolean(defaultValue);
     }
 
-
-
+    //
+    //
+    //
 
     // TODO: Same anchor
     /// Compares this scalar with another for equality.
