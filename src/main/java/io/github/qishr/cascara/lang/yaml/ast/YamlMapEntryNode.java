@@ -41,4 +41,9 @@ public class YamlMapEntryNode extends YamlNode implements MapEntryAstNode<YamlNo
     public List<YamlNode> getChildren() {
         return List.of(key, value);
     }
+
+    @Override
+    public void accept(YamlVisitor visitor) {
+        visitor.visit(this);
+    }
 }

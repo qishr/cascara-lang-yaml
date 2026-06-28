@@ -12,7 +12,7 @@ public class RegressionTests {
     private final YamlOptions options = new YamlOptions();
     private final YamlParser parser = new YamlParser().setOptions(options);
 
-    // If we have a literal block where we want to preserve exact formatting (like a script or a snippet), your current code will turn key: value into key : value (adding spaces) or merge multiple tokens into a single line incorrectly.
+    // If we have a literal block where we want to preserve exact formatting (like a script or a snippet), the current code will turn key: value into key : value (adding spaces) or merge multiple tokens into a single line incorrectly.
     // A block scalar should ignore the "meaning" of tokens (like : or -) and just treat everything between the INDENT and DEDENT as raw text, only stripping the common indentation prefix.
     @Test
     void testLiteralBlockPreservesExactSpacing() {
