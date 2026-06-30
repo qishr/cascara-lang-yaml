@@ -19,6 +19,23 @@ import static org.junit.jupiter.api.Assertions.*;
 public class YamlPullParserTest {
 
     @Test
+    public void testNoCrash() throws Exception {
+        String yaml = "a: b";
+
+        YamlOptions options = new YamlOptions().setIncludeComments(false);
+        Reporter reporter = new StandardReporter().setLevel(Level.TRACE);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = new YamlPullParser(inputStream)) {
+            parser.setOptions(options).setReporter(reporter);
+            while (parser.hasNext()) {
+                Event event = parser.next();
+                assertNotNull(event);
+            }
+        }
+    }
+
+    @Test
     public void testNestedMappingStreaming() throws Exception {
         String yaml = """
             # Project Configuration

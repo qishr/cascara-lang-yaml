@@ -12,13 +12,13 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
-import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
+import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 
 public class YamlEmitterTests {
     @Test
     void testEmitterRoundTrip() {
         String original = "name: Cascara\nversion: 1.0\ntags:\n  - java\n  - yaml";
-        YamlParser parser = new YamlParser();
+        YamlAstParser parser = new YamlAstParser();
         YamlNode root = parser.parse(original);
 
         YamlEmitter emitter = new YamlEmitter();
@@ -39,7 +39,7 @@ public class YamlEmitterTests {
             "    - fast # High performance\n" +
             "    - safe";
 
-        YamlParser parser = new YamlParser();
+        YamlAstParser parser = new YamlAstParser();
 
         parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
 
@@ -60,7 +60,7 @@ public class YamlEmitterTests {
     @Test
     void test_emitter_anchorRoundTrip() {
         String yaml = "key: &myAnchor value\ncopy: *myAnchor\n";
-        YamlParser parser = new YamlParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
+        YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
         YamlNode root = parser.parse(yaml);
 
         YamlEmitter emitter = new YamlEmitter();

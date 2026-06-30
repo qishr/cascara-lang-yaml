@@ -12,7 +12,7 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
+import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 
 public class StreamTests {
     @Test
@@ -21,7 +21,7 @@ public class StreamTests {
 
         InputStream stream = new ByteArrayInputStream(yamlString.getBytes(StandardCharsets.UTF_8));
 
-        YamlParser parser = new YamlParser()
+        YamlAstParser parser = new YamlAstParser()
                 .setReporter(new StandardReporter().setLevel(Level.TRACE));
 
         YamlNode node = parser.parse(stream);

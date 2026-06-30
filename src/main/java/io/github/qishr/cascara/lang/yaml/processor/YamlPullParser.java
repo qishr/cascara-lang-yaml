@@ -20,6 +20,7 @@ public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implem
     private void ensureEngine() {
         if (engine == null) {
             this.engine = new YamlStreamEngine(input, getReporter(), getOptions().isIncludeComments());
+            this.engine.setReporter(reporter);
         }
     }
 
