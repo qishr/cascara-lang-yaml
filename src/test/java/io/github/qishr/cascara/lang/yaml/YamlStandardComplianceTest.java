@@ -13,12 +13,12 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.*;
-import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
+import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 
 class YamlStandardComplianceTest {
 
     private YamlOptions options;
-    private YamlParser parser;
+    private YamlAstParser parser;
     private Reporter reporter;
     private List<Diagnostic> diagnostics;
 
@@ -36,7 +36,7 @@ class YamlStandardComplianceTest {
         diagnostics = new ArrayList<>();
         reporter = new StandardReporter().setProblemCollector(this::collect);
         options = new YamlOptions().setStrict(true);
-        parser = new YamlParser()
+        parser = new YamlAstParser()
             .setOptions(options)
             .setReporter(reporter);
     }
@@ -119,7 +119,7 @@ class YamlStandardComplianceTest {
         String yaml = "dup: first\ndup: second";
 
         // Assert that the parser fails on duplicate keys
-        // assertThrows(YamlParserException.class, () -> {
+        // assertThrows(YamlAstParserException.class, () -> {
             parser.parse(yaml);
         // });
 

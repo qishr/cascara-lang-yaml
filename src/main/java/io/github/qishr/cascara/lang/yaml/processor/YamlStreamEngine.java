@@ -1,5 +1,6 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.lang.streaming.Event;
 import io.github.qishr.cascara.common.lang.streaming.EventType;
@@ -17,6 +18,8 @@ class YamlStreamEngine {
     private final Deque<Integer> indentStack = new ArrayDeque<>();
     private final Deque<EventType> contextStack = new ArrayDeque<>();
 
+    private Reporter reporter = new NoOpReporter();
+
     private Token currentToken;
     private Token bufferedToken;
 
@@ -26,9 +29,7 @@ class YamlStreamEngine {
     private boolean isDocumentEnded = false;
     private boolean rootOpened = false;
     private boolean insideExplicitKey = false;
-
     private boolean insideBlockScalar = false;
-    private boolean isFoldedBlock = false;
     private final StringBuilder blockScalarBuffer = new StringBuilder();
 
     YamlStreamEngine(InputStream input, Reporter reporter, boolean includeComments) {
@@ -39,11 +40,25 @@ class YamlStreamEngine {
         this.includeComments = includeComments;
     }
 
+    public YamlStreamEngine setReporter(Reporter reporter) {
+        this.reporter = reporter == null ? new NoOpReporter() : reporter;
+        return this;
+    }
+
+    // boolean hashNextEvent() {
+    //     return !isDocumentEnded || targetDedentCount > 0;
+    // }
+
     boolean hashNextEvent() {
-        return !isDocumentEnded || targetDedentCount > 0;
+        // If we are already done, do not claim to have events
+        return !isDocumentEnded;
+        // if (isDocumentEnded && targetDedentCount == 0) return false;
+        // return true;
     }
 
     Event nextEvent() throws ParserException {
+        if (isDocumentEnded) return null; // Or handle as appropriate
+
         if (!rootOpened) {
             rootOpened = true;
             return new StreamingEvent(1, 1, EventType.START_OBJECT, "");
@@ -59,7 +74,18 @@ class YamlStreamEngine {
 
         advanceToken();
 
-        if (currentToken == null || currentToken.getType() == YamlTokenType.EOF) {
+        if (currentToken.getType() == YamlTokenType.DOCUMENT_START) {
+            // If a document was already in progress, close it
+            if (rootOpened) {
+                // You might need to flush contexts here if not already done
+                return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.END_DOCUMENT, "");
+            }
+            // Otherwise, this is the start of the first document
+            rootOpened = true;
+            return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.START_DOCUMENT, "");
+        }
+
+        if (currentToken == null || currentToken.getType() == YamlTokenType.EOF || currentToken.getType() == YamlTokenType.STREAM_END) {
             if (insideBlockScalar) {
                 insideBlockScalar = false;
                 blockScalarBuffer.append("\n");
@@ -67,7 +93,6 @@ class YamlStreamEngine {
                 blockScalarBuffer.setLength(0);
                 return new StreamingEvent(tokenizer.getLine(), tokenizer.getColumn(), EventType.VALUE_SCALAR, finalContent);
             }
-
             if (contextStack.size() > 0) {
                 targetDedentCount = contextStack.size();
                 return nextEvent();
@@ -175,41 +200,6 @@ class YamlStreamEngine {
             return nextEvent();
         }
 
-        // if (currentToken.getType() == YamlTokenType.SCALAR) {
-        //     String value = currentToken.getContent();
-
-        //     if (insideBlockScalar) {
-        //         // Check if this text line broke the scalar's block structure baseline
-        //         if ("|".equals(value) || ">".equals(value)) {
-        //             // Fall through to parse structural indicator change
-        //         } else {
-        //             if (blockScalarBuffer.length() > 0) {
-        //                 blockScalarBuffer.append(isFoldedBlock ? " " : "\n");
-        //             }
-        //             blockScalarBuffer.append(value);
-        //             return nextEvent();
-        //         }
-        //     }
-
-        //     if (insideExplicitKey) {
-        //         insideExplicitKey = false;
-        //         return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.FIELD_NAME, value);
-        //     }
-
-        //     if (isNextTokenValueIndicator()) {
-        //         return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.FIELD_NAME, value);
-        //     }
-
-        //     if ("|".equals(value) || ">".equals(value)) {
-        //         insideBlockScalar = true;
-        //         isFoldedBlock = ">".equals(value);
-        //         blockScalarBuffer.setLength(0);
-        //         return nextEvent();
-        //     }
-
-        //     return new StreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), EventType.VALUE_SCALAR, value);
-        // }
-
         if (currentToken.getType() == YamlTokenType.SCALAR) {
             String value = currentToken.getContent();
 
@@ -240,7 +230,8 @@ class YamlStreamEngine {
             return nextEvent();
         }
 
-        return null;
+        throw new ParserException(currentToken, YamlDiagnosticCode.UNEXPECTED_TOKEN, currentToken.getType());
+        // return null;
     }
 
     private boolean isNextTokenValueIndicator() throws ParserException {

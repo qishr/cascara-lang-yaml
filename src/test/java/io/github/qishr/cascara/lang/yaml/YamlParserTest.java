@@ -6,14 +6,14 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.lang.yaml.ast.*;
-import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
+import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
-class YamlParserTest {
+class YamlAstParserTest {
 
-    private final YamlParser parser = new YamlParser();
+    private final YamlAstParser parser = new YamlAstParser();
 
     @Test
     void testNewLineInsideNestedObject() throws Exception {
@@ -26,9 +26,9 @@ class YamlParserTest {
 
         // TODO: diagnostic level in one place for all tests?
         // Reporter reporter = new StandardReporter().setLevel(Level.TRACE);
-        // YamlParser parser = new YamlParser().setReporter(reporter);
+        // YamlAstParser parser = new YamlAstParser().setReporter(reporter);
 
-        YamlParser parser = new YamlParser();
+        YamlAstParser parser = new YamlAstParser();
         parser.parse(yaml);
 
     }

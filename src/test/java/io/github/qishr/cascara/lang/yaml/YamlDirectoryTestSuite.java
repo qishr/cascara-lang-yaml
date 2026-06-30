@@ -16,20 +16,20 @@ import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
-import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
+import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 class YamlDirectoryTestSuite {
 
     private YamlOptions options;
-    private YamlParser parser;
+    private YamlAstParser parser;
     private Reporter reporter;
 
     @BeforeEach
     void init() {
         reporter = new StandardReporter();
         options = new YamlOptions().setStrict(true);
-        parser = new YamlParser()
+        parser = new YamlAstParser()
             .setOptions(options)
             .setReporter(reporter);
     }
@@ -89,11 +89,6 @@ class YamlDirectoryTestSuite {
 
         // 2. First Emit
         String emitted = emitter.emit(doc);
-
-        List<YamlToken> list = parser.getTokens();
-        System.out.println("\n---1");
-        System.out.println(emitted);
-        System.out.println("---\n");
 
         // 3. Re-parse
         YamlMapNode reParsedDoc = (YamlMapNode)parser.parse(emitted);

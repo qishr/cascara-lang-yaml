@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class YamlStreamParserTest {
 
     private final YamlOptions options = new YamlOptions().setMultiDocument(true);
-    private final YamlParser parser = new YamlParser()
+    private final YamlAstParser parser = new YamlAstParser()
             .setOptions(options)
             .setReporter(new StandardReporter().setLevel(Level.TRACE));
 

@@ -11,13 +11,13 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
-import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
+import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 
 public class ParserTests {
     @Test
     void test_parser_anchoredScalar() {
         String yaml = "status: &val active\nlink: *val";
-        YamlParser parser = new YamlParser();
+        YamlAstParser parser = new YamlAstParser();
         YamlNode doc = parser.parse(yaml);
 
         assertInstanceOf(YamlMapNode.class, doc);
@@ -50,7 +50,7 @@ public class ParserTests {
                       "  debug: true\n" +
                       "  level: 1\n" +
                       "current: *settings";
-        YamlParser parser = new YamlParser();
+        YamlAstParser parser = new YamlAstParser();
         YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
 
         YamlNode defaults = doc.get("defaults");

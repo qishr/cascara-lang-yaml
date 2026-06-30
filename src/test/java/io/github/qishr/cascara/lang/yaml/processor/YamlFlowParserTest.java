@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class YamlFlowParserTest {
 
-    private final YamlParser parser = new YamlParser();
+    private final YamlAstParser parser = new YamlAstParser();
 
     @Test
     void testEmptyFlowContainers() {

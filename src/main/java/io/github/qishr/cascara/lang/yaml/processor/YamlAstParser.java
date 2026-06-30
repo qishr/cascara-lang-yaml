@@ -14,7 +14,7 @@ import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.annotation.Experimental;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
-import io.github.qishr.cascara.common.lang.processor.Parser;
+import io.github.qishr.cascara.common.lang.processor.AstParser;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
@@ -46,7 +46,7 @@ import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 /// * **Indentation Lifecycle**: Manages block boundaries by consuming `INDENT` and `DEDENT`
 ///   tokens through the [parseValue] dispatcher.
 
-public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Parser<YamlNode, YamlToken> {
+public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implements AstParser<YamlNode, YamlToken> {
 
     private Tokenizer<YamlToken> tokenizer;
 
@@ -65,9 +65,9 @@ public class YamlParser extends AbstractYamlProcessor<YamlParser> implements Par
     private int lastNewlineOrComment;
 
     /// Empty default constructor for SPI.
-    public YamlParser() {}
+    public YamlAstParser() {}
 
-    @Override protected YamlParser self() { return this; }
+    @Override protected YamlAstParser self() { return this; }
 
     /// Entry point for parsing a full YAML source string.
     @Override
