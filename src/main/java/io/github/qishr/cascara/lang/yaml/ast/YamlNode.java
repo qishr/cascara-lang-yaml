@@ -6,7 +6,6 @@ import java.util.Objects;
 
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
-import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 /// Base implementation for all YAML AST nodes.
@@ -19,7 +18,7 @@ public abstract class YamlNode implements AstNode {
     private final int startColumn;
     private final int endLine = 0;
     private final int endColumn = 0;
-    private final List<CommentAstNode> comments = new ArrayList<>();
+    private List<YamlCommentNode> comments = null;
     private String anchor;
     private YamlToken token;
 
@@ -27,6 +26,8 @@ public abstract class YamlNode implements AstNode {
         startLine = 0;
         startColumn = 0;
     }
+
+    public abstract void accept(YamlVisitor visitor);
 
     /// Constructs a new YamlNode with specific source coordinates.
     ///
@@ -72,13 +73,31 @@ public abstract class YamlNode implements AstNode {
 
     /// {@inheritDoc}
     @Override
-    public List<CommentAstNode> getComments() { return comments; }
+    public List<YamlCommentNode> getComments() {
+        if (comments == null) {
+            comments = new ArrayList<>();
+        }
+        return comments;
+    }
 
     /// Associates a comment node with this specific AST node.
     ///
     /// @param comment The comment node to add.
-    public void addComment(CommentAstNode comment) {
+    public void addComment(YamlCommentNode comment) {
+        if (this.comments == null) {
+            this.comments = new ArrayList<>();
+        }
         this.comments.add(comment);
+    }
+
+    /// Associates a comment node with this specific AST node.
+    ///
+    /// @param comment The comment node to add.
+    public void addComments(int pos, List<YamlCommentNode> comments) {
+        if (this.comments == null) {
+            this.comments = new ArrayList<>();
+        }
+        this.comments.addAll(pos, comments);
     }
 
     /// {@inheritDoc}

@@ -6,12 +6,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
-import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
+import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
@@ -22,7 +23,7 @@ import java.util.List;
 
 class YamlComprehensiveTest {
 
-    // private final YamlParser parser = new YamlParser();
+    // private final YamlAstParser parser = new YamlAstParser();
     // private final YamlTokenizer tokenizer = new YamlTokenizer();
 
     // private void assertTokenTypes(List<YamlToken> tokens, YamlTokenType... expected) {
@@ -34,7 +35,7 @@ class YamlComprehensiveTest {
 
     private YamlOptions options;
     private YamlTokenizer tokenizer;
-    private YamlParser parser;
+    private YamlAstParser parser;
     private Reporter reporter;
     private List<Diagnostic> diagnostics;
 
@@ -53,7 +54,7 @@ class YamlComprehensiveTest {
         reporter = new StandardReporter().setDiagnosticCollector(this::collect);
         options = new YamlOptions().setStrict(true);
         tokenizer = new YamlTokenizer().setReporter(reporter);
-        parser = new YamlParser()
+        parser = new YamlAstParser()
             .setOptions(options)
             .setReporter(reporter);
     }
@@ -160,7 +161,8 @@ class YamlComprehensiveTest {
     void testTabIndentationFails() {
         // YAML spec forbids tabs for indentation
         String yaml = "key:\n\t- item";
-        // Assuming YamlParserException extends ParserException
+        parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
+        // Assuming YamlAstParserException extends ParserException
         assertThrows(ParserException.class, () -> parser.parse(yaml));
         // parser.parse(yaml);
         // assertFalse(diagnostics.isEmpty());

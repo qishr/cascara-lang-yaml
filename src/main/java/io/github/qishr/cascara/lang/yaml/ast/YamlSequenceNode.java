@@ -23,6 +23,12 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
 
     /// {@inheritDoc}
     @Override
+    public boolean isEmpty() {
+        return elements.isEmpty();
+    }
+
+    /// {@inheritDoc}
+    @Override
     public YamlSequenceNode remove(int index) {
         if (index >= 0 && index < elements.size()) {
             elements.remove(index);
@@ -104,5 +110,10 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
         public void remove() {
             throw new UnsupportedOperationException();
         }
+    }
+
+    @Override
+    public void accept(YamlVisitor visitor) {
+        visitor.visit(this);
     }
 }

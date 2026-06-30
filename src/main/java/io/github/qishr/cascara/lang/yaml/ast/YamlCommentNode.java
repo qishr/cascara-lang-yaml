@@ -29,4 +29,9 @@ public class YamlCommentNode extends YamlNode implements CommentAstNode {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getRawValue'");
     }
+
+    @Override
+    public void accept(YamlVisitor visitor) {
+        visitor.visit(this);
+    }
 }

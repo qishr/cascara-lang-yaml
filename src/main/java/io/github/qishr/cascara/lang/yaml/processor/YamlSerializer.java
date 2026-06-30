@@ -8,7 +8,7 @@ import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.lang.exception.SerializerException;
 import io.github.qishr.cascara.common.lang.processor.AbstractSerializer;
-import io.github.qishr.cascara.common.lang.processor.Parser;
+import io.github.qishr.cascara.common.lang.processor.AstParser;
 import io.github.qishr.cascara.common.util.ContentType;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.YamlPrimitiveDelegate;
@@ -21,7 +21,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 /// Standard implementation for YAML serialization.
 public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,YamlScalarNode,YamlSequenceNode,YamlMapNode,YamlMapEntryNode> {
 
-    private YamlParser parser;
+    private YamlAstParser parser;
     private YamlOptions options = new YamlOptions();
     private Reporter reporter = new NoOpReporter();
 
@@ -58,11 +58,11 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     //
 
     @Override
-    public YamlSerializer setParser(Parser<YamlNode,?> parser) {
-        if (!(parser instanceof YamlParser yamlParser)) {
-            throw new SerializerException(GenericDiagnosticCode.ERROR, "Parser must be a YamlParser");
+    public YamlSerializer setParser(AstParser<YamlNode,?> parser) {
+        if (!(parser instanceof YamlAstParser YamlAstParser)) {
+            throw new SerializerException(GenericDiagnosticCode.ERROR, "Parser must be a YamlAstParser");
         }
-        this.parser = yamlParser;
+        this.parser = YamlAstParser;
         return this;
     }
 
@@ -100,9 +100,9 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return (C) deserialize(astNode, jvmType);
     }
 
-    private YamlParser getParser() {
+    private YamlAstParser getParser() {
         if (parser == null) {
-            parser = new YamlParser();
+            parser = new YamlAstParser();
             parser.setReporter(reporter);
         }
         return parser;

@@ -8,11 +8,14 @@ import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Emitter;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlCommentNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDocumentNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlStreamNode;
 
 /// Responsible for converting a [YamlNode] AST back into a valid YAML string.
 ///
@@ -46,14 +49,38 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     @Override public void dedent() {}
     @Override public String getOutput() { return sb.toString(); }
 
-    /// Primary entry point for emitting a full document.
+    /// Primary entry point for emitting a full document or a multi-document stream.
     ///
-    /// @param root AST root.
+    /// @param root AST root (can be a YamlStreamNode, YamlMapNode, YamlSequenceNode, or YamlScalarNode).
     /// @return A formatted YAML string.
     public String emit(YamlNode root) {
         writtenAnchors.clear();
         sb.setLength(0);
-        emitNode(root, 0, false, false);
+
+        if (root instanceof YamlStreamNode stream) {
+            var documents = stream.getDocuments();
+            for (int i = 0; i < documents.size(); i++) {
+                YamlDocumentNode doc = documents.get(i);
+
+                // Write explicit document markers if there are multiple documents,
+                // or if the document explicitly contains directives.
+                if (documents.size() > 1 || !doc.getDirectives().isEmpty()) {
+                    sb.append("---").append(NL);
+                }
+
+                // Process the body of this specific document
+                emitNode(doc.getBody(), 0, false, false);
+
+                // Append a newline between documents if we aren't at the very end
+                if (i < documents.size() - 1 && sb.length() > 0 && sb.charAt(sb.length() - 1) != '\n') {
+                    sb.append(NL);
+                }
+            }
+        } else {
+            // Fallback for direct single-node emission
+            emitNode(root, 0, false, false);
+        }
+
         debugOutput(sb.toString());
         return sb.toString();
     }
@@ -66,34 +93,42 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     /// @param isFlow True if we are inside a flow context (prevents forced newlines).
     private void emitNode(YamlNode node, int indent, boolean isSequenceItem, boolean isFlow) {
         if (node == null) return;
-        // 1. ANCHOR CHECK
-        String anchor = node.getAnchor();
-        if (anchor != null && !anchor.isEmpty() && !(node instanceof YamlAliasNode)) {
-            sb.append("&").append(anchor);
-            if (node instanceof YamlScalarNode) sb.append(" ");
+
+        // 1. Extract the actual target data node if wrapped in an Anchor decorator
+        YamlNode targetNode = node;
+        while (targetNode instanceof YamlAnchorNode wrapper) {
+            targetNode = wrapper.getInnerNode();
         }
 
         // 2. ALIAS CHECK
-        if (node instanceof YamlAliasNode alias) {
+        if (targetNode instanceof YamlAliasNode alias) {
             sb.append("*").append(alias.getAlias());
             return;
         }
 
-        if (!isFlow) emitBlockComments(node, indent);
+        // 3. ANCHOR CHECK (Using targetNode to fetch anchor metadata safely)
+        String anchor = targetNode.getAnchor();
+        if (anchor != null && !anchor.isEmpty()) {
+            sb.append("&").append(anchor);
+            if (targetNode instanceof YamlScalarNode) sb.append(" ");
+        }
 
-        if (node instanceof YamlScalarNode scalar) {
+        if (!isFlow) emitBlockComments(targetNode, indent);
+
+        // 4. STRUCTURAL EVALUATION (Checking targetNode instead of node)
+        if (targetNode instanceof YamlScalarNode scalar) {
             // If we are a sequence item on the same line as the dash,
             // the dash and space ARE the indent for the first line.
             int scalarIndent = isSequenceItem ? 0 : indent;
             emitScalarInternal(scalar, scalarIndent, isFlow);
-        } else if (node instanceof YamlMapNode map) {
+        } else if (targetNode instanceof YamlMapNode map) {
             if (map.getStyle() == CollectionStyle.FLOW) {
                 emitFlowMap(map);
                 if (!isFlow) sb.append(NL);
             } else {
                 emitMap(map, indent, isSequenceItem);
             }
-        } else if (node instanceof YamlSequenceNode seq) {
+        } else if (targetNode instanceof YamlSequenceNode seq) {
             if (seq.getStyle() == CollectionStyle.FLOW) {
                 emitFlowSequence(seq);
                 if (!isFlow) sb.append(NL);
@@ -103,7 +138,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         }
     }
 
-    /// Handles scalar formatting including Literal (|) and quoted styles.
+    /// Handles scalar formatting including Literal (|), Folded (>), and quoted styles.
     private void emitScalarInternal(YamlScalarNode scalar, int indent, boolean isFlow) {
         if (scalar == null) return; // TODO: literal null
         String val = scalar.asString();
@@ -111,34 +146,42 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         // 1. Implicit Null
         if (val == null) {
             if (!isFlow) sb.append(" ".repeat(indent));
-            // We do NOT handle comments or NL here anymore; let the caller decide
             return;
         }
 
-        // 2. Block Literal (|)
         QuoteStyle style = scalar.getQuoteStyle();
-        if (style == QuoteStyle.LITERAL_BLOCK && !isFlow) {
-            sb.append("|").append(NL);
+
+        // AUTO-PROMOTION: If the style is PLAIN but the text contains newlines,
+        // force it to LITERAL_BLOCK so it serializes into a valid block scalar.
+        if (!isFlow && style == QuoteStyle.PLAIN && (val.contains("\n") || val.contains("\r"))) {
+            style = QuoteStyle.LITERAL_BLOCK;
+        }
+
+        // 2. Block Literal (|) and Folded (>)
+        if ((style == QuoteStyle.LITERAL_BLOCK || style == QuoteStyle.FOLDED) && !isFlow) {
+            sb.append(style == QuoteStyle.LITERAL_BLOCK ? "|" : ">").append(NL);
+
             int blockIndent = indent + options.getIndentSize();
             String indentation = " ".repeat(blockIndent);
+
             String[] lines = val.split("\\R", -1);
-            for (int i = 0; i < lines.length; i++) {
-                if (!lines[i].isEmpty()) sb.append(indentation);
-                sb.append(lines[i]);
-                if (i < lines.length - 1) sb.append(NL);
+            int limit = lines.length;
+
+            // Safe end-of-string newline clipping
+            if (limit > 0 && lines[limit - 1].isEmpty()) {
+                limit--;
             }
-            return; // Caller handles the final NL
+
+            for (int i = 0; i < limit; i++) {
+                sb.append(indentation).append(lines[i]).append(NL);
+            }
+            return;
         }
 
         if (!isFlow) sb.append(" ".repeat(indent));
 
-        // Pass the style directly down so the lines are escaped individually
-        // before being joined together with indentation.
         String content = formatAndIndentMultiline(val, style, indent);
-
         sb.append(content);
-
-
 
         // IF NOT IS FLOW, this is a standalone root scalar or similar
         if (!isFlow) {
@@ -222,7 +265,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
             for (CommentAstNode c : key.getComments()) {
                 if (c instanceof YamlCommentNode ycn && ycn.getStartLine() < key.getStartLine()) {
-                    sb.append("# ").append(ycn.asString()).append(NL).append(" ".repeat(indent));
+                    sb.append("#").append(ycn.asString()).append(NL).append(" ".repeat(indent));
                 }
             }
 
@@ -252,7 +295,20 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                 }
                 sb.append(NL);
                 emitNode(value, indent + options.getIndentSize(), false, false);
-            } else {
+            }
+            // Handle multiline string block scalars cleanly (only for plain/block targeted text)
+            else if (value instanceof YamlScalarNode scalar
+                    && scalar.getQuoteStyle() != QuoteStyle.DOUBLE
+                    && scalar.getQuoteStyle() != QuoteStyle.SINGLE
+                    && scalar.asString() != null
+                    && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
+                if (!isComplexKey) {
+                    handleInlineComments(key);
+                }
+                sb.append(" ");
+                emitScalarInternal(scalar, indent + options.getIndentSize(), false);
+            }
+            else {
                 if (!isImplicitNull(value)) sb.append(" ");
 
                 emitNode(value, 0, false, true); // Clean text
@@ -308,19 +364,27 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             }
             else {
                 // COMPACT / FLOW / SCALAR
-                if (!isImplicitNull(item)) {
-                    sb.append(" ");
+                if (item instanceof YamlScalarNode scalar
+                        && scalar.getQuoteStyle() != QuoteStyle.DOUBLE
+                        && scalar.getQuoteStyle() != QuoteStyle.SINGLE
+                        && scalar.asString() != null
+                        && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
+                    // It's a multiline string scalar! It CANNOT be inline/flowed after a compact dash.
+                    // It must trigger a newline and follow block formatting guidelines.
+                    sb.append(NL);
+                    emitScalarInternal(scalar, indent + options.getIndentSize(), false);
                 }
+                else {
+                    // True compact inline scalars / flow collections
+                    if (!isImplicitNull(item)) {
+                        sb.append(" ");
+                    }
 
-                // 1. Force isFlow=true so emitScalarInternal ONLY prints the text
-                emitNode(item, 0, true, true);
-
-                // 2. Manually handle the comment for the item here
-                handleInlineComments(item);
-
-                // 3. ALWAYS append the newline here.
-                // This ensures the line is closed regardless of what the item was.
-                sb.append(NL);
+                    // Force isFlow=true only for single lines / flow structures
+                    emitNode(item, 0, true, true);
+                    handleInlineComments(item);
+                    sb.append(NL);
+                }
             }
         }
     }
@@ -372,7 +436,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         if (node == null) return;
         for (CommentAstNode comment : node.getComments()) {
             if (comment instanceof YamlCommentNode ycn && ycn.getStartColumn() <= 1) {
-                sb.append(" ".repeat(indent)).append("# ").append(ycn.asString()).append(NL);
+                sb.append(" ".repeat(indent)).append("#").append(ycn.asString()).append(NL);
             }
         }
     }
@@ -382,7 +446,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         if (node == null) return;
         for (CommentAstNode comment : node.getComments()) {
             if (comment instanceof YamlCommentNode ycn && ycn.getStartColumn() > 1) {
-                sb.append(" # ").append(ycn.asString());
+                sb.append(" #").append(ycn.asString());
                 break;
             }
         }

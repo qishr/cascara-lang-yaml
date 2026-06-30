@@ -30,4 +30,8 @@ public class YamlAnchorNode extends YamlNode {
         return innerNode == null ? "" : innerNode.toString();
     }
 
+    @Override
+    public void accept(YamlVisitor visitor) {
+        visitor.visit(this);
+    }
 }
