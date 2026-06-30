@@ -25,6 +25,18 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
 
     /// {@inheritDoc}
     @Override
+    public boolean isEmpty() {
+        return entriesByKey.isEmpty();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public int size() {
+        return entriesByKey.size();
+    }
+
+    /// {@inheritDoc}
+    @Override
     public boolean containsKey(YamlNode key) {
         return getEntry(key) != null;
     }
@@ -65,6 +77,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
         return entriesByKey.keySet();
     }
 
+    // TODO: PERFORMANCE: This is looking up the hash entry more than once
     /// {@inheritDoc}
     @Override
     public YamlMapNode put(YamlNode key, YamlNode value) {
@@ -214,5 +227,10 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
     public YamlMapNode put(String key, String value) {
         // TODO: This should not be forcing double quotes
         return put(key, new YamlScalarNode(value));
+    }
+
+    @Override
+    public void accept(YamlVisitor visitor) {
+        visitor.visit(this);
     }
 }

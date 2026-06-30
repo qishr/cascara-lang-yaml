@@ -37,7 +37,7 @@ public abstract class YamlTypeSerializer<T> extends AbstractTypeDescriptor<T> im
     @Override
     public final T deserialize(AstNode node) throws SerializerException {
         if (node instanceof YamlNode yamlNode) {
-            return this.deserialize(yamlNode); // Safely forwards to your abstract method
+            return this.deserialize(yamlNode);
         }
         throw new SerializerException(
             GenericDiagnosticCode.ERROR,

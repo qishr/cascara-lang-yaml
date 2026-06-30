@@ -9,7 +9,7 @@ import io.github.qishr.cascara.common.util.Properties;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
 
 public abstract class AbstractYamlProcessor<P extends Processor> implements Processor {
-    static final String YAML_CONTENT_TYPE_STRING = "text/yaml";
+    static final String YAML_CONTENT_TYPE_STRING = "application/yaml";
 
     static final ContentType YAML_CONTENT_TYPE =
         new ContentType("YAML")
@@ -41,14 +41,22 @@ public abstract class AbstractYamlProcessor<P extends Processor> implements Proc
     /// {@inheritDoc}
     @Override
     public P setReporter(Reporter reporter) {
-        this.reporter = reporter;
+        this.reporter = reporter == null ? new NoOpReporter() : reporter;
         return self();
     }
 
     /// {@inheritDoc}
     @Override
     public P setOptions(LanguageOptions<?> options) {
-        this.options = (YamlOptions) options;
+        this.options = options == null ? new YamlOptions() : (YamlOptions) options;
         return self();
+    }
+
+    public YamlOptions getOptions() {
+        return options;
+    }
+
+    public Reporter getReporter() {
+        return reporter;
     }
 }

@@ -19,11 +19,17 @@ module cascara.lang.yaml {
 
     provides io.github.qishr.cascara.common.lang.processor.AstConverter
         with io.github.qishr.cascara.lang.yaml.processor.YamlConverter;
+
     provides io.github.qishr.cascara.common.lang.processor.Emitter
         with io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
-    provides io.github.qishr.cascara.common.lang.processor.Parser
-        with io.github.qishr.cascara.lang.yaml.processor.YamlParser;
+
+    provides io.github.qishr.cascara.common.lang.processor.AstParser
+        with io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
+
     provides io.github.qishr.cascara.common.lang.processor.Tokenizer
-    // provides io.github.qishr.cascara.common.service.ServiceProvider
         with io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
+
+    // It also works this way...
+    // provides io.github.qishr.cascara.common.service.ServiceProvider
+    //     with io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 }

@@ -7,7 +7,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
+import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
@@ -17,7 +17,7 @@ public class TokenizerTests {
     /// Asserts that the sequence of token types matches the expected types.
     ///
     /// This helper is used to verify the internal state of the [YamlTokenizer]
-    /// without involving the [YamlParser].
+    /// without involving the [YamlAstParser].
     ///
     /// @param tokens The list of actual tokens produced by the tokenizer.
     /// @param expectedTypes A varargs list of the expected [YamlTokenType]s.

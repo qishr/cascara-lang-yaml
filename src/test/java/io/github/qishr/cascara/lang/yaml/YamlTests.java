@@ -15,7 +15,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
-import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
+import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 
 class YamlTests {
 
@@ -29,8 +29,8 @@ class YamlTests {
                             "";
 
         // TODO: diagnostic level in one place for all tests?
-        // YamlParser parser = new YamlParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
-        YamlParser parser = new YamlParser();
+        // YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
+        YamlAstParser parser = new YamlAstParser();
         YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
         List<YamlNode> array = yaml.getSequence("array").getChildren();
         assertEquals(2, array.size());
@@ -44,7 +44,7 @@ class YamlTests {
                             "    - value1\n" + //
                             "    - value2\n" + //
                             "";
-        YamlParser parser = new YamlParser();
+        YamlAstParser parser = new YamlAstParser();
         YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
         YamlMapNode object = yaml.getMap("object");
         List<YamlMapEntryNode> entries = object.getEntries();
@@ -65,7 +65,7 @@ class YamlTests {
     @Test
     void test_stringContaining_quotes() {
         String yamlString = "name: \"one \\\"two\\\" three\"";
-        YamlParser parser = new YamlParser();
+        YamlAstParser parser = new YamlAstParser();
         YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
         String name = yaml.getString("name");
         assertEquals("one \"two\" three", name);
@@ -75,7 +75,7 @@ class YamlTests {
     void test_stringContaining_newline() {
         String yamlString = "name: \"One\n" + //
                         "Two\"";
-        YamlParser parser = new YamlParser();
+        YamlAstParser parser = new YamlAstParser();
         YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
         String name = yaml.getString("name");
         assertEquals("One\nTwo", name);
@@ -84,7 +84,7 @@ class YamlTests {
     @Test
     void test_startsWithComment() {
         String yamlString = "#comment\nkey: value\n";
-        YamlParser parser = new YamlParser();
+        YamlAstParser parser = new YamlAstParser();
         YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
         String value = yaml.getString("key");
         assertEquals("value", value);
@@ -99,7 +99,7 @@ class YamlTests {
               }
             ]
             """;
-        YamlParser parser = new YamlParser()
+        YamlAstParser parser = new YamlAstParser()
                 .setReporter(new StandardReporter().setLevel(Level.TRACE));
 
         YamlSequenceNode seq = (YamlSequenceNode)parser.parse(yamlString);
@@ -167,7 +167,7 @@ class YamlTests {
                 }
             ]
             """;
-        YamlParser parser = new YamlParser()
+        YamlAstParser parser = new YamlAstParser()
                 .setReporter(new StandardReporter().setLevel(Level.TRACE));
 
         YamlSequenceNode seq = (YamlSequenceNode)parser.parse(yamlString);
