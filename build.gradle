@@ -11,7 +11,7 @@ repositories {
 
 
 dependencies {
-    implementation(platform("io.github.qishr:cascara-meta-bom:0.1.13"))
+    implementation(platform("io.github.qishr:cascara-meta-bom:0.1.14"))
 
     // JUnit
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
@@ -37,7 +37,7 @@ tasks.withType(Test).configureEach {
     // This is for benchmarking.
     // Without forkEvery, the new jvmArgs won't do anything.
 
-    forkEvery = 1
-    jvmArgs '-XX:StartFlightRecording=duration=20s,filename=yaml_profile.jfr'
+    // forkEvery = 1
+    // jvmArgs '-XX:StartFlightRecording=duration=20s,filename=yaml_profile.jfr'
 }
 

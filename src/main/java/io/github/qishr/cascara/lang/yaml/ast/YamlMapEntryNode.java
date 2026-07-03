@@ -46,4 +46,10 @@ public class YamlMapEntryNode extends YamlNode implements MapEntryAstNode<YamlNo
     public void accept(YamlVisitor visitor) {
         visitor.visit(this);
     }
+
+	@Override
+	public YamlNode setValue(YamlNode value) {
+        this.value = value;
+        return this;
+	}
 }
