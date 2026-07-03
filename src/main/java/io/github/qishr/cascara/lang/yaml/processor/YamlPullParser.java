@@ -11,6 +11,11 @@ public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implem
     private YamlStreamEngine engine;
     private final InputStream input;
 
+    /// Default constructor for SPI.
+    public YamlPullParser() {
+        input = null;
+    }
+
     public YamlPullParser(InputStream input) {
         this.input = input;
     }
