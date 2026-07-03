@@ -1,6 +1,7 @@
 package io.github.qishr.cascara.lang.yaml.ast;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -233,4 +234,9 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMa
     public void accept(YamlVisitor visitor) {
         visitor.visit(this);
     }
+
+	@Override
+	public Iterator<YamlMapEntryNode> iterator() {
+        return entriesByKey.sequencedValues().iterator();
+	}
 }
