@@ -1,6 +1,5 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.lang.streaming.Event;
 import io.github.qishr.cascara.common.lang.streaming.EventType;
@@ -17,8 +16,6 @@ class YamlStreamEngine {
     private final YamlTokenizer tokenizer;
     private final Deque<Integer> indentStack = new ArrayDeque<>();
     private final Deque<EventType> contextStack = new ArrayDeque<>();
-
-    private Reporter reporter = new NoOpReporter();
 
     private Token currentToken;
     private Token bufferedToken;
@@ -41,19 +38,12 @@ class YamlStreamEngine {
     }
 
     public YamlStreamEngine setReporter(Reporter reporter) {
-        this.reporter = reporter == null ? new NoOpReporter() : reporter;
         return this;
     }
-
-    // boolean hashNextEvent() {
-    //     return !isDocumentEnded || targetDedentCount > 0;
-    // }
 
     boolean hashNextEvent() {
         // If we are already done, do not claim to have events
         return !isDocumentEnded;
-        // if (isDocumentEnded && targetDedentCount == 0) return false;
-        // return true;
     }
 
     Event nextEvent() throws ParserException {
