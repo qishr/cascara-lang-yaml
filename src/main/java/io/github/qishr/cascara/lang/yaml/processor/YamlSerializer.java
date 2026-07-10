@@ -11,7 +11,6 @@ import io.github.qishr.cascara.common.lang.processor.AbstractSerializer;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
 import io.github.qishr.cascara.common.util.ContentType;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
-import io.github.qishr.cascara.lang.yaml.YamlPrimitiveDelegate;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
@@ -26,7 +25,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private Reporter reporter = new NoOpReporter();
 
     public YamlSerializer() {
-        super(AbstractYamlProcessor.YAML_CONTENT_TYPE_STRING, new YamlNodeFactory(), new YamlPrimitiveDelegate());
+        super(AbstractYamlProcessor.YAML_CONTENT_TYPE_STRING, new YamlNodeFactory(), new YamlOptions());
     }
 
     @Override
@@ -50,6 +49,8 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     @Override
     public YamlSerializer setOptions(LanguageOptions<?> options) {
         this.options = (YamlOptions) options;
+        super.setOptions(options);
+        // super.setDelegate(new YamlScalarDelegate((YamlOptions)options));
         return this;
     }
 

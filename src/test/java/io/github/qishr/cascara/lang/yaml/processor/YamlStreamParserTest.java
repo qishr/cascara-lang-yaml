@@ -77,6 +77,7 @@ class YamlStreamParserTest {
 
         // An empty document body defaults to an empty scalar
         assertTrue(body instanceof YamlScalarNode);
-        assertEquals("", ((YamlScalarNode) body).asString());
+        String strVal = ((YamlScalarNode) body).asString();
+        assertEquals("", strVal);
     }
 }

@@ -16,6 +16,7 @@ import io.github.qishr.cascara.common.lang.annotation.Experimental;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
+import io.github.qishr.cascara.common.lang.type.SchemaType;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
@@ -65,9 +66,15 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     private int lastNewlineOrComment;
 
     /// Empty default constructor for SPI.
-    public YamlAstParser() {}
+    public YamlAstParser() {
+    }
 
     @Override protected YamlAstParser self() { return this; }
+
+    public YamlAstParser setOptions(YamlOptions options) {
+        super.setOptions(options);
+        return this;
+    }
 
     /// Entry point for parsing a full YAML source string.
     @Override
@@ -299,7 +306,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         }
 
         if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || isAtEnd()) {
-            document.setBody(new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), "", "", QuoteStyle.PLAIN));
+            document.setBody(new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), SchemaType.ANY, "", "", QuoteStyle.PLAIN, options));
         } else {
             document.setBody(parseValue());
         }
@@ -350,7 +357,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             skipTrivia();
 
             if (check(YamlTokenType.DEDENT) || check(YamlTokenType.EOF)) {
-                return new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), "", null, QuoteStyle.PLAIN);
+                return new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), SchemaType.ANY, "", null, QuoteStyle.PLAIN, options);
             }
 
             // 1. Capture Anchor if present
@@ -416,7 +423,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
             }
             else {
-                result = new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(),"", null, QuoteStyle.PLAIN);
+                result = new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(),SchemaType.ANY, "", null, QuoteStyle.PLAIN, options);
             }
 
             // 3. Apply the anchor to whatever node was produced by wrapping it
@@ -568,7 +575,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                 YamlNode value;
                 if (check(YamlTokenType.NEWLINE) && !isIndentedDeeperThan(keyColumn)) {
-                    value = new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), "", null, QuoteStyle.PLAIN);
+                    value = new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), SchemaType.ANY, "", null, QuoteStyle.PLAIN, options);
                 } else {
                     value = parseValue();
                 }
@@ -722,9 +729,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             YamlScalarNode scalar = new YamlScalarNode(
                 token.getStartLine(),
                 token.getStartColumn(),
+                SchemaType.ANY,// token.getSchemaType(),
                 raw,
                 token.getContent(),
-                style
+                style,
+                options
             );
             scalar.setToken(token);
 
