@@ -21,8 +21,7 @@ public class RegressionTests {
               line:one
               line:two
             """;
-        YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
-        YamlMapNode root = (YamlMapNode) doc;
+        YamlMapNode root = (YamlMapNode)parser.parse(yaml);
         YamlScalarNode script = (YamlScalarNode) root.get("script");
 
         // CURRENT EXPECTATION (Failing): "line : one \nline : two \n"

@@ -28,8 +28,8 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
                     AstNode astKey = astMapEntry.getKey();
                     AstNode astValue = astMapEntry.getValue();
                     if (astKey instanceof ScalarAstNode astScalarKey) {
-                        YamlScalarNode yamlKey = new YamlScalarNode();
-                        yamlKey.setPrimitive(astScalarKey.asString());
+                        YamlScalarNode yamlKey = new YamlScalarNode(astScalarKey.asString());
+                        // yamlKey.setPrimitive(astScalarKey.asString());
                         YamlNode yamlValue = fromAst(astValue);
                         yamlMap.put(yamlKey, yamlValue);
                     }
@@ -45,8 +45,8 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             }
             return yamlSeq;
         } else if (ast instanceof ScalarAstNode astScalar) {
-            YamlScalarNode yamlScalar = new YamlScalarNode();
-            yamlScalar.setPrimitive(astScalar.getPrimitive());
+            YamlScalarNode yamlScalar = new YamlScalarNode(astScalar.getPrimitive());
+            // yamlScalar.setPrimitive(astScalar.getPrimitive());
             // yamlScalar.setRaw(astScalar.getString());
             return yamlScalar;
         } else {

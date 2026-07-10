@@ -106,7 +106,7 @@ class YamlComprehensiveTest {
         assertEquals(2, inner.size());
 
         // 5. Verify a leaf value
-        assertEquals("1", inner.get(0).toString());
+        assertEquals("1", inner.get(0).asString());
     }
 
     @Test
