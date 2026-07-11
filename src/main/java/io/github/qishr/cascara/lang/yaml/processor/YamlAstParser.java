@@ -942,7 +942,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
     /// Log the current method name and upcoming tokens
     private void trace(String methodName) {
-        if (reporter == null || reporter instanceof NoOpReporter) return;
+        if (reporter == null || reporter.isSilent()) return;
 
         // Ensure at least the current token is loaded to grab safe coordinates
         ensureBuffered(0);
