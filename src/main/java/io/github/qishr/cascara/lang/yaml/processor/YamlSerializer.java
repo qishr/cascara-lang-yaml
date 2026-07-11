@@ -18,7 +18,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 
 /// Standard implementation for YAML serialization.
-public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,YamlScalarNode,YamlSequenceNode,YamlMapNode,YamlMapEntryNode> {
+public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,YamlScalarNode,YamlSequenceNode,YamlMapNode,YamlMapEntryNode,YamlNode> {
 
     private YamlAstParser parser;
     private YamlOptions options = new YamlOptions();
@@ -107,5 +107,10 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
             parser.setReporter(reporter);
         }
         return parser;
+    }
+
+    @Override
+    protected YamlNode serializeKey(Object key) {
+        return serialize(key);
     }
 }

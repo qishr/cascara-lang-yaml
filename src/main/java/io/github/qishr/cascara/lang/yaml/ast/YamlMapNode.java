@@ -13,7 +13,7 @@ import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.common.lang.type.SchemaType;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 
-public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlMapEntryNode> {
+public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNode, YamlMapEntryNode> {
     private CollectionStyle style = CollectionStyle.BLOCK;
     private final LinkedHashMap<YamlNode,YamlMapEntryNode> entriesByKey = new LinkedHashMap<>();
 

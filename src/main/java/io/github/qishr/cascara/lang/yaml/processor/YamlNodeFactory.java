@@ -10,7 +10,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 
-public class YamlNodeFactory implements AstNodeFactory<YamlNode,YamlScalarNode,YamlSequenceNode,YamlMapNode,YamlMapEntryNode> {
+public class YamlNodeFactory implements AstNodeFactory<YamlNode,YamlScalarNode,YamlSequenceNode,YamlMapNode,YamlMapEntryNode,YamlNode> {
 
     @Override
     public YamlScalarNode createScalarNode(Object jvmValue) {
@@ -28,7 +28,7 @@ public class YamlNodeFactory implements AstNodeFactory<YamlNode,YamlScalarNode,Y
 	}
 
     @Override
-    public YamlScalarNode createScalarKeyNode(Object key) {
+    public YamlScalarNode createKey(Object key) {
         return new YamlScalarNode(key);
     }
 

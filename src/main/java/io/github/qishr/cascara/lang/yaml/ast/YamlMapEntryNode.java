@@ -5,7 +5,7 @@ import java.util.List;
 import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
 
 /// Represents the structural pairing of a key and a value.
-public class YamlMapEntryNode extends YamlNode implements MapEntryAstNode<YamlNode> {
+public class YamlMapEntryNode extends YamlNode implements MapEntryAstNode<YamlNode,YamlNode> {
     private final YamlNode key;
     private YamlNode value;
 

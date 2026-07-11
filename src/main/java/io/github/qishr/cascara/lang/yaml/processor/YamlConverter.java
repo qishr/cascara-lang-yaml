@@ -24,12 +24,18 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         if (ast instanceof MapAstNode astMap) {
             YamlMapNode yamlMap = new YamlMapNode();
             for (Object entry : astMap.getEntries()) {
+                // TODO: MapEntryAstNode should probably have a method of obtaining a string key
                 if (entry instanceof MapEntryAstNode astMapEntry) {
-                    AstNode astKey = astMapEntry.getKey();
-                    AstNode astValue = astMapEntry.getValue();
-                    if (astKey instanceof ScalarAstNode astScalarKey) {
-                        YamlScalarNode yamlKey = new YamlScalarNode(astScalarKey.asString());
-                        // yamlKey.setPrimitive(astScalarKey.asString());
+                    if (astMapEntry.getKey() instanceof AstNode astKey) {
+                        AstNode astValue = astMapEntry.getValue();
+                        if (astKey instanceof ScalarAstNode astScalarKey) {
+                            YamlScalarNode yamlKey = new YamlScalarNode(astScalarKey.asString());
+                            YamlNode yamlValue = fromAst(astValue);
+                            yamlMap.put(yamlKey, yamlValue);
+                        }
+                    } else if (astMapEntry.getKey() instanceof String stringKey) {
+                        AstNode astValue = astMapEntry.getValue();
+                        YamlScalarNode yamlKey = new YamlScalarNode(stringKey);
                         YamlNode yamlValue = fromAst(astValue);
                         yamlMap.put(yamlKey, yamlValue);
                     }
