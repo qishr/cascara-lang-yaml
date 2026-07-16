@@ -4,11 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.lang.type.LocalDateTimeTypeDescriptor;
 import io.github.qishr.cascara.common.lang.type.ByteArrayDescriptor;
+import io.github.qishr.cascara.common.lang.type.DateTimeTypeDescriptor;
 import io.github.qishr.cascara.common.lang.type.TypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
@@ -23,10 +24,10 @@ public class ScalarDescriptorTest {
     void testDateScalarDescriptor() {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
-        LocalDateTimeTypeDescriptor dateScalarDescriptor = new LocalDateTimeTypeDescriptor();
+        DateTimeTypeDescriptor dateScalarDescriptor = new DateTimeTypeDescriptor();
         yamlSerializer.registerTypeDescriptor(dateScalarDescriptor);
 
-        LocalDateTime dt = LocalDateTime.now();
+        ZonedDateTime dt = ZonedDateTime.now();
         TypeDescriptorTestClass test = new TypeDescriptorTestClass(dt);
 
         YamlNode yaml = yamlSerializer.toAst(test);

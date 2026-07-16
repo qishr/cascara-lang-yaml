@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public class RegressionTests {
     private final YamlOptions options = new YamlOptions();
@@ -21,8 +22,7 @@ public class RegressionTests {
               line:one
               line:two
             """;
-        YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
-        YamlMapNode root = (YamlMapNode) doc;
+        YamlMapNode root = (YamlMapNode)parser.parse(yaml);
         YamlScalarNode script = (YamlScalarNode) root.get("script");
 
         // CURRENT EXPECTATION (Failing): "line : one \nline : two \n"

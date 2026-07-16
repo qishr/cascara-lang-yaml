@@ -25,7 +25,7 @@ public class YamlCommentNode extends YamlNode implements CommentAstNode {
     @Override public List<YamlNode> getChildren() { return List.of(); }
 
     @Override
-    public String getRaw() {
+    public String getLexeme() {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getRawValue'");
     }
