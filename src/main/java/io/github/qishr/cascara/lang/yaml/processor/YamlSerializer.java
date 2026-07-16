@@ -1,6 +1,9 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
+import java.io.Writer;
 
 import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
@@ -11,12 +14,12 @@ import io.github.qishr.cascara.common.lang.processor.AbstractSerializer;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
 import io.github.qishr.cascara.common.lang.type.TypeReference;
 import io.github.qishr.cascara.common.util.ContentType;
-import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 /// Standard implementation for YAML serialization.
 public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,YamlScalarNode,YamlSequenceNode,YamlMapNode,YamlMapEntryNode,YamlNode> {
@@ -34,6 +37,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return this;
     }
 
+    /// {@inheritDoc}
     @Override
     public ContentType getContentType() {
         return AbstractYamlProcessor.YAML_CONTENT_TYPE;
@@ -59,6 +63,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     // Serializer Implementation
     //
 
+    /// {@inheritDoc}
     @Override
     public YamlSerializer setParser(AstParser<YamlNode,?> parser) {
         if (!(parser instanceof YamlAstParser YamlAstParser)) {
@@ -68,6 +73,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return this;
     }
 
+    /// {@inheritDoc}
     @Override
     public String toText(Object jvmInstance) {
         // Step 1: Object -> AST
@@ -76,11 +82,21 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return new YamlEmitter().setOptions(options).emit(ast);
     }
 
+    /// {@inheritDoc}
+    @Override
+    public void toWriter(Object jvmInstance, Writer writer) throws IOException {
+        YamlNode ast = toAst(jvmInstance);
+        String text = new YamlEmitter().setOptions(options).emit(ast);
+        writer.write(text);
+    }
+
+    /// {@inheritDoc}
     @Override
     public YamlNode toAst(Object jvmInstance) {
         return serialize(jvmInstance);
     }
 
+    /// {@inheritDoc}
     @Override
     public <C> C fromText(String text, Class<C> jvmType) {
         // Step 1: String -> AST
@@ -89,6 +105,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return fromAst(ast, jvmType);
     }
 
+    /// {@inheritDoc}
     @Override
     public <C> C fromText(String text, TypeReference<C> typeRef) {
         // Step 1: String -> AST
@@ -97,6 +114,21 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return fromAst(ast, typeRef);
     }
 
+    /// {@inheritDoc}
+    @Override
+    public <C> C fromReader(Reader reader, Class<C> jvmType) {
+        YamlNode ast = getParser().parse(reader);
+        return fromAst(ast, jvmType);
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public <C> C fromReader(Reader reader, TypeReference<C> typeRef) {
+        YamlNode ast = getParser().parse(reader);
+        return fromAst(ast, typeRef);
+    }
+
+    /// {@inheritDoc}
     @Override
     public <C> C fromStream(InputStream is, Class<C> jvmType) {
         // Step 1: String -> AST
@@ -105,6 +137,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return fromAst(ast, jvmType);
     }
 
+    /// {@inheritDoc}
     @Override
     public <C> C fromStream(InputStream is, TypeReference<C> typeRef) {
         // Step 1: String -> AST
@@ -113,11 +146,13 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return fromAst(ast, typeRef);
     }
 
+    /// {@inheritDoc}
     @Override
     public <C> C fromAst(YamlNode astNode, Class<C> jvmType) {
         return (C) deserialize(astNode, jvmType);
     }
 
+    /// {@inheritDoc}
     @Override
     public <C> C fromAst(YamlNode astNode, TypeReference<C> typeRef) {
         return (C) deserialize(astNode, typeRef);
@@ -131,6 +166,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return parser;
     }
 
+    /// {@inheritDoc}
     @Override
     protected YamlNode serializeKey(Object key) {
         return serialize(key);

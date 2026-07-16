@@ -5,7 +5,7 @@ import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
-import io.github.qishr.cascara.lang.yaml.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 import org.junit.jupiter.api.Test;
 

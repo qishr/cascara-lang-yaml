@@ -1,6 +1,7 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
 import java.io.InputStream;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,14 +11,12 @@ import java.util.Set;
 
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
-import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.annotation.Experimental;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
-import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
@@ -34,6 +33,7 @@ import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 /// A recursive descent parser that transforms a stream of [YamlToken]s into a [YamlNode] AST.
 ///
@@ -80,6 +80,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     @Override
     public YamlNode parse(String text) {
         ensureTokenBufferFilled(text);
+        return parseAndUnpack();
+    }
+
+    @Override
+    public YamlNode parse(Reader reader) {
+        ensureTokenBufferFilled(reader);
         return parseAndUnpack();
     }
 
@@ -166,6 +172,15 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         tz.setOptions(options);
         tz.setReporter(reporter);
         tz.open(text);
+        fillBuffer(tz);
+    }
+
+    /// Helper to centralize tokenizer execution
+    private void ensureTokenBufferFilled(Reader reader) {
+        YamlTokenizer tz = new YamlTokenizer();
+        tz.setOptions(options);
+        tz.setReporter(reporter);
+        tz.open(reader);
         fillBuffer(tz);
     }
 

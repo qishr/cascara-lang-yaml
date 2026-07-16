@@ -6,7 +6,7 @@ import io.github.qishr.cascara.common.lang.processor.Processor;
 import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.util.ContentType;
 import io.github.qishr.cascara.common.util.Properties;
-import io.github.qishr.cascara.lang.yaml.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public abstract class AbstractYamlProcessor<P extends Processor> implements Processor {
     static final String YAML_CONTENT_TYPE_STRING = "application/yaml";
