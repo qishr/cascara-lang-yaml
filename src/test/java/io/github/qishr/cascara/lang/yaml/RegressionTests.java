@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public class RegressionTests {
     private final YamlOptions options = new YamlOptions();

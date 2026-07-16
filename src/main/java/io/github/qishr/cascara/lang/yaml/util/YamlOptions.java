@@ -1,4 +1,4 @@
-package io.github.qishr.cascara.lang.yaml;
+package io.github.qishr.cascara.lang.yaml.util;
 
 import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.util.Duplicable;

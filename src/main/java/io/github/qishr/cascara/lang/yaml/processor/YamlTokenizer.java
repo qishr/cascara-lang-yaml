@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.io.InputStream;
+import java.io.Reader;
 import java.util.ArrayDeque;
 
 import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
@@ -72,6 +73,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     @Override
     public void open(String text) {
         this.buffer = new SourceStringBuffer(text);
+        this.isLegacyMode = false;
+        resetCommonState();
+    }
+
+    @Override
+    public void open(Reader reader) {
+        buffer = new SourceInputStreamBuffer(reader);
         this.isLegacyMode = false;
         resetCommonState();
     }
