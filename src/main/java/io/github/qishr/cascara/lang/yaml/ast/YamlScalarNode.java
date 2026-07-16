@@ -6,7 +6,7 @@ import java.util.Objects;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
-import io.github.qishr.cascara.common.lang.type.SchemaType;
+import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 
 /// Represents a leaf node in the YAML AST containing a single scalar value.
 public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> {
@@ -19,7 +19,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
 
     // TODO: Set this in constructors
-    private SchemaType schemaType;
+    private PrimitiveType schemaType;
 
 
 
@@ -39,7 +39,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// Constructor for use in parsers.
     /// Used when reading raw text from a file stream.
     /// Takes a String and triggers full lexical dialect type inference.
-    public YamlScalarNode(int line, int column, SchemaType schemaType, String raw, String unescapedContent, QuoteStyle quoteStyle, YamlOptions options) {
+    public YamlScalarNode(int line, int column, PrimitiveType schemaType, String raw, String unescapedContent, QuoteStyle quoteStyle, YamlOptions options) {
         super(line, column);
         this.lexeme = raw;
         // fromString treats the input as text content to be parsed
@@ -69,7 +69,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
         // quoteStyle should be treated as a *preference*, and YamlScalarNode should override it if it doesn't suit the type/value.
 
-        this.schemaType = SchemaType.of(jvmValue);
+        this.schemaType = PrimitiveType.of(jvmValue);
         this.lexeme = null;
         this.content = null;
 
@@ -94,7 +94,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
 
         // // TODO:
-        // this.schemaType = SchemaType.of(jvmValue);
+        // this.schemaType = PrimitiveType.of(jvmValue);
 
 
         // this.nativeValue = jvmValue;
@@ -119,7 +119,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         // // TODO: Set quote style here, or later?
 
 
-        // this.schemaType = SchemaType.of(primitiveValue);
+        // this.schemaType = PrimitiveType.of(primitiveValue);
 
 
         // this.delegate = null;
@@ -137,7 +137,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
 
         // // TODO:
-        // this.schemaType = SchemaType.ANY;
+        // this.schemaType = PrimitiveType.ANY;
 
 
         // // this.primitive = Primitive.of(null)
@@ -145,8 +145,8 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         // this.delegate = null;
     }
 
-    public SchemaType getSchemaType() {
-        if (schemaType == null || schemaType == SchemaType.ANY) {
+    public PrimitiveType getPrimitiveType() {
+        if (schemaType == null || schemaType == PrimitiveType.ANY) {
             schemaType = inferType(lexeme, quoteStyle);
         }
         return schemaType;
@@ -226,7 +226,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         //     return nativeValue;
         // }
 
-        // if (schemaType == SchemaType.STRING) {
+        // if (schemaType == PrimitiveType.STRING) {
         //     jvmValue = content; // do not interpret
         //     nativeValueCached = true;
         //     return jvmValue;
@@ -249,7 +249,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
         if (!stringValueCached) {
             // STRING: return logical value (unescaped)
-            if (getSchemaType() == SchemaType.STRING) {
+            if (getPrimitiveType() == PrimitiveType.STRING) {
                 Object v = getPrimitive(); // unescaped logical value
                 stringValue = (v == null) ? null : String.valueOf(v);
             }
@@ -441,20 +441,20 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
 
 
-    public SchemaType inferType(String raw, QuoteStyle quoteStyle) {
+    public PrimitiveType inferType(String raw, QuoteStyle quoteStyle) {
 
         // raw should never be null here, right? Is this needed?
         if (raw == null) {
-            return SchemaType.NULL;
+            return PrimitiveType.NULL;
         }
 
 
         // Quoted strings
         if (quoteStyle == QuoteStyle.DOUBLE) {
-            return SchemaType.STRING;
+            return PrimitiveType.STRING;
         }
         if (quoteStyle == QuoteStyle.SINGLE) {
-            return SchemaType.STRING;
+            return PrimitiveType.STRING;
         }
 
         // Plain scalars
@@ -468,39 +468,39 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
                 "on".equals(raw) ||
                 "off".equals(raw)
             ) {
-                return SchemaType.BOOLEAN;
+                return PrimitiveType.BOOLEAN;
             }
 
             // Null
             if ("null".equals(raw) || raw.isBlank()) {
-                return SchemaType.NULL;
+                return PrimitiveType.NULL;
             }
 
-            SchemaType numberType = inferNumberType(raw);
+            PrimitiveType numberType = inferNumberType(raw);
             if (numberType != null) {
                 return numberType;
             }
 
             // if (isSpecialNumber(raw)) {
-            //     return SchemaType.NUMBER;
+            //     return PrimitiveType.NUMBER;
             // }
             // if (isHexRaw(raw)) {
-            //     return SchemaType.NUMBER;
+            //     return PrimitiveType.NUMBER;
             // }
             // if (isOctalRaw(raw)) {
-            //     return SchemaType.NUMBER;
+            //     return PrimitiveType.NUMBER;
             // }
             // if (isDecimalNumber(raw)) {
-            //     return SchemaType.NUMBER;
+            //     return PrimitiveType.NUMBER;
             // }
 
-            return SchemaType.STRING;
+            return PrimitiveType.STRING;
         }
 
-        return SchemaType.STRING;
+        return PrimitiveType.STRING;
     }
 
-    private SchemaType inferNumberType(String s) {
+    private PrimitiveType inferNumberType(String s) {
         int len = s.length();
         if (len == 0) return null;
 
@@ -532,14 +532,14 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
             if (c == 'e' || c == 'E') {
                 if (isScientific(s, i)) {
-                    return SchemaType.NUMBER;
+                    return PrimitiveType.NUMBER;
                 }
             }
 
             return null;
         }
 
-        return hasDigit ? (hasDot ? SchemaType.NUMBER : SchemaType.INTEGER) : null;
+        return hasDigit ? (hasDot ? PrimitiveType.NUMBER : PrimitiveType.INTEGER) : null;
     }
 
     // ------------------------------------------------------------
@@ -570,10 +570,10 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     // ------------------------------------------------------------
     public Object parse(String raw, QuoteStyle quoteStyle) {
 
-        if (schemaType == null || schemaType == SchemaType.ANY) {
+        if (schemaType == null || schemaType == PrimitiveType.ANY) {
             schemaType = inferType(raw, quoteStyle);
         }
-        // SchemaType type = inferType(raw, quoteStyle, isKey);
+        // PrimitiveType type = inferType(raw, quoteStyle, isKey);
 
         switch (schemaType) {
             case BOOLEAN:
