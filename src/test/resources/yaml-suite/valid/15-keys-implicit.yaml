@@ -1,0 +1,8 @@
+"key": "value"
+plain: value
+mixed:
+  "quoted": true
+colon:
+  "quo:ted": true
+space:
+  "quo ted": true

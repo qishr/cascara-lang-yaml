@@ -1,6 +1,6 @@
 ## 🛠 The Cascara YAML Processors
 
-The YAML subsystem provides a high-fidelity lifecycle for YAML documents, ensuring that every space, comment, and structural nuance is preserved from input to output.
+The YAML module provides a high-fidelity lifecycle for YAML documents, ensuring that every space, comment, and structural nuance is preserved from input to output.
 
 ### 1. Structural Integrity & Parsing
 
