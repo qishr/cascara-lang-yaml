@@ -1,0 +1,15 @@
+error:
+  TOKEN-101: "Tab characters are not allowed for indentation in YAML"
+
+  PARSE-101: "Expected ',' or '}' in flow map."
+  PARSE-103: "Expected end of stream."
+  PARSE-104: "Expected scalar."
+  PARSE-105: "Expected ':' after key in flow map."
+  PARSE-106: "Expected '{' to start flow map."
+  PARSE-107: "Expected ']'"
+  PARSE-108: "Expected '['"
+
+  PARSE-202: "Inconsistent indentation for map key."
+  PARSE-203: "Expected indentation for block scalar."
+
+  VALID-301: "Duplicate key found: '{0}'."

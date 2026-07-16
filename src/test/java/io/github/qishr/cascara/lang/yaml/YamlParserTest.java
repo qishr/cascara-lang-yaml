@@ -1,3 +1,38 @@
+// # License & Terms
+//
+// This file is part of **Cascara**.
+//
+// **Cascara** is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// ---
+//
+// ## Special Runtime Exception
+//
+// As a special exception, the copyright holders of this library give you
+// permission to link this library with independent modules to produce an
+// executable, regardless of the license terms of these independent modules,
+// and to copy and distribute the resulting executable under terms of your
+// choice, provided that you also meet, for each linked independent module,
+// the terms and conditions of the license of that module.
+//
+// An independent module is a module which is not derived from or based on
+// this library. If you modify this library, you may extend this exception
+// to your version of the library, but you are not obligated to do so. If
+// you do not wish to do so, delete this exception statement from your
+// version.
+
+
 package io.github.qishr.cascara.lang.yaml;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -5,18 +40,15 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.SimpleReporter;
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.*;
-import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
+import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
-class YamlParserTest {
+class YamlAstParserTest {
 
-    private final YamlParser parser = new YamlParser();
+    private final YamlAstParser parser = new YamlAstParser();
 
     @Test
     void testNewLineInsideNestedObject() throws Exception {
@@ -27,8 +59,11 @@ class YamlParserTest {
                 c: 2
             """;
 
-        Reporter reporter = new SimpleReporter().setLevel(Level.TRACE);
-        YamlParser parser = new YamlParser().setReporter(reporter);
+        // TODO: diagnostic level in one place for all tests?
+        // Reporter reporter = new StandardReporter().setLevel(Level.TRACE);
+        // YamlAstParser parser = new YamlAstParser().setReporter(reporter);
+
+        YamlAstParser parser = new YamlAstParser();
         parser.parse(yaml);
 
     }
@@ -42,11 +77,7 @@ class YamlParserTest {
                     "text/css"
                 """;
 
-        YamlDocument doc = parser.parse(yaml);
-
-        // Access the root map via doc.getRoot()
-        assertTrue(doc.getRoot() instanceof YamlMapNode);
-        YamlMapNode rootMap = (YamlMapNode) doc.getRoot();
+        YamlMapNode rootMap = (YamlMapNode)parser.parse(yaml);
 
         // Use the get(String key) helper from MapAstNode
         YamlNode rootValue = rootMap.get("mimeTypes");
@@ -59,17 +90,17 @@ class YamlParserTest {
         assertTrue(firstItem instanceof YamlScalarNode, "Expected a ScalarNode inside the sequence");
 
         YamlScalarNode scalar = (YamlScalarNode) firstItem;
-        // ScalarAstNode uses getString() or getPrimitiveValue()
-        assertEquals("text/css", scalar.getString(), "Should parse indented scalar without quotes");
+        // ScalarAstNode uses getString() or getPrimitive()
+        assertEquals("text/css", scalar.asString(), "Should parse indented scalar without quotes");
     }
 
     @Test
     void testEmptyFileDoesNotCrash() throws Exception {
         String yaml = "";
         assertDoesNotThrow(() -> {
-            YamlDocument doc = parser.parse(yaml);
+            YamlNode doc = parser.parse(yaml);
             // doc.getRoot() might be a MapNode with no entries
-            if (doc.getRoot() instanceof YamlMapNode map) {
+            if (doc instanceof YamlMapNode map) {
                 assertTrue(map.getEntries().isEmpty());
             }
         });
@@ -84,8 +115,7 @@ class YamlParserTest {
                     name: "test"
                 """;
 
-        YamlDocument doc = parser.parse(yaml);
-        YamlMapNode rootMap = (YamlMapNode) doc.getRoot();
+        YamlMapNode rootMap = (YamlMapNode) parser.parse(yaml);
 
         YamlSequenceNode seq = (YamlSequenceNode) rootMap.get("records");
         // Get the first item in sequence, then cast to map
@@ -106,8 +136,7 @@ class YamlParserTest {
                   -
                     2
                 """;
-        YamlDocument doc = parser.parse(yaml);
-        YamlMapNode root = (YamlMapNode) doc.getRoot();
+        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
 
         // Accessing values by key and checking style
         YamlSequenceNode compact = (YamlSequenceNode) root.get("compact");

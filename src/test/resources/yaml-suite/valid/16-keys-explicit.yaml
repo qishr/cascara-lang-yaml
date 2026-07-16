@@ -1,0 +1,11 @@
+mapping:
+  ? foo
+  : 1
+  ? bar baz
+  : 2
+  ? "qux:quux"
+  : 3
+tiles:
+  ? X: -10
+    Y: -10
+  : 2

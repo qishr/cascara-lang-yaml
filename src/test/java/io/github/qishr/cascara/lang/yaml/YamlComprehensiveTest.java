@@ -1,22 +1,66 @@
+// # License & Terms
+//
+// This file is part of **Cascara**.
+//
+// **Cascara** is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// ---
+//
+// ## Special Runtime Exception
+//
+// As a special exception, the copyright holders of this library give you
+// permission to link this library with independent modules to produce an
+// executable, regardless of the license terms of these independent modules,
+// and to copy and distribute the resulting executable under terms of your
+// choice, provided that you also meet, for each linked independent module,
+// the terms and conditions of the license of that module.
+//
+// An independent module is a module which is not derived from or based on
+// this library. If you modify this library, you may extend this exception
+// to your version of the library, but you are not obligated to do so. If
+// you do not wish to do so, delete this exception statement from your
+// version.
+
+
 package io.github.qishr.cascara.lang.yaml;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.github.qishr.cascara.common.diagnostic.Diagnostic;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
-import io.github.qishr.cascara.lang.yaml.processor.YamlParser;
+import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 class YamlComprehensiveTest {
 
-    private final YamlParser parser = new YamlParser();
-    private final YamlTokenizer tokenizer = new YamlTokenizer();
+    // private final YamlAstParser parser = new YamlAstParser();
+    // private final YamlTokenizer tokenizer = new YamlTokenizer();
 
     // private void assertTokenTypes(List<YamlToken> tokens, YamlTokenType... expected) {
     //     for (int i = 0; i < expected.length; i++) {
@@ -24,6 +68,33 @@ class YamlComprehensiveTest {
     //         assertEquals(expected[i], tokens.get(i).getType(), "Mismatch at token " + i);
     //     }
     // }
+
+    private YamlOptions options;
+    private YamlTokenizer tokenizer;
+    private YamlAstParser parser;
+    private Reporter reporter;
+    private List<Diagnostic> diagnostics;
+
+    public void collect(Diagnostic diagnostic) {
+        diagnostics.add(diagnostic);
+    }
+
+    public void clear(URI uri) {
+        diagnostics.clear();
+    }
+
+
+    @BeforeEach
+    void init() {
+        diagnostics = new ArrayList<>();
+        reporter = new StandardReporter().setDiagnosticCollector(this::collect);
+        options = new YamlOptions().setStrict(true);
+        tokenizer = new YamlTokenizer().setReporter(reporter);
+        parser = new YamlAstParser()
+            .setOptions(options)
+            .setReporter(reporter);
+    }
+
 
     // --- TOKENIZATION TESTS ---
 
@@ -46,20 +117,16 @@ class YamlComprehensiveTest {
     void testImplicitNullValues() throws Exception {
         // Common in config: key followed by newline and another key
         String yaml = "empty_key:\nnext_key: value";
-        YamlDocument doc = parser.parse(yaml);
+        YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
         YamlNode val = doc.get("empty_key");
         assertTrue(val instanceof YamlScalarNode);
-        assertNull(((YamlScalarNode)val).getString(), "Value-less key should result in null scalar");
+        assertNull(((YamlScalarNode)val).asString(), "Value-less key should result in null scalar");
     }
 
     @Test
     void testNestedFlowCollectionsInBlock() throws Exception {
         String yaml = "matrix: [[1, 2], [3, 4]]";
-        YamlDocument doc = parser.parse(yaml);
-
-        // 1. The root is a Map
-        assertTrue(doc.getRoot() instanceof YamlMapNode);
-        YamlMapNode rootMap = (YamlMapNode) doc.getRoot();
+        YamlMapNode rootMap = (YamlMapNode)parser.parse(yaml);
 
         // 2. Get the value for "matrix"
         YamlNode matrixNode = rootMap.get("matrix");
@@ -75,7 +142,7 @@ class YamlComprehensiveTest {
         assertEquals(2, inner.size());
 
         // 5. Verify a leaf value
-        assertEquals("1", inner.get(0).toString());
+        assertEquals("1", inner.get(0).asString());
     }
 
     @Test
@@ -84,7 +151,7 @@ class YamlComprehensiveTest {
                 default: &def "base"
                 custom: *def
                 """;
-        YamlDocument doc = parser.parse(yaml);
+        YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
 
         // Use the common MapAstNode 'get' to find the alias node
         YamlNode customVal = doc.get("custom");
@@ -100,24 +167,21 @@ class YamlComprehensiveTest {
         String original = "records:\n  -\n    id: \"1\"\n    tags:\n      -\n        a";
 
         // 1. Parse
-        YamlDocument doc = parser.parse(original);
+        YamlMapNode originalMap = (YamlMapNode)parser.parse(original);
 
 
         YamlOptions options = new YamlOptions().setExpandedStyle(true);
 
         // 2. Emit
-        String emitted = new YamlEmitter().setOptions(options).emit(doc);
+        String emitted = new YamlEmitter().setOptions(options).emit(originalMap);
         System.out.println("--- EMITTED START ---");
         System.out.println(emitted);
         System.out.println("--- EMITTED END ---");
 
         // 3. Re-Parse
-        YamlDocument reParsedDoc = parser.parse(emitted);
+        YamlMapNode reParsedMap = (YamlMapNode)parser.parse(emitted);
 
         // 4. Verify logical equality
-        YamlMapNode originalMap = (YamlMapNode) doc.getRoot();
-        YamlMapNode reParsedMap = (YamlMapNode) reParsedDoc.getRoot();
-
         assertEquals(originalMap.getEntries().size(), reParsedMap.getEntries().size());
 
         // Compare the first record's ID:
@@ -133,12 +197,17 @@ class YamlComprehensiveTest {
     void testTabIndentationFails() {
         // YAML spec forbids tabs for indentation
         String yaml = "key:\n\t- item";
-        // Assuming YamlParserException extends ParserException
+        parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
+        // Assuming YamlAstParserException extends ParserException
         assertThrows(ParserException.class, () -> parser.parse(yaml));
+        // parser.parse(yaml);
+        // assertFalse(diagnostics.isEmpty());
     }
 
     @Test
     void testMismatchedDedentFails() {
         String yaml = "parent:\n  child: val\n    - orphan_item";
         assertThrows(ParserException.class, () -> parser.parse(yaml));
+        // parser.parse(yaml);
+        // assertFalse(diagnostics.isEmpty());
     }}
