@@ -1,15 +1,15 @@
 package io.github.qishr.cascara.lang.yaml.type;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 import io.github.qishr.cascara.common.lang.annotation.Serializable;
 
 @Serializable
 public class TypeDescriptorTestClass {
     @SuppressWarnings("unused")
-    private LocalDateTime dateTime;
+    private ZonedDateTime dateTime;
 
-    public TypeDescriptorTestClass(LocalDateTime dt) {
+    public TypeDescriptorTestClass(ZonedDateTime dt) {
         dateTime = dt;
     }
 }

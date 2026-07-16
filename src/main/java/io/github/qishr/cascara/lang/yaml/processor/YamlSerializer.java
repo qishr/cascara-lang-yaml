@@ -9,6 +9,7 @@ import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.lang.exception.SerializerException;
 import io.github.qishr.cascara.common.lang.processor.AbstractSerializer;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
+import io.github.qishr.cascara.common.lang.type.TypeReference;
 import io.github.qishr.cascara.common.util.ContentType;
 import io.github.qishr.cascara.lang.yaml.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
@@ -76,11 +77,24 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     }
 
     @Override
+    public YamlNode toAst(Object jvmInstance) {
+        return serialize(jvmInstance);
+    }
+
+    @Override
     public <C> C fromText(String text, Class<C> jvmType) {
         // Step 1: String -> AST
         YamlNode ast = getParser().parse(text);
         // Step 2: AST -> Object
         return fromAst(ast, jvmType);
+    }
+
+    @Override
+    public <C> C fromText(String text, TypeReference<C> typeRef) {
+        // Step 1: String -> AST
+        YamlNode ast = getParser().parse(text);
+        // Step 2: AST -> Object
+        return fromAst(ast, typeRef);
     }
 
     @Override
@@ -92,13 +106,21 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     }
 
     @Override
-    public YamlNode toAst(Object jvmInstance) {
-        return serialize(jvmInstance);
+    public <C> C fromStream(InputStream is, TypeReference<C> typeRef) {
+        // Step 1: String -> AST
+        YamlNode ast = getParser().parse(is);
+        // Step 2: AST -> Object
+        return fromAst(ast, typeRef);
     }
 
     @Override
     public <C> C fromAst(YamlNode astNode, Class<C> jvmType) {
         return (C) deserialize(astNode, jvmType);
+    }
+
+    @Override
+    public <C> C fromAst(YamlNode astNode, TypeReference<C> typeRef) {
+        return (C) deserialize(astNode, typeRef);
     }
 
     private YamlAstParser getParser() {
