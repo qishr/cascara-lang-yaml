@@ -49,7 +49,6 @@ public class TokenizerTests {
 
     /// Helper to print tokens in a readable format when a test fails.
     private void dumpTokens(List<YamlToken> tokens) {
-        System.out.println("\n--- Captured Token Stream ---");
         for (int i = 0; i < tokens.size(); i++) {
             YamlToken t = tokens.get(i);
             System.out.printf("[%2d] %-20s | L:%-3d C:%-3d | Lexeme: '%s'%n",

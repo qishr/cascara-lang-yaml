@@ -2,7 +2,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.PushParser;
-import io.github.qishr.cascara.common.lang.streaming.Event;
+import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
 import io.github.qishr.cascara.common.lang.streaming.StreamHandler;
 
 import java.io.InputStream;
@@ -19,7 +19,7 @@ public class YamlPushParser extends AbstractYamlProcessor<YamlPushParser> implem
         executionEngine.setReporter(reporter);
 
         while (executionEngine.hashNextEvent()) {
-            Event event = executionEngine.nextEvent();
+            StreamingEvent event = executionEngine.nextEvent();
             if (event != null) {
                 handler.onEvent(event);
             }

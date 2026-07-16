@@ -2,7 +2,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.PullParser;
-import io.github.qishr.cascara.common.lang.streaming.Event;
+import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
 
 import java.io.InputStream;
 import java.util.NoSuchElementException;
@@ -40,7 +40,7 @@ public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implem
     }
 
     @Override
-    public Event next() {
+    public StreamingEvent next() {
         if (!hasNext()) {
             throw new NoSuchElementException("No more YAML streaming events available.");
         }

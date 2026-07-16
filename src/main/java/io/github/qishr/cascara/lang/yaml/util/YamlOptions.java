@@ -1,9 +1,11 @@
-package io.github.qishr.cascara.lang.yaml;
+package io.github.qishr.cascara.lang.yaml.util;
 
 import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.util.Duplicable;
 
 public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplicable<YamlOptions> {
+    public static final YamlOptions DEFAULT = new YamlOptions();
+
     private boolean allowUnicode = true;
     private boolean explicitStart = false; // Writes '---' if true
     private boolean expandedStyle = false;

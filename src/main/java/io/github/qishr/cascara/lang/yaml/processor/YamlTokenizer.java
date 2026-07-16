@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.io.InputStream;
+import java.io.Reader;
 import java.util.ArrayDeque;
 
 import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
@@ -72,6 +73,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     @Override
     public void open(String text) {
         this.buffer = new SourceStringBuffer(text);
+        this.isLegacyMode = false;
+        resetCommonState();
+    }
+
+    @Override
+    public void open(Reader reader) {
+        buffer = new SourceInputStreamBuffer(reader);
         this.isLegacyMode = false;
         resetCommonState();
     }
@@ -188,8 +196,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         if (c == ' ' || c == '\t') {
             trace(method, "space or tab");
             if (c == '\t') {
+                // TODO: Tokenizer should not call error().
+                // Use UNKNOWN token type and let parser handle it.
                 error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
-                // throw new YamlTokenierException("Tab characters are not allowed for indentation in YAML", line, column, uri);
             }
             return;
         }
@@ -632,11 +641,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
     }
 
-    private void error(YamlDiagnosticCode msgCode, Object... details) {
-        YamlToken token = addToken(YamlTokenType.ERROR);
-        reporter.errorAt(token, msgCode, details);
-    }
-
     private YamlToken addToken(YamlToken token) {
         trace("addToken");
         if (token != null) {
@@ -706,8 +710,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     }
 
     //
-    // Diagnostics
+    // Errors & Diagnostics
     //
+
+    private void error(YamlDiagnosticCode msgCode, Object... details) {
+        YamlToken token = addToken(YamlTokenType.ERROR);
+        reporter.errorAt(token, msgCode, details);
+    }
 
     private void trace(String method) {
         if (reporter == null || reporter instanceof NoOpReporter) return;

@@ -1,15 +1,15 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.lang.streaming.Event;
-import io.github.qishr.cascara.common.lang.streaming.EventType;
+import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
+import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 
-public class StreamingEvent implements Event {
+public class YamlStreamingEvent implements StreamingEvent {
 	private final int lineNumber;
 	private final int columnNumber;
 	private final String content;
-	private final EventType type;
+	private final StreamingEventType type;
 
-    public StreamingEvent(int lineNumber, int columnNumber, EventType type, String content) {
+    public YamlStreamingEvent(int lineNumber, int columnNumber, StreamingEventType type, String content) {
 		this.lineNumber = lineNumber;
 		this.columnNumber = columnNumber;
 		this.type = type;
@@ -17,7 +17,7 @@ public class StreamingEvent implements Event {
     }
 
 	@Override
-	public EventType getType() {
+	public StreamingEventType getType() {
 		return type;
 	}
 
