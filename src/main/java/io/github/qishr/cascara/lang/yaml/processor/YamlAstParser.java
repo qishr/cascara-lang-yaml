@@ -148,6 +148,17 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         }
     }
 
+    @Experimental
+    public YamlStreamNode parseMulti(byte[] data) {
+        YamlOptions originalOptions = this.options;
+        try {
+            this.options = originalOptions.duplicate().setMultiDocument(true);
+            return (YamlStreamNode) parse(new String(data));
+        } finally {
+            this.options = originalOptions; // Safely restore original state
+        }
+    }
+
     /// Type-safe method specifically for multi-document scenarios.
     @Experimental
     public YamlStreamNode parseMulti(InputStream is) {
@@ -290,20 +301,26 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 break;
             }
 
-            // TODO: Commenting this out causes in JUnit tests but helps with yaml suite tests
-            // Guard: Malformed indentations that break out of blocks cannot start documents
-            if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR) || check(YamlTokenType.VALUE_INDICATOR)) {
-                YamlToken badToken = peek();
-                error(badToken, YamlDiagnosticCode.UNEXPECTED_TOKEN, badToken.getType());
-            }
+            // // TODO: Commenting this out causes in JUnit tests but helps with yaml suite tests
+            // // Guard: Malformed indentations that break out of blocks cannot start documents
+            // if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR) || check(YamlTokenType.VALUE_INDICATOR)) {
+            //     YamlToken badToken = peek();
+            //     error(badToken, YamlDiagnosticCode.UNEXPECTED_TOKEN, badToken.getType());
+            // }
             // Only start a new document if we are at the top indentation level
-
             // // Guard: Malformed indentations that break out of blocks cannot start documents
             // if (options.isStrict()
             //     && (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR) || check(YamlTokenType.VALUE_INDICATOR))) {
             //     YamlToken badToken = peek();
             //     error(badToken, YamlDiagnosticCode.UNEXPECTED_TOKEN, badToken.getType());
             // }
+            // Guard: Malformed indentations that break out of blocks cannot start documents
+            if (options.isStrict()
+                && (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR) || check(YamlTokenType.VALUE_INDICATOR))) {
+                YamlToken badToken = peek();
+                error(badToken, YamlDiagnosticCode.UNEXPECTED_TOKEN, badToken.getType());
+            }
+
 
             YamlDocumentNode docNode = parseDocument();
             streamNode.addDocument(docNode);
@@ -454,12 +471,16 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     result = parseValue();
                 }
 
-                skipTrivia();
-                consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
                 // skipTrivia();
-                // while (check(YamlTokenType.DEDENT)) {
-                //     advance();
-                // }
+                // consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
+                skipTrivia();
+                if (options.isStrict()) {
+                    consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
+                } else {
+                    if (check(YamlTokenType.DEDENT)) {
+                        advance();
+                    }
+                }
             }
             else if (check(YamlTokenType.KEY_INDICATOR)) {
                 // Root-level un-indented explicit key marker implies a Map
