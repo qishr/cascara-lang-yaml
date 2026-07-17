@@ -35,6 +35,8 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -72,6 +74,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
     @Override protected YamlEmitter self() { return this; }
 
+    // TODO: emitTagIfPresent
     @Override public void emitScalar(String value) { sb.append(value); }
     @Override public void emitMapStart() {}
     @Override public void emitMapEnd() {}
@@ -99,9 +102,13 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
                 // Write explicit document markers if there are multiple documents,
                 // or if the document explicitly contains directives.
-                if (documents.size() > 1 || !doc.getDirectives().isEmpty()) {
+                // if (documents.size() > 1 || !doc.getDirectives().isEmpty()) {
+                //     sb.append("---").append(NL);
+                // }
+                if (options.isExplicitStart() || documents.size() > 1 || !doc.getDirectives().isEmpty()) {
                     sb.append("---").append(NL);
                 }
+
 
                 // Process the body of this specific document
                 emitNode(doc.getBody(), 0, false, false);
@@ -142,13 +149,23 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         }
 
         // 3. ANCHOR CHECK (Using targetNode to fetch anchor metadata safely)
-        String anchor = targetNode.getAnchor();
-        if (anchor != null && !anchor.isEmpty()) {
-            sb.append("&").append(anchor);
-            if (targetNode instanceof YamlScalarNode) sb.append(" ");
+        // String anchor = targetNode.getAnchor();
+        // if (anchor != null && !anchor.isEmpty()) {
+        //     sb.append("&").append(anchor);
+        //     if (targetNode instanceof YamlScalarNode) sb.append(" ");
+        // }
+        if (!options.stripAnchors()) {
+            String anchor = targetNode.getAnchor();
+            if (anchor != null && !anchor.isEmpty()) {
+                sb.append("&").append(anchor);
+                if (targetNode instanceof YamlScalarNode) sb.append(" ");
+            }
         }
 
-        if (!isFlow) emitBlockComments(targetNode, indent);
+        // if (!isFlow) emitBlockComments(targetNode, indent);
+        if (!options.stripComments() && !isFlow) {
+            emitBlockComments(targetNode, indent);
+        }
 
         // 4. STRUCTURAL EVALUATION (Checking targetNode instead of node)
         if (targetNode instanceof YamlScalarNode scalar) {
@@ -184,7 +201,12 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             return;
         }
 
-        QuoteStyle style = scalar.getQuoteStyle();
+        QuoteStyle style;
+        if (options.normalizeScalarFormatting()) {
+            style = QuoteStyle.DOUBLE;
+        } else {
+            style = scalar.getQuoteStyle();
+        }
 
         // AUTO-PROMOTION: If the style is PLAIN but the text contains newlines,
         // force it to LITERAL_BLOCK so it serializes into a valid block scalar.
@@ -220,7 +242,10 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         // IF NOT IS FLOW, this is a standalone root scalar or similar
         if (!isFlow) {
-            handleInlineComments(scalar);
+            // handleInlineComments(scalar);
+            if (!options.stripComments()) {
+                handleInlineComments(scalar);
+            }
             sb.append(NL);
         }
     }
@@ -289,6 +314,10 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     private void emitMap(YamlMapNode map, int indent, boolean isSequenceItem) {
         if (map == null) return;
         var entries = map.getEntries();
+        if (options.sortKeys()) {
+            entries = new ArrayList<>(entries);
+            entries.sort(Comparator.comparing(e -> e.getKey().asString()));
+        }
         for (int i = 0; i < entries.size(); i++) {
             var entry = entries.get(i);
 
@@ -326,7 +355,10 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
             if (isBlock) {
                 if (!isComplexKey) {
-                    handleInlineComments(key); // Comment for the key line
+                    // handleInlineComments(key); // Comment for the key line
+                    if (!options.stripComments()) {
+                        handleInlineComments(key);
+                    }
                 }
                 sb.append(NL);
                 emitNode(value, indent + options.getIndentSize(), false, false);
@@ -338,7 +370,10 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                     && scalar.asString() != null
                     && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
                 if (!isComplexKey) {
-                    handleInlineComments(key);
+                    // handleInlineComments(key);
+                    if (!options.stripComments()) {
+                        handleInlineComments(key);
+                    }
                 }
                 sb.append(" ");
                 emitScalarInternal(scalar, indent + options.getIndentSize(), false);
@@ -347,7 +382,10 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                 if (!isImplicitNull(value)) sb.append(" ");
 
                 emitNode(value, 0, false, true); // Clean text
-                handleInlineComments(value);    // Value's inline comment
+                // handleInlineComments(value);    // Value's inline comment
+                if (!options.stripComments()) {
+                    handleInlineComments(value);
+                }
                 sb.append(NL);
             }
         }
@@ -417,7 +455,10 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
                     // Force isFlow=true only for single lines / flow structures
                     emitNode(item, 0, true, true);
-                    handleInlineComments(item);
+                    // handleInlineComments(item);
+                    if (!options.stripComments()) {
+                        handleInlineComments(item);
+                    }
                     sb.append(NL);
                 }
             }

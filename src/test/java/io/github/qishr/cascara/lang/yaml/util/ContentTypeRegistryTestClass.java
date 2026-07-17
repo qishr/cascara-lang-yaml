@@ -33,19 +33,27 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.type;
+package io.github.qishr.cascara.lang.yaml.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import io.github.qishr.cascara.common.lang.annotation.DataField;
 import io.github.qishr.cascara.common.lang.annotation.Serializable;
 
 @Serializable
-public class LongObject {
-    private Long value;
+public class ContentTypeRegistryTestClass {
 
-    public Long getValue() {
-        return value;
+    @DataField
+    public List<ContentTypeTestClass> records = new ArrayList<>();
+
+    public ContentTypeRegistryTestClass() {}
+
+    public List<ContentTypeTestClass> getRecords() {
+        return records;
     }
 
-    public void setRaw(Long value) {
-        this.value = value;
+    public void setRecords(List<ContentTypeTestClass> records) {
+        this.records = records;
     }
 }

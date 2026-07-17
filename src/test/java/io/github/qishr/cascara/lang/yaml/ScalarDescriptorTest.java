@@ -49,10 +49,10 @@ import io.github.qishr.cascara.common.lang.type.TypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
-import io.github.qishr.cascara.lang.yaml.type.LongInstant;
-import io.github.qishr.cascara.lang.yaml.type.Person;
-import io.github.qishr.cascara.lang.yaml.type.PersonSerializer;
-import io.github.qishr.cascara.lang.yaml.type.TypeDescriptorTestClass;
+import io.github.qishr.cascara.lang.yaml.util.LongInstant;
+import io.github.qishr.cascara.lang.yaml.util.Person;
+import io.github.qishr.cascara.lang.yaml.util.PersonSerializer;
+import io.github.qishr.cascara.lang.yaml.util.TypeDescriptorTestClass;
 
 public class ScalarDescriptorTest {
     @Test

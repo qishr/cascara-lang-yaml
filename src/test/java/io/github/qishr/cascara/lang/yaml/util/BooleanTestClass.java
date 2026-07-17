@@ -33,28 +33,22 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.type;
+package io.github.qishr.cascara.lang.yaml.util;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import io.github.qishr.cascara.common.lang.annotation.AnyGetter;
-import io.github.qishr.cascara.common.lang.annotation.AnySetter;
+import io.github.qishr.cascara.common.lang.annotation.DataField;
 import io.github.qishr.cascara.common.lang.annotation.Serializable;
 
 @Serializable
-public class SettingsTestClass {
+public class BooleanTestClass {
 
-    private Map<String, Object> otherSettings = new HashMap<>();
+    @DataField
+    public final Map<String, Object> allSettings = new ConcurrentHashMap<>();
 
-    @AnySetter
-    public void addSetting(String key, Object value) {
-        System.out.println("DEBUG: Setting " + key + " to " + value + " (" + value.getClass().getSimpleName() + ")");
-        this.otherSettings.put(key, value);
-    }
-
-    @AnyGetter
-    public Map<String, Object> getOtherSettings() {
-        return otherSettings;
+    public BooleanTestClass() {
+        // Initialize Core Defaults directly into the single map
+        this.allSettings.put("dumpCss", false);
     }
 }

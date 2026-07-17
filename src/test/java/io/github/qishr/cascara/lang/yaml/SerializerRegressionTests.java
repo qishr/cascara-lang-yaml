@@ -45,8 +45,8 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
-import io.github.qishr.cascara.lang.yaml.type.ContentTypeRegistryTestClass;
-import io.github.qishr.cascara.lang.yaml.type.ContentTypeTestClass;
+import io.github.qishr.cascara.lang.yaml.util.ContentTypeRegistryTestClass;
+import io.github.qishr.cascara.lang.yaml.util.ContentTypeTestClass;
 
 public class SerializerRegressionTests {
     @Test

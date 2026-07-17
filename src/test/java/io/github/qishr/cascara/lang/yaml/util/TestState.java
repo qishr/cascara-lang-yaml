@@ -33,24 +33,22 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.type;
+package io.github.qishr.cascara.lang.yaml.util;
 
-import io.github.qishr.cascara.common.lang.exception.SerializerException;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.processor.YamlTypeSerializer;
+import java.util.ArrayList;
+import java.util.List;
 
-public class PersonSerializer extends YamlTypeSerializer<Person> {
-    public PersonSerializer() {
-        super(Person.class);
-    }
+import io.github.qishr.cascara.common.lang.annotation.DataField;
+import io.github.qishr.cascara.common.lang.annotation.Serializable;
 
-	@Override
-	public YamlNode serialize(Person value) throws SerializerException {
-        return new YamlMapNode()
-            .put("firstName", value.getFirstName())
-            .put("lastName", value.getLastName())
-            .put("age", value.getAge());
-    }
+@Serializable
+public class TestState {
+    @DataField
+    public List<String> disabledModules = new ArrayList<>();
+
+    @DataField
+    public NestedConfig security; // This is the object that will be null in YAML
+
+    public TestState() {}
 }
 

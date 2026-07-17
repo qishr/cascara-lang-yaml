@@ -48,12 +48,12 @@ import io.github.qishr.cascara.common.lang.type.UriTypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
-import io.github.qishr.cascara.lang.yaml.type.ColorDefinition;
-import io.github.qishr.cascara.lang.yaml.type.LongObject;
-import io.github.qishr.cascara.lang.yaml.type.SettingsTestClass;
-import io.github.qishr.cascara.lang.yaml.type.Stringy;
-import io.github.qishr.cascara.lang.yaml.type.TestState;
-import io.github.qishr.cascara.lang.yaml.type.UriTestClass;
+import io.github.qishr.cascara.lang.yaml.util.ColorDefinition;
+import io.github.qishr.cascara.lang.yaml.util.LongObject;
+import io.github.qishr.cascara.lang.yaml.util.SettingsTestClass;
+import io.github.qishr.cascara.lang.yaml.util.Stringy;
+import io.github.qishr.cascara.lang.yaml.util.TestState;
+import io.github.qishr.cascara.lang.yaml.util.UriTestClass;
 
 
 class YamlSerializerTests {
