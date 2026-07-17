@@ -39,7 +39,9 @@ import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.lang.processor.Processor;
 import io.github.qishr.cascara.common.lang.util.LanguageOptions;
+import io.github.qishr.cascara.common.semver.SemVer;
 import io.github.qishr.cascara.common.util.ContentType;
+import io.github.qishr.cascara.common.util.JarManifest;
 import io.github.qishr.cascara.common.util.Properties;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
@@ -93,5 +95,9 @@ public abstract class AbstractYamlProcessor<P extends Processor> implements Proc
 
     public Reporter getReporter() {
         return reporter;
+    }
+
+    public SemVer getVersion() {
+        return JarManifest.of(getClass()).getVersion();
     }
 }

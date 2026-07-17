@@ -33,7 +33,7 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.type;
+package io.github.qishr.cascara.lang.yaml.util;
 
 import java.util.ArrayList;
 import java.util.List;

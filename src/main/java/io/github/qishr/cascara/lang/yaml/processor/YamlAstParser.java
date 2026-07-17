@@ -118,6 +118,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         return parseAndUnpack();
     }
 
+    public YamlNode parse(byte[] data) {
+        ensureTokenBufferFilled(new String(data));
+        return parseAndUnpack();
+    }
+
     @Override
     public YamlNode parse(Reader reader) {
         ensureTokenBufferFilled(reader);
@@ -285,11 +290,20 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 break;
             }
 
+            // TODO: Commenting this out causes in JUnit tests but helps with yaml suite tests
             // Guard: Malformed indentations that break out of blocks cannot start documents
             if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR) || check(YamlTokenType.VALUE_INDICATOR)) {
                 YamlToken badToken = peek();
                 error(badToken, YamlDiagnosticCode.UNEXPECTED_TOKEN, badToken.getType());
             }
+            // Only start a new document if we are at the top indentation level
+
+            // // Guard: Malformed indentations that break out of blocks cannot start documents
+            // if (options.isStrict()
+            //     && (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR) || check(YamlTokenType.VALUE_INDICATOR))) {
+            //     YamlToken badToken = peek();
+            //     error(badToken, YamlDiagnosticCode.UNEXPECTED_TOKEN, badToken.getType());
+            // }
 
             YamlDocumentNode docNode = parseDocument();
             streamNode.addDocument(docNode);
@@ -442,6 +456,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                 skipTrivia();
                 consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
+                // skipTrivia();
+                // while (check(YamlTokenType.DEDENT)) {
+                //     advance();
+                // }
             }
             else if (check(YamlTokenType.KEY_INDICATOR)) {
                 // Root-level un-indented explicit key marker implies a Map

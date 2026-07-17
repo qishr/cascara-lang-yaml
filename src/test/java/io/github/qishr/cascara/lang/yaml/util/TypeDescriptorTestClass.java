@@ -33,21 +33,18 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.type;
+package io.github.qishr.cascara.lang.yaml.util;
+
+import java.time.ZonedDateTime;
 
 import io.github.qishr.cascara.common.lang.annotation.Serializable;
 
 @Serializable
-public class LongInstant {
-    private Long value;
+public class TypeDescriptorTestClass {
+    @SuppressWarnings("unused")
+    private ZonedDateTime dateTime;
 
-    public LongInstant() {
-
+    public TypeDescriptorTestClass(ZonedDateTime dt) {
+        dateTime = dt;
     }
-
-    public LongInstant(Long dt) {
-        value = dt;
-    }
-
-    public Long getValue() { return value; }
 }
