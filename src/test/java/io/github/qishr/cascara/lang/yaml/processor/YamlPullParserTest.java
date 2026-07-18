@@ -46,7 +46,9 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -97,28 +99,27 @@ public class YamlPullParserTest {
                 }
             });
 
-            // Assertions to verify our translated token-stream boundaries
-            assertFalse(events.isEmpty());
-
-            // First structural marker for the root level mapping block
-            assertEquals(StreamingEventType.START_OBJECT, events.get(0).getType());
-
-            // Verify 'services' field identification via our lookahead pairs
-            assertEquals(StreamingEventType.FIELD_NAME, events.get(1).getType());
-            assertEquals("services", events.get(1).getContent());
-
-            // Verify nested structure matches indent tracking shifts
-            assertEquals(StreamingEventType.START_OBJECT, events.get(2).getType());
-            assertEquals(StreamingEventType.FIELD_NAME, events.get(3).getType());
-            assertEquals("web", events.get(3).getContent());
-
-            // Verify final structural collapse drains completely
-            assertEquals(StreamingEventType.END_DOCUMENT, events.get(events.size() - 1).getType());
+            new EventValidator(events).verbose()
+                .expect(StreamingEventType.START_STREAM)
+                .expect(StreamingEventType.START_DOCUMENT)
+                .expect(StreamingEventType.START_OBJECT)
+                .expect(StreamingEventType.FIELD_NAME, "services")
+                .expect(StreamingEventType.START_OBJECT)
+                .expect(StreamingEventType.FIELD_NAME, "web")
+                .expect(StreamingEventType.START_OBJECT)
+                .expect(StreamingEventType.FIELD_NAME, "port")
+                .expect(StreamingEventType.VALUE_SCALAR, "8080")
+                .expect(StreamingEventType.END_OBJECT)
+                .expect(StreamingEventType.END_OBJECT)
+                .expect(StreamingEventType.END_OBJECT)
+                .expect(StreamingEventType.END_DOCUMENT)
+                .expect(StreamingEventType.END_STREAM)
+                .validate();
         }
     }
 
     @Test
-    public void testMixedMappingAndSequenceStreaming() throws Exception {
+    void testMixedMappingAndSequenceStreaming() throws Exception {
         String yaml = """
             project: Cascara
             targets:
@@ -135,45 +136,26 @@ public class YamlPullParserTest {
 
             parser.setOptions(options);
             parser.setReporter(reporter);
-            parser.forEachRemaining(e ->{
-                if (e!=null) {
-                    reporter.debug("Event: " + e.getType() + ": " + e.getContent());
-                    events.add(e);
-                }
+
+            parser.forEachRemaining(e -> {
+                if (e != null) events.add(e);
             });
 
-            // Assertions to verify the full streaming event lifecycle
-            assertFalse(events.isEmpty());
-
-            // 1. Root Object Context
-            assertEquals(StreamingEventType.START_OBJECT, events.get(0).getType());
-
-            // 2. Simple Field "project: Cascara"
-            assertEquals(StreamingEventType.FIELD_NAME, events.get(1).getType());
-            assertEquals("project", events.get(1).getContent());
-            assertEquals(StreamingEventType.VALUE_SCALAR, events.get(2).getType());
-            assertEquals("Cascara", events.get(2).getContent());
-
-            // 3. Block Sequence Key "targets:"
-            assertEquals(StreamingEventType.FIELD_NAME, events.get(3).getType());
-            assertEquals("targets", events.get(3).getContent());
-
-            // 4. Lookahead should detect '-' following the indent and open an array
-            assertEquals(StreamingEventType.START_ARRAY, events.get(4).getType());
-
-            // 5. Sequence Elements
-            assertEquals(StreamingEventType.VALUE_SCALAR, events.get(5).getType());
-            assertEquals("macos", events.get(5).getContent());
-
-            assertEquals(StreamingEventType.VALUE_SCALAR, events.get(6).getType());
-            assertEquals("windows", events.get(6).getContent());
-
-            // 6. Tail End Unwinding
-            // The dedent/EOF collapse should close the array, then the root object, then end the doc
-            int total = events.size();
-            assertEquals(StreamingEventType.END_ARRAY, events.get(total - 3).getType());
-            assertEquals(StreamingEventType.END_OBJECT, events.get(total - 2).getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, events.get(total - 1).getType());
+            new EventValidator(events).verbose()
+                .expect(StreamingEventType.START_STREAM)
+                .expect(StreamingEventType.START_DOCUMENT)
+                .expect(StreamingEventType.START_OBJECT)
+                .expect(StreamingEventType.FIELD_NAME, "project")
+                .expect(StreamingEventType.VALUE_SCALAR, "Cascara")
+                .expect(StreamingEventType.FIELD_NAME, "targets")
+                .expect(StreamingEventType.START_ARRAY)
+                .expect(StreamingEventType.VALUE_SCALAR, "macos")
+                .expect(StreamingEventType.VALUE_SCALAR, "windows")
+                .expect(StreamingEventType.END_ARRAY)
+                .expect(StreamingEventType.END_OBJECT)
+                .expect(StreamingEventType.END_DOCUMENT)
+                .expect(StreamingEventType.END_STREAM)
+                .validate();
         }
     }
 
@@ -195,41 +177,26 @@ public class YamlPullParserTest {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = new YamlPullParser(inputStream)) {
             List<StreamingEvent> events = new ArrayList<>();
+
             parser.setOptions(options);
             parser.setReporter(reporter);
-            // parser.forEachRemaining(events::add);
-            parser.forEachRemaining(e ->{
-                if (e!=null) {
-                    reporter.debug("Event: " + e.getType() + ": " + e.getContent());
-                    events.add(e);
-                }
+
+            parser.forEachRemaining(e -> {
+                if (e != null) events.add(e);
             });
 
-            assertFalse(events.isEmpty());
-
-            // 1. Document start
-            assertEquals(StreamingEventType.START_OBJECT, events.get(0).getType());
-
-            // 2. Explicit Key processing
-            // '?' changes the scalar interpretation to a FIELD_NAME even without a trailing colon on the same token line
-            assertEquals(StreamingEventType.FIELD_NAME, events.get(1).getType());
-            assertEquals("explicit_key", events.get(1).getContent());
-
-            // 3. Literal Block Scalar value matching ':' and '|'
-            assertEquals(StreamingEventType.VALUE_SCALAR, events.get(2).getType());
-            assertEquals("Literal block scalar\nretains newlines.\n", events.get(2).getContent());
-
-            // 4. Folded Block Scalar key/value pairing
-            assertEquals(StreamingEventType.FIELD_NAME, events.get(3).getType());
-            assertEquals("folded_key", events.get(3).getContent());
-
-            assertEquals(StreamingEventType.VALUE_SCALAR, events.get(4).getType());
-            assertEquals("Folded block scalar removes single newlines.\n", events.get(4).getContent());
-
-            // 5. Unwinding
-            int total = events.size();
-            assertEquals(StreamingEventType.END_OBJECT, events.get(total - 2).getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, events.get(total - 1).getType());
+            new EventValidator(events).verbose()
+                .expect(StreamingEventType.START_STREAM)
+                .expect(StreamingEventType.START_DOCUMENT)
+                .expect(StreamingEventType.START_OBJECT)
+                .expect(StreamingEventType.FIELD_NAME, "explicit_key")
+                .expect(StreamingEventType.VALUE_SCALAR, "Literal block scalar\nretains newlines.\n")
+                .expect(StreamingEventType.FIELD_NAME, "folded_key")
+                .expect(StreamingEventType.VALUE_SCALAR, "Folded block scalar removes single newlines.\n")
+                .expect(StreamingEventType.END_OBJECT)
+                .expect(StreamingEventType.END_DOCUMENT)
+                .expect(StreamingEventType.END_STREAM)
+                .validate();
         }
     }
 }

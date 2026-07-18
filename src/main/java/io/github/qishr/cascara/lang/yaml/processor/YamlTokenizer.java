@@ -47,6 +47,7 @@ import java.io.Reader;
 import java.util.ArrayDeque;
 
 import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
+import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
 import io.github.qishr.cascara.common.lang.util.SourceBuffer;
 import io.github.qishr.cascara.common.lang.util.SourceInputStreamBuffer;
@@ -161,6 +162,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     @Override
     public YamlToken nextToken() {
+        if (bufferedToken != null) {
+            YamlToken tok = bufferedToken;
+            bufferedToken = null;
+            return tok;
+        }
+
         // 1. Flush any tokens queued up by structural blocks first
         if (!pendingTokens.isEmpty()) {
             return queueToken(pendingTokens.pollFirst());
@@ -204,6 +211,15 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         return null;
+    }
+
+    private YamlToken bufferedToken;
+
+    public YamlToken peekToken() throws ParserException {
+        if (bufferedToken == null) {
+            bufferedToken = nextToken();
+        }
+        return bufferedToken;
     }
 
     //
