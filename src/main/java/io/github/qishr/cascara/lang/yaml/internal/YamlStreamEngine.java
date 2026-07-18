@@ -59,6 +59,9 @@ public class YamlStreamEngine {
     private final boolean includeComments;
 
     private int targetDedentCount = 0;
+    private boolean streamClosed;
+    private boolean documentClosed;
+    private boolean documentOpened;
     private boolean isDocumentEnded = false;
     private boolean rootOpened = false;
     private boolean insideExplicitKey = false;
@@ -69,7 +72,6 @@ public class YamlStreamEngine {
         this.tokenizer = new YamlTokenizer().setReporter(reporter);
         this.tokenizer.open(input);
         this.indentStack.push(0);
-        this.contextStack.push(StreamingEventType.START_OBJECT);
         this.includeComments = includeComments;
     }
 
@@ -77,17 +79,24 @@ public class YamlStreamEngine {
         return this;
     }
 
-    public boolean hashNextEvent() {
+    public boolean hasNextEvent() {
         // If we are already done, do not claim to have events
         return !isDocumentEnded;
     }
 
     public  YamlStreamingEvent nextEvent() throws ParserException {
-        if (isDocumentEnded) return null; // Or handle as appropriate
+        // if (isDocumentEnded) return null; // Or handle as appropriate
 
         if (!rootOpened) {
             rootOpened = true;
-            return new YamlStreamingEvent(1, 1, StreamingEventType.START_OBJECT, "");
+            return new YamlStreamingEvent(tokenizer.getLine(), tokenizer.getColumn(),
+                StreamingEventType.START_STREAM, "");
+        }
+
+        if (!documentOpened) {
+            documentOpened = true;
+            return new YamlStreamingEvent(tokenizer.getLine(), tokenizer.getColumn(),
+                StreamingEventType.START_DOCUMENT, "");
         }
 
         if (targetDedentCount > 0) {
@@ -100,6 +109,68 @@ public class YamlStreamEngine {
 
         advanceToken();
 
+        if (currentToken == null ||
+            currentToken.getType() == YamlTokenType.EOF ||
+            currentToken.getType() == YamlTokenType.STREAM_END) {
+
+            // 1. Flush block scalar
+            if (insideBlockScalar) {
+                insideBlockScalar = false;
+                blockScalarBuffer.append("\n");
+                String finalContent = blockScalarBuffer.toString();
+                blockScalarBuffer.setLength(0);
+                return new YamlStreamingEvent(
+                    tokenizer.getLine(),
+                    tokenizer.getColumn(),
+                    StreamingEventType.VALUE_SCALAR,
+                    finalContent
+                );
+            }
+
+            // 2. Close open MAP/SEQ contexts
+            if (!contextStack.isEmpty()) {
+                StreamingEventType ctx = contextStack.pop();
+                indentStack.pop();
+                StreamingEventType endType =
+                    (ctx == StreamingEventType.START_ARRAY)
+                        ? StreamingEventType.END_ARRAY
+                        : StreamingEventType.END_OBJECT;
+
+                return new YamlStreamingEvent(
+                    tokenizer.getLine(),
+                    tokenizer.getColumn(),
+                    endType,
+                    ""
+                );
+            }
+
+            // 3. Close document
+            if (!documentClosed) {
+                documentClosed = true;
+                return new YamlStreamingEvent(
+                    tokenizer.getLine(),
+                    tokenizer.getColumn(),
+                    StreamingEventType.END_DOCUMENT,
+                    ""
+                );
+            }
+
+            // 4. Close stream
+            if (!streamClosed) {
+                streamClosed = true;
+                return new YamlStreamingEvent(
+                    tokenizer.getLine(),
+                    tokenizer.getColumn(),
+                    StreamingEventType.END_STREAM,
+                    ""
+                );
+            }
+
+            // 5. Done
+            isDocumentEnded = true;
+            return null;
+        }
+
         if (currentToken.getType() == YamlTokenType.DOCUMENT_START) {
             // If a document was already in progress, close it
             if (rootOpened) {
@@ -109,22 +180,6 @@ public class YamlStreamEngine {
             // Otherwise, this is the start of the first document
             rootOpened = true;
             return new YamlStreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), StreamingEventType.START_DOCUMENT, "");
-        }
-
-        if (currentToken == null || currentToken.getType() == YamlTokenType.EOF || currentToken.getType() == YamlTokenType.STREAM_END) {
-            if (insideBlockScalar) {
-                insideBlockScalar = false;
-                blockScalarBuffer.append("\n");
-                String finalContent = blockScalarBuffer.toString();
-                blockScalarBuffer.setLength(0);
-                return new YamlStreamingEvent(tokenizer.getLine(), tokenizer.getColumn(), StreamingEventType.VALUE_SCALAR, finalContent);
-            }
-            if (contextStack.size() > 0) {
-                targetDedentCount = contextStack.size();
-                return nextEvent();
-            }
-            isDocumentEnded = true;
-            return new YamlStreamingEvent(tokenizer.getLine(), tokenizer.getColumn(), StreamingEventType.END_DOCUMENT, "");
         }
 
         // 1. Structural drops flush block scalars naturally
@@ -231,11 +286,11 @@ public class YamlStreamEngine {
 
             if (insideExplicitKey) {
                 insideExplicitKey = false;
-                return new YamlStreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), StreamingEventType.FIELD_NAME, value);
+                return new YamlStreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), StreamingEventType.VALUE_SCALAR, value);
             }
 
             if (isNextTokenValueIndicator()) {
-                return new YamlStreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), StreamingEventType.FIELD_NAME, value);
+                return new YamlStreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), StreamingEventType.VALUE_SCALAR, value);
             }
 
             return new YamlStreamingEvent(currentToken.getStartLine(), currentToken.getStartColumn(), StreamingEventType.VALUE_SCALAR, value);
@@ -254,6 +309,24 @@ public class YamlStreamEngine {
                 || currentToken.getType() == YamlTokenType.NEWLINE
                 || currentToken.getType() == YamlTokenType.STREAM_START) {
             return nextEvent();
+        }
+
+        if (currentToken.getType() == YamlTokenType.ANCHOR) {
+            return new YamlStreamingEvent(
+                currentToken.getStartLine(),
+                currentToken.getStartColumn(),
+                StreamingEventType.VALUE_SCALAR,
+                "&" + currentToken.getContent()
+            );
+        }
+
+        if (currentToken.getType() == YamlTokenType.ALIAS) {
+            return new YamlStreamingEvent(
+                currentToken.getStartLine(),
+                currentToken.getStartColumn(),
+                StreamingEventType.VALUE_SCALAR,
+                "*" + currentToken.getContent()
+            );
         }
 
         throw new ParserException(currentToken, YamlDiagnosticCode.UNEXPECTED_TOKEN, currentToken.getType());

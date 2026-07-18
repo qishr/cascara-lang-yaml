@@ -97,6 +97,11 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     @Override protected YamlTokenizer self() { return this; }
 
+    @Override
+    public int getOffset() {
+        return buffer.offset();
+    }
+
     public int getLine() {
         return buffer.line();
     }

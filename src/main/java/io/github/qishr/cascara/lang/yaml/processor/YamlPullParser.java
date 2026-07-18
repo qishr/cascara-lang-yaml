@@ -69,7 +69,7 @@ public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implem
     public boolean hasNext() {
         try {
             ensureEngine();
-            return engine.hashNextEvent();
+            return engine.hasNextEvent();
         } catch (ParserException e) {
             throw new RuntimeException("Error scanning for next streaming event", e);
         }

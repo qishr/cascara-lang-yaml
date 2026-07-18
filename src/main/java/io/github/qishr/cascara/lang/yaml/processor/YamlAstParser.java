@@ -100,15 +100,23 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
     private int lastNewlineOrComment;
 
-    /// Empty default constructor for SPI.
+    private int DEPTH_LIMIT;
+
+    /// Default constructor for SPI.
     public YamlAstParser() {
+        applyOptions();
     }
 
     @Override protected YamlAstParser self() { return this; }
 
     public YamlAstParser setOptions(YamlOptions options) {
         super.setOptions(options);
+        applyOptions();
         return this;
+    }
+
+    private void applyOptions() {
+        this.DEPTH_LIMIT = options.getDepthLimit();
     }
 
     /// Entry point for parsing a full YAML source string.
@@ -429,6 +437,9 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     /// 3. Determining the structural type (Map, Sequence, or Scalar) via lookahead.
     private YamlNode parseValue() {
         depth++;
+        if (depth > DEPTH_LIMIT) {
+            error(peek(), YamlDiagnosticCode.DEPTH_LIMIT);
+        }
         trace("parseValue");
         try {
             if (check(YamlTokenType.ERROR)) {
@@ -624,6 +635,19 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 } else {
                     // Standard implicit key
                     key = parseScalar();
+
+                    // // If the key starts a nested block or has an inline value indicator,
+                    // // we must parse it as a full value node, not just a scalar.
+                    // if (check(YamlTokenType.ALIAS)) {
+                    //     // alias-as-key
+                    //     YamlToken tok = advance();
+                    //     // TODO: PERFORMANCE: This is unneccesary string shenanigans if token
+                    //     // has the start and end offset in a byte array.
+                    //     String name = tok.getContent().replace("*", "");
+                    //     key = new YamlAliasNode(tok.getStartLine(), tok.getStartColumn(), name);
+                    // } else {
+                    //     key = parseScalar();
+                    // }
                 }
 
                 // 2. Prepend the harvested block comments so they don't get lost
