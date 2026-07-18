@@ -54,6 +54,8 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
             .setExplicitStart(true)
     );
 
+    private int depthLimit = 500;
+
     private boolean allowUnicode = true;
     private boolean explicitStart = false; // Writes '---' if true
     private boolean expandedStyle = false;
@@ -72,6 +74,8 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     public YamlOptions() {}
 
     public YamlOptions(YamlOptions original) {
+        depthLimit = original.depthLimit;
+
         allowUnicode = original.allowUnicode;
         explicitStart = original.explicitStart; // Writes '---' if true
         expandedStyle = original.expandedStyle;
@@ -89,6 +93,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         normalizeScalarFormatting = original.normalizeScalarFormatting;
     }
 
+    public int getDepthLimit() {return depthLimit; }
     public boolean isAllowUnicode() { return allowUnicode; }
     public boolean isExplicitStart() { return explicitStart; }
     public boolean isExpandedStyle() { return expandedStyle; }
@@ -103,6 +108,10 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     public boolean normalizeIndent() { return normalizeIndent; }
     public boolean normalizeScalarFormatting() { return normalizeScalarFormatting; }
 
+    public YamlOptions setDepthLimit(int val) {
+        this.depthLimit = val;
+        return this;
+    }
 
     /// Sets whether unicode characters are allowed in scalars.
     public YamlOptions setAllowUnicode(boolean val) {

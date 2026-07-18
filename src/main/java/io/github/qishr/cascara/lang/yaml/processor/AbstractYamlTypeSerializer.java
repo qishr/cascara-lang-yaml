@@ -42,12 +42,12 @@ import io.github.qishr.cascara.common.lang.type.AbstractTypeDescriptor;
 import io.github.qishr.cascara.common.lang.type.TypeSerializer;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 
-public abstract class YamlTypeSerializer<T> extends AbstractTypeDescriptor<T> implements TypeSerializer<T> {
-    protected YamlTypeSerializer(Class<T> javaType) {
+public abstract class AbstractYamlTypeSerializer<T> extends AbstractTypeDescriptor<T> implements TypeSerializer<T> {
+    protected AbstractYamlTypeSerializer(Class<T> javaType) {
         super(javaType, "object");
     }
 
-    protected YamlTypeSerializer(Class<T> javaType, String schemaType) {
+    protected AbstractYamlTypeSerializer(Class<T> javaType, String schemaType) {
         super(javaType, schemaType);
     }
 

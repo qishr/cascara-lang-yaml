@@ -35,6 +35,8 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
+import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
@@ -45,6 +47,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.exception.YamlConverterException;
 
 public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implements AstConverter<YamlNode> {
     @Override protected YamlConverter self() { return this; }
@@ -55,7 +58,10 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         return emitter.emit(yamlNode);
     }
 
+    @Nullable
     public YamlNode fromAst(AstNode ast) {
+        if (ast == null) return null;
+
         if (ast instanceof MapAstNode astMap) {
             YamlMapNode yamlMap = new YamlMapNode();
             for (Object entry : astMap.getEntries()) {
@@ -87,12 +93,10 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             return yamlSeq;
         } else if (ast instanceof ScalarAstNode astScalar) {
             YamlScalarNode yamlScalar = new YamlScalarNode(astScalar.getPrimitive());
-            // yamlScalar.setPrimitive(astScalar.getPrimitive());
-            // yamlScalar.setRaw(astScalar.getString());
             return yamlScalar;
         } else {
-            System.err.println("Unknown AST node");
-            return null;
+            String name = (ast == null) ? "null" : ast.getClass().getSimpleName();
+            throw new YamlConverterException(LangDiagnosticCode.UNKNOWN_NODE_TYPE, name);
         }
     }
 }

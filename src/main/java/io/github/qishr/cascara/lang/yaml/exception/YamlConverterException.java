@@ -33,24 +33,18 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.util;
+package io.github.qishr.cascara.lang.yaml.exception;
 
-import io.github.qishr.cascara.common.lang.exception.SerializerException;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.processor.AbstractYamlTypeSerializer;
+import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
+import io.github.qishr.cascara.common.diagnostic.LocalizableRuntimeException;
 
-public class PersonSerializer extends AbstractYamlTypeSerializer<Person> {
-    public PersonSerializer() {
-        super(Person.class);
+public class YamlConverterException extends LocalizableRuntimeException {
+
+    public YamlConverterException(Throwable cause, DiagnosticCode code, Object... details) {
+        super(cause, code, details);
     }
 
-	@Override
-	public YamlNode serialize(Person value) throws SerializerException {
-        return new YamlMapNode()
-            .put("firstName", value.getFirstName())
-            .put("lastName", value.getLastName())
-            .put("age", value.getAge());
+    public YamlConverterException(DiagnosticCode code, Object... details) {
+        this(null, code, details);
     }
 }
-
