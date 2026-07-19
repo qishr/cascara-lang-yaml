@@ -14,6 +14,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlStreamNode;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -210,6 +211,23 @@ public class SpecTests {
                 collectAliasKeys(e.getValue(), out);
             }
         }
+    }
+
+    @Test
+    public void test_sequence_with_tags_should_not_produce_two_empty_documents() {
+        String yaml =
+            "- !!str a\n" +
+            "- b\n" +
+            "- !!int 42\n" +
+            "- d\n";
+
+        YamlAstParser parser = new YamlAstParser()
+                .setReporter(new StandardReporter().setLevel(Level.TRACE));
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        // This assertion WILL fail with your current parser,
+        // because you said the AST contains 2 empty documents.
+        assertEquals(1, stream.getDocuments().size());
     }
 
 }
