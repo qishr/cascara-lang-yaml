@@ -318,6 +318,16 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 error(badToken, YamlDiagnosticCode.UNEXPECTED_TOKEN, badToken.getType());
             }
 
+
+
+            // // This was added...
+            // if (!check(YamlTokenType.DOCUMENT_START) && streamNode.getDocuments().size() > 0) {
+            //     break;
+            // }
+
+
+
+
             YamlDocumentNode docNode = parseDocument();
             streamNode.addDocument(docNode);
 
@@ -352,48 +362,65 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
     /// Parses a single document context, safely handling layout tokens near explicit boundaries
     private YamlDocumentNode parseDocument() {
-        trace("parseDocument");
+        trace(">parseDocument");
         depth++;
+        try {
+            YamlToken startToken = peek();
+            YamlDocumentNode document = new YamlDocumentNode(startToken.getStartLine(), startToken.getStartColumn());
 
-        YamlToken startToken = peek();
-        YamlDocumentNode document = new YamlDocumentNode(startToken.getStartLine(), startToken.getStartColumn());
-
-        if (lookAheadToExplicitMarker()) {
-            while (!isAtEnd() && check(YamlTokenType.NEWLINE)) {
-                advance();
+            if (lookAheadToExplicitMarker()) {
+                while (!isAtEnd() && check(YamlTokenType.NEWLINE)) {
+                    advance();
+                }
             }
-        }
 
-        while (check(YamlTokenType.DIRECTIVE)) {
-            YamlToken dirToken = advance();
-            document.addDirective(new YamlDirectiveNode(dirToken.getStartLine(), dirToken.getStartColumn(), dirToken.getContent()));
-            skipTrivia();
-        }
+            while (check(YamlTokenType.DIRECTIVE)) {
+                YamlToken dirToken = advance();
 
-        // Clean layout indentation wrapping the explicit document boundaries
-        if (check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
-            ensureBuffered(1);
-            if (current + 1 < tokenBuffer.size() && tokenBuffer.get(current + 1).getType() == YamlTokenType.DOCUMENT_START) {
-                advance();
+
+                // document.addDirective(new YamlDirectiveNode(dirToken.getStartLine(), dirToken.getStartColumn(), dirToken.getContent()));
+                if (isKnownDirective(dirToken)) {
+                    document.addDirective(new YamlDirectiveNode(dirToken.getStartLine(), dirToken.getStartColumn(), dirToken.getContent()));
+                } else {
+                    // FIX: emit warning
+                    warn(
+                        dirToken,
+                        YamlDiagnosticCode.UNKNOWN_DIRECTIVE,
+                        "Unknown directive ignored: " + dirToken.getContent()
+                    );
+                    // DO NOT add a directive node
+                }
+
+
+                skipTrivia();
             }
-        }
 
-        if (match(YamlTokenType.DOCUMENT_START)) {
-            skipTrivia();
-        }
+            // Clean layout indentation wrapping the explicit document boundaries
+            if (check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
+                ensureBuffered(1);
+                if (current + 1 < tokenBuffer.size() && tokenBuffer.get(current + 1).getType() == YamlTokenType.DOCUMENT_START) {
+                    advance();
+                }
+            }
 
-        if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || isAtEnd()) {
-            document.setBody(new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), PrimitiveType.ANY, "", "", QuoteStyle.PLAIN, options));
-        } else {
-            document.setBody(parseValue());
-        }
+            if (match(YamlTokenType.DOCUMENT_START)) {
+                skipTrivia();
+            }
 
-        if (match(YamlTokenType.DOCUMENT_END)) {
-            skipTrivia();
-        }
+            if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || isAtEnd()) {
+                document.setBody(new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), PrimitiveType.ANY, "", "", QuoteStyle.PLAIN, options));
+            } else {
+                document.setBody(parseValue());
+            }
 
-        depth--;
-        return document;
+            if (match(YamlTokenType.DOCUMENT_END)) {
+                skipTrivia();
+            }
+            return document;
+        } finally {
+            depth--;
+            trace("<parseDocument");
+        }
     }
 
     /// Safely looks ahead to check for an explicit document boundary or directive.
@@ -424,12 +451,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     /// 2. Managing block indentation tokens (`INDENT`/`DEDENT`).
     /// 3. Determining the structural type (Map, Sequence, or Scalar) via lookahead.
     private YamlNode parseValue() {
+        trace(">parseValue");
         depth++;
         if (depth > DEPTH_LIMIT) {
             error(peek(), YamlDiagnosticCode.DEPTH_LIMIT);
         }
-
-        trace("parseValue");
         try {
             if (check(YamlTokenType.ERROR)) {
                 error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, peek().getType());
@@ -483,6 +509,16 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
 
             trace("PV-after-if-anchor");
+
+
+
+            List<YamlToken> tags = new ArrayList<>();
+            while (check(YamlTokenType.TAG)) {
+                tags.add(advance());
+                skipTrivia();
+            }
+
+
 
             // 2. Structural dispatch
             YamlNode result;
@@ -615,10 +651,16 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 result = anchorNode;
             }
 
+            // 3. Attach tags
+            for (YamlToken tagToken : tags) {
+                result.setTag(tagToken.getLexeme());
+            }
+
             return attachComments(result);
 
         } finally {
             depth--;
+            trace("<parseValue");
         }
     }
 
@@ -647,8 +689,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     /// This method captures the column of the first key encountered and ensures
     /// all subsequent sibling keys in this map align perfectly.
     private YamlNode parseMap() {
+        trace(">parseMap");
         depth++;
-        trace("parseMap");
         try {
             YamlToken startToken = peek();
             YamlMapNode map = new YamlMapNode(startToken.getStartLine(), startToken.getStartColumn());
@@ -815,45 +857,9 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             return map;
         } finally {
             depth--;
+            trace("<parseMap");
         }
     }
-
-
-
-
-
-    // private YamlNode parseKeyNode() {
-    //     YamlToken tok = peek();
-
-    //     switch (tok.getType()) {
-
-    //         case SCALAR:
-    //             return parseScalar();
-
-    //         case ALIAS:
-    //             advance(); // consume alias token
-    //             return new YamlAliasNode(tok.getStartLine(), tok.getStartColumn(), tok.getContent());
-
-    //         case ANCHOR:
-    //             advance(); // consume &anchor
-    //             YamlToken next = peek();
-    //             if (next.getType() == YamlTokenType.SCALAR) {
-    //                 YamlNode key = parseScalar(); // quoted or plain scalar
-    //                 return key;
-    //             }
-    //             error(tok, GenericDiagnosticCode.ERROR, "Anchor used without scalar key");
-    //             return new YamlScalarNode(tok.getStartLine(), tok.getStartColumn(), PrimitiveType.ANY, "", "", QuoteStyle.UNDETERMINED, options); // safe fallback
-    //         case KEY_INDICATOR:
-    //             advance(); // consume '?'
-    //             skipTrivia();
-    //             // explicit key always followed by a scalar or complex value
-    //             return parseValue(); // your existing explicit-key path
-
-    //         default:
-    //             error(tok, GenericDiagnosticCode.ERROR, "Unexpected token in key position: " + tok.getType());
-    //             return new YamlScalarNode(tok.getStartLine(), tok.getStartColumn(), PrimitiveType.ANY, "", "", QuoteStyle.UNDETERMINED, options); // safe fallback
-    //     }
-    // }
 
 
 
@@ -862,64 +868,69 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
     private YamlNode parseKeyNode() {
         YamlToken tok = peek();
-        trace("parseKeyNode: " + tok.getType() + " @" + tok.getStartLine() + ":" + tok.getStartColumn());
+        trace(">parseKeyNode: " + tok.getType() + " @" + tok.getStartLine() + ":" + tok.getStartColumn());
+        depth++;
+        try {
+            switch (tok.getType()) {
 
-        switch (tok.getType()) {
+                case SCALAR:
+                    trace("parseKeyNode: SCALAR");
+                    return parseScalar();
 
-            case SCALAR:
-                trace("parseKeyNode: SCALAR");
-                return parseScalar();
+                case ALIAS: {
+                    advance(); // consume alias token
 
-            case ALIAS: {
-                advance(); // consume alias token
+                    String raw = tok.getContent();
+                    String name = raw.startsWith("*") ? raw.substring(1) : raw;
 
-                String raw = tok.getContent();
-                String name = raw.startsWith("*") ? raw.substring(1) : raw;
+                    YamlAliasNode alias = new YamlAliasNode(tok.getStartLine(), tok.getStartColumn(), name);
 
-                YamlAliasNode alias = new YamlAliasNode(tok.getStartLine(), tok.getStartColumn(), name);
+                    // Mirror parseValue alias resolution
+                    if (anchorRegistry.containsKey(name)) {
+                        alias.setResolvedNode(anchorRegistry.get(name));
+                    }
 
-                // Mirror parseValue alias resolution
-                if (anchorRegistry.containsKey(name)) {
-                    alias.setResolvedNode(anchorRegistry.get(name));
+                    return alias;
                 }
 
-                return alias;
+
+                case ANCHOR: {
+                    advance(); // consume &anchor
+                    String raw = tok.getContent();
+                    String name = raw.startsWith("&") ? raw.substring(1) : raw;
+
+                    // Parse the scalar key that follows
+                    YamlNode key = parseScalar();
+
+                    // ⭐ Register the anchor for later alias resolution
+                    anchorRegistry.put(name, key);
+
+                    // Wrap in YamlAnchorNode (same as parseValue)
+                    YamlAnchorNode anchorNode = new YamlAnchorNode(
+                        key.getStartLine(),
+                        key.getStartColumn(),
+                        name,
+                        key
+                    );
+
+                    return anchorNode;
+                }
+
+                case KEY_INDICATOR:
+                    trace("parseKeyNode: KEY_INDICATOR");
+                    advance(); // consume '?'
+                    skipTrivia();
+                    return parseValue();
+
+                default:
+                    trace("parseKeyNode: UNEXPECTED " + tok.getType());
+                    error(tok, GenericDiagnosticCode.ERROR, "Unexpected token in key position: " + tok.getType());
+                    return new YamlScalarNode(tok.getStartLine(), tok.getStartColumn(),
+                        PrimitiveType.ANY, "", "", QuoteStyle.UNDETERMINED, options);
             }
-
-
-            case ANCHOR: {
-                advance(); // consume &anchor
-                String raw = tok.getContent();
-                String name = raw.startsWith("&") ? raw.substring(1) : raw;
-
-                // Parse the scalar key that follows
-                YamlNode key = parseScalar();
-
-                // ⭐ Register the anchor for later alias resolution
-                anchorRegistry.put(name, key);
-
-                // Wrap in YamlAnchorNode (same as parseValue)
-                YamlAnchorNode anchorNode = new YamlAnchorNode(
-                    key.getStartLine(),
-                    key.getStartColumn(),
-                    name,
-                    key
-                );
-
-                return anchorNode;
-            }
-
-            case KEY_INDICATOR:
-                trace("parseKeyNode: KEY_INDICATOR");
-                advance(); // consume '?'
-                skipTrivia();
-                return parseValue();
-
-            default:
-                trace("parseKeyNode: UNEXPECTED " + tok.getType());
-                error(tok, GenericDiagnosticCode.ERROR, "Unexpected token in key position: " + tok.getType());
-                return new YamlScalarNode(tok.getStartLine(), tok.getStartColumn(),
-                    PrimitiveType.ANY, "", "", QuoteStyle.UNDETERMINED, options);
+        } finally {
+            depth--;
+            trace("<parseKeyNode");
         }
     }
 
@@ -934,8 +945,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
     /// Parses a block sequence (list) indicated by leading dashes.
     private YamlSequenceNode parseSequence() {
+        trace(">parseSequence");
         depth++;
-        trace("parseSequence");
         try {
             YamlToken start = peek();
             YamlSequenceNode sequence = new YamlSequenceNode(start.getStartLine(), start.getStartColumn());
@@ -950,11 +961,30 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     break;
                 }
 
+
+
+                Removed:
                 if (!check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
                     break;
                 }
 
+                // // Added:
+                // boolean isItemStart =
+                //     check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR) ||
+                //     check(YamlTokenType.SCALAR) ||
+                //     check(YamlTokenType.ALIAS) ||
+                //     check(YamlTokenType.ANCHOR) ||
+                //     check(YamlTokenType.TAG);
+                // if (!isItemStart) {
+                //     break;
+                // }
+
                 advance(); // Consume the '-'
+                // if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
+                //     advance(); // consume '-'
+                // } else {
+                //     // Item starts with TAG, SCALAR, ALIAS, ANCHOR → do NOT consume anything here
+                // }
 
                 // parseValue handles the content, including potential nested blocks
                 sequence.add(parseValue());
@@ -965,13 +995,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             return sequence;
         } finally {
             depth--;
+            trace("<parseSequence");
         }
     }
 
     /// Parses a flow sequence like [item1, item2].
     private YamlSequenceNode parseFlowSequence() {
+        trace(">parseFlowSequence");
         depth++;
-        trace("parseFlowSequence");
         try {
             YamlToken start = consume(YamlTokenType.SEQUENCE_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACKET);
             YamlSequenceNode sequence = new YamlSequenceNode(start.getStartLine(), start.getStartColumn());
@@ -990,6 +1021,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             return attachComments(sequence);
         } finally {
             depth--;
+            trace("<parseFlowSequence");
         }
     }
 
@@ -997,8 +1029,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     /// Parses a flow-style mapping (e.g., { key: value, key2: value2 }).
     /// This method handles the explicit MAP_START and MAP_END tokens.
     private YamlNode parseFlowMap() {
+        trace(">parseFlowMap");
         depth++;
-        trace("parseFlowMap");
         try {
             YamlToken startToken = consume(YamlTokenType.MAP_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACE_FLOW_MAP);
             YamlMapNode map = new YamlMapNode(startToken.getStartLine(), startToken.getStartColumn());
@@ -1045,13 +1077,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             return map;
         } finally {
             depth--;
+            trace("<parseFlowMap");
         }
     }
 
     private YamlScalarNode parseScalar() {
-        ++this.depth;
-        this.trace("parseScalar");
-
+        trace(">parseScalar");
+        ++depth;
         try {
             YamlToken token = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
 
@@ -1087,6 +1119,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             return scalar;
         } finally {
             --this.depth;
+            trace("<parseScalar");
         }
     }
 
@@ -1272,9 +1305,18 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         return false;
     }
 
+    private boolean isKnownDirective(YamlToken token) {
+        String content = token.getContent();
+        return content.startsWith("%YAML") || content.startsWith("%TAG");
+    }
+
     //
     // Errors and Diagnostics
     //
+
+    private void warn(YamlToken token, DiagnosticCode code, Object... details) {
+        reporter.warnAt(token, code, details);
+    }
 
     private void error(YamlToken token, DiagnosticCode code, Object... details) {
         reporter.errorAt(token, code, details);

@@ -33,7 +33,7 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml;
+package io.github.qishr.cascara.lang.yaml.processor;
 
 import org.junit.jupiter.api.Test;
 

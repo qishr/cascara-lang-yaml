@@ -33,50 +33,33 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml;
+package io.github.qishr.cascara.lang.yaml.processor;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.lang.exception.SerializerException;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
-import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
-import io.github.qishr.cascara.lang.yaml.util.ContentTypeRegistryTestClass;
-import io.github.qishr.cascara.lang.yaml.util.ContentTypeTestClass;
+import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 
-public class SerializerRegressionTests {
+public class StreamTests {
     @Test
-    void test_contentTypes() throws SerializerException {
+    void test_simpleKeyValue() {
+        String yamlString = "key: value";
 
-        ContentTypeRegistryTestClass registry = new ContentTypeRegistryTestClass();
-        ContentTypeTestClass type1 = new ContentTypeTestClass();
-        type1.getMimeTypes().add("text/plain");
-        type1.setCanonicalId("text/plain");
-        type1.setCanonicalName("Plain Text");
-        type1.getSuffixes().add(".text");
-        type1.getSuffixes().add(".txt");
-        registry.getRecords().add(type1);
+        InputStream stream = new ByteArrayInputStream(yamlString.getBytes(StandardCharsets.UTF_8));
 
+        YamlAstParser parser = new YamlAstParser()
+                .setReporter(new StandardReporter().setLevel(Level.TRACE));
 
-        YamlSerializer yamlSerializer = new YamlSerializer();
-        YamlNode yaml = yamlSerializer.toAst(registry);
-        assertInstanceOf(YamlMapNode.class, yaml);
-
-        YamlMapNode registryNode = (YamlMapNode) yaml;
-
-        YamlNode recordsNode = registryNode.get("records");
-        assertInstanceOf(YamlSequenceNode.class, recordsNode);
-
-        YamlSequenceNode recordsSequence = (YamlSequenceNode) recordsNode;
-
-        YamlNode element1 = recordsSequence.get(0);
-        assertInstanceOf(YamlMapNode.class, element1);
-
-        YamlMapNode item1MapNode = (YamlMapNode) element1;
-        assertEquals("Plain Text", item1MapNode.getString("canonicalName"));
-     }
+        YamlNode node = parser.parse(stream);
+        assertInstanceOf(YamlMapNode.class, node);
+    }
 }

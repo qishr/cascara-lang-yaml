@@ -33,7 +33,7 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml;
+package io.github.qishr.cascara.lang.yaml.processor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
