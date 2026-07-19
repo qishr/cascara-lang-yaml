@@ -79,7 +79,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         FLOW_CONTEXT_SINGLE_CHAR_TOKENS.put('{', YamlTokenType.MAP_START);
         FLOW_CONTEXT_SINGLE_CHAR_TOKENS.put('}', YamlTokenType.MAP_END);
         FLOW_CONTEXT_SINGLE_CHAR_TOKENS.put(',', YamlTokenType.COMMA);
-        FLOW_CONTEXT_SINGLE_CHAR_TOKENS.put('!', YamlTokenType.TAG);
+        // FLOW_CONTEXT_SINGLE_CHAR_TOKENS.put('!', YamlTokenType.TAG);
     }
 
     private Deque<Integer> indentationLevels = new ArrayDeque<>();
@@ -256,6 +256,11 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 // Use UNKNOWN token type and let parser handle it.
                 error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
             }
+            return;
+        }
+
+        if (c == '!') {
+            scanIdentifier(YamlTokenType.TAG);
             return;
         }
 
@@ -667,7 +672,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     }
 
     private void scanIdentifier(YamlTokenType type) {
-        while (!buffer.isAtEnd() && isAlphaNumeric(buffer.peek())) {
+        // while (!buffer.isAtEnd() && isAlphaNumeric(buffer.peek())) {
+        while (!buffer.isAtEnd() && (isAlphaNumeric(buffer.peek()) || buffer.peek() == '!')) {
             buffer.advance();
         }
         addToken(type);

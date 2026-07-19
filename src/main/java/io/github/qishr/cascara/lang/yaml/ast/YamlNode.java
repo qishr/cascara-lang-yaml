@@ -56,6 +56,7 @@ public abstract class YamlNode implements AstNode {
     private List<YamlCommentNode> comments = null;
     private String anchor;
     private YamlToken token;
+    private String tag;
 
     protected YamlNode() {
         startLine = 0;
@@ -72,6 +73,9 @@ public abstract class YamlNode implements AstNode {
         this.startLine = line;
         this.startColumn = column;
     }
+
+    public String getTag() { return tag; }
+    public void setTag(String tag) { this.tag = tag; }
 
     /// Gets the YAML anchor associated with this node (e.g., &anchorName).
     ///

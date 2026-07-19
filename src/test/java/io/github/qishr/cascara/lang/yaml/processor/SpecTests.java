@@ -1,15 +1,18 @@
-package io.github.qishr.cascara.lang.yaml;
+package io.github.qishr.cascara.lang.yaml.processor;
 
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.data.Tree;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.LocalizableIOException;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
+import io.github.qishr.cascara.common.lang.reference.ReferenceNode;
 import io.github.qishr.cascara.common.lang.util.AstTreeData;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDocumentNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
@@ -24,6 +27,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 
 public class SpecTests {
@@ -229,5 +233,50 @@ public class SpecTests {
         // because you said the AST contains 2 empty documents.
         assertEquals(1, stream.getDocuments().size());
     }
+
+    @Test
+    public void testUnknownDirectiveIsIgnored() {
+        String yaml =
+            "%FOO  bar baz #c\n" +   // unknown directive → must be ignored
+            "              #d\n" +
+            "---\n" +
+            "\"foo\"\n";
+
+        // Collect diagnostics
+        List<Diagnostic> diagnostics = new ArrayList<>();
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE)
+            .setDiagnosticCollector(d -> {
+                diagnostics.add(d);
+            });
+
+        // Parse YAML using the actual compliance parser
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+
+        YamlDocumentNode doc = stream.getDocuments().get(0);
+
+        // The document body must be a scalar node with value "foo"
+        assertTrue(doc.getBody() instanceof YamlScalarNode);
+
+        YamlScalarNode scalar = (YamlScalarNode) doc.getBody();
+
+        // The scalar content must be "foo"
+        assertEquals("foo", scalar.getContent());
+
+        // Check for a warning
+        assertEquals(1, diagnostics.size(), "Should have exactly 1 warning");
+        assertEquals(Level.WARN, diagnostics.getFirst().getLevel());
+
+        // The directive must NOT appear as a node
+        // i.e., no null scalar, no extra nodes, no map/seq created
+    }
+
 
 }

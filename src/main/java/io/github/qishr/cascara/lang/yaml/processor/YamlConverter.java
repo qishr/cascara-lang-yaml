@@ -35,6 +35,8 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import io.github.qishr.cascara.common.diagnostic.LocalizableRuntimeException;
+import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
@@ -43,6 +45,13 @@ import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
 import io.github.qishr.cascara.common.lang.processor.AstConverter;
+import io.github.qishr.cascara.common.lang.reference.ReferenceMapEntryNode;
+import io.github.qishr.cascara.common.lang.reference.ReferenceMapNode;
+import io.github.qishr.cascara.common.lang.reference.ReferenceNode;
+import io.github.qishr.cascara.common.lang.reference.ReferenceScalarNode;
+import io.github.qishr.cascara.common.lang.reference.ReferenceSequenceNode;
+import io.github.qishr.cascara.common.lang.type.PrimitiveType;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
@@ -98,5 +107,58 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             String name = (ast == null) ? "null" : ast.getClass().getSimpleName();
             throw new YamlConverterException(LangDiagnosticCode.UNKNOWN_NODE_TYPE, name);
         }
+    }
+
+    @Nullable
+    public ReferenceNode toPlainAst(YamlNode yaml) {
+        if (yaml == null) return null;
+
+        if (yaml instanceof YamlMapNode map) {
+            ReferenceMapNode out = new ReferenceMapNode();
+            for (YamlMapEntryNode e : map.getEntries()) {
+                ReferenceNode key = toPlainAst(e.getKey());
+                ReferenceNode val = toPlainAst(e.getValue());
+                out.put(key, val);
+            }
+            return out;
+        }
+
+        if (yaml instanceof YamlSequenceNode seq) {
+            ReferenceSequenceNode out = new ReferenceSequenceNode();
+            for (YamlNode child : seq.getChildren()) {
+                out.add(toPlainAst(child));
+            }
+            return out;
+        }
+
+        if (yaml instanceof YamlScalarNode scalar) {
+            return convertScalar(scalar);   // tag logic goes here
+        }
+
+        throw new YamlConverterException(
+            LangDiagnosticCode.UNKNOWN_NODE_TYPE,
+            yaml.getClass().getSimpleName()
+        );
+    }
+
+    @Nullable
+    private ReferenceScalarNode convertScalar(YamlScalarNode scalar) {
+        if (scalar == null) return null;
+        String tag = scalar.getTag();
+        if (tag == null) {
+            if (tag == null) {
+                return new ReferenceScalarNode(scalar.getPrimitive());
+            }
+        }
+        Object value;
+        value = switch(tag) {
+            case "!!str" -> scalar.asString();
+            case "!!float" -> scalar.asDouble();
+            case "!!int" -> scalar.asInteger();
+            case "!!bool" -> scalar.asBoolean();
+            case "!!null" -> null;
+            default -> scalar.asString();
+        };
+        return new ReferenceScalarNode(value);
     }
 }
