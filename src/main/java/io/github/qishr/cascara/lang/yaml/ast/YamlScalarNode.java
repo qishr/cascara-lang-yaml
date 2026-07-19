@@ -45,23 +45,14 @@ import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 
 /// Represents a leaf node in the YAML AST containing a single scalar value.
 public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> {
-    // private static final YamlPrimitiveDelegate YAML_PRIMITIVE_DELEGATE = new YamlPrimitiveDelegate();
-
     private final String lexeme;
     private final String content;
-    // private Primitive primitive;
 
-
-
-    // TODO: Set this in constructors
     private PrimitiveType schemaType;
-
-
 
     private QuoteStyle quoteStyle = QuoteStyle.UNDETERMINED;
     private ScalarStyle scalarStyle;
     private ChompingStyle chompingStyle;
-    // private final ScalarAstDelegate delegate;
     private YamlOptions options;
 
     // dialect-aware native value cache
@@ -77,9 +68,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     public YamlScalarNode(int line, int column, PrimitiveType schemaType, String raw, String unescapedContent, QuoteStyle quoteStyle, YamlOptions options) {
         super(line, column);
         this.lexeme = raw;
-        // fromString treats the input as text content to be parsed
-        // this.primitive = Primitive.fromString(unescapedContent, quoteStyle)
-        //     .setDelegate(YAML_PRIMITIVE_DELEGATE);
         this.options = options;
         this.content = unescapedContent;
         this.quoteStyle = quoteStyle;
@@ -92,17 +80,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         super(0, 0);
         this.quoteStyle = quoteStyle;
         this.options = options;
-
-
-        // TODO:
-        // Problem:
-        // Serializer set QuoteStyle.PLAIN for a String
-        // getPrimitive returns a Double.
-        // Serializer does not know what the quote style should be.
-        // Serializer does know it's a String
-        // Should YamlScalarNode itself determine it's a string from its jvmValue? YES
-
-        // quoteStyle should be treated as a *preference*, and YamlScalarNode should override it if it doesn't suit the type/value.
 
         this.schemaType = PrimitiveType.of(jvmValue);
         this.lexeme = null;
@@ -117,23 +94,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// Takes a pre-typed Object and skips text-based type inference.
     public YamlScalarNode(Object jvmValue, QuoteStyle quoteStyle) {
         this(jvmValue, quoteStyle, YamlOptions.DEFAULT);
-        // super( 0, 0);
-        // this.lexeme = null;
-        // this.content = null;
-        // // Pass the object directly into the primitive wrapper
-        // // this.primitive = Primitive.of(primitiveValue)
-        // //     .setQuoteStyle(quoteStyle)
-        // //     .setDelegate(YAML_PRIMITIVE_DELEGATE);
-        // this.options = YamlOptions.DEFAULT;
-        // this.quoteStyle = quoteStyle;
-
-
-        // // TODO:
-        // this.schemaType = PrimitiveType.of(jvmValue);
-
-
-        // this.nativeValue = jvmValue;
-        // this.nativeValueCached = true;
     }
 
     /// A programmatic and serializer constructor.
@@ -141,43 +101,11 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// Takes a pre-typed Object and skips text-based type inference.
     public YamlScalarNode(Object primitiveValue) {
         this(primitiveValue, QuoteStyle.UNDETERMINED);
-
-        // super(0, 0);
-        // this.raw = null;
-        // this.content = null; // Cleared cache marks it as dirty for the emitter
-
-
-        // // // this.primitive = Primitive.of(primitiveValue)
-        // // //     .setDelegate(YAML_PRIMITIVE_DELEGATE);
-        // // this.quoteStyle = primitive.getQuoteStyle();
-
-        // // TODO: Set quote style here, or later?
-
-
-        // this.schemaType = PrimitiveType.of(primitiveValue);
-
-
-        // this.delegate = null;
-        // this.nativeValue = primitiveValue;
-        // this.nativeValueCached = true;
     }
 
     /// The default constructor
     public YamlScalarNode() {
         this(null);
-        // super( 0, 0);
-        // this.raw = null;
-        // this.content = null;
-        // this.quoteStyle = QuoteStyle.UNDETERMINED;
-
-
-        // // TODO:
-        // this.schemaType = PrimitiveType.ANY;
-
-
-        // // this.primitive = Primitive.of(null)
-        // //     .setDelegate(YAML_PRIMITIVE_DELEGATE);
-        // this.delegate = null;
     }
 
     public PrimitiveType getPrimitiveType() {
@@ -195,7 +123,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// Gets the quoting style used for this scalar.
     public QuoteStyle getQuoteStyle() {
         if (quoteStyle == QuoteStyle.UNDETERMINED) {
-            // TODO: We should get rid of delegate
             quoteStyle = inferQuoteStyle(getPrimitive(), false);
         }
         return quoteStyle;
@@ -254,25 +181,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         if (nativeValueCached) {
             return jvmValue;
         }
-
-        // if (delegate == null) {
-        //     nativeValue = content;
-        //     nativeValueCached = true;
-        //     return nativeValue;
-        // }
-
-        // if (schemaType == PrimitiveType.STRING) {
-        //     jvmValue = content; // do not interpret
-        //     nativeValueCached = true;
-        //     return jvmValue;
-        // }
-
-
-        // TODO: Surely if we're looking for `content`, using `raw` is incorrect?
-
-        // Use content, which is already de-quoted and unescaped by the tokenizer
-        // String source = (content != null) ? content : raw;
-
         jvmValue = parse(content, quoteStyle);
         nativeValueCached = true;
         return jvmValue;
@@ -377,13 +285,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         if (this == o) return true;
         if (!(o instanceof YamlScalarNode that)) return false;
 
-        // // Wrong:
-        // return Objects.equals(raw, that.raw)
-        //     && Objects.equals(content, that.content)
-        //     && quoteStyle == that.quoteStyle;
-
         // TODO: Take anchor into account
-        // Correct:
         return Objects.equals(this.asString(), that.asString());
     }
 
@@ -396,7 +298,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// {@inheritDoc}
     @Override
     public String toString() {
-        // return raw != null ? raw : asString();
         return lexeme != null ? lexeme : String.valueOf(getPrimitive());
     }
 
@@ -516,19 +417,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
                 return numberType;
             }
 
-            // if (isSpecialNumber(raw)) {
-            //     return PrimitiveType.NUMBER;
-            // }
-            // if (isHexRaw(raw)) {
-            //     return PrimitiveType.NUMBER;
-            // }
-            // if (isOctalRaw(raw)) {
-            //     return PrimitiveType.NUMBER;
-            // }
-            // if (isDecimalNumber(raw)) {
-            //     return PrimitiveType.NUMBER;
-            // }
-
             return PrimitiveType.STRING;
         }
 
@@ -578,29 +466,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     }
 
     // ------------------------------------------------------------
-    // Quote style inference
-    // ------------------------------------------------------------
-    // @Override
-    // public QuoteStyle inferQuoteStyle(Object scalar, boolean isKey) {
-
-    //     // TODO: Look at data to see if it needs quoted?
-
-    //     // // Keys: strict JSON always double-quoted
-    //     // if (isKey && !options.allowUnquotedKeys()) {
-    //     //     return QuoteStyle.DOUBLE;
-    //     // }
-
-    //     // // JSON5-like: single quotes allowed
-    //     // if (scalar instanceof String && options.allowSingleQuotedStrings()) {
-    //     //     return QuoteStyle.SINGLE;
-    //     // }
-
-    //     return QuoteStyle.DOUBLE;
-    // }
-
-
-
-    // ------------------------------------------------------------
     // Parsing
     // ------------------------------------------------------------
     public Object parse(String raw, QuoteStyle quoteStyle) {
@@ -608,7 +473,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         if (schemaType == null || schemaType == PrimitiveType.ANY) {
             schemaType = inferType(raw, quoteStyle);
         }
-        // PrimitiveType type = inferType(raw, quoteStyle, isKey);
 
         switch (schemaType) {
             case BOOLEAN:

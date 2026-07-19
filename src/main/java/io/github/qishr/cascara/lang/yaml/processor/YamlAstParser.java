@@ -494,6 +494,31 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 skipTrivia();
                 trace("PV-in-if-indent3");
 
+                if (check(YamlTokenType.ANCHOR)) {
+                    YamlToken anchorTok = advance();
+                    String raw = anchorTok.getContent();
+                    String pendingAnchor2 = raw.startsWith("&") ? raw.substring(1) : raw;
+
+                    skipTrivia();
+
+                    // If this is a key (SCALAR + ":"), parse a map
+                    if ((check(YamlTokenType.SCALAR) || check(YamlTokenType.ALIAS)) &&
+                        lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
+
+                        YamlNode innerMap = parseMap();
+
+                        // Normalizer will unwrap this later
+                        return new YamlAnchorNode(
+                            innerMap.getStartLine(),
+                            innerMap.getStartColumn(),
+                            pendingAnchor2,
+                            innerMap
+                        );
+                    }
+
+                    // Otherwise fall through to normal structural parsing
+                }
+
                 if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
                     result = parseSequence();
                 } else if (check(YamlTokenType.KEY_INDICATOR)) {
