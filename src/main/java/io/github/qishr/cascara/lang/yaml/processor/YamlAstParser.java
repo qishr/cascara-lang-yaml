@@ -320,16 +320,20 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
 
 
-            // // This was added...
-            // if (!check(YamlTokenType.DOCUMENT_START) && streamNode.getDocuments().size() > 0) {
-            //     break;
-            // }
 
-
-
-
-            YamlDocumentNode docNode = parseDocument();
-            streamNode.addDocument(docNode);
+            // Only start a document when appropriate
+            if (streamNode.getDocuments().isEmpty()) {
+                // First document: implicit or explicit
+                YamlDocumentNode docNode = parseDocument();
+                streamNode.addDocument(docNode);
+            } else if (check(YamlTokenType.DOCUMENT_START)) {
+                // Subsequent documents: must start with ---
+                YamlDocumentNode docNode = parseDocument();
+                streamNode.addDocument(docNode);
+            } else {
+                // No explicit document start → we're done
+                break;
+            }
 
             if (current == previousPosition) {
                 break;

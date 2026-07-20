@@ -309,4 +309,33 @@ public class SpecTests {
         assertEquals("key", map.getString("foo"));
     }
 
+    @Test
+    public void test35KP() {
+        String yaml = """
+            --- !!str
+            d
+            e
+            """;
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        // Parse YAML using the actual compliance parser
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocumentNode doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlScalarNode.class, body);
+        YamlScalarNode scalar = (YamlScalarNode) body;
+
+        assertEquals("d e", scalar);
+    }
 }
