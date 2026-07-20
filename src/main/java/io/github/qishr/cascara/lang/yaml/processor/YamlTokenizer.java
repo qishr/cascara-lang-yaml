@@ -88,6 +88,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     private SourceBuffer buffer;
     private List<YamlToken> tokens = new ArrayList<>();
     private boolean isLegacyMode = false;
+    private boolean inQuotedScalar = false;
 
     private final Deque<YamlToken> pendingTokens = new ArrayDeque<>();
     private boolean streamStarted = false;
@@ -373,6 +374,54 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     }
 
     private void handleNewlineAndIndentation(char c) {
+
+        // if (inQuotedScalar) {
+
+        //     // Advance over the first newline character
+        //     buffer.advance();
+
+        //     // Handle optional CRLF
+        //     String lexeme;
+        //     if (c == '\r' && !buffer.isAtEnd() && buffer.peek() == '\n') {
+        //         buffer.advance();
+        //         lexeme = "\r\n";
+        //     } else {
+        //         lexeme = "\n";
+        //     }
+
+        //     addExplicitToken(YamlTokenType.NEWLINE, lexeme, buffer.column() - lexeme.length());
+
+        //     int spaces = 0;
+        //     while (!buffer.isAtEnd() && buffer.peek() == ' ') {
+        //         buffer.advance();
+        //         spaces++;
+        //     }
+
+        //     if (spaces > 0) {
+        //         addExplicitToken(YamlTokenType.SCALAR, " ".repeat(spaces), buffer.column());
+        //     }
+
+        //     buffer.startTokenWindow();
+        //     return;
+        // }
+
+        if (inQuotedScalar) {
+            // Consume the newline (CR or LF or CRLF)
+            buffer.advance();
+            if (c == '\r' && !buffer.isAtEnd() && buffer.peek() == '\n') {
+                buffer.advance();
+            }
+
+            // Consume indentation spaces, but DO NOT emit tokens
+            while (!buffer.isAtEnd() && buffer.peek() == ' ') {
+                buffer.advance();
+            }
+
+            // No tokens, no startTokenWindow, just return
+            return;
+        }
+
+
         // 1. First Newline
         String lexeme = (c == '\r' && buffer.peek() == '\n') ? "\r\n" : "\n";
         if (lexeme.length() == 2) buffer.advance();
@@ -427,12 +476,40 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     /// Scans a quoted scalar, handling escape sequences for double quotes.
     private void scanQuotedScalar(char quoteChar) {
         trace("scanQuotedScalar");
+        inQuotedScalar = true;
 
         // 1. Capture the starting coordinates using the buffer state
         int startLine = buffer.line();
         int startColumn = buffer.column() - 1;
         int startOffset = buffer.offset();
 
+        // while (!buffer.isAtEnd()) {
+        //     char c = buffer.peek();
+
+        //     if (quoteChar == '"' && c == '\\') {
+        //         buffer.advance();
+        //         if (!buffer.isAtEnd()) buffer.advance();
+        //         continue;
+        //     }
+
+        //     if (c == quoteChar) {
+        //         buffer.advance(); // Consume closing quote
+
+        //         // Extract the full matching sequence from the window
+        //         String lexeme = buffer.getTokenWindowLexeme();
+        //         // Safely trim off the leading and trailing quote characters
+        //         String content = (lexeme.length() >= 2)
+        //             ? lexeme.substring(1, lexeme.length() - 1)
+        //             : "";
+
+        //         addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, content));
+        //         inQuotedScalar = false;
+        //         return;
+        //     }
+
+        //     // Coordinates update automatically inside buffer.advance() for newlines
+        //     buffer.advance();
+        // }
         while (!buffer.isAtEnd()) {
             char c = buffer.peek();
 
@@ -442,21 +519,21 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 continue;
             }
 
+            if (c == '\n' || c == '\r') {
+                handleNewlineAndIndentation(c);   // ⭐ now the guard runs
+                // buffer.startTokenWindow();
+                continue;
+            }
+
             if (c == quoteChar) {
-                buffer.advance(); // Consume closing quote
-
-                // Extract the full matching sequence from the window
+                buffer.advance();
                 String lexeme = buffer.getTokenWindowLexeme();
-                // Safely trim off the leading and trailing quote characters
-                String content = (lexeme.length() >= 2)
-                    ? lexeme.substring(1, lexeme.length() - 1)
-                    : "";
-
+                String content = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
                 addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, content));
+                inQuotedScalar = false;
                 return;
             }
 
-            // Coordinates update automatically inside buffer.advance() for newlines
             buffer.advance();
         }
 
