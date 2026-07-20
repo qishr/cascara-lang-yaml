@@ -298,13 +298,19 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             // }
             trace("PI-while");
 
-            if ((check(YamlTokenType.NEWLINE) && !lookAheadFor(YamlTokenType.DIRECTIVE)) ||
+            if (check(YamlTokenType.NEWLINE) ||
                 (check(YamlTokenType.INDENT) && !lookAheadFor(YamlTokenType.DIRECTIVE)) ||
                 (check(YamlTokenType.DEDENT) && !lookAheadFor(YamlTokenType.DIRECTIVE))) {
-
                 advance();
                 continue;
             }
+
+            // if ((check(YamlTokenType.NEWLINE) && !lookAheadFor(YamlTokenType.DIRECTIVE)) ||
+            //     (check(YamlTokenType.INDENT) && !lookAheadFor(YamlTokenType.DIRECTIVE)) ||
+            //     (check(YamlTokenType.DEDENT) && !lookAheadFor(YamlTokenType.DIRECTIVE))) {
+            //     advance();
+            //     continue;
+            // }
 
             if (check(YamlTokenType.COMMENT)) {
                 // If there are no documents yet, AND there is no upcoming explicit
@@ -1227,7 +1233,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             StringBuilder foldedContent = new StringBuilder(content);
             boolean folded = false;
 
-            // Only fold for plain scalars (35KP case)
             if (style == QuoteStyle.PLAIN) {
                 while (true) {
 
@@ -1235,15 +1240,31 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         break;
                     }
 
-                    // Consume layout between scalar chunks
-                    while (check(YamlTokenType.NEWLINE) || check(YamlTokenType.INDENT)) {
+                    int newlineCount = 0;
+
+                    // Count ONLY consecutive NEWLINEs
+                    while (check(YamlTokenType.NEWLINE)) {
+                        newlineCount++;
+                        advance();
+                    }
+
+                    // Then skip INDENT separately (it does not affect folding)
+                    while (check(YamlTokenType.INDENT)) {
                         advance();
                     }
 
                     if (check(YamlTokenType.SCALAR)) {
-                        // YAML 1.2: newline between non-empty lines → space
-                        foldedContent.append(" ");
-                        foldedContent.append(peek().getContent());
+
+                        if (newlineCount == 0) {
+                            foldedContent.append(peek().getContent());
+                        } else if (newlineCount == 1) {
+                            foldedContent.append(" ");
+                            foldedContent.append(peek().getContent());
+                        } else {
+                            foldedContent.append("\n");
+                            foldedContent.append(peek().getContent());
+                        }
+
                         advance();
                         folded = true;
                     } else {
@@ -1508,16 +1529,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             details = error.getDetails();
         }
 
-        System.out.println("ERROR: " + code.getMessage());
-        System.err.println("ERROR: " + code.getMessage());
-        System.out.flush();
-        System.err.flush();
-
         reporter.errorAt(token, code, details);
         if (!reporter.collectsProblems()) {
-            if (code.getCode().equals("YAML-114")) {
-                System.out.println("Debug: Throwing YAML-114");
-            }
             throw new YamlParserException(token, code, details);
         }
     }
