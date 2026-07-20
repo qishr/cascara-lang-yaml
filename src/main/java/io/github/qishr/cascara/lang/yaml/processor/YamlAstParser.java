@@ -395,6 +395,17 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 skipTrivia();
             }
 
+
+
+
+            // After directives, before deciding body, strip layout so skipTrivia can see comments
+            while (check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
+                advance();
+            }
+            skipTrivia(); // this will now see COMMENT(#d) and buffer it
+
+
+
             // Clean layout indentation wrapping the explicit document boundaries
             if (check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
                 ensureBuffered(1);
@@ -406,6 +417,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             if (match(YamlTokenType.DOCUMENT_START)) {
                 skipTrivia();
             }
+
 
             if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || isAtEnd()) {
                 document.setBody(new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), PrimitiveType.ANY, "", "", QuoteStyle.PLAIN, options));
@@ -464,11 +476,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             skipTrivia();
             trace("PV-after-skipTrivia");
 
+            // This block is not being entered in this test, so it cannot be the problem.
+            // Making assumptions like this without verifying they are true leads to
+            // incorrect code. DO NOT DO THAT!
             if (check(YamlTokenType.DEDENT) || check(YamlTokenType.EOF)) {
                 return new YamlScalarNode(
                     peek().getStartLine(),
                     peek().getStartColumn(),
-                    PrimitiveType.ANY,
+                    PrimitiveType.NULL,
                     "",
                     null,
                     QuoteStyle.PLAIN,
@@ -476,33 +491,58 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 );
             }
 
+            YamlNode result;
+
             // 1. Capture anchor if present
             String pendingAnchor = null;
 
             if (check(YamlTokenType.ANCHOR)) {
+                // YamlNode anchorNode = parseAnchor();
                 trace("PV-in-if-anchor1");
-                YamlToken anchorTok = advance();
-                trace("PV-in-if-anchor2");
 
-                String raw = anchorTok.getContent();
-                pendingAnchor = raw.startsWith("&") ? raw.substring(1) : raw;
+                if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
+                    result = parseMap();
+                    // TODO: This result ends up being ignored and "Structural dispatch"
+                    // ends up in the final `else` block an returns a null scalar.
+                    attachComments(result);
+                    return result;
+                } else {
 
-                // Fast-path: &anchor scalar
-                if (check(YamlTokenType.SCALAR)) {
-                    trace("PV-in-if-scalar1");
-                    YamlNode scalar = parseScalar();
-                    trace("PV-in-if-scalar2");
+                    YamlToken anchorTok = advance();
+                    trace("PV-in-if-anchor2");
 
-                    anchorRegistry.put(pendingAnchor, scalar);
+                    String raw = anchorTok.getContent();
+                    pendingAnchor = raw.startsWith("&") ? raw.substring(1) : raw;
 
-                    YamlAnchorNode anchorNode = new YamlAnchorNode(
-                        scalar.getStartLine(),
-                        scalar.getStartColumn(),
-                        pendingAnchor,
-                        scalar
-                    );
+                    // Newly added:
+                    if (check(YamlTokenType.VALUE_INDICATOR)) {
+                        YamlNode innerMap = parseMap();
+                        // Normalizer will unwrap this later
+                        return new YamlAnchorNode(
+                            innerMap.getStartLine(),
+                            innerMap.getStartColumn(),
+                            pendingAnchor,
+                            innerMap
+                        );
+                    }
 
-                    return attachComments(anchorNode);
+                    // Fast-path: &anchor scalar
+                    else if (check(YamlTokenType.SCALAR)) {
+                        trace("PV-in-if-scalar1");
+                        YamlNode scalar = parseScalar();
+                        trace("PV-in-if-scalar2");
+
+                        anchorRegistry.put(pendingAnchor, scalar);
+
+                        YamlAnchorNode anchorNode = new YamlAnchorNode(
+                            scalar.getStartLine(),
+                            scalar.getStartColumn(),
+                            pendingAnchor,
+                            scalar
+                        );
+
+                        return attachComments(anchorNode);
+                    }
                 }
 
                 skipTrivia();
@@ -521,7 +561,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
 
             // 2. Structural dispatch
-            YamlNode result;
 
             if (check(YamlTokenType.INDENT)) {
                 trace("PV-in-if-indent1");
@@ -626,7 +665,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 result = new YamlScalarNode(
                     peek().getStartLine(),
                     peek().getStartColumn(),
-                    PrimitiveType.ANY,
+                    PrimitiveType.NULL,
                     "",
                     null,
                     QuoteStyle.PLAIN,
@@ -663,7 +702,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             trace("<parseValue");
         }
     }
-
 
 
 
@@ -740,6 +778,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     check(YamlTokenType.SCALAR) ||
                     check(YamlTokenType.ALIAS) ||
                     check(YamlTokenType.ANCHOR);
+
+                // System.out.println(
+                //     "isExplicitKey=" + isExplicitKey +
+                //     " isScalarKeyStart=" + isScalarKeyStart
+                // );
 
                 // A map entry must start with '?', SCALAR, ALIAS, or ANCHOR
                 if (!isExplicitKey && !isScalarKeyStart) {
@@ -843,11 +886,19 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                 trace("before parseValue");
                 YamlNode value;
+
+
+
+
                 if (check(YamlTokenType.NEWLINE) && !isIndentedDeeperThan(keyColumn)) {
-                    value = new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), PrimitiveType.ANY, "", null, QuoteStyle.PLAIN, options);
+                    value = new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), PrimitiveType.NULL, "", null, QuoteStyle.PLAIN, options);
                 } else {
                     value = parseValue();
                 }
+
+
+
+
                 trace("after parseValue");
 
                 map.put(new YamlMapEntryNode(key.getStartLine(), key.getStartColumn(), key, value));
@@ -898,6 +949,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     advance(); // consume &anchor
                     String raw = tok.getContent();
                     String name = raw.startsWith("&") ? raw.substring(1) : raw;
+
+                    // Consume the ':' that belongs to the anchored key
+                    // if (check(YamlTokenType.VALUE_INDICATOR)) {
+                    //     advance();
+                    // }
+                    consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_MAP_KEY);
 
                     // Parse the scalar key that follows
                     YamlNode key = parseScalar();
