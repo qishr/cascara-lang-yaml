@@ -53,6 +53,7 @@ import io.github.qishr.cascara.common.lang.util.SourceBuffer;
 import io.github.qishr.cascara.common.lang.util.SourceInputStreamBuffer;
 import io.github.qishr.cascara.common.lang.util.SourceStringBuffer;
 import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
+import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
@@ -230,11 +231,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     private void scanToken() {
         trace("scanToken");
 
-        // If we have pending spaces from a previous newline, process them now
-        // resolvePendingIndentation();
-
         final String method = "scanToken";
         int tokenStartColumn = buffer.column();
+
         char c = buffer.advance();
 
         if (c == '|' || c == '>') {
@@ -252,8 +251,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         if (c == ' ' || c == '\t') {
             trace(method, "space or tab");
             if (c == '\t') {
-                // TODO: Tokenizer should not call error().
-                // Use UNKNOWN token type and let parser handle it.
                 error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
             }
             return;
@@ -372,7 +369,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             return;
         }
 
-        scanPlainScalar();
+        scanPlainScalar(c);
     }
 
     private void handleNewlineAndIndentation(char c) {
@@ -468,13 +465,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
     }
 
-    private void scanPlainScalar() {
+    private void scanPlainScalar(char firstChar) {
         trace("scanPlainScalar");
 
-        char lastChar = '\0';
+        char prevChar = '\0';
         boolean isFirstChar = true;
 
-        while (!buffer.isAtEnd()) {
+        do {
             char c = buffer.peek();
 
             // 1. Stop at Newlines
@@ -483,34 +480,32 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             // 2. Stop at Comments (Space + #)
             // A '#' is only a comment if it is preceded by whitespace, or if it's the very first char
             if (c == '#') {
-                if (!isFirstChar && !isWhitespace(lastChar)) {
+                if (!isFirstChar && !isWhitespace(prevChar)) {
                     // It's part of the scalar value literal, keep consuming
                 } else {
                     break;
                 }
             }
 
-            // 3. Stop at Flow Indicators
-            // if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c)) break;
-            if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c)) {
-                if (c != ',' || flowDepth > 0) {
-                    break;
-                }
+            if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c) && flowDepth > 0) {
+                break;
             }
 
             // 4. The Colon Rule: Stop ONLY if it's a value indicator
-            if (c == ':' && (isWhitespace(buffer.peekNext()) || buffer.isAtEnd())) {
+            char next = buffer.peekNext();
+
+            if (c == ':' && (isWhitespace(next) || buffer.isAtEnd())) {
                 break;
             }
 
             // 4b. The Explicit Key Rule: Stop if this is a block key indicator
-            if (c == '?' && (isWhitespace(buffer.peekNext()) || buffer.isAtEnd())) {
+            if (c == '?' && (isWhitespace(next) || buffer.isAtEnd())) {
                 break;
             }
 
-            lastChar = buffer.advance();
+            prevChar = buffer.advance();
             isFirstChar = false;
-        }
+        } while (!buffer.isAtEnd());
 
         // Get the accumulated text inside our window
         String rawLexeme = buffer.getTokenWindowLexeme();
@@ -776,8 +771,15 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     //
 
     private void error(YamlDiagnosticCode msgCode, Object... details) {
-        YamlToken token = addToken(YamlTokenType.ERROR);
-        reporter.errorAt(token, msgCode, details);
+        YamlErrorToken errorToken = new YamlErrorToken(
+            buffer.line(),
+            buffer.column(),
+            buffer.offset(),
+            msgCode,
+            details
+        );
+        addToken(errorToken);
+        reporter.errorAt(errorToken, msgCode, details);
     }
 
     private void trace(String method) {

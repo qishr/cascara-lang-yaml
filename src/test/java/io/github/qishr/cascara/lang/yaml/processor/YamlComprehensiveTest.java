@@ -126,6 +126,9 @@ class YamlComprehensiveTest {
     @Test
     void testNestedFlowCollectionsInBlock() throws Exception {
         String yaml = "matrix: [[1, 2], [3, 4]]";
+
+        parser.setReporter(new StandardReporter().setLevel((Level.TRACE)));
+
         YamlMapNode rootMap = (YamlMapNode)parser.parse(yaml);
 
         // 2. Get the value for "matrix"

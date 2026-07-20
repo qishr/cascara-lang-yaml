@@ -68,6 +68,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStreamNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
+import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
@@ -291,7 +292,16 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         while (!isAtEnd() && !check(YamlTokenType.STREAM_END) && !check(YamlTokenType.EOF)) {
             int previousPosition = current;
 
-            if (check(YamlTokenType.NEWLINE) || check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
+            // if (check(YamlTokenType.NEWLINE) || check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
+            //     advance();
+            //     continue;
+            // }
+            trace("PI-while");
+
+            if ((check(YamlTokenType.NEWLINE) && !lookAheadFor(YamlTokenType.DIRECTIVE)) ||
+                (check(YamlTokenType.INDENT) && !lookAheadFor(YamlTokenType.DIRECTIVE)) ||
+                (check(YamlTokenType.DEDENT) && !lookAheadFor(YamlTokenType.DIRECTIVE))) {
+
                 advance();
                 continue;
             }
@@ -320,20 +330,32 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
 
 
+            // // This was wrong because a DIRECTIVE can come between DOCUMENT_START and DOCUMENT_END
+            // // Only start a document when appropriate
+            // if (streamNode.getDocuments().isEmpty()) {
+            //     // First document: implicit or explicit
+            //     YamlDocumentNode docNode = parseDocument();
+            //     streamNode.addDocument(docNode);
+            // } else if (check(YamlTokenType.DOCUMENT_START)) {
+            //     // Subsequent documents: must start with ---
+            //     YamlDocumentNode docNode = parseDocument();
+            //     streamNode.addDocument(docNode);
+            // } else {
+            //     // No explicit document start → we're done
+            //     break;
+            // }
 
-            // Only start a document when appropriate
-            if (streamNode.getDocuments().isEmpty()) {
-                // First document: implicit or explicit
-                YamlDocumentNode docNode = parseDocument();
-                streamNode.addDocument(docNode);
-            } else if (check(YamlTokenType.DOCUMENT_START)) {
-                // Subsequent documents: must start with ---
-                YamlDocumentNode docNode = parseDocument();
-                streamNode.addDocument(docNode);
-            } else {
-                // No explicit document start → we're done
+            // This is the correct way to do it:
+            YamlToken before = peek();
+            streamNode.addDocument(parseDocument());
+            YamlToken after = peek();
+            if (!check(YamlTokenType.DIRECTIVE) &&
+                !check(YamlTokenType.DOCUMENT_START)) {
                 break;
             }
+
+
+
 
             if (current == previousPosition) {
                 break;
@@ -355,7 +377,9 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
         }
 
-        if (check(YamlTokenType.STREAM_END)) {
+        if (check(YamlTokenType.ERROR)) {
+            error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN);
+        } else if (check(YamlTokenType.STREAM_END)) {
             advance();
         } else if (check(YamlTokenType.EOF)) {
             advance();
@@ -382,17 +406,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 YamlToken dirToken = advance();
 
 
-                // document.addDirective(new YamlDirectiveNode(dirToken.getStartLine(), dirToken.getStartColumn(), dirToken.getContent()));
                 if (isKnownDirective(dirToken)) {
                     document.addDirective(new YamlDirectiveNode(dirToken.getStartLine(), dirToken.getStartColumn(), dirToken.getContent()));
                 } else {
-                    // FIX: emit warning
                     warn(
                         dirToken,
                         YamlDiagnosticCode.UNKNOWN_DIRECTIVE,
                         "Unknown directive ignored: " + dirToken.getContent()
                     );
-                    // DO NOT add a directive node
                 }
 
 
@@ -401,13 +422,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
 
 
-
+            trace("PD-1");
             // After directives, before deciding body, strip layout so skipTrivia can see comments
             while (check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
                 advance();
             }
             skipTrivia(); // this will now see COMMENT(#d) and buffer it
 
+            trace("PD-2");
 
 
             // Clean layout indentation wrapping the explicit document boundaries
@@ -418,10 +440,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
             }
 
+            trace("PD-3");
+
             if (match(YamlTokenType.DOCUMENT_START)) {
                 skipTrivia();
             }
 
+            trace("PD-4");
 
             if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || isAtEnd()) {
                 document.setBody(new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), PrimitiveType.ANY, "", "", QuoteStyle.PLAIN, options));
@@ -782,11 +807,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     check(YamlTokenType.SCALAR) ||
                     check(YamlTokenType.ALIAS) ||
                     check(YamlTokenType.ANCHOR);
-
-                // System.out.println(
-                //     "isExplicitKey=" + isExplicitKey +
-                //     " isScalarKeyStart=" + isScalarKeyStart
-                // );
+                    // || (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR) && peek().getStartColumn() == mapColumn);
 
                 // A map entry must start with '?', SCALAR, ALIAS, or ANCHOR
                 if (!isExplicitKey && !isScalarKeyStart) {
@@ -811,7 +832,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     else {
                         // invalid indentation
                         error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
-                        throw new ParserException(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                     }
                 }
 
@@ -1010,42 +1030,41 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         depth++;
         try {
             YamlToken start = peek();
+            int indicatorColumn = start.getStartColumn();
+
             YamlSequenceNode sequence = new YamlSequenceNode(start.getStartLine(), start.getStartColumn());
             sequence.setStyle(CollectionStyle.BLOCK);
             attachComments(sequence);
 
             while (!isAtEnd()) {
                 skipTrivia();
+                trace("PS-while");
 
                 // STOP: Hand control back to the dispatcher
+                // If we see a DEDENT but the next token is still a '-', this is misaligned indentation
                 if (check(YamlTokenType.DEDENT)) {
+                    trace("PS-while-dedent");
+                    if (peek(2).getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR) {
+                        trace("PS-while-seq-indicator");
+                        YamlToken bad = peek(1);
+                        error(bad, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
+                    }
                     break;
                 }
 
 
-
-                Removed:
                 if (!check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
+                    trace("PS-while-not-seq-indicator");
                     break;
                 }
 
-                // // Added:
-                // boolean isItemStart =
-                //     check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR) ||
-                //     check(YamlTokenType.SCALAR) ||
-                //     check(YamlTokenType.ALIAS) ||
-                //     check(YamlTokenType.ANCHOR) ||
-                //     check(YamlTokenType.TAG);
-                // if (!isItemStart) {
-                //     break;
-                // }
+                int currentColumn = peek().getStartColumn();
+                if (currentColumn != indicatorColumn) {
+                    error(peek(), YamlDiagnosticCode.INCONSISTENT_INDENTATION);
+                }
+
 
                 advance(); // Consume the '-'
-                // if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
-                //     advance(); // consume '-'
-                // } else {
-                //     // Item starts with TAG, SCALAR, ALIAS, ANCHOR → do NOT consume anything here
-                // }
 
                 // parseValue handles the content, including potential nested blocks
                 sequence.add(parseValue());
@@ -1142,6 +1161,48 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         }
     }
 
+    // private YamlScalarNode parseScalar() {
+    //     trace(">parseScalar");
+    //     ++depth;
+    //     try {
+    //         YamlToken token = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
+
+    //         String raw = token.getLexeme();
+    //         QuoteStyle style = QuoteStyle.PLAIN;
+
+    //         if (raw.startsWith("\"")) {
+    //             style = QuoteStyle.DOUBLE;
+    //         } else if (raw.startsWith("'")) {
+    //             style = QuoteStyle.SINGLE;
+    //         } else if (raw.startsWith("|")) {
+    //             style = QuoteStyle.LITERAL_BLOCK;
+    //         } else if (raw.startsWith(">")) {
+    //             style = QuoteStyle.FOLDED;
+    //         }
+
+    //         YamlScalarNode scalar = new YamlScalarNode(
+    //             token.getStartLine(),
+    //             token.getStartColumn(),
+    //             PrimitiveType.ANY,// token.getPrimitiveType(),
+    //             raw,
+    //             token.getContent(),
+    //             style,
+    //             options
+    //         );
+    //         scalar.setToken(token);
+
+    //         if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
+    //             scalar.addComment(parseComment());
+    //         }
+
+    //         parseInlineComment(scalar);
+    //         return scalar;
+    //     } finally {
+    //         --this.depth;
+    //         trace("<parseScalar");
+    //     }
+    // }
+
     private YamlScalarNode parseScalar() {
         trace(">parseScalar");
         ++depth;
@@ -1149,6 +1210,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             YamlToken token = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
 
             String raw = token.getLexeme();
+            String content = token.getContent();
             QuoteStyle style = QuoteStyle.PLAIN;
 
             if (raw.startsWith("\"")) {
@@ -1161,12 +1223,45 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 style = QuoteStyle.FOLDED;
             }
 
+            // Start with the first chunk
+            StringBuilder foldedContent = new StringBuilder(content);
+            boolean folded = false;
+
+            // Only fold for plain scalars (35KP case)
+            if (style == QuoteStyle.PLAIN) {
+                while (true) {
+
+                    if (nextNonTriviaIsMapKey()) {
+                        break;
+                    }
+
+                    // Consume layout between scalar chunks
+                    while (check(YamlTokenType.NEWLINE) || check(YamlTokenType.INDENT)) {
+                        advance();
+                    }
+
+                    if (check(YamlTokenType.SCALAR)) {
+                        // YAML 1.2: newline between non-empty lines → space
+                        foldedContent.append(" ");
+                        foldedContent.append(peek().getContent());
+                        advance();
+                        folded = true;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            PrimitiveType primitiveType = folded
+                ? PrimitiveType.STRING   // multi-line plain scalar → string
+                : PrimitiveType.ANY;     // single token → keep inferred type
+
             YamlScalarNode scalar = new YamlScalarNode(
                 token.getStartLine(),
                 token.getStartColumn(),
-                PrimitiveType.ANY,// token.getPrimitiveType(),
+                primitiveType,
                 raw,
-                token.getContent(),
+                folded ? foldedContent.toString() : content,
                 style,
                 options
             );
@@ -1287,6 +1382,29 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         return false;
     }
 
+    private boolean nextNonTriviaIsMapKey() {
+        int i = current;
+
+        // Skip NEWLINE/INDENT/DEDENT
+        while (i < tokenBuffer.size()) {
+            YamlTokenType t = tokenBuffer.get(i).getType();
+            if (t == YamlTokenType.NEWLINE || t == YamlTokenType.INDENT || t == YamlTokenType.DEDENT) {
+                i++;
+                continue;
+            }
+            break;
+        }
+
+        // Now check for SCALAR + KEY_INDICATOR
+        if (i + 1 < tokenBuffer.size()
+            && tokenBuffer.get(i).getType() == YamlTokenType.SCALAR
+            && tokenBuffer.get(i + 1).getType() == YamlTokenType.VALUE_INDICATOR) {
+            return true;
+        }
+
+        return false;
+    }
+
     private boolean hasInlineValueIndicator() {
         int offset = 0;
         while (true) {
@@ -1311,6 +1429,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     private boolean check(YamlTokenType type) {
         if (isAtEnd()) return false;
         return peek().getType() == type;
+    }
+
+    private boolean lookAheadFor(YamlTokenType type) {
+        YamlToken next = peek(1);
+        return next != null && next.getType() == type;
     }
 
     private YamlToken advance() {
@@ -1380,8 +1503,21 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     private void error(YamlToken token, DiagnosticCode code, Object... details) {
+        if (token instanceof YamlErrorToken error) {
+            code = error.getCode();
+            details = error.getDetails();
+        }
+
+        System.out.println("ERROR: " + code.getMessage());
+        System.err.println("ERROR: " + code.getMessage());
+        System.out.flush();
+        System.err.flush();
+
         reporter.errorAt(token, code, details);
         if (!reporter.collectsProblems()) {
+            if (code.getCode().equals("YAML-114")) {
+                System.out.println("Debug: Throwing YAML-114");
+            }
             throw new YamlParserException(token, code, details);
         }
     }
