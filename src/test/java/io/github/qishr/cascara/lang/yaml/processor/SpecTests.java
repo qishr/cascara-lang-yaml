@@ -19,6 +19,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStreamNode;
+import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -336,6 +337,87 @@ public class SpecTests {
         assertInstanceOf(YamlScalarNode.class, body);
         YamlScalarNode scalar = (YamlScalarNode) body;
 
-        assertEquals("d e", scalar);
+        assertEquals("d e", scalar.asString());
+    }
+
+    @Test
+    public void test35KP2() {
+        String yaml = """
+            --- !!str
+            d
+            e
+            f: g
+            """;
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        // Parse YAML using the actual compliance parser
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocumentNode doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlScalarNode.class, body);
+        YamlScalarNode scalar = (YamlScalarNode) body;
+
+        assertEquals("d e", scalar.asString());
+    }
+
+    @Test
+    public void test2EBW() {
+        String yaml = """
+            a!"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~: safe
+            ?foo: safe question mark
+            :foo: safe colon
+            -foo: safe dash
+            this is#not: a comment
+            """;
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        // Parse YAML using the actual compliance parser
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocumentNode doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlMapNode.class, body);
+        YamlMapNode map = (YamlMapNode) body;
+
+    }
+
+    @Test
+    public void testIndent() {
+        String yaml = """
+            list:
+              - first
+             - second  # Only 1 space indent, should fail
+            """;
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        // Parse YAML using the actual compliance parser
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        assertThrows(YamlParserException.class, () -> parser.parse(yaml));
     }
 }

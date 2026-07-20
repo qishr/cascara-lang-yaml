@@ -48,8 +48,10 @@ import java.util.stream.Stream;
 
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
@@ -80,7 +82,7 @@ class YamlDirectoryTestSuite {
     @MethodSource("getInvalidFiles")
     void testInvalidFiles(String fileName, String content) {
         parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
-        assertThrows(Exception.class, () -> parser.parse(content), "Should have failed: " + fileName);
+        assertThrows(YamlParserException.class, () -> parser.parse(content), "Should have failed: " + fileName);
     }
 
     static Stream<Arguments> getValidFiles() throws Exception {

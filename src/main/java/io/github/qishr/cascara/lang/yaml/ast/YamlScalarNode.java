@@ -72,8 +72,15 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         this.content = unescapedContent;
         this.quoteStyle = quoteStyle;
         this.schemaType = schemaType;
-        this.stringValueCached = false;
-        this.nativeValueCached = false;
+        if (schemaType == PrimitiveType.STRING) {
+            stringValueCached = true;
+            nativeValueCached = true;
+            jvmValue = content;
+            stringValue = content;
+        } else {
+            stringValueCached = false;
+            nativeValueCached = false;
+        }
     }
 
     public YamlScalarNode(Object jvmValue, QuoteStyle quoteStyle, YamlOptions options) {
@@ -298,7 +305,8 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// {@inheritDoc}
     @Override
     public String toString() {
-        return lexeme != null ? lexeme : String.valueOf(getPrimitive());
+        return asString();
+        // return lexeme != null ? lexeme : String.valueOf(getPrimitive());
     }
 
     // TODO: Rename this to `visit` ?
