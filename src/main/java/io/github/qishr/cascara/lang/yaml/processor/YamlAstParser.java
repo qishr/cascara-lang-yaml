@@ -1233,6 +1233,45 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             StringBuilder foldedContent = new StringBuilder(content);
             boolean folded = false;
 
+            // if (style == QuoteStyle.PLAIN) {
+            //     while (true) {
+
+            //         if (nextNonTriviaIsMapKey()) {
+            //             break;
+            //         }
+
+            //         int newlineCount = 0;
+
+            //         // Count ONLY consecutive NEWLINEs
+            //         while (check(YamlTokenType.NEWLINE)) {
+            //             newlineCount++;
+            //             advance();
+            //         }
+
+            //         // Then skip INDENT separately (it does not affect folding)
+            //         while (check(YamlTokenType.INDENT)) {
+            //             advance();
+            //         }
+
+            //         if (check(YamlTokenType.SCALAR)) {
+
+            //             if (newlineCount == 0) {
+            //                 foldedContent.append(peek().getContent());
+            //             } else if (newlineCount == 1) {
+            //                 foldedContent.append(" ");
+            //                 foldedContent.append(peek().getContent());
+            //             } else {
+            //                 foldedContent.append("\n");
+            //                 foldedContent.append(peek().getContent());
+            //             }
+
+            //             advance();
+            //             folded = true;
+            //         } else {
+            //             break;
+            //         }
+            //     }
+
             if (style == QuoteStyle.PLAIN) {
                 while (true) {
 
@@ -1240,22 +1279,30 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         break;
                     }
 
+                    // Consume layout between scalar chunks
                     int newlineCount = 0;
-
-                    // Count ONLY consecutive NEWLINEs
                     while (check(YamlTokenType.NEWLINE)) {
                         newlineCount++;
                         advance();
                     }
-
-                    // Then skip INDENT separately (it does not affect folding)
                     while (check(YamlTokenType.INDENT)) {
                         advance();
                     }
 
-                    if (check(YamlTokenType.SCALAR)) {
+                    // First, fold any following anchor/tag tokens into the scalar
+                    boolean extended = false;
+                    while (check(YamlTokenType.ANCHOR) || check(YamlTokenType.TAG)) {
+                        foldedContent.append(" ");
+                        foldedContent.append(peek().getContent());
+                        advance();
+                        extended = true;
+                    }
 
-                        if (newlineCount == 0) {
+                    // Then handle the next scalar chunk
+                    if (check(YamlTokenType.SCALAR)) {
+                        // YAML 1.2: single newline between non-empty lines → space, ≥2 → newline
+                        if (newlineCount == 0 && !extended) {
+                            // same line continuation
                             foldedContent.append(peek().getContent());
                         } else if (newlineCount == 1) {
                             foldedContent.append(" ");
@@ -1272,6 +1319,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     }
                 }
             }
+
+        // }
 
             PrimitiveType primitiveType = folded
                 ? PrimitiveType.STRING   // multi-line plain scalar → string
