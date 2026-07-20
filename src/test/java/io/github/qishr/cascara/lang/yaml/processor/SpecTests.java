@@ -420,4 +420,34 @@ public class SpecTests {
 
         assertThrows(YamlParserException.class, () -> parser.parse(yaml));
     }
+
+    @Test
+    public void test3MYT() {
+        String yaml = """
+            ---
+            k:#foo
+             &a !t s
+            """;
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        // Parse YAML using the actual compliance parser
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocumentNode doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlScalarNode.class, body);
+        YamlScalarNode scalar = (YamlScalarNode) body;
+
+        assertEquals("k:#foo &a !t s", scalar.asString());
+    }
 }
