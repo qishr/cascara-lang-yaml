@@ -1,5 +1,6 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.data.Tree;
@@ -228,9 +229,6 @@ public class SpecTests {
         YamlAstParser parser = new YamlAstParser()
                 .setReporter(new StandardReporter().setLevel(Level.TRACE));
         YamlStreamNode stream = parser.parseMulti(yaml);
-
-        // This assertion WILL fail with your current parser,
-        // because you said the AST contains 2 empty documents.
         assertEquals(1, stream.getDocuments().size());
     }
 
@@ -245,7 +243,7 @@ public class SpecTests {
         // Collect diagnostics
         List<Diagnostic> diagnostics = new ArrayList<>();
         StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE)
+            // .setLevel(Level.TRACE)
             .setDiagnosticCollector(d -> {
                 diagnostics.add(d);
             });
@@ -278,5 +276,37 @@ public class SpecTests {
         // i.e., no null scalar, no extra nodes, no map/seq created
     }
 
+    @Disabled // This test is testing non-valid YAML 1.2 semantics
+    @Test
+    public void testAlias2SXE() {
+        String yaml = """
+            &a: key: &a value
+            foo:
+              *a:
+
+            """;
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        // Parse YAML using the actual compliance parser
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocumentNode doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlMapNode.class, body);
+        YamlMapNode map = (YamlMapNode) body;
+
+        assertEquals("value", map.getString("key"));
+        assertEquals("key", map.getString("foo"));
+    }
 
 }
