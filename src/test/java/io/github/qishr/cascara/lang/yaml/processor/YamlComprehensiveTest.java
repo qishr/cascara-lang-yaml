@@ -117,6 +117,9 @@ class YamlComprehensiveTest {
     void testImplicitNullValues() throws Exception {
         // Common in config: key followed by newline and another key
         String yaml = "empty_key:\nnext_key: value";
+
+        parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
+
         YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
         YamlNode val = doc.get("empty_key");
         assertTrue(val instanceof YamlScalarNode);

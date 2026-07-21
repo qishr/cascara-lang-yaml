@@ -43,7 +43,7 @@ public class YamlErrorToken extends YamlToken {
 
     //YamlToken(int line, int column, int startOffset, YamlTokenType type, String lexeme, String content) {
     public YamlErrorToken(int line, int column, int offset, DiagnosticCode code, Object... details) {
-        super(line, column, offset, YamlTokenType.ERROR, "", null);
+        super(line, column, offset, YamlTokenType.ERROR);
         this.code = code;
         this.details = details;
     }

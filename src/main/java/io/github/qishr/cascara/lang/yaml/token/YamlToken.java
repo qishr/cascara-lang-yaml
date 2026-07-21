@@ -37,6 +37,7 @@ package io.github.qishr.cascara.lang.yaml.token;
 
 import io.github.qishr.cascara.common.lang.token.Token;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
+import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 
 public class YamlToken implements Token {
     private int line;
@@ -45,15 +46,57 @@ public class YamlToken implements Token {
     private YamlTokenType type;
     private String lexeme;
     private String content;
+    private final QuoteStyle quoteStyle;
     private PrimitiveType schemaType;
 
-    public YamlToken(int line, int column, int startOffset, YamlTokenType type, String lexeme, String content) {
+    /// Structural Token
+    public YamlToken(
+        int line,
+        int column,
+        int startOffset,
+        YamlTokenType type)
+    {
+        this.line = line;
+        this.column = column;
+        this.offset = startOffset;
+        this.type = type;
+
+        this.lexeme = null;
+        this.content = null;
+        this.quoteStyle = QuoteStyle.PLAIN;
+    }
+
+    public YamlToken(
+        int line,
+        int column,
+        int startOffset,
+        YamlTokenType type,
+        String lexeme,
+        String content,
+        QuoteStyle quoteStyle)
+    {
         this.line = line;
         this.column = column;
         this.offset = startOffset;
         this.type = type;
         this.lexeme = lexeme;
         this.content = content;
+        this.quoteStyle = quoteStyle;
+    }
+
+    @Override
+    public int getStartLine() {
+        return line;
+    }
+
+    @Override
+    public int getStartColumn() {
+        return column;
+    }
+
+    @Override
+    public int getOffset() {
+        return offset;
     }
 
     @Override
@@ -71,19 +114,8 @@ public class YamlToken implements Token {
         return content;
     }
 
-    @Override
-    public int getOffset() {
-        return offset;
-    }
-
-    @Override
-    public int getStartLine() {
-        return line;
-    }
-
-    @Override
-    public int getStartColumn() {
-        return column;
+    public QuoteStyle getQuoteStyle() {
+        return quoteStyle;
     }
 
     public void setType(YamlTokenType type) { this.type = type; }

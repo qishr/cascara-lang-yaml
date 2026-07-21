@@ -455,7 +455,9 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             trace("PD-4");
 
             if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || isAtEnd()) {
-                document.setBody(new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), PrimitiveType.ANY, "", "", QuoteStyle.PLAIN, options));
+                document.setBody(
+                    new YamlScalarNode("", QuoteStyle.PLAIN, options)
+                );
             } else {
                 document.setBody(parseValue());
             }
@@ -511,17 +513,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             skipTrivia();
             trace("PV-after-skipTrivia");
 
-            // This block is not being entered in this test, so it cannot be the problem.
-            // Making assumptions like this without verifying they are true leads to
-            // incorrect code. DO NOT DO THAT!
             if (check(YamlTokenType.DEDENT) || check(YamlTokenType.EOF)) {
                 return new YamlScalarNode(
-                    peek().getStartLine(),
-                    peek().getStartColumn(),
+                    peek(),
                     PrimitiveType.NULL,
-                    "",
-                    null,
-                    QuoteStyle.PLAIN,
                     options
                 );
             }
@@ -698,12 +693,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             else {
                 result = new YamlScalarNode(
-                    peek().getStartLine(),
-                    peek().getStartColumn(),
+                    peek(),
                     PrimitiveType.NULL,
-                    "",
-                    null,
-                    QuoteStyle.PLAIN,
                     options
                 );
             }
@@ -921,7 +912,9 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
 
                 if (check(YamlTokenType.NEWLINE) && !isIndentedDeeperThan(keyColumn)) {
-                    value = new YamlScalarNode(peek().getStartLine(), peek().getStartColumn(), PrimitiveType.NULL, "", null, QuoteStyle.PLAIN, options);
+                    value = new YamlScalarNode(
+                        peek(), PrimitiveType.NULL, options
+                    );
                 } else {
                     value = parseValue();
                 }
@@ -1012,8 +1005,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 default:
                     trace("parseKeyNode: UNEXPECTED " + tok.getType());
                     error(tok, GenericDiagnosticCode.ERROR, "Unexpected token in key position: " + tok.getType());
-                    return new YamlScalarNode(tok.getStartLine(), tok.getStartColumn(),
-                        PrimitiveType.ANY, "", "", QuoteStyle.UNDETERMINED, options);
+                    return new YamlScalarNode(tok, PrimitiveType.ANY, options);
             }
         } finally {
             depth--;
@@ -1217,16 +1209,16 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             String raw = token.getLexeme();
             String content = token.getContent();
-            QuoteStyle style = QuoteStyle.PLAIN;
+            QuoteStyle quoteStyle = QuoteStyle.PLAIN;
 
             if (raw.startsWith("\"")) {
-                style = QuoteStyle.DOUBLE;
+                quoteStyle = QuoteStyle.DOUBLE;
             } else if (raw.startsWith("'")) {
-                style = QuoteStyle.SINGLE;
+                quoteStyle = QuoteStyle.SINGLE;
             } else if (raw.startsWith("|")) {
-                style = QuoteStyle.LITERAL_BLOCK;
+                quoteStyle = QuoteStyle.LITERAL_BLOCK;
             } else if (raw.startsWith(">")) {
-                style = QuoteStyle.FOLDED;
+                quoteStyle = QuoteStyle.FOLDED;
             }
 
             // Start with the first chunk
@@ -1272,7 +1264,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             //         }
             //     }
 
-            if (style == QuoteStyle.PLAIN) {
+            if (quoteStyle == QuoteStyle.PLAIN) {
                 while (true) {
 
                     if (nextNonTriviaIsMapKey()) {
@@ -1320,22 +1312,37 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
             }
 
-        // }
 
-            PrimitiveType primitiveType = folded
-                ? PrimitiveType.STRING   // multi-line plain scalar → string
-                : PrimitiveType.ANY;     // single token → keep inferred type
+            YamlScalarNode scalar;
+            if (folded) {
+                scalar = new YamlScalarNode(
+                    token,
+                    foldedContent.toString(),
+                    quoteStyle,
+                    options
+                );
+            } else {
+                scalar = new YamlScalarNode(
+                    token,
+                    PrimitiveType.ANY,
+                    options
+                );
 
-            YamlScalarNode scalar = new YamlScalarNode(
-                token.getStartLine(),
-                token.getStartColumn(),
-                primitiveType,
-                raw,
-                folded ? foldedContent.toString() : content,
-                style,
-                options
-            );
-            scalar.setToken(token);
+            }
+
+            // PrimitiveType primitiveType = folded
+            //     ? PrimitiveType.STRING   // multi-line plain scalar → string
+            //     : PrimitiveType.ANY;     // single token → keep inferred type
+
+            // YamlScalarNode scalar = new YamlScalarNode(
+            //     token,
+            //     primitiveType,
+            //     // raw,
+            //     folded ? foldedContent.toString() : content,
+            //     quoteStyle,
+            //     options
+            // );
+            // scalar.setToken(token);
 
             if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
                 scalar.addComment(parseComment());
@@ -1616,7 +1623,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             YamlToken token = tokenBuffer.get(current + i);
             sb.append(token.getType());
             sb.append("(");
-            sb.append(token.getLexeme().replace("\n", "\\n").replace("\r", "\\r"));
+            sb.append(
+                token.getLexeme() == null
+                ? "null"
+                :token.getLexeme().replace("\n", "\\n").replace("\r", "\\r")
+            );
             sb.append(") ");
         }
         return sb.toString();
