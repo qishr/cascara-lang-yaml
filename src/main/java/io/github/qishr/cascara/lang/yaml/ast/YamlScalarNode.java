@@ -39,63 +39,73 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 
 /// Represents a leaf node in the YAML AST containing a single scalar value.
 public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> {
-    private final String lexeme;
-    private final String content;
+    // private final String lexeme;
+    // private final String content;
 
-    private PrimitiveType schemaType;
-
+    private PrimitiveType primitiveType;
     private QuoteStyle quoteStyle = QuoteStyle.UNDETERMINED;
-    private ScalarStyle scalarStyle;
-    private ChompingStyle chompingStyle;
-    private YamlOptions options;
 
     // dialect-aware native value cache
     private Object jvmValue;
-    private boolean nativeValueCached;
+    private boolean isJvmValueCached;
 
     private String stringValue;
-    private boolean stringValueCached = false;
+    private boolean isStringValueCached = false;
+
+    private ScalarStyle scalarStyle;
+    private ChompingStyle chompingStyle;
+
+    private YamlOptions options;
 
     /// Constructor for use in parsers.
     /// Used when reading raw text from a file stream.
     /// Takes a String and triggers full lexical dialect type inference.
-    public YamlScalarNode(int line, int column, PrimitiveType schemaType, String raw, String content, QuoteStyle quoteStyle, YamlOptions options) {
-        super(line, column);
-        this.lexeme = raw;
-        this.options = options;
-        this.content = content;
-        this.quoteStyle = quoteStyle;
-        this.schemaType = schemaType;
-        if (schemaType == PrimitiveType.STRING) {
-            //TODO: this is wrong. its not unescaped yet
-            // do lazy unueascaping like json
-            stringValueCached = true;
-            nativeValueCached = true;
-            jvmValue = content;
-            stringValue = content;
-        } else {
-            stringValueCached = false;
-            nativeValueCached = false;
-        }
+    public YamlScalarNode(
+        YamlToken token,
+        PrimitiveType primitiveType,
+        YamlOptions options
+    ) {
+        super(token);
+        this.primitiveType = primitiveType;
+        this.quoteStyle = token.getQuoteStyle();
+        this.options = (options == null) ? YamlOptions.DEFAULT : options;
     }
 
-    public YamlScalarNode(Object jvmValue, QuoteStyle quoteStyle, YamlOptions options) {
-        super(0, 0);
+    /// Constructor for strings
+    public YamlScalarNode(
+        YamlToken token,
+        String content,
+        QuoteStyle quoteStyle,
+        YamlOptions options
+    ) {
+        super(token);
+        this.primitiveType = PrimitiveType.STRING;
         this.quoteStyle = quoteStyle;
-        this.options = options;
+        this.options = (options == null) ? YamlOptions.DEFAULT : options;
+        this.stringValue = content;
+        this.isStringValueCached = true;
+        // TODO: This is a new constructor.
+        // Check that the getters of this class behave with it.
+    }
 
-        this.schemaType = PrimitiveType.of(jvmValue);
-        this.lexeme = null;
-        this.content = null;
-
+    public YamlScalarNode(
+        Object jvmValue,
+        QuoteStyle quoteStyle,
+        YamlOptions options
+    ) {
+        super();
+        this.primitiveType = PrimitiveType.of(jvmValue);
+        this.quoteStyle = quoteStyle;
+        this.options = (options == null) ? YamlOptions.DEFAULT : options;
         this.jvmValue = jvmValue;
-        this.nativeValueCached = true;
+        this.isJvmValueCached = true;
     }
 
     /// A programmatic and serializer constructor.
@@ -108,8 +118,8 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// A programmatic and serializer constructor.
     /// Used when building an AST dynamically in code.
     /// Takes a pre-typed Object and skips text-based type inference.
-    public YamlScalarNode(Object primitiveValue) {
-        this(primitiveValue, QuoteStyle.UNDETERMINED);
+    public YamlScalarNode(Object jvmValue) {
+        this(jvmValue, QuoteStyle.UNDETERMINED);
     }
 
     /// The default constructor
@@ -117,19 +127,18 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         this(null);
     }
 
+    // TODO: Add to interface
     public PrimitiveType getPrimitiveType() {
-        if (schemaType == null || schemaType == PrimitiveType.ANY) {
-            schemaType = inferType(lexeme, quoteStyle);
-        }
-        return schemaType;
+        return primitiveType;
     }
 
-    // Updated getter to derive from style
+    // Derive quotedness from quote style
     public boolean isQuoted() {
         return getQuoteStyle() != QuoteStyle.PLAIN;
     }
 
     /// Gets the quoting style used for this scalar.
+    @Override
     public QuoteStyle getQuoteStyle() {
         if (quoteStyle == QuoteStyle.UNDETERMINED) {
             quoteStyle = inferQuoteStyle(getPrimitive(), false);
@@ -138,9 +147,9 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     }
 
     /// Sets the quoting style and clears the raw cache.
+    @Override
     public YamlScalarNode setQuoteStyle(QuoteStyle quoteStyle) {
         this.quoteStyle = quoteStyle;
-        // this.primitive.setQuoteStyle(quoteStyle);
         return this;
     }
 
@@ -162,67 +171,38 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return this;
     }
 
-    //
-    //
-    //
-
-    /// {@inheritDoc}
-    /// Scalars are leaf nodes and have no children.
-    @Override
-    public List<YamlNode> getChildren() {
-        return List.of();
-    }
-
     /// Returns the original raw (unescaped) string as seen in the source file.
     public String getLexeme() {
-        return lexeme;
-        // return (raw != null) ? raw : primitive.asString();
+        return token == null ? null : token.getLexeme();
     }
 
     @Override
     public String getContent() {
-        return content;
+        return token == null ? asString() : token.getContent();
     }
 
     /// Returns the dialect-aware JVM value (cached).
     @Override
     public Object getPrimitive() {
-        if (nativeValueCached) {
+        if (isJvmValueCached) {
             return jvmValue;
         }
-        jvmValue = parse(content, quoteStyle);
-        nativeValueCached = true;
+        jvmValue = parse(token.getContent(), quoteStyle);
+        isJvmValueCached = true;
         return jvmValue;
     }
 
     @Override
     public String asString() {
-        if (stringValueCached) return stringValue;
-
-        if (!stringValueCached) {
-            // STRING: return logical value (unescaped)
-            if (getPrimitiveType() == PrimitiveType.STRING) {
-                Object v = getPrimitive(); // unescaped logical value
-                stringValue = (v == null) ? null : String.valueOf(v);
-            }
-            // NUMBER / BOOLEAN / NULL / IDENTIFIER
-            else if (content != null) {
-                stringValue = content; // lexeme
-            }
-            // Programmatic node fallback
-            else if (lexeme != null) {
-                if (lexeme.isEmpty()) {
-                    // null
+        if (!isStringValueCached) {
+            if (primitiveType != PrimitiveType.NULL) {
+                if (token == null) {
+                    stringValue = (jvmValue == null) ? null : String.valueOf(jvmValue);
                 } else {
-                    stringValue = lexeme;
+                    stringValue = unescape(token.getContent(), quoteStyle);
                 }
             }
-            else {
-                Object v = jvmValue;
-                stringValue = (v == null) ? null : String.valueOf(v);
-            }
-
-            stringValueCached = true;
+            isStringValueCached = true;
         }
         return stringValue;
     }
@@ -279,6 +259,19 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return defaultValue;
     }
 
+    /// {@inheritDoc}
+    /// Scalars are leaf nodes and have no children.
+    @Override
+    public List<YamlNode> getChildren() {
+        return List.of();
+    }
+
+    // TODO: Rename this to `visit` ?
+    @Override
+    public void accept(YamlVisitor visitor) {
+        visitor.visit(this);
+    }
+
     //
     //
     //
@@ -289,6 +282,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// Two scalars are considered equal if they share the same anchor
     /// and logical string value. Source coordinates and quoting styles
     /// are ignored.
+    /// {@inheritDoc}
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -301,7 +295,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// {@inheritDoc}
     @Override
     public int hashCode() {
-        return Objects.hash(lexeme, content, quoteStyle);
+        return Objects.hash(getLexeme(), getContent(), quoteStyle);
     }
 
     /// {@inheritDoc}
@@ -311,14 +305,9 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         // return lexeme != null ? lexeme : String.valueOf(getPrimitive());
     }
 
-    // TODO: Rename this to `visit` ?
-    @Override
-    public void accept(YamlVisitor visitor) {
-        visitor.visit(this);
-    }
-
-
-
+    //
+    //
+    //
 
     public QuoteStyle inferQuoteStyle(Object value, boolean isKey) {
         if (value == null) {
@@ -480,11 +469,11 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     // ------------------------------------------------------------
     public Object parse(String raw, QuoteStyle quoteStyle) {
 
-        if (schemaType == null || schemaType == PrimitiveType.ANY) {
-            schemaType = inferType(raw, quoteStyle);
+        if (primitiveType == null || primitiveType == PrimitiveType.ANY) {
+            primitiveType = inferType(raw, quoteStyle);
         }
 
-        switch (schemaType) {
+        switch (primitiveType) {
             case BOOLEAN:
                 return "true".equals(raw);
 

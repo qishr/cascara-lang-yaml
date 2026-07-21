@@ -49,6 +49,7 @@ import java.util.ArrayDeque;
 import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
+import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.util.SourceBuffer;
 import io.github.qishr.cascara.common.lang.util.SourceInputStreamBuffer;
 import io.github.qishr.cascara.common.lang.util.SourceStringBuffer;
@@ -181,7 +182,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         if (!streamStarted) {
             streamStarted = true;
-            return queueToken(new YamlToken(buffer.line(), buffer.column(), buffer.offset(), YamlTokenType.STREAM_START, "", ""));
+            return queueToken(new YamlToken(buffer.line(), buffer.column(), buffer.offset(), YamlTokenType.STREAM_START));
         }
 
         // 2. Loop until we either find a token or hit the end of the input buffer
@@ -203,12 +204,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
             if (indentationLevels.size() > 1) {
                 indentationLevels.pop();
-                return queueToken(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.DEDENT, "", null));
+                return queueToken(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.DEDENT));
             }
 
             streamEnded = true;
-            pendingTokens.add(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.EOF, "", null));
-            pendingTokens.add(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.STREAM_END, "", ""));
+            pendingTokens.add(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.EOF));
+            pendingTokens.add(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.STREAM_END));
             return queueToken(pendingTokens.pollFirst());
         }
 
@@ -483,33 +484,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         int startColumn = buffer.column() - 1;
         int startOffset = buffer.offset();
 
-        // while (!buffer.isAtEnd()) {
-        //     char c = buffer.peek();
+        final QuoteStyle qs = (quoteChar == '"')
+            ? QuoteStyle.DOUBLE
+            : QuoteStyle.SINGLE;
 
-        //     if (quoteChar == '"' && c == '\\') {
-        //         buffer.advance();
-        //         if (!buffer.isAtEnd()) buffer.advance();
-        //         continue;
-        //     }
-
-        //     if (c == quoteChar) {
-        //         buffer.advance(); // Consume closing quote
-
-        //         // Extract the full matching sequence from the window
-        //         String lexeme = buffer.getTokenWindowLexeme();
-        //         // Safely trim off the leading and trailing quote characters
-        //         String content = (lexeme.length() >= 2)
-        //             ? lexeme.substring(1, lexeme.length() - 1)
-        //             : "";
-
-        //         addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, content));
-        //         inQuotedScalar = false;
-        //         return;
-        //     }
-
-        //     // Coordinates update automatically inside buffer.advance() for newlines
-        //     buffer.advance();
-        // }
         while (!buffer.isAtEnd()) {
             char c = buffer.peek();
 
@@ -529,7 +507,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 buffer.advance();
                 String lexeme = buffer.getTokenWindowLexeme();
                 String content = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
-                addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, content));
+                addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, content, qs));
                 inQuotedScalar = false;
                 return;
             }
@@ -740,7 +718,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             result.setLength(result.length() - 1);
         }
 
-        addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, buffer.getTokenWindowLexeme(), result.toString()));
+        addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, buffer.getTokenWindowLexeme(), result.toString(), QuoteStyle.PLAIN));
     }
 
     private void scanIdentifier(YamlTokenType type) {
@@ -785,21 +763,21 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     private YamlToken addToken(YamlTokenType type) {
         String text = buffer.getTokenWindowLexeme();
-        return addToken(new YamlToken(buffer.windowStartLine(), buffer.windowStartColumn(), buffer.windowStartOffset(), type, text, text));
+        return addToken(new YamlToken(buffer.windowStartLine(), buffer.windowStartColumn(), buffer.windowStartOffset(), type, text, text, QuoteStyle.PLAIN));
     }
 
     private YamlToken addToken(YamlTokenType type, String lexeme) {
-        return addToken(new YamlToken(buffer.windowStartLine(), buffer.windowStartColumn(), buffer.windowStartOffset(), type, lexeme, lexeme));
+        return addToken(new YamlToken(buffer.windowStartLine(), buffer.windowStartColumn(), buffer.windowStartOffset(), type, lexeme, lexeme, QuoteStyle.PLAIN));
     }
 
     private void addExplicitToken(YamlTokenType type, String lexeme, int tokenColumn) {
         trace("addExplicitToken");
-        addToken(new YamlToken(buffer.windowStartLine(), tokenColumn, buffer.windowStartOffset(), type, lexeme, lexeme));
+        addToken(new YamlToken(buffer.windowStartLine(), tokenColumn, buffer.windowStartOffset(), type, lexeme, lexeme, QuoteStyle.PLAIN));
     }
 
     private void addStructuralToken(YamlTokenType type, int tokenColumn) {
         trace("addStructuralToken");
-        addToken(new YamlToken(buffer.windowStartLine(), tokenColumn, buffer.windowStartOffset(), type, "", null));
+        addToken(new YamlToken(buffer.windowStartLine(), tokenColumn, buffer.windowStartOffset(), type));
     }
 
     private boolean willBeMappingKey() {

@@ -55,8 +55,8 @@ public abstract class YamlNode implements AstNode {
     private final int endColumn = 0;
     private List<YamlCommentNode> comments = null;
     private String anchor;
-    private YamlToken token;
     private String tag;
+    protected YamlToken token;
 
     protected YamlNode() {
         startLine = 0;
@@ -72,6 +72,12 @@ public abstract class YamlNode implements AstNode {
     protected YamlNode(int line, int column) {
         this.startLine = line;
         this.startColumn = column;
+    }
+
+    protected YamlNode(YamlToken token) {
+        this.token = token;
+        this.startLine = token.getStartLine();
+        this.startColumn = token.getStartColumn();
     }
 
     public String getTag() { return tag; }
