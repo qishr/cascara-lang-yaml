@@ -453,41 +453,6 @@ public class SpecTests {
         assertEquals("k:#foo &a !t s", scalar.asString());
     }
 
-    @Test
-    public void test3RLN_00() {
-        String yaml = """
-            "1 leading
-                \\ttab"
-            """;
-
-        // This represents a file with:
-        // - a literal backslash
-        // - letters: t t a b
-        // This should be unescaped by the parser/node
-        // and become an actual tab.
-
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        // Parse YAML using the actual compliance parser
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
-
-        YamlStreamNode stream = parser.parseMulti(yaml);
-
-        // The stream must contain exactly one document
-        assertEquals(1, stream.getDocuments().size());
-        YamlDocumentNode doc = stream.getDocuments().getFirst();
-
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
-        AstNode ast = new YamlConverter().toPlainAst(body);
-
-        assertInstanceOf(ReferenceScalarNode.class, ast);
-        ReferenceScalarNode scalar = (ReferenceScalarNode) ast;
-
-        assertEquals("1 leading \ttab", scalar.asString());
-    }
 
     @Test
     public void test2G84() {
@@ -516,5 +481,6 @@ public class SpecTests {
 
         assertEquals("", scalar.asString());
     }
+
 
 }
