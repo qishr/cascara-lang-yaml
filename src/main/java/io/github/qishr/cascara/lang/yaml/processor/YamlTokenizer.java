@@ -334,9 +334,15 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
         }
 
-        if (c == '\'' || c == '\"') {
-            trace(method, "quote");
-            scanQuotedScalar(c);
+        if (c == '\'') {
+            trace(method, "single quote");
+            scanSingleQuotedScalar();
+            return;
+        }
+
+        if (c == '\"') {
+            trace(method, "double quote");
+            scanDoubleQuotedScalar();
             return;
         }
 
@@ -475,8 +481,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     }
 
     /// Scans a quoted scalar, handling escape sequences for double quotes.
-    private void scanQuotedScalar(char quoteChar) {
-        trace("scanQuotedScalar");
+    private void scanSingleQuotedScalar() {
+        trace("scanSingleQuotedScalar");
         inQuotedScalar = true;
 
         // 1. Capture the starting coordinates using the buffer state
@@ -484,30 +490,66 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         int startColumn = buffer.column() - 1;
         int startOffset = buffer.offset();
 
-        final QuoteStyle qs = (quoteChar == '"')
-            ? QuoteStyle.DOUBLE
-            : QuoteStyle.SINGLE;
+        while (!buffer.isAtEnd()) {
+            char c = buffer.peek();
+
+            if (c == '\n' || c == '\r') {
+                handleNewlineAndIndentation(c);
+                continue;
+            }
+
+            if (c == '\'' && buffer.peekAhead(1) == '\'') {
+                buffer.advance(); // consume first '
+                buffer.advance(); // consume second '
+                continue;
+            }
+
+            if (c == '\'') {
+                buffer.advance();
+                String lexeme = buffer.getTokenWindowLexeme();
+                String content = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
+                addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, content, QuoteStyle.SINGLE));
+                inQuotedScalar = false;
+                return;
+            }
+
+            buffer.advance();
+        }
+
+        if (buffer.isAtEnd()) {
+            addToken(YamlTokenType.ERROR);
+        }
+    }
+
+    /// Scans a quoted scalar, handling escape sequences for double quotes.
+    private void scanDoubleQuotedScalar() {
+        trace("scanDoubleQuotedScalar");
+        inQuotedScalar = true;
+
+        // 1. Capture the starting coordinates using the buffer state
+        int startLine = buffer.line();
+        int startColumn = buffer.column() - 1;
+        int startOffset = buffer.offset();
 
         while (!buffer.isAtEnd()) {
             char c = buffer.peek();
 
-            if (quoteChar == '"' && c == '\\') {
+            if (c == '\\') {
                 buffer.advance();
                 if (!buffer.isAtEnd()) buffer.advance();
                 continue;
             }
 
             if (c == '\n' || c == '\r') {
-                handleNewlineAndIndentation(c);   // ⭐ now the guard runs
-                // buffer.startTokenWindow();
+                handleNewlineAndIndentation(c);
                 continue;
             }
 
-            if (c == quoteChar) {
+            if (c == '"') {
                 buffer.advance();
                 String lexeme = buffer.getTokenWindowLexeme();
                 String content = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
-                addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, content, qs));
+                addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, content, QuoteStyle.DOUBLE));
                 inQuotedScalar = false;
                 return;
             }

@@ -189,23 +189,53 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         return new ReferenceScalarNode(value);
     }
 
+    // System.out.println("---=== BEGIN YAML STRING ===---");
+    // debugString(s);
+    // System.out.println("---=== END YAML STRING ===---");
+
+    // Newlines become spaces
+    // Actual tab characters become spaces, unless there is a backslash in front of them.
+    // Tab characters with a backslash in front of them become tab characters
+    // Multiple spaces become one space
+
+    // // 14:20 - The correct conversion method (final, minimal, passes all RLN tests)
+    // private String normalizeDoubleQuotedString(YamlScalarNode scalar) {
+    //     String s = scalar.asString();
+    //     if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
+
+    //         // 1. Fold newline + indentation (spaces or tabs) → single space
+    //         s = s.replaceAll("\n[ \t]+", " ");
+
+    //         // 2. ONLY unescape backslash + REAL TAB (RLN_01)
+    //         //    Do NOT unescape backslash + 't' (RLN_00)
+    //         s = s.replaceAll("\\\\\t", "\t");
+    //     }
+    //     return s;
+    // }
+
+    // 14:26 - The correct conversion method (final)
     private String normalizeDoubleQuotedString(YamlScalarNode scalar) {
         String s = scalar.asString();
-
         if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
-            // System.out.println("---=== BEGIN YAML STRING ===---");
-            // debugString(s);
-            // System.out.println("---=== END YAML STRING ===---");
 
-            // s = s.replaceAll("\n +\t", " \t");
-            s = s.replaceAll("\n +", " ");
+            // 1. Fold newline + indentation (spaces or tabs) → single space
+            s = s.replaceAll("\n[ \t]+", " ");
 
-            // System.out.println("---=== BEGIN YAML STRING ===---");
-            // debugString(s);
-            // System.out.println("---=== END YAML STRING ===---");
+            // 2. ONLY unescape backslash + REAL TAB (RLN_01)
+            s = s.replaceAll("\\\\+(?!t)\t", "\t");
         }
-
         return s;
+    }
+
+    // System.out.println("---=== BEGIN YAML STRING ===---");
+    // debugString(s);
+    // System.out.println("---=== END YAML STRING ===---");
+
+    private void debugStringFlat(String input) {
+        for (int codePoint : input.codePoints().toArray()) {
+            System.out.print(currentChar( codePoint ));
+        }
+        System.out.println();
     }
 
     private void debugString(String input) {

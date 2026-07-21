@@ -59,7 +59,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     private String stringValue;
     private boolean isStringValueCached = false;
 
-    private String unescapedContent;
+    private String originalContent;
     private ScalarStyle scalarStyle;
     private ChompingStyle chompingStyle;
 
@@ -74,7 +74,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         YamlOptions options
     ) {
         super(token);
-        this.unescapedContent = token.getContent();
+        this.originalContent = token.getContent();
         this.primitiveType = primitiveType;
         this.quoteStyle = token.getQuoteStyle();
         this.options = (options == null) ? YamlOptions.DEFAULT : options;
@@ -83,13 +83,13 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// Constructor for content that is not identical to the token's content
     public YamlScalarNode(
         YamlToken token,
-        String unescapedContent,
+        String content,
         PrimitiveType primitiveType,
         QuoteStyle quoteStyle,
         YamlOptions options
     ) {
         super(token);
-        this.unescapedContent = unescapedContent;
+        this.originalContent = content;
         this.primitiveType = primitiveType;
         this.quoteStyle = quoteStyle;
         this.options = (options == null) ? YamlOptions.DEFAULT : options;
@@ -178,7 +178,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
     @Override
     public String getContent() {
-        return token == null ? asString() : unescapedContent;
+        return token == null ? asString() : originalContent;
     }
 
     /// Returns the dialect-aware JVM value (cached).
@@ -187,7 +187,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         if (isJvmValueCached) {
             return jvmValue;
         }
-        jvmValue = parse(unescapedContent, quoteStyle);
+        jvmValue = parse(originalContent, quoteStyle);
         isJvmValueCached = true;
         return jvmValue;
     }
@@ -199,7 +199,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
                 if (token == null) {
                     stringValue = (jvmValue == null) ? null : String.valueOf(jvmValue);
                 } else {
-                    stringValue = unescape(unescapedContent, quoteStyle);
+                    stringValue = unescape(originalContent, quoteStyle);
                 }
             }
             isStringValueCached = true;
@@ -511,17 +511,15 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return input.replace("\\\"", "\"")
                     .replace("\\\\", "\\")
                     .replace("\\n", "\n")
-                    .replace("\\r", "\r")
-                    .replace("\\t", "\t");
+                    .replace("\\r", "\r");
     }
 
     private String unescapeSingleQuotes(String input) {
         if (input == null) return null;
-        return input.replace("''", "'")
-                    .replace("\\\\", "\\")
-                    .replace("\\n", "\n")
-                    .replace("\\r", "\r")
-                    .replace("\\t", "\t");
+        return input.replace("''", "'");
+                    // .replace("\\\\", "\\")
+                    // .replace("\\n", "\n")
+                    // .replace("\\r", "\r");
     }
 
     // ------------------------------------------------------------
