@@ -1312,19 +1312,21 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
             }
 
-
             YamlScalarNode scalar;
             if (folded) {
                 scalar = new YamlScalarNode(
                     token,
                     foldedContent.toString(),
+                    PrimitiveType.STRING,
                     quoteStyle,
                     options
                 );
             } else {
                 scalar = new YamlScalarNode(
                     token,
+                    content,
                     PrimitiveType.ANY,
+                    quoteStyle,
                     options
                 );
 

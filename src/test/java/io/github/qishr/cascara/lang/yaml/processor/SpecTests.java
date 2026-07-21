@@ -453,7 +453,6 @@ public class SpecTests {
         assertEquals("k:#foo &a !t s", scalar.asString());
     }
 
-    @Disabled //TODO enable this
     @Test
     public void test3RLN_00() {
         String yaml = """
@@ -489,4 +488,33 @@ public class SpecTests {
 
         assertEquals("1 leading \ttab", scalar.asString());
     }
+
+    @Test
+    public void test2G84() {
+        String yaml = "--- |1-";
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        // Parse YAML using the actual compliance parser
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocumentNode doc = stream.getDocuments().getFirst();
+
+        YamlConverter converter = new YamlConverter();
+        YamlNode normalized = YamlNormalizer.normalize(doc.getBody());
+        AstNode ast = converter.toPlainAst(normalized);
+
+        assertInstanceOf(ScalarAstNode.class, ast);
+        ScalarAstNode<?> scalar = (ScalarAstNode<?>) ast;
+
+        assertEquals("", scalar.asString());
+    }
+
 }

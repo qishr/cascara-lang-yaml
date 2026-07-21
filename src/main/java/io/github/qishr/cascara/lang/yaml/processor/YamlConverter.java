@@ -35,8 +35,6 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.diagnostic.LocalizableRuntimeException;
-import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
@@ -45,12 +43,10 @@ import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
 import io.github.qishr.cascara.common.lang.processor.AstConverter;
-import io.github.qishr.cascara.common.lang.reference.ReferenceMapEntryNode;
 import io.github.qishr.cascara.common.lang.reference.ReferenceMapNode;
 import io.github.qishr.cascara.common.lang.reference.ReferenceNode;
 import io.github.qishr.cascara.common.lang.reference.ReferenceScalarNode;
 import io.github.qishr.cascara.common.lang.reference.ReferenceSequenceNode;
-import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
@@ -197,16 +193,16 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         String s = scalar.asString();
 
         if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
-            System.out.println("---=== BEGIN YAML STRING ===---");
-            debugString(s);
-            System.out.println("---=== END YAML STRING ===---");
+            // System.out.println("---=== BEGIN YAML STRING ===---");
+            // debugString(s);
+            // System.out.println("---=== END YAML STRING ===---");
 
             // s = s.replaceAll("\n +\t", " \t");
             s = s.replaceAll("\n +", " ");
 
-            System.out.println("---=== BEGIN YAML STRING ===---");
-            debugString(s);
-            System.out.println("---=== END YAML STRING ===---");
+            // System.out.println("---=== BEGIN YAML STRING ===---");
+            // debugString(s);
+            // System.out.println("---=== END YAML STRING ===---");
         }
 
         return s;

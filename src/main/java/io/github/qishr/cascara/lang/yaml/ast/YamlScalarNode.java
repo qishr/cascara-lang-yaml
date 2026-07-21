@@ -59,6 +59,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     private String stringValue;
     private boolean isStringValueCached = false;
 
+    private String unescapedContent;
     private ScalarStyle scalarStyle;
     private ChompingStyle chompingStyle;
 
@@ -73,26 +74,25 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         YamlOptions options
     ) {
         super(token);
+        this.unescapedContent = token.getContent();
         this.primitiveType = primitiveType;
         this.quoteStyle = token.getQuoteStyle();
         this.options = (options == null) ? YamlOptions.DEFAULT : options;
     }
 
-    /// Constructor for strings
+    /// Constructor for content that is not identical to the token's content
     public YamlScalarNode(
         YamlToken token,
-        String content,
+        String unescapedContent,
+        PrimitiveType primitiveType,
         QuoteStyle quoteStyle,
         YamlOptions options
     ) {
         super(token);
-        this.primitiveType = PrimitiveType.STRING;
+        this.unescapedContent = unescapedContent;
+        this.primitiveType = primitiveType;
         this.quoteStyle = quoteStyle;
         this.options = (options == null) ? YamlOptions.DEFAULT : options;
-        this.stringValue = content;
-        this.isStringValueCached = true;
-        // TODO: This is a new constructor.
-        // Check that the getters of this class behave with it.
     }
 
     public YamlScalarNode(
@@ -178,7 +178,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
     @Override
     public String getContent() {
-        return token == null ? asString() : token.getContent();
+        return token == null ? asString() : unescapedContent;
     }
 
     /// Returns the dialect-aware JVM value (cached).
@@ -187,7 +187,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         if (isJvmValueCached) {
             return jvmValue;
         }
-        jvmValue = parse(token.getContent(), quoteStyle);
+        jvmValue = parse(unescapedContent, quoteStyle);
         isJvmValueCached = true;
         return jvmValue;
     }
@@ -199,7 +199,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
                 if (token == null) {
                     stringValue = (jvmValue == null) ? null : String.valueOf(jvmValue);
                 } else {
-                    stringValue = unescape(token.getContent(), quoteStyle);
+                    stringValue = unescape(unescapedContent, quoteStyle);
                 }
             }
             isStringValueCached = true;
@@ -298,12 +298,12 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return Objects.hash(getLexeme(), getContent(), quoteStyle);
     }
 
-    /// {@inheritDoc}
-    @Override
-    public String toString() {
-        return asString();
-        // return lexeme != null ? lexeme : String.valueOf(getPrimitive());
-    }
+    // /// {@inheritDoc}
+    // @Override
+    // public String toString() {
+    //     return asString();
+    //     // return lexeme != null ? lexeme : String.valueOf(getPrimitive());
+    // }
 
     //
     //
@@ -511,12 +511,17 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return input.replace("\\\"", "\"")
                     .replace("\\\\", "\\")
                     .replace("\\n", "\n")
-                    .replace("\\r", "\r");
+                    .replace("\\r", "\r")
+                    .replace("\\t", "\t");
     }
 
-    /// YAML single quotes unescape by replacing doubled single quotes with one.
     private String unescapeSingleQuotes(String input) {
-        return input == null ? null : input.replace("''", "'");
+        if (input == null) return null;
+        return input.replace("''", "'")
+                    .replace("\\\\", "\\")
+                    .replace("\\n", "\n")
+                    .replace("\\r", "\r")
+                    .replace("\\t", "\t");
     }
 
     // ------------------------------------------------------------
