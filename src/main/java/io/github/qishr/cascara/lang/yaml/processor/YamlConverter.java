@@ -51,6 +51,7 @@ import io.github.qishr.cascara.common.lang.reference.ReferenceNode;
 import io.github.qishr.cascara.common.lang.reference.ReferenceScalarNode;
 import io.github.qishr.cascara.common.lang.reference.ReferenceSequenceNode;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
+import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
@@ -141,24 +142,99 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         );
     }
 
+    // @Nullable
+    // private ReferenceScalarNode convertScalar(YamlScalarNode scalar) {
+    //     if (scalar == null) return null;
+    //     String tag = scalar.getTag();
+    //     if (tag == null) {
+    //         return new ReferenceScalarNode(scalar.getPrimitive());
+    //     }
+    //     Object value;
+    //     value = switch(tag) {
+    //         // case "!!str" -> scalar.asString();
+    //         case "!!float" -> scalar.asDouble();
+    //         case "!!int" -> scalar.asInteger();
+    //         case "!!bool" -> scalar.asBoolean();
+    //         case "!!null" -> null;
+    //         default -> {
+    //             String s = scalar.asString();
+    //             if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
+    //                 s = s.replaceAll("\n +", " \t");
+    //             }
+    //             yield s;
+    //         }
+    //     };
+    //     return new ReferenceScalarNode(value);
+    // }
+
     @Nullable
     private ReferenceScalarNode convertScalar(YamlScalarNode scalar) {
         if (scalar == null) return null;
+
         String tag = scalar.getTag();
+
         if (tag == null) {
-            if (tag == null) {
-                return new ReferenceScalarNode(scalar.getPrimitive());
+            // Untagged: if double-quoted, treat as string
+            if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
+                return new ReferenceScalarNode(normalizeDoubleQuotedString(scalar));
             }
+            return new ReferenceScalarNode(scalar.getPrimitive());
         }
-        Object value;
-        value = switch(tag) {
-            case "!!str" -> scalar.asString();
+
+        Object value = switch (tag) {
+            case "!!str" -> normalizeDoubleQuotedString(scalar);
             case "!!float" -> scalar.asDouble();
-            case "!!int" -> scalar.asInteger();
-            case "!!bool" -> scalar.asBoolean();
-            case "!!null" -> null;
-            default -> scalar.asString();
+            case "!!int"   -> scalar.asInteger();
+            case "!!bool"  -> scalar.asBoolean();
+            case "!!null"  -> null;
+            default -> normalizeDoubleQuotedString(scalar);
         };
+
         return new ReferenceScalarNode(value);
+    }
+
+    private String normalizeDoubleQuotedString(YamlScalarNode scalar) {
+        String s = scalar.asString();
+
+        if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
+            System.out.println("---=== BEGIN YAML STRING ===---");
+            debugString(s);
+            System.out.println("---=== END YAML STRING ===---");
+
+            // s = s.replaceAll("\n +\t", " \t");
+            s = s.replaceAll("\n +", " ");
+
+            System.out.println("---=== BEGIN YAML STRING ===---");
+            debugString(s);
+            System.out.println("---=== END YAML STRING ===---");
+        }
+
+        return s;
+    }
+
+    private void debugString(String input) {
+        for (int codePoint : input.codePoints().toArray()) {
+            System.out.println
+            (
+                currentChar( codePoint ) +
+                " = # " + codePoint +
+                " " + Character.getName( codePoint )
+            );
+        }
+    }
+
+    private String currentChar(int c) {
+        switch (c) {
+            case ' ':
+                return "␣";
+            case '\t':
+                return "⇥";
+            case '\r':
+                return "↵";
+            case '\n':
+                return "↩";
+            default:
+                return Character.toString(c);
+        }
     }
 }

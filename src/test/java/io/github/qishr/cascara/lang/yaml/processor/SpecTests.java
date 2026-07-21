@@ -9,7 +9,9 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.LocalizableIOException;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
+import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.reference.ReferenceNode;
+import io.github.qishr.cascara.common.lang.reference.ReferenceScalarNode;
 import io.github.qishr.cascara.common.lang.util.AstTreeData;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
@@ -455,8 +457,14 @@ public class SpecTests {
     public void test3RLN_00() {
         String yaml = """
             "1 leading
-            \ttab"
+                \\ttab"
             """;
+
+        // This represents a file with:
+        // - a literal backslash
+        // - letters: t t a b
+        // This should be unescaped by the parser/node
+        // and become an actual tab.
 
         StandardReporter reporter = new StandardReporter()
             .setLevel(Level.TRACE);
@@ -473,9 +481,10 @@ public class SpecTests {
         YamlDocumentNode doc = stream.getDocuments().getFirst();
 
         YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        AstNode ast = new YamlConverter().toPlainAst(body);
 
-        assertInstanceOf(YamlScalarNode.class, body);
-        YamlScalarNode scalar = (YamlScalarNode) body;
+        assertInstanceOf(ReferenceScalarNode.class, ast);
+        ReferenceScalarNode scalar = (ReferenceScalarNode) ast;
 
         assertEquals("1 leading \ttab", scalar.asString());
     }

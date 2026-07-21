@@ -65,14 +65,16 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// Constructor for use in parsers.
     /// Used when reading raw text from a file stream.
     /// Takes a String and triggers full lexical dialect type inference.
-    public YamlScalarNode(int line, int column, PrimitiveType schemaType, String raw, String unescapedContent, QuoteStyle quoteStyle, YamlOptions options) {
+    public YamlScalarNode(int line, int column, PrimitiveType schemaType, String raw, String content, QuoteStyle quoteStyle, YamlOptions options) {
         super(line, column);
         this.lexeme = raw;
         this.options = options;
-        this.content = unescapedContent;
+        this.content = content;
         this.quoteStyle = quoteStyle;
         this.schemaType = schemaType;
         if (schemaType == PrimitiveType.STRING) {
+            //TODO: this is wrong. its not unescaped yet
+            // do lazy unueascaping like json
             stringValueCached = true;
             nativeValueCached = true;
             jvmValue = content;
