@@ -1856,52 +1856,172 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
 
 
+
+
+
+
+    // private YamlScalarNode parseScalar() {
+    //     trace(">parseScalar");
+    //     ++depth;
+    //     try {
+    //         YamlToken token = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
+
+    //         String content = token.getContent();
+    //         QuoteStyle quoteStyle = token.getQuoteStyle();
+
+    //         if (quoteStyle == QuoteStyle.FOLDED) {
+    //             String[] lines = content.split("\n", -1);
+
+    //             int i = 0;
+    //             StringBuilder sb = new StringBuilder();
+    //             boolean first = true;
+    //             int pendingBlankLines = 0;
+
+    //             while (i < lines.length) {
+    //                 String line = lines[i++];
+    //                 if (line.isEmpty()) {
+    //                     pendingBlankLines++;
+    //                     continue;
+    //                 }
+
+    //                 if (first) {
+    //                     sb.append(line);
+    //                     first = false;
+    //                 } else {
+    //                     if (pendingBlankLines == 0) {
+    //                         sb.append(' ');
+    //                     } else {
+    //                         for (int k = 0; k < pendingBlankLines; k++) {
+    //                             sb.append('\n');
+    //                         }
+    //                     }
+    //                     sb.append(line);
+    //                 }
+
+    //                 pendingBlankLines = 0;
+    //             }
+
+    //             sb.append('\n'); // keep final newline
+
+    //             YamlScalarNode scalar = new YamlScalarNode(
+    //                 token,
+    //                 sb.toString(),
+    //                 PrimitiveType.STRING,
+    //                 QuoteStyle.FOLDED,
+    //                 options
+    //             );
+
+    //             if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
+    //                 scalar.addComment(parseComment());
+    //             }
+    //             parseInlineComment(scalar);
+    //             return scalar;
+    //         }
+
+    //         if (quoteStyle == QuoteStyle.PLAIN) {
+    //             // just return the scalar as-is
+    //             YamlScalarNode scalar = new YamlScalarNode(
+    //                 token,
+    //                 content,
+    //                 PrimitiveType.ANY,
+    //                 quoteStyle,
+    //                 options
+    //             );
+
+    //             if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
+    //                 scalar.addComment(parseComment());
+    //             }
+    //             parseInlineComment(scalar);
+    //             return scalar;
+    //         }
+
+    //         YamlScalarNode scalar = new YamlScalarNode(
+    //             token,
+    //             content,
+    //             PrimitiveType.ANY,
+    //             quoteStyle,
+    //             options
+    //         );
+
+    //         if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
+    //             scalar.addComment(parseComment());
+    //         }
+
+    //         parseInlineComment(scalar);
+    //         return scalar;
+    //     } finally {
+    //         --this.depth;
+    //         trace("<parseScalar");
+    //     }
+    // }
+
+
+
+
+
+
     private YamlScalarNode parseScalar() {
         trace(">parseScalar");
         ++depth;
         try {
             YamlToken token = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
 
-            String content = token.getContent();
             QuoteStyle quoteStyle = token.getQuoteStyle();
 
-            if (quoteStyle == QuoteStyle.FOLDED) {
-                String[] lines = content.split("\n", -1);
+            if (quoteStyle == QuoteStyle.LITERAL_BLOCK) {
+                trace("LITERAL_BLOCK");
 
-                int i = 0;
-                StringBuilder sb = new StringBuilder();
-                boolean first = true;
-                int pendingBlankLines = 0;
+                // TODO: Do we not want to do anything with the header content?
+                // String header = token.getContent();
 
-                while (i < lines.length) {
-                    String line = lines[i++];
-                    if (line.isEmpty()) {
-                        pendingBlankLines++;
-                        continue;
-                    }
-
-                    if (first) {
-                        sb.append(line);
-                        first = false;
-                    } else {
-                        if (pendingBlankLines == 0) {
-                            sb.append(' ');
-                        } else {
-                            for (int k = 0; k < pendingBlankLines; k++) {
-                                sb.append('\n');
-                            }
-                        }
-                        sb.append(line);
-                    }
-
-                    pendingBlankLines = 0;
+                // The next token is the actual content scalar
+                YamlScalarNode scalar;
+                if (check(YamlTokenType.SCALAR)) {
+                    trace("LITERAL_BLOCK content");
+                    YamlToken contentToken = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
+                    String content = contentToken.getContent() + "\n";
+                    scalar = new YamlScalarNode(
+                        contentToken,
+                        content,
+                        PrimitiveType.STRING,
+                        QuoteStyle.LITERAL_BLOCK,
+                        options
+                    );
+                } else {
+                    scalar = new YamlScalarNode(
+                        token,
+                        token.getContent(),
+                        PrimitiveType.STRING,
+                        QuoteStyle.LITERAL_BLOCK,
+                        options
+                    );
                 }
 
-                sb.append('\n'); // keep final newline
+                if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
+                    scalar.addComment(parseComment());
+                }
+                parseInlineComment(scalar);
+                return scalar;
+            }
 
+            if (quoteStyle == QuoteStyle.FOLDED) {
+                trace("FOLDED");
+
+                YamlToken contentToken = null;
+                String content;
+
+                if (check(YamlTokenType.SCALAR)) {
+                    contentToken = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
+                    content = contentToken.getContent();
+                } else {
+                    content = token.getContent();
+                }
+
+                // If the tokenizer already produced multi-line content,
+                // DO NOT re-fold it. Just return it as-is.
                 YamlScalarNode scalar = new YamlScalarNode(
-                    token,
-                    sb.toString(),
+                    contentToken != null ? contentToken : token,
+                    content,
                     PrimitiveType.STRING,
                     QuoteStyle.FOLDED,
                     options
@@ -1915,12 +2035,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
 
             if (quoteStyle == QuoteStyle.PLAIN) {
+                trace("PLAIN");
                 // just return the scalar as-is
                 YamlScalarNode scalar = new YamlScalarNode(
                     token,
-                    content,
                     PrimitiveType.ANY,
-                    quoteStyle,
                     options
                 );
 
@@ -1931,11 +2050,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 return scalar;
             }
 
+            trace("DEFAULT");
+
             YamlScalarNode scalar = new YamlScalarNode(
                 token,
-                content,
                 PrimitiveType.ANY,
-                quoteStyle,
                 options
             );
 
@@ -1950,6 +2069,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             trace("<parseScalar");
         }
     }
+
+
+
+
 
 
 

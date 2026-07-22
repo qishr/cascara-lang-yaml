@@ -20,6 +20,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStreamNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 
@@ -417,7 +418,7 @@ public class SpecTests {
 
         // Parse YAML using the actual compliance parser
         YamlAstParser parser = new YamlAstParser()
-            // .setReporter(reporter)
+            .setReporter(reporter)
             .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
 
         assertThrows(YamlParserException.class, () -> parser.parse(yaml));
@@ -518,4 +519,45 @@ public class SpecTests {
         assertEquals("ab cd\nef\n\ngh\n", scalar.asString());
     }
 
+   @Test
+    public void test4QFQ() {
+        String yaml = """
+            - |
+             detected
+            - >
+
+
+              # detected
+            - |1
+              explicit
+            - >
+             detected
+            """;
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+
+        YamlDocumentNode doc = stream.getDocuments().get(0);
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlSequenceNode.class, body);
+        YamlSequenceNode seq = (YamlSequenceNode) body;
+
+        assertEquals(4, seq.size());
+
+        assertEquals("detected\n", seq.get(0).asString());
+        assertEquals("\n\n# detected\n", seq.get(1).asString());
+        assertEquals(" explicit\n", seq.get(2).asString());
+        assertEquals("detected\n", seq.get(3).asString());
+    }
 }
