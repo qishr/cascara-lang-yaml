@@ -39,9 +39,11 @@ import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 import io.github.qishr.cascara.common.lang.token.Token;
+import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
 import java.io.InputStream;
@@ -53,8 +55,8 @@ public class YamlStreamEngine {
     private final Deque<Integer> indentStack = new ArrayDeque<>();
     private final Deque<StreamingEventType> contextStack = new ArrayDeque<>();
 
-    private Token currentToken;
-    private Token bufferedToken;
+    private YamlToken currentToken;
+    private YamlToken bufferedToken;
 
     private final boolean includeComments;
 
@@ -222,27 +224,6 @@ public class YamlStreamEngine {
                 ""
             );
         }
-
-        // 7. Root mapping detection: open START_OBJECT before first key
-        // if (documentOpened &&
-        //     !documentClosed &&
-        //     contextStack.isEmpty() &&
-        //     currentToken.getType() == YamlTokenType.SCALAR &&
-        //     isNextTokenValueIndicator()) {
-
-        //     // We are at the first "key:" of a root mapping
-        //     contextStack.push(StreamingEventType.START_OBJECT);
-        //     indentStack.push(0);
-        //     // Buffer the current scalar so it will be processed as FIELD_NAME next time
-        //     bufferedToken = currentToken;
-        //     currentToken = null;
-        //     return new YamlStreamingEvent(
-        //         tokenizer.getLine(),
-        //         tokenizer.getColumn(),
-        //         StreamingEventType.START_OBJECT,
-        //         ""
-        //     );
-        // }
 
         // 7. Root mapping detection: open START_OBJECT before first key
         if (documentOpened &&
@@ -435,7 +416,6 @@ public class YamlStreamEngine {
             return nextEvent();
         }
 
-        // I tried commenting this out, no luck:
         // Explicit key indicator '?'
         if (currentToken.getType() == YamlTokenType.KEY_INDICATOR) {
             insideExplicitKey = true;
@@ -446,6 +426,11 @@ public class YamlStreamEngine {
 
         if (currentToken.getType() == YamlTokenType.SCALAR) {
             String value = currentToken.getContent();
+            QuoteStyle style = currentToken.getQuoteStyle();
+
+            // Literal block: already has correct newlines from tokenizer
+            // Folded block: already folded by tokenizer
+            // Plain/quoted: unchanged
 
             if (isNextTokenValueIndicator()) {
                 return new YamlStreamingEvent(
@@ -456,7 +441,6 @@ public class YamlStreamEngine {
                 );
             }
 
-            // Plain scalar value
             return new YamlStreamingEvent(
                 currentToken.getStartLine(),
                 currentToken.getStartColumn(),
@@ -508,6 +492,37 @@ public class YamlStreamEngine {
 
         throw new ParserException(currentToken, YamlDiagnosticCode.UNEXPECTED_TOKEN, currentToken.getType());
     }
+
+    private String foldBlockScalar(String content) {
+        String[] lines = content.split("\n", -1);
+
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        int pendingBlank = 0;
+
+        for (String line : lines) {
+            if (line.isEmpty()) {
+                pendingBlank++;
+                continue;
+            }
+
+            if (first) {
+                sb.append(line);
+                first = false;
+            } else {
+                if (pendingBlank == 0) sb.append(' ');
+                else for (int i = 0; i < pendingBlank; i++) sb.append('\n');
+
+                sb.append(line);
+            }
+
+            pendingBlank = 0;
+        }
+
+        sb.append('\n');
+        return sb.toString();
+    }
+
     private boolean isNextTokenValueIndicator() throws ParserException {
         if (bufferedToken == null) {
             bufferedToken = tokenizer.nextToken();

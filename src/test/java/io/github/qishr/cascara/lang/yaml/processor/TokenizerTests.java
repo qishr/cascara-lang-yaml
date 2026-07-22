@@ -42,6 +42,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
@@ -88,7 +90,9 @@ public class TokenizerTests {
             YamlToken t = tokens.get(i);
             System.out.printf("[%2d] %-20s | L:%-3d C:%-3d | Lexeme: '%s'%n",
                 i, t.getType(), t.getStartLine(), t.getStartColumn(),
-                t.getLexeme().replace("\n", "\\n").replace("\r", "\\r"));
+                t.getLexeme() == null
+                ? "null"
+                : t.getLexeme().replace("\n", "\\n").replace("\r", "\\r"));
         }
         System.out.println("-----------------------------\n");
     }
@@ -233,4 +237,32 @@ public class TokenizerTests {
         // If this is 2, we've found the bug. It should only be 1.
         assertEquals(1, indents, "Nesting a dash deeper than its parent should only trigger ONE indent.");
     }
+
+    @Test
+    void testFoldedScalarTokenization() {
+        String yaml = "--- >\n ab\n cd\n\n ef\n\n\n gh\n";
+
+        tokenizer.setReporter(new StandardReporter().setLevel(Level.TRACE));
+
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+
+        assertTokensMatch(tokens,
+            YamlTokenType.STREAM_START,
+            YamlTokenType.DOCUMENT_START,
+            YamlTokenType.SCALAR,
+            // YamlTokenType.NEWLINE,
+            // YamlTokenType.SCALAR,
+            // YamlTokenType.NEWLINE,
+            // YamlTokenType.NEWLINE,
+            // YamlTokenType.SCALAR,
+            // YamlTokenType.NEWLINE,
+            // YamlTokenType.NEWLINE,
+            // YamlTokenType.NEWLINE,
+            // YamlTokenType.SCALAR,
+            // YamlTokenType.NEWLINE,
+            YamlTokenType.EOF,
+            YamlTokenType.STREAM_END
+        );
+    }
+
 }

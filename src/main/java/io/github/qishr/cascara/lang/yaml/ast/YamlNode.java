@@ -75,6 +75,9 @@ public abstract class YamlNode implements AstNode {
     }
 
     protected YamlNode(YamlToken token) {
+        if (token == null) {
+            throw new IllegalArgumentException("token must not be null");
+        }
         this.token = token;
         this.startLine = token.getStartLine();
         this.startColumn = token.getStartColumn();
