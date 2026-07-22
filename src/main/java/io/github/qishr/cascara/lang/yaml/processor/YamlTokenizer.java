@@ -1025,7 +1025,31 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
 
             char next = buffer.peek();
+
+
+
+
+            // Old:
             boolean isEmptyLine = (next == '\n' || next == '\r' || buffer.isAtEnd());
+
+            // New:
+            // boolean isEmptyLine = false;
+            // int tmpOffset = buffer.offset();
+
+            // // skip spaces
+            // while (!buffer.isAtEnd() && buffer.peek() == ' ') {
+            //     buffer.advance();
+            // }
+
+            // char c = buffer.peek();
+            // isEmptyLine = (c == '\n' || c == '\r' || buffer.isAtEnd());
+
+            // // rollback
+            // buffer.setOffset(tmpOffset);
+
+
+
+
 
             if (!isEmptyLine) {
                 if (!baseIndentDetermined) {
@@ -1091,11 +1115,32 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     boolean currentDeep = isLineDeeplyIndented.get(i);
                     boolean nextDeep = isLineDeeplyIndented.get(i + 1);
 
-                    if (currentLine.isEmpty() || nextLine.isEmpty() || currentDeep || nextDeep) {
+
+
+                    // Old:
+                    // if (currentLine.isEmpty() || nextLine.isEmpty() || currentDeep || nextDeep) {
+                    //     result.append('\n');
+                    // } else {
+                    //     result.append(' ');
+                    // }
+
+                    // New:
+                    if (currentLine.isEmpty() || currentDeep || nextDeep) {
+                        // Empty or deeply indented current line → hard break
                         result.append('\n');
+                    } else if (nextLine.isEmpty()) {
+                        // Next line is empty → do NOT add a newline here.
+                        // Let the empty line itself (on the next iteration) add the newline.
+                        // This collapses runs of empty lines to a single blank line.
+                        // No append here.
                     } else {
+                        // Both lines non-empty and not deep → soft break (space)
                         result.append(' ');
                     }
+
+
+
+
                 }
             }
         }
