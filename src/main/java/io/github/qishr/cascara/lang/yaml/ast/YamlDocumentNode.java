@@ -70,8 +70,12 @@ public class YamlDocumentNode extends YamlNode {
     }
 
 	@Override
-	public List<? extends YamlNode> getChildren() {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Unimplemented method 'getChildren'");
+	public List<YamlNode> getChildren() {
+        List<YamlNode> children = new ArrayList<>();
+        for (YamlNode node : directives) {
+            children.add(node);
+        }
+        children.add(body);
+        return children;
 	}
 }

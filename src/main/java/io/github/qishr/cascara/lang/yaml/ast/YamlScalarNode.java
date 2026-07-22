@@ -67,7 +67,8 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
     /// Constructor for use in parsers.
     /// Used when reading raw text from a file stream.
-    /// Takes a String and triggers full lexical dialect type inference.
+    /// Takes a token and triggers full lexical dialect type
+    ///  inference from the token's content.
     public YamlScalarNode(
         YamlToken token,
         PrimitiveType primitiveType,
@@ -80,7 +81,10 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         this.options = (options == null) ? YamlOptions.DEFAULT : options;
     }
 
-    /// Constructor for content that is not identical to the token's content
+    /// Constructor for use in parsers.
+    /// Used when content is not identical to the token's content
+    /// Takes a token and a string and triggers full lexical
+    /// dialect type inference from the string.
     public YamlScalarNode(
         YamlToken token,
         String content,
@@ -95,6 +99,9 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         this.options = (options == null) ? YamlOptions.DEFAULT : options;
     }
 
+    /// A programmatic and serializer constructor.
+    /// Used when building an AST dynamically in code.
+    /// Takes a pre-typed Object and skips text-based type inference.
     public YamlScalarNode(
         Object jvmValue,
         QuoteStyle quoteStyle,
@@ -125,6 +132,10 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// The default constructor
     public YamlScalarNode() {
         this(null);
+    }
+
+    public YamlOptions getOptions() {
+        return options;
     }
 
     // TODO: Add to interface

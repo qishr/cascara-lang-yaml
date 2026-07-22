@@ -38,6 +38,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -65,11 +66,11 @@ class YamlDirectoryTestSuite {
 
     @BeforeEach
     void init() {
-        reporter = new StandardReporter();
+        // reporter = new StandardReporter();
         options = new YamlOptions().setStrict(true);
         parser = new YamlAstParser()
-            .setOptions(options)
-            .setReporter(reporter);
+            .setOptions(options);
+            // .setReporter(reporter);
     }
 
     @ParameterizedTest(name = "Validating: {0}")
@@ -108,17 +109,9 @@ class YamlDirectoryTestSuite {
     @MethodSource("getValidFiles")
     void testRoundTripStability(String fileName, String content) throws Exception {
 
-        // TODO: diagnostic level in one place for all tests?
-        reporter.setLevel(Level.TRACE);
+        // reporter.setLevel(Level.TRACE);
 
         YamlMapNode doc = (YamlMapNode)parser.parse(content);
-
-        // PrintWriter pw = new PrintWriter(System.err);
-        // Tree<AstTreeData,AstNode> tree = new Tree<>();
-        // tree.setRoot(new AstTreeData(doc));
-        // tree.render(pw);
-        // pw.flush();
-
 
         // 1. Setup ONE emitter with desired options
         YamlOptions testOptions = new YamlOptions().setExpandedStyle(true);
@@ -134,9 +127,14 @@ class YamlDirectoryTestSuite {
         // 4. Second Emit (using the SAME emitter instance)
         String secondEmit = emitter.emit(reParsedDoc);
 
-        System.out.println("\n---2");
-        System.out.println(emitted);
-        System.out.println("---\n");
+        if (fileName.contains("12-content")) {
+            System.out.println("=== FIRST EMIT ===");
+            System.out.println(emitted);
+            System.out.println("=== SECOND EMIT ===");
+
+            reParsedDoc = (YamlMapNode)parser.parse(emitted);
+            System.out.println(secondEmit);
+        }
 
         if (!emitted.equals(secondEmit)) {
             fail(generateDiffMessage(fileName, emitted, secondEmit));
@@ -159,4 +157,168 @@ class YamlDirectoryTestSuite {
         }
         return diff.toString();
     }
+
+    @Test
+    void testExpandedListItemComment() {
+        String yaml = """
+            # Header
+            key: value # Inline
+            # Middle
+            list:
+              - item # List comment
+            # Footer
+            """;
+
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(new StandardReporter().setLevel(Level.TRACE));
+
+        YamlMapNode doc = (YamlMapNode) parser.parse(yaml);
+
+        YamlOptions opts = new YamlOptions().setExpandedStyle(true);
+        YamlEmitter emitter = new YamlEmitter();
+        emitter.setOptions(opts);
+
+        String emitted = emitter.emit(doc);
+        YamlMapNode reparsed = (YamlMapNode) parser.parse(emitted);
+        String secondEmit = emitter.emit(reparsed);
+
+        System.out.println("=== FIRST EMIT ===");
+        System.out.println(emitted);
+        System.out.println("=== SECOND EMIT ===");
+        System.out.println(secondEmit);
+    }
+
+    @Test
+    void testOne() {
+        String content = """
+            records:
+            - canonicalId: "text/markdown"
+              canonicalName: "Markdown"
+              mimeTypes:
+                - "text/x-markdown"
+                - "text/markdown"
+              suffixes:
+                - ".md"
+              moduleId: ""
+            - canonicalId: "text/plain"
+              canonicalName: "Text"
+              mimeTypes:
+                - "text/plain"
+              suffixes:
+                - ".text"
+              moduleId: ""
+            - canonicalId: "application/java-archive"
+              canonicalName: "Java Archive"
+              mimeTypes:
+                - "application/java-archive"
+              suffixes:
+                - ".jar"
+              moduleId: ""
+            - canonicalId: "text/json"
+              canonicalName: "JavaScript object notation"
+              mimeTypes:
+                - "application/json"
+                - "application/schema+json"
+                - "text/json"
+              suffixes:
+                - ".json"
+              moduleId: ""
+            - canonicalId: "application/java"
+              canonicalName: "Java Byte Code"
+              mimeTypes:
+                - "application/x-java-class"
+                - "application/java"
+                - "application/java-byte-code"
+              suffixes:
+                - ".class"
+              moduleId: ""
+            - canonicalId: "text/css"
+              canonicalName: "Cascading style sheet"
+              mimeTypes:
+                - "text/css"
+              suffixes:
+                - ".css"
+              moduleId: ""
+            - canonicalId: "text/yaml"
+              canonicalName: "YAML Ain't Markup Language"
+              mimeTypes:
+                - "text/x-yaml"
+                - "text/yaml"
+                - "application/yaml"
+              suffixes:
+                - ".yaml"
+              moduleId: ""
+            - canonicalId: "text/x-java"
+              canonicalName: "Java source code"
+              mimeTypes:
+                - "text/x-java"
+                - "text/x-java-source"
+              suffixes:
+                - ".java"
+              moduleId: ""
+            """;
+
+        // // EXACTLY like the directory suite:
+        // StandardReporter reporter = new StandardReporter().setLevel(Level.TRACE);
+
+        // YamlOptions opts = new YamlOptions()
+        //     .setExpandedStyle(true)
+        //     .setIndentSize(2)
+        //     .setStrict(true);
+
+        // YamlAstParser parser = new YamlAstParser()
+        //     .setOptions(opts)
+        //     .setReporter(reporter);
+
+        // YamlEmitter emitter = new YamlEmitter();
+        // emitter.setOptions(opts);
+
+        // // FIRST PARSE
+        // YamlMapNode doc = (YamlMapNode) parser.parse(yaml);
+
+        // // FIRST EMIT
+        // String emitted = emitter.emit(doc);
+
+        // // SECOND PARSE (same parser instance, same options)
+        // YamlMapNode reparsed = (YamlMapNode) parser.parse(emitted);
+
+        // // SECOND EMIT (same emitter instance, same options)
+        // String secondEmit = emitter.emit(reparsed);
+
+        // System.out.println("=== FIRST EMIT ===");
+        // System.out.println(emitted);
+        // System.out.println("=== SECOND EMIT ===");
+        // System.out.println(secondEmit);
+
+        // assertEquals(emitted, secondEmit);
+
+        YamlMapNode doc = (YamlMapNode)parser.parse(content);
+
+        // 1. Setup ONE emitter with desired options
+        YamlOptions testOptions = new YamlOptions().setExpandedStyle(true);
+        YamlEmitter emitter = new YamlEmitter();
+        emitter.setOptions(testOptions);
+
+        // 2. First Emit
+        String emitted = emitter.emit(doc);
+
+        // 3. Re-parse
+        YamlMapNode reParsedDoc = (YamlMapNode)parser.parse(emitted);
+
+        // 4. Second Emit (using the SAME emitter instance)
+        String secondEmit = emitter.emit(reParsedDoc);
+
+            System.out.println("=== FIRST EMIT ===");
+            System.out.println(emitted);
+            System.out.println("=== SECOND EMIT ===");
+
+            reParsedDoc = (YamlMapNode)parser.parse(emitted);
+            System.out.println(secondEmit);
+
+        if (!emitted.equals(secondEmit)) {
+            fail(generateDiffMessage("fileName", emitted, secondEmit));
+        }
+
+    }
+
 }

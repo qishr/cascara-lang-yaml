@@ -436,7 +436,7 @@ public class SpecTests {
 
         // Parse YAML using the actual compliance parser
         YamlAstParser parser = new YamlAstParser()
-            // .setReporter(reporter)
+            .setReporter(reporter)
             .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
 
         YamlStreamNode stream = parser.parseMulti(yaml);
@@ -482,5 +482,40 @@ public class SpecTests {
         assertEquals("", scalar.asString());
     }
 
+
+    @Test
+    public void test4Q9F() {
+        String yaml = """
+            --- >
+             ab
+             cd
+
+             ef
+
+
+             gh
+            """;
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        // Parse YAML using the actual compliance parser
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocumentNode doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlScalarNode.class, body);
+        YamlScalarNode scalar = (YamlScalarNode) body;
+
+        assertEquals("ab cd\nef\n\ngh\n", scalar.asString());
+    }
 
 }

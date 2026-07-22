@@ -34,17 +34,42 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
+import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDocumentNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public class YamlNormalizer {
+    public static StandardReporter reporter = new StandardReporter().setLevel(Level.DEBUG);
+
     public static YamlNode normalize(YamlNode node) {
+
+        reporter.debug("normalize %s", node.getClass().getSimpleName());
+
+        // // If the document's body is a !!str scalar, fold its sibling scalars
+        // if (node instanceof YamlDocumentNode doc) {
+
+        //     YamlNode body = doc.getBody();
+
+        //     if (body instanceof YamlScalarNode scalar &&
+        //         "!!str".equals(scalar.getTag())) {
+
+        //         // Fold all top-level plain scalars in the document
+        //         return foldPlainScalars(doc.getTopLevelScalars());
+        //     }
+        // }
 
         // unwrap anchors
         if (node instanceof YamlAnchorNode anchor) {
@@ -102,5 +127,41 @@ public class YamlNormalizer {
 
         // scalars are already normalized
         return node;
+    }
+
+    private static YamlScalarNode foldPlainScalars(List<? extends YamlNode> nodes) {
+
+        YamlOptions options = null;
+        if (nodes.getFirst() instanceof YamlScalarNode scalar) {
+            options = scalar.getOptions();
+        }
+
+        List<String> lines = new ArrayList<>();
+
+        for (YamlNode n : nodes) {
+            if (n instanceof YamlScalarNode s) {
+                lines.add(s.asString());
+            }
+        }
+
+        StringBuilder out = new StringBuilder();
+        boolean first = true;
+
+        for (String line : lines) {
+            if (first) {
+                out.append(line);
+                first = false;
+            } else {
+                out.append(" ");
+                out.append(line);
+            }
+        }
+
+        return new YamlScalarNode(
+            out.toString(),          // JVM value
+            QuoteStyle.PLAIN,        // style
+            options                  // options from first scalar
+        );
+
     }
 }
