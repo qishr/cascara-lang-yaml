@@ -102,9 +102,9 @@ public class Yts3RLNTests {
     //
 
     private void debug(String yaml, String expected, String actual) {
-        System.out.println("YAML: " + debugString(yaml));
-        System.out.println("Converted: " + debugString(actual));
-        System.out.println("Expected: " + debugString(expected));
+        System.out.println("YAML: " + StringUtil.debugString(yaml));
+        System.out.println("Converted: " + StringUtil.debugString(actual));
+        System.out.println("Expected: " + StringUtil.debugString(expected));
     }
 
     private String convert(String yaml) {
@@ -127,31 +127,8 @@ public class Yts3RLNTests {
     private String error(String expected, String actual) {
         return String.format(
             "Expected: %s  Actual: %s",
-            debugString(expected),
-            debugString(actual)
+            StringUtil.debugString(expected),
+            StringUtil.debugString(actual)
         );
-    }
-
-    private String debugString(String input) {
-        StringBuilder sb = new StringBuilder();
-        for (int codePoint : input.codePoints().toArray()) {
-            sb.append(currentChar( codePoint ));
-        }
-        return sb.toString();
-    }
-
-    private String currentChar(int c) {
-        switch (c) {
-            case ' ':
-                return "␣";
-            case '\t':
-                return "⇥";
-            case '\r':
-                return "↵";
-            case '\n':
-                return "↩";
-            default:
-                return Character.toString(c);
-        }
     }
 }
