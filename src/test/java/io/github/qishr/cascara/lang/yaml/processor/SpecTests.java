@@ -555,9 +555,9 @@ public class SpecTests {
 
         assertEquals(4, seq.size());
 
-        assertEquals("detected\n", seq.get(0).asString());
-        assertEquals("\n\n# detected\n", seq.get(1).asString());
-        assertEquals(" explicit\n", seq.get(2).asString());
-        assertEquals("detected\n", seq.get(3).asString());
+        StringUtil.assertEquals("detected\n", seq.get(0).asString());
+        StringUtil.assertEquals("\n\n# detected\n", seq.get(1).asString());
+        StringUtil.assertEquals(" explicit\n", seq.get(2).asString());
+        StringUtil.assertEquals("detected\n", seq.get(3).asString());
     }
 }
