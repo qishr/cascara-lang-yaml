@@ -584,6 +584,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             .setOptions(options);
     }
 
+    // TODO: This will never work if the map style isn't store in the AST
     static void test_emitter_lexeme() {
         String yaml = "key:\n  \"one\n\n  two\"";
         YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
