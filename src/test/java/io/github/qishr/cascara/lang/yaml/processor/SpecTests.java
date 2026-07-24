@@ -555,10 +555,10 @@ public class SpecTests {
 
         assertEquals(4, seq.size());
 
-        Util.assertEquals("detected\n", seq.get(0).asString());
-        Util.assertEquals("\n\n# detected\n", seq.get(1).asString());
-        Util.assertEquals(" explicit\n", seq.get(2).asString());
-        Util.assertEquals("detected\n", seq.get(3).asString());
+        TestUtil.assertEquals("detected\n", seq.get(0).asString());
+        TestUtil.assertEquals("\n\n# detected\n", seq.get(1).asString());
+        TestUtil.assertEquals(" explicit\n", seq.get(2).asString());
+        TestUtil.assertEquals("detected\n", seq.get(3).asString());
     }
 
     @Test
@@ -579,7 +579,7 @@ public class SpecTests {
 
         YamlStreamNode stream = parser.parseMulti(yaml);
 
-        Util.dumpTokens(parser.getTokens());
+        TestUtil.dumpTokens(parser.getTokens());
 
         // The stream must contain exactly one document
         assertEquals(1, stream.getDocuments().size());
@@ -595,8 +595,8 @@ public class SpecTests {
 
         YamlMapNode map = (YamlMapNode)seq.get(0);
 
-        Util.assertEquals("xxx\n", map.get("aaa").asString());
-        Util.assertEquals("xxx\n", map.get("bbb").asString());
+        TestUtil.assertEquals("xxx\n", map.get("aaa").asString());
+        TestUtil.assertEquals("xxx\n", map.get("bbb").asString());
     }
 
     @Test
@@ -617,7 +617,7 @@ public class SpecTests {
 
         YamlStreamNode stream = parser.parseMulti(yaml);
 
-        Util.dumpTokens(parser.getTokens());
+        TestUtil.dumpTokens(parser.getTokens());
 
         // The stream must contain exactly one document
         assertEquals(1, stream.getDocuments().size());
@@ -628,7 +628,7 @@ public class SpecTests {
 
         YamlMapNode map = (YamlMapNode)body;
 
-        Util.assertEquals("Empty line\nas a line feed", map.get("Folding").asString());
+        TestUtil.assertEquals("Empty line\nas a line feed", map.get("Folding").asString());
     }
 
 }

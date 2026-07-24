@@ -2343,7 +2343,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         // Create indentation based on recursion depth
         String indent = "  ".repeat(Math.max(0, depth));
 
-        reporter.trace("L%3d C%3d I%3d %s%s: %s",
+        reporter.debug("L%3d C%3d I%3d %s%s: %s",
                 tokenBuffer.get(current).getStartLine(),
                 tokenBuffer.get(current).getStartColumn(),
                 current,

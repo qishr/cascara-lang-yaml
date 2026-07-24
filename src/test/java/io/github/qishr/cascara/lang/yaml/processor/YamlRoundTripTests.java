@@ -87,26 +87,26 @@ public class YamlRoundTripTests {
         reporter = new StandardReporter().setLevel(Level.TRACE);
         YamlAstParser parser = new YamlAstParser().setOptions(options).setReporter(reporter);
         parser.parse(content);
-        Util.dumpTokens(parser.getTokens());
+        TestUtil.dumpTokens(parser.getTokens());
     }
 
     private void validateError(String filename, String fileContent, YamlNode firstAst, YamlNode secondAst, String firstYaml, String secondYaml) {
         System.out.println("\nFile content:");
-        System.out.println(Util.debugString(fileContent));
+        System.out.println(TestUtil.debugString(fileContent));
 
         traceParser(fileContent, "File Content");
         traceParser(firstYaml, "Emitted Content");
 
         System.out.println("\n=== First AST ===");
-        Util.dumpYamlAst(firstAst, "");
+        TestUtil.dumpYamlAst(firstAst, "");
         System.out.println("\n=== Second AST ===");
-        Util.dumpYamlAst(secondAst, "");
+        TestUtil.dumpYamlAst(secondAst, "");
 
         // System.err.println("\n" + generateDiffMessage(filename, firstYaml, secondYaml) + "\n");
 
         System.out.println("\n=== FIRST EMIT ===");
-        System.out.println(Util.debugString(firstYaml));
+        System.out.println(TestUtil.debugString(firstYaml));
         System.out.println("\n=== SECOND EMIT ===");
-        System.out.println(Util.debugString(secondYaml));
+        System.out.println(TestUtil.debugString(secondYaml));
     }
 }
