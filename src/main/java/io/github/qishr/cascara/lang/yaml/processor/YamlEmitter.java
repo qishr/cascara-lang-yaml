@@ -398,8 +398,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             }
             else {
                 if (!isImplicitNull(value)) sb.append(" ");
-                emitNode(value, 0, false, true); // Clean text
-                // handleInlineComments(value);    // Value's inline comment
+                emitNode(value, 0, false, true);   // <‑‑ inline, no indent, flow=true
                 if (!options.stripComments()) {
                     handleInlineComments(value);
                 }
@@ -423,62 +422,64 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     private void emitSequence(YamlSequenceNode seq, int indent, boolean isSequenceItem) {
         if (seq == null) return;
         var elements = seq.getElements();
+
         for (int i = 0; i < elements.size(); i++) {
             var item = elements.get(i);
 
-            // 1. ALWAYS write the indentation and the dash for every element
+            // dash indentation
             if (!(i == 0 && isSequenceItem)) {
                 sb.append(" ".repeat(indent));
             }
             sb.append("-");
 
-            // 2. Now decide how to handle the VALUE after that dash
-            if (options.isExpandedStyle()) {
-                if (isImplicitNull(item)) {
-                    // It's a null value in expanded style.
-                    // We just need the newline to finish this item's line.
-                    sb.append(NL);
-                } else {
-                    sb.append(NL);
-                    // Handle flow vs block indentation
-                    handleExpandedItem(item, indent);
-                }
+            // --- CASE 1: expanded style only applies to block maps/sequences ---
+            if (options.isExpandedStyle()
+                    && !(item instanceof YamlScalarNode)) {
+
+                sb.append(NL);
+                handleExpandedItem(item, indent);
+                continue;
             }
-            else if (item instanceof YamlMapNode m && m.getStyle() == CollectionStyle.BLOCK) {
+
+            // --- CASE 2: block map under dash (compact) ---
+            if (item instanceof YamlMapNode m
+                    && m.getStyle() == CollectionStyle.BLOCK) {
+
                 sb.append(" ");
                 emitMap(m, indent + 2, true);
+                continue;
             }
-            else if (item instanceof YamlSequenceNode s && s.getStyle() == CollectionStyle.BLOCK) {
+
+            // --- CASE 3: block sequence under dash (compact) ---
+            if (item instanceof YamlSequenceNode s
+                    && s.getStyle() == CollectionStyle.BLOCK) {
+
                 sb.append(NL);
                 emitNode(item, indent + options.getIndentSize(), false, false);
+                continue;
             }
-            else {
-                // COMPACT / FLOW / SCALAR
-                if (item instanceof YamlScalarNode scalar
-                        && scalar.getQuoteStyle() != QuoteStyle.DOUBLE
-                        && scalar.getQuoteStyle() != QuoteStyle.SINGLE
-                        && scalar.asString() != null
-                        && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
-                    // It's a multiline string scalar! It CANNOT be inline/flowed after a compact dash.
-                    // It must trigger a newline and follow block formatting guidelines.
-                    sb.append(NL);
-                    emitScalarInternal(scalar, indent + options.getIndentSize(), false, false);
-                }
-                else {
-                    // True compact inline scalars / flow collections
-                    if (!isImplicitNull(item)) {
-                        sb.append(" ");
-                    }
 
-                    // Force isFlow=true only for single lines / flow structures
-                    emitNode(item, 0, true, true);
-                    // handleInlineComments(item);
-                    if (!options.stripComments()) {
-                        handleInlineComments(item);
-                    }
-                    sb.append(NL);
-                }
+            // --- CASE 4: multiline scalar (must break) ---
+            if (item instanceof YamlScalarNode scalar
+                    && scalar.asString() != null
+                    && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
+
+                sb.append(NL);
+                emitScalarInternal(scalar, indent + options.getIndentSize(), false, false);
+                continue;
             }
+
+            // --- CASE 5: SIMPLE SCALAR (compact) ---
+            if (!isImplicitNull(item)) {
+                sb.append(" ");
+                emitNode(item, 0, true, true);   // inline scalar
+            }
+
+            if (!options.stripComments()) {
+                handleInlineComments(item);
+            }
+
+            sb.append(NL);
         }
     }
 
@@ -568,7 +569,8 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
     public static void main(String[] args) {
         // new YamlEmitter().valid_03_multiline_strings();
-        new YamlEmitter().valid_12_content_type_records();
+        // new YamlEmitter().valid_12_content_type_records();
+        test_emitter_lexeme();
     }
 
     private static String VALID_PATH = "src/test/resources/yaml-suite/valid";
@@ -580,6 +582,22 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         options = new YamlOptions().setStrict(true);
         parser = new YamlAstParser()
             .setOptions(options);
+    }
+
+    static void test_emitter_lexeme() {
+        String yaml = "key:\n  \"one\n\n  two\"";
+        YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
+        YamlNode root = parser.parse(yaml);
+
+        YamlEmitter emitter = new YamlEmitter();
+        String output = emitter.emit(root);
+
+        if (!yaml.equals(output)) {
+            System.out.println("=== INPUT YAML ===");
+            System.out.println(Util.debugString(yaml));
+            System.out.println("=== EMITTED YAML ===");
+            System.out.println(Util.debugString(output));
+        }
     }
 
     // void valid_file_03_multiline_strings() {

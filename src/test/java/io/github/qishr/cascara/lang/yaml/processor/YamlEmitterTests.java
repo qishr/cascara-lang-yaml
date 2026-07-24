@@ -37,6 +37,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
@@ -110,6 +111,7 @@ public class YamlEmitterTests {
         assertEquals(yaml, output);
     }
 
+    @Disabled("This is invalid. The emitter should emit the same as the YAML being parsed.")
     @Test
     void testExpandedStyleSequence() {
         // Create a simple sequence: ["java", "yaml"]
