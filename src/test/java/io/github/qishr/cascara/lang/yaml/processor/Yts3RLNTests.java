@@ -102,9 +102,9 @@ public class Yts3RLNTests {
     //
 
     private void debug(String yaml, String expected, String actual) {
-        System.out.println("YAML: " + StringUtil.debugString(yaml));
-        System.out.println("Converted: " + StringUtil.debugString(actual));
-        System.out.println("Expected: " + StringUtil.debugString(expected));
+        System.out.println("YAML: " + Util.debugString(yaml));
+        System.out.println("Converted: " + Util.debugString(actual));
+        System.out.println("Expected: " + Util.debugString(expected));
     }
 
     private String convert(String yaml) {
@@ -127,8 +127,8 @@ public class Yts3RLNTests {
     private String error(String expected, String actual) {
         return String.format(
             "Expected: %s  Actual: %s",
-            StringUtil.debugString(expected),
-            StringUtil.debugString(actual)
+            Util.debugString(expected),
+            Util.debugString(actual)
         );
     }
 }

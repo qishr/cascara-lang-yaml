@@ -127,7 +127,7 @@ class YamlDirectoryTestSuite {
         // 4. Second Emit (using the SAME emitter instance)
         String secondEmit = emitter.emit(reParsedDoc);
 
-        if (fileName.contains("12-content")) {
+        if (fileName.contains("07-quoted-scalars.yaml")) {
             System.out.println("=== FIRST EMIT ===");
             System.out.println(emitted);
             System.out.println("=== SECOND EMIT ===");
@@ -179,11 +179,12 @@ class YamlDirectoryTestSuite {
         emitter.setOptions(opts);
 
         String emitted = emitter.emit(doc);
+        System.out.println("=== FIRST EMIT ===");
+        System.out.println(emitted);
+
         YamlMapNode reparsed = (YamlMapNode) parser.parse(emitted);
         String secondEmit = emitter.emit(reparsed);
 
-        System.out.println("=== FIRST EMIT ===");
-        System.out.println(emitted);
         System.out.println("=== SECOND EMIT ===");
         System.out.println(secondEmit);
     }

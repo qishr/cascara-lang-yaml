@@ -555,9 +555,80 @@ public class SpecTests {
 
         assertEquals(4, seq.size());
 
-        StringUtil.assertEquals("detected\n", seq.get(0).asString());
-        StringUtil.assertEquals("\n\n# detected\n", seq.get(1).asString());
-        StringUtil.assertEquals(" explicit\n", seq.get(2).asString());
-        StringUtil.assertEquals("detected\n", seq.get(3).asString());
+        Util.assertEquals("detected\n", seq.get(0).asString());
+        Util.assertEquals("\n\n# detected\n", seq.get(1).asString());
+        Util.assertEquals(" explicit\n", seq.get(2).asString());
+        Util.assertEquals("detected\n", seq.get(3).asString());
     }
+
+    @Test
+    public void test4WA9() {
+        String yaml = """
+            - aaa: |2
+                xxx
+              bbb: |
+                xxx
+            """;
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        Util.dumpTokens(parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+
+        YamlDocumentNode doc = stream.getDocuments().get(0);
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlSequenceNode.class, body);
+        YamlSequenceNode seq = (YamlSequenceNode) body;
+
+        assertEquals(1, seq.size());
+
+        YamlMapNode map = (YamlMapNode)seq.get(0);
+
+        Util.assertEquals("xxx\n", map.get("aaa").asString());
+        Util.assertEquals("xxx\n", map.get("bbb").asString());
+    }
+
+    @Test
+    public void test5GBFa() {
+        String yaml = """
+            Folding:
+              "Empty line
+
+              as a line feed"
+            """;
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        Util.dumpTokens(parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+
+        YamlDocumentNode doc = stream.getDocuments().get(0);
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMapNode map = (YamlMapNode)body;
+
+        Util.assertEquals("Empty line\nas a line feed", map.get("Folding").asString());
+    }
+
 }

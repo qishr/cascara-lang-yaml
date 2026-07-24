@@ -172,7 +172,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             // If we are a sequence item on the same line as the dash,
             // the dash and space ARE the indent for the first line.
             int scalarIndent = isSequenceItem ? 0 : indent;
-            emitScalarInternal(scalar, scalarIndent, isFlow);
+            emitScalarInternal(scalar, scalarIndent, isFlow, false);
         } else if (targetNode instanceof YamlMapNode map) {
             if (map.getStyle() == CollectionStyle.FLOW) {
                 emitFlowMap(map);
@@ -191,8 +191,41 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     }
 
     /// Handles scalar formatting including Literal (|), Folded (>), and quoted styles.
-    private void emitScalarInternal(YamlScalarNode scalar, int indent, boolean isFlow) {
+    private void emitScalarInternal(YamlScalarNode scalar, int indent, boolean isFlow, boolean isBlockStyle) {
         if (scalar == null) return; // TODO: literal null
+
+
+
+
+        // if (scalar.getToken() != null) {
+        //     String lexeme = scalar.getToken().getLexeme();
+        //     if (lexeme != null) {
+        //         if (isBlockStyle) {
+        //             sb.append("\n");
+        //             sb.append(" ".repeat(indent));
+        //             sb.append(lexeme);
+        //         } else {
+        //             // sb.append(" ".repeat(indent));
+        //             sb.append(lexeme);
+        //         }
+
+        //         if (!isFlow) {
+        //             // handleInlineComments(scalar);
+        //             if (!options.stripComments()) {
+        //                 handleInlineComments(scalar);
+        //             }
+        //             // if (!isBlockStyle) {
+        //             //     sb.append(NL);
+        //             // }
+        //         }
+
+        //         return;
+        //     }
+        // }
+
+
+
+
         String val = scalar.asString();
 
         // 1. Implicit Null
@@ -376,11 +409,23 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                     }
                 }
                 sb.append(" ");
-                emitScalarInternal(scalar, indent + options.getIndentSize(), false);
+                emitScalarInternal(scalar, indent + options.getIndentSize(), false, false);
             }
+            // else if (value instanceof YamlScalarNode scalar) {
+            //     boolean isBlockStyle = (scalar.getStartLine() > key.getStartLine());
+            //     if (!isBlockStyle) sb.append(" ");
+            //     int scalarIndent = isBlockStyle ? indent + options.getIndentSize() : 0;
+            //     emitScalarInternal(scalar, scalarIndent, false, isBlockStyle);
+
+
+
+            //     // sb.append(NL);
+
+
+
+            // }
             else {
                 if (!isImplicitNull(value)) sb.append(" ");
-
                 emitNode(value, 0, false, true); // Clean text
                 // handleInlineComments(value);    // Value's inline comment
                 if (!options.stripComments()) {
@@ -445,7 +490,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                     // It's a multiline string scalar! It CANNOT be inline/flowed after a compact dash.
                     // It must trigger a newline and follow block formatting guidelines.
                     sb.append(NL);
-                    emitScalarInternal(scalar, indent + options.getIndentSize(), false);
+                    emitScalarInternal(scalar, indent + options.getIndentSize(), false, false);
                 }
                 else {
                     // True compact inline scalars / flow collections
