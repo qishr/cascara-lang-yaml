@@ -1,11 +1,7 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 import java.io.PrintWriter;
 import java.util.List;
-
-import org.junit.jupiter.api.AssertionFailureBuilder;
 
 import io.github.qishr.cascara.common.data.Table;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
@@ -39,16 +35,16 @@ public class Util {
         }
     }
 
-    public static void assertEquals(String expected, String actual) {
-        if (expected == actual) return;
-        if (expected == null || !expected.equals(actual)) {
-            AssertionFailureBuilder.assertionFailure()
-                // .message(error(expected, actual))
-				.expected(debugString(expected))
-				.actual(debugString(actual))
-				.buildAndThrow();
-        }
-    }
+    // public static void assertEquals(String expected, String actual) {
+    //     if (expected == actual) return;
+    //     if (expected == null || !expected.equals(actual)) {
+    //         AssertionFailureBuilder.assertionFailure()
+    //             // .message(error(expected, actual))
+	// 			.expected(debugString(expected))
+	// 			.actual(debugString(actual))
+	// 			.buildAndThrow();
+    //     }
+    // }
 
     private static String error(String expected, String actual) {
         return String.format(
@@ -79,9 +75,9 @@ public class Util {
             );
         }
 
-        try (PrintWriter pw = new PrintWriter(System.out)) {
-            table.render(pw);
-        }
+        PrintWriter pw = new PrintWriter(System.out);
+        table.render(pw);
+        pw.flush();
 
 
         // for (int i = 0; i < tokens.size(); i++) {

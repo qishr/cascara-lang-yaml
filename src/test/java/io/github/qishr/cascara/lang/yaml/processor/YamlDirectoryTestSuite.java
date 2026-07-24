@@ -43,24 +43,27 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
 import java.nio.file.*;
-import java.util.List;
 import java.util.stream.Stream;
 
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
-import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
-import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
-import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 class YamlDirectoryTestSuite {
 
-    private YamlOptions options;
+    private static String VALID_PATH = "src/test/resources/yaml-suite/valid";
+    private static String INVALID_PATH = "src/test/resources/yaml-suite/invalid";
+
+    private YamlOptions options = new YamlOptions().setExpandedStyle(true);
+
     private YamlAstParser parser;
     private Reporter reporter;
 
@@ -72,6 +75,7 @@ class YamlDirectoryTestSuite {
             .setOptions(options);
             // .setReporter(reporter);
     }
+
 
     @ParameterizedTest(name = "Validating: {0}")
     @MethodSource("getValidFiles")

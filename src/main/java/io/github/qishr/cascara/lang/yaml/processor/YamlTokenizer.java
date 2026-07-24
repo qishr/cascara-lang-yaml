@@ -569,9 +569,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 buffer.advance();
                 String lexeme = buffer.getTokenWindowLexeme();
 
-
-
-
                 // String content = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
                 String raw = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
 
@@ -584,7 +581,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                 while (i < raw.length()) {
                     char ch = raw.charAt(i);
-                    System.out.println("i="+i+" c="+ch);
+                    // System.out.println("i="+i+" c="+ch);
 
                     if (ch == '\n') {
                         int startOfLine = i + 1;
@@ -593,14 +590,14 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                             // collapse consecutive newlines
                             while (i < raw.length() && raw.charAt(i) == '\n') {
                                 i++;
-                                System.out.println(" i="+i+" c="+raw.charAt(i));
+                                // System.out.println(" i="+i+" c="+raw.charAt(i));
                             }
                             if (raw.charAt(i) == ' ' || raw.charAt(i) == '\t') {
                                 i--;
-                                System.out.println(" back one");
+                                // System.out.println(" back one");
                             }
                             folded.append('\n');
-                            System.out.println("single new line");
+                            // System.out.println("single new line");
                         } else {
                             // fold newline + spaces → space
                             int pos = startOfLine;
@@ -614,26 +611,16 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                             if (raw.charAt(pos) == '\n') {
                                 folded.append('\n');
                                 i = pos;
-                                System.out.println("single space");
+                                // System.out.println("single space");
                             } else {
-                                System.out.println(" pos="+pos+" c="+raw.charAt(pos));
+                                // System.out.println(" pos="+pos+" c="+raw.charAt(pos));
                                 i = pos;
                                 if (expectedSpaces == -1 || spaces > expectedSpaces) {
-                                    System.out.println(spaces + " > " + expectedSpaces);
+                                    // System.out.println(spaces + " > " + expectedSpaces);
                                     folded.append(' ');
                                 }
                                 if (expectedSpaces == -1) expectedSpaces = spaces;
                             }
-
-                            // if (k > j) {
-                            //     // newline followed by spaces → single space
-                            //     folded.append(' ');
-                            //     i = k;
-                            // } else {
-                            //     // single logical newline
-                            //     folded.append('\n');
-                            //     i = j;
-                            // }
 
                         }
 
@@ -645,8 +632,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 }
 
                 String content = folded.toString();
-                System.out.println("raw: " + raw);
-                System.out.println("content: " + content);
+                // System.out.println("raw: " + raw);
+                // System.out.println("content: " + content);
 
 
 
@@ -655,59 +642,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 inQuotedScalar = false;
                 return;
             }
-
-            // if (c == '"') {
-            //     buffer.advance();
-            //     String lexeme = buffer.getTokenWindowLexeme();
-            //     String content = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
-
-            //     // YAML 1.2 double-quoted line folding:
-            //     // - newline + spaces → single space
-            //     // - multiple newlines → single newline
-            //     StringBuilder folded = new StringBuilder();
-            //     int i = 0;
-            //     while (i < content.length()) {
-            //         char ch = content.charAt(i);
-            //         if (ch == '\n') {
-            //             int j = i + 1;
-            //             // collapse consecutive newlines
-            //             while (j < content.length() && content.charAt(j) == '\n') {
-            //                 j++;
-            //             }
-            //             // fold newline + spaces → space
-            //             int k = j;
-            //             while (k < content.length() && content.charAt(k) == ' ') {
-            //                 k++;
-            //             }
-            //             if (k > j) {
-            //                 // newline followed by spaces → single space
-            //                 folded.append(' ');
-            //                 i = k;
-            //             } else {
-            //                 // single logical newline
-            //                 folded.append('\n');
-            //                 i = j;
-            //             }
-            //         } else {
-            //             folded.append(ch);
-            //             i++;
-            //         }
-            //     }
-
-            //     addToken(new YamlToken(
-            //         startLine,
-            //         startColumn,
-            //         startOffset,
-            //         YamlTokenType.SCALAR,
-            //         lexeme,
-            //         folded.toString(),
-            //         QuoteStyle.DOUBLE
-            //     ));
-            //     inQuotedScalar = false;
-            //     return;
-            // }
-
-
 
             buffer.advance();
         }

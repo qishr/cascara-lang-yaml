@@ -35,11 +35,18 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Emitter;
@@ -53,6 +60,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStreamNode;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 /// Responsible for converting a [YamlNode] AST back into a valid YAML string.
 ///
@@ -194,6 +202,18 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     private void emitScalarInternal(YamlScalarNode scalar, int indent, boolean isFlow, boolean isBlockStyle) {
         if (scalar == null) return; // TODO: literal null
 
+        // if (scalar.getToken() != null && scalar.getToken().getLexeme() != null) {
+        //     String lex = scalar.getToken().getLexeme();
+
+        //     if (!isFlow) sb.append(" ".repeat(indent));
+        //     sb.append(lex);
+
+        //     if (!isFlow) {
+        //         if (!options.stripComments()) handleInlineComments(scalar);
+        //         // DO NOT append NL here — lexeme already contains correct formatting
+        //     }
+        //     return;
+        // }
 
 
 
@@ -588,5 +608,103 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         reporter.trace("--- EMITTER DEBUG START ---");
         reporter.trace(output.replace(" ", "·").replace("\n", "↵\n"));
         reporter.trace("--- EMITTER DEBUG END ---");
+    }
+
+    //
+    // Test
+    //
+
+    public static void main(String[] args) {
+        new YamlEmitter().valid_03_multiline_strings();
+    }
+
+    private static String VALID_PATH = "src/test/resources/yaml-suite/valid";
+    private YamlOptions options = new YamlOptions().setExpandedStyle(true);
+    private YamlAstParser parser;
+    private Reporter reporter;
+
+    void test_init() {
+        options = new YamlOptions().setStrict(true);
+        parser = new YamlAstParser()
+            .setOptions(options);
+    }
+
+    void valid_03_multiline_strings() {
+        validate("03-multiline-strings.yaml");
+    }
+
+    void valid_04_empty_edge_cases() {
+        validate("04-empty-edge-cases.yaml");
+    }
+
+    void valid_09_empty_collections() {
+        validate("09-empty-collections.yaml");
+    }
+
+    void valid_12_content_type_records() {
+        validate("12-content-type-records.yaml");
+    }
+
+    private void validate(String filename) {
+        test_init();
+        Path path = Paths.get(VALID_PATH, filename);
+        String fileContent = null;
+        try {
+            fileContent = Files.readString(path);
+        } catch (IOException e) {
+            System.err.println("Unable to read YAML file " + filename);
+            return;
+        }
+
+        YamlEmitter emitter = new YamlEmitter().setOptions(options);
+
+        YamlMapNode firstAst = (YamlMapNode) parser.parse(fileContent);
+        String firstYaml = emitter.emit(firstAst);
+
+        YamlMapNode secondAst = (YamlMapNode) parser.parse(firstYaml);
+        String secondYaml = emitter.emit(secondAst);
+
+        if (!firstAst.equals(secondAst)) {
+            System.out.println("validate ast mismatch ["+filename+"]");
+            validateError(filename, fileContent, firstAst, secondAst, firstYaml, secondYaml);
+            return;
+        }
+
+        if (!firstYaml.equals(secondYaml)) {
+            System.out.println("validate content mismatch ["+filename+"]");
+            validateError(filename, fileContent, firstAst, secondAst, firstYaml, secondYaml);
+            return;
+        }
+    }
+
+    private void traceParser(String content, String title) {
+        System.out.println("\n=== Parser Trace for " + title + " ===");
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE)
+            .setDisableFlush(false);
+        YamlAstParser parser = new YamlAstParser().setOptions(options).setReporter(reporter);
+        parser.parse(content);
+        Util.dumpTokens(parser.getTokens());
+        System.out.flush();
+    }
+
+    private void validateError(String filename, String fileContent, YamlNode firstAst, YamlNode secondAst, String firstYaml, String secondYaml) {
+        System.out.println("\nFile content:");
+        System.out.println(Util.debugString(fileContent));
+
+        traceParser(fileContent, "File Content");
+        traceParser(firstYaml, "Emitted Content");
+
+        System.out.println("\n=== First AST ===");
+        Util.dumpYamlAst(firstAst, "");
+        System.out.println("\n=== Second AST ===");
+        Util.dumpYamlAst(secondAst, "");
+
+        // System.err.println("\n" + generateDiffMessage(filename, firstYaml, secondYaml) + "\n");
+
+        System.out.println("\n=== FIRST EMIT ===");
+        System.out.println(Util.debugString(firstYaml));
+        System.out.println("\n=== SECOND EMIT ===");
+        System.out.println(Util.debugString(secondYaml));
     }
 }

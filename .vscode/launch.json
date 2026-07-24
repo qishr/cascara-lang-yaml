@@ -3,6 +3,15 @@
     "configurations": [
       {
         "type": "java",
+        "name": "YamlEmitter",
+        "request": "launch",
+        "mainClass": "cascara.lang.yaml/io.github.qishr.cascara.lang.yaml.processor.YamlEmitter",
+        "projectName": "cascara-lang-yaml",
+        "modulePaths": ["${workspaceFolder}/build/modulepath"],
+        "classPaths": [],
+      },
+      {
+        "type": "java",
         "name": "BlockScalar",
         "request": "launch",
         "mainClass": "cascara.lang.yaml/io.github.qishr.cascara.lang.yaml.internal.BlockScalar",
