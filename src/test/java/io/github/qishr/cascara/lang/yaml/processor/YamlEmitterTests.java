@@ -60,6 +60,11 @@ public class YamlEmitterTests {
         YamlEmitter emitter = new YamlEmitter();
         String emitted = emitter.emit(root);
 
+        System.out.println("IN:");
+        System.out.println(Util.debugString(original));
+        System.out.println("OUT:");
+        System.out.println(Util.debugString(emitted));
+
         assertEquals(original.trim(), emitted.trim());
     }
 
@@ -133,5 +138,35 @@ public class YamlEmitterTests {
             "    yaml";
 
         assertEquals(expected.trim(), output.trim(), "Expanded style should place scalars on a new indented line.");
+    }
+
+    @Test
+    void test_emitter_lexeme() {
+        String yaml = "key:\n  \"one\n\n  two\"";
+        YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
+        YamlNode root = parser.parse(yaml);
+
+        YamlEmitter emitter = new YamlEmitter();
+        String output = emitter.emit(root);
+
+        System.out.println("IN:");
+        System.out.println(Util.debugString(yaml));
+        System.out.println("OUT:");
+        System.out.println(Util.debugString(output));
+
+        assertEquals(yaml, output);
+    }
+
+    @Test
+    void test_emitter_lexeme2() {
+        // String yaml = "\"one\\ntwo\"";
+        String yaml = "\"one\\ntwo\"";
+        YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
+        YamlNode root = parser.parse(yaml);
+
+        YamlEmitter emitter = new YamlEmitter();
+        String output = emitter.emit(root);
+
+        Util.assertEquals(yaml, output);
     }
 }

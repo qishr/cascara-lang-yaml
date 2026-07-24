@@ -1075,68 +1075,74 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         StringBuilder sb = new StringBuilder(first.asString());
                         int column = first.getStartColumn();
 
-                        while (check(YamlTokenType.NEWLINE)) {
-                            advance(); // newline
+                        // TODO: Is this still needed?
+                        if (check(YamlTokenType.NEWLINE)) {
+                            while (check(YamlTokenType.NEWLINE)) {
+                                advance(); // newline
 
-                            if (check(YamlTokenType.SCALAR)) {
-                                // stop if this scalar is a mapping key
-                                if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-                                    break;
-                                }
-
-                                YamlScalarNode next = (YamlScalarNode) parseScalar();
-
-                                if (next.getStartColumn() != column) {
-                                    break;
-                                }
-
-                                sb.append(" ").append(next.asString());
-                            } else if (check(YamlTokenType.INDENT)) {
-                                advance(); // INDENT
-
-                                StringBuilder line = new StringBuilder();
-                                while (!check(YamlTokenType.NEWLINE) && !check(YamlTokenType.EOF)) {
-                                    // If this is a comment, STOP — do not consume it here
-                                    if (check(YamlTokenType.COMMENT)) {
+                                if (check(YamlTokenType.SCALAR)) {
+                                    // stop if this scalar is a mapping key
+                                    if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
                                         break;
                                     }
 
-                                    YamlToken tok = advance();
+                                    YamlScalarNode next = (YamlScalarNode) parseScalar();
 
-                                    if (tok.getType() == YamlTokenType.VALUE_INDICATOR) {
-                                        // hit real mapping, stop folding
-                                        result = new YamlScalarNode(
-                                            sb.toString(),
-                                            QuoteStyle.PLAIN,
-                                            first.getOptions()
-                                        );
-                                        return attachComments(result);
+                                    if (next.getStartColumn() != column) {
+                                        break;
                                     }
 
-                                    if (line.length() > 0) {
-                                        line.append(' ');
-                                    }
-                                    line.append(tok.getContent());
-                                }
+                                    sb.append(" ").append(next.asString());
+                                } else if (check(YamlTokenType.INDENT)) {
+                                    advance(); // INDENT
 
-                                if (line.length() == 0) {
+                                    StringBuilder line = new StringBuilder();
+                                    while (!check(YamlTokenType.NEWLINE) && !check(YamlTokenType.EOF)) {
+                                        // If this is a comment, STOP — do not consume it here
+                                        if (check(YamlTokenType.COMMENT)) {
+                                            break;
+                                        }
+
+                                        YamlToken tok = advance();
+
+                                        if (tok.getType() == YamlTokenType.VALUE_INDICATOR) {
+                                            // hit real mapping, stop folding
+                                            result = new YamlScalarNode(
+                                                sb.toString(),
+                                                QuoteStyle.PLAIN,
+                                                first.getOptions()
+                                            );
+                                            return attachComments(result);
+                                        }
+
+                                        if (line.length() > 0) {
+                                            line.append(' ');
+                                        }
+                                        line.append(tok.getContent());
+                                    }
+
+                                    if (line.length() == 0) {
+                                        break;
+                                    }
+
+                                    sb.append(" ").append(line.toString());
+
+
+
+                                } else {
                                     break;
                                 }
-
-                                sb.append(" ").append(line.toString());
-
-
-
-                            } else {
-                                break;
                             }
+
+                            result = new YamlScalarNode(
+                                sb.toString(),
+                                first.getQuoteStyle(),
+                                first.getOptions()
+                            );
+                        } else {
+                            result = first;
                         }
 
-                        result = new YamlScalarNode(
-                            sb.toString(),
-                            first.getQuoteStyle(),
-                            first.getOptions()
-                        );
                         result.addComments(0, first.getComments());
                     } else {
                         result = parseValue();
@@ -1958,8 +1964,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
 
 
-
-
+    // TODO: Tidy this up
     private YamlScalarNode parseScalar() {
         trace(">parseScalar");
         ++depth;
@@ -1970,32 +1975,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             if (quoteStyle == QuoteStyle.LITERAL_BLOCK) {
                 trace("LITERAL_BLOCK");
-
-                // TODO: Do we not want to do anything with the header content?
-                // String header = token.getContent();
-
-                // The next token is the actual content scalar
-                YamlScalarNode scalar;
-                if (check(YamlTokenType.SCALAR)) {
-                    trace("LITERAL_BLOCK content");
-                    YamlToken contentToken = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
-                    String content = contentToken.getContent() + "\n";
-                    scalar = new YamlScalarNode(
-                        contentToken,
-                        content,
-                        PrimitiveType.STRING,
-                        QuoteStyle.LITERAL_BLOCK,
-                        options
-                    );
-                } else {
-                    scalar = new YamlScalarNode(
-                        token,
-                        token.getContent(),
-                        PrimitiveType.STRING,
-                        QuoteStyle.LITERAL_BLOCK,
-                        options
-                    );
-                }
+                YamlScalarNode scalar = new YamlScalarNode(
+                    token,
+                    token.getContent(),
+                    PrimitiveType.STRING,
+                    QuoteStyle.LITERAL_BLOCK,
+                    options
+                );
 
                 if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
                     scalar.addComment(parseComment());

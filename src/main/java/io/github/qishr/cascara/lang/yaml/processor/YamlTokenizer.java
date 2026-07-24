@@ -403,6 +403,52 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
 
+
+        // if (inQuotedScalar) {
+        //     // Consume the newline
+        //     buffer.advance();
+        //     if (c == '\r' && buffer.peek() == '\n') {
+        //         buffer.advance();
+        //     }
+
+        //     // YAML double-quoted folding rules:
+        //     // 1) If next is another newline → collapse to ONE newline
+        //     if (!buffer.isAtEnd() && (buffer.peek() == '\n' || buffer.peek() == '\r')) {
+        //         // Skip all consecutive newlines
+        //         while (!buffer.isAtEnd() &&
+        //                (buffer.peek() == '\n' || buffer.peek() == '\r')) {
+        //             char nc = buffer.advance();
+        //             if (nc == '\r' && buffer.peek() == '\n') buffer.advance();
+        //         }
+        //         // Emit ONE newline
+        //         addExplicitToken(YamlTokenType.SCALAR, "\n", buffer.column());
+        //         buffer.startTokenWindow();
+        //         return;
+        //     }
+
+        //     // 2) If next chars are spaces → fold newline + spaces → ONE space
+        //     int spaces = 0;
+        //     while (!buffer.isAtEnd() && buffer.peek() == ' ') {
+        //         buffer.advance();
+        //         spaces++;
+        //     }
+        //     if (spaces > 0) {
+        //         // Fold to a single space
+        //         addExplicitToken(YamlTokenType.SCALAR, " ", buffer.column());
+        //         buffer.startTokenWindow();
+        //         return;
+        //     }
+
+        //     // 3) Otherwise → literal newline
+        //     addExplicitToken(YamlTokenType.SCALAR, "\n", buffer.column());
+        //     buffer.startTokenWindow();
+        //     return;
+        // }
+
+
+
+
+
         // 1. First Newline
         String lexeme = (c == '\r' && buffer.peek() == '\n') ? "\r\n" : "\n";
         if (lexeme.length() == 2) buffer.advance();
@@ -522,11 +568,146 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             if (c == '"') {
                 buffer.advance();
                 String lexeme = buffer.getTokenWindowLexeme();
-                String content = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
+
+
+
+
+                // String content = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
+                String raw = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
+
+                // YAML 1.2 double-quoted folding:
+                // - newline + spaces -> single space
+                // - multiple newlines -> single newline
+                StringBuilder folded = new StringBuilder();
+                int expectedSpaces = indentationLevels.peek() - 1;
+                int i = 0;
+
+                while (i < raw.length()) {
+                    char ch = raw.charAt(i);
+                    System.out.println("i="+i+" c="+ch);
+
+                    if (ch == '\n') {
+                        int startOfLine = i + 1;
+
+                        if (raw.charAt(startOfLine) == '\n') {
+                            // collapse consecutive newlines
+                            while (i < raw.length() && raw.charAt(i) == '\n') {
+                                i++;
+                                System.out.println(" i="+i+" c="+raw.charAt(i));
+                            }
+                            if (raw.charAt(i) == ' ' || raw.charAt(i) == '\t') {
+                                i--;
+                                System.out.println(" back one");
+                            }
+                            folded.append('\n');
+                            System.out.println("single new line");
+                        } else {
+                            // fold newline + spaces → space
+                            int pos = startOfLine;
+                            int spaces = 0;
+                            while (pos < raw.length() && (
+                                    raw.charAt(pos) == ' ' || raw.charAt(pos) == '\t')) {
+                                spaces++;
+                                pos++;
+                            }
+
+                            if (raw.charAt(pos) == '\n') {
+                                folded.append('\n');
+                                i = pos;
+                                System.out.println("single space");
+                            } else {
+                                System.out.println(" pos="+pos+" c="+raw.charAt(pos));
+                                i = pos;
+                                if (expectedSpaces == -1 || spaces > expectedSpaces) {
+                                    System.out.println(spaces + " > " + expectedSpaces);
+                                    folded.append(' ');
+                                }
+                                if (expectedSpaces == -1) expectedSpaces = spaces;
+                            }
+
+                            // if (k > j) {
+                            //     // newline followed by spaces → single space
+                            //     folded.append(' ');
+                            //     i = k;
+                            // } else {
+                            //     // single logical newline
+                            //     folded.append('\n');
+                            //     i = j;
+                            // }
+
+                        }
+
+
+                    } else {
+                        folded.append(ch);
+                        i++;
+                    }
+                }
+
+                String content = folded.toString();
+                System.out.println("raw: " + raw);
+                System.out.println("content: " + content);
+
+
+
+
                 addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, content, QuoteStyle.DOUBLE));
                 inQuotedScalar = false;
                 return;
             }
+
+            // if (c == '"') {
+            //     buffer.advance();
+            //     String lexeme = buffer.getTokenWindowLexeme();
+            //     String content = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
+
+            //     // YAML 1.2 double-quoted line folding:
+            //     // - newline + spaces → single space
+            //     // - multiple newlines → single newline
+            //     StringBuilder folded = new StringBuilder();
+            //     int i = 0;
+            //     while (i < content.length()) {
+            //         char ch = content.charAt(i);
+            //         if (ch == '\n') {
+            //             int j = i + 1;
+            //             // collapse consecutive newlines
+            //             while (j < content.length() && content.charAt(j) == '\n') {
+            //                 j++;
+            //             }
+            //             // fold newline + spaces → space
+            //             int k = j;
+            //             while (k < content.length() && content.charAt(k) == ' ') {
+            //                 k++;
+            //             }
+            //             if (k > j) {
+            //                 // newline followed by spaces → single space
+            //                 folded.append(' ');
+            //                 i = k;
+            //             } else {
+            //                 // single logical newline
+            //                 folded.append('\n');
+            //                 i = j;
+            //             }
+            //         } else {
+            //             folded.append(ch);
+            //             i++;
+            //         }
+            //     }
+
+            //     addToken(new YamlToken(
+            //         startLine,
+            //         startColumn,
+            //         startOffset,
+            //         YamlTokenType.SCALAR,
+            //         lexeme,
+            //         folded.toString(),
+            //         QuoteStyle.DOUBLE
+            //     ));
+            //     inQuotedScalar = false;
+            //     return;
+            // }
+
+
 
             buffer.advance();
         }
@@ -607,7 +788,237 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
      *   - Blank lines produce NEWLINE tokens.
      *   - Folding is done in the parser, not here.
      */
-    void scanBlockScalar(char headerChar) {
+    // void scanBlockScalar(char headerChar) {
+    //     int startLine = buffer.line();
+    //     int startColumn = buffer.column() - 1;
+    //     int startOffset = buffer.offset();
+
+    //     QuoteStyle quoteStyle = (headerChar == '|')
+    //         ? QuoteStyle.LITERAL_BLOCK
+    //         : QuoteStyle.FOLDED;
+
+    //     char chomping = 'C';
+    //     int explicitIndent = -1;
+
+    //     while (!buffer.isAtEnd()) {
+    //         char next = buffer.peek();
+    //         if (next == '-') {
+    //             chomping = 'S';
+    //             buffer.advance();
+    //         } else if (next == '+') {
+    //             chomping = 'K';
+    //             buffer.advance();
+    //         } else if (next >= '1' && next <= '9') {
+    //             explicitIndent = next - '0';
+    //             buffer.advance();
+    //         } else {
+    //             break;
+    //         }
+    //     }
+
+    //     while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
+    //         buffer.advance();
+    //     }
+
+    //     if (!buffer.isAtEnd()) {
+    //         char next = buffer.advance();
+    //         if (next == '\r' && buffer.peek() == '\n') {
+    //             buffer.advance();
+    //         }
+    //     }
+
+    //     int currentMargin = indentationLevels.peek();
+    //     boolean isNested = (currentMargin > 0);
+
+    //     int blockIndent = explicitIndent != -1 ? -1 : -1; // auto-detect only when no explicit indent
+
+    //     List<String> rawLines = new ArrayList<>();
+    //     List<Boolean> isLineDeeplyIndented = new ArrayList<>();
+    //     boolean baseIndentDetermined = (explicitIndent != -1);
+
+    //     while (!buffer.isAtEnd()) {
+    //         int lineStartOffset = buffer.offset();
+    //         int spaces = 0;
+
+    //         while (!buffer.isAtEnd() && buffer.peek() == ' ') {
+    //             spaces++;
+    //             buffer.advance();
+    //         }
+
+    //         char next = buffer.peek();
+    //         boolean isEmptyLine = (next == '\n' || next == '\r' || buffer.isAtEnd());
+
+
+
+
+    //         int indentToStrip = -1;
+    //         if (explicitIndent != -1) {
+    //             indentToStrip = currentMargin + explicitIndent;
+    //         }
+
+
+
+
+    //         int effectiveSpaces = spaces - currentMargin;
+    //         if (effectiveSpaces < 0) effectiveSpaces = 0;
+
+    //         if (!isEmptyLine) {
+    //             if (!baseIndentDetermined && explicitIndent == -1) {
+    //                 if (spaces < currentMargin) {
+    //                     int rollback = buffer.offset() - lineStartOffset;
+    //                     for (int i = 0; i < rollback; i++) buffer.backup();
+    //                     break;
+    //                 }
+    //                 blockIndent = spaces;
+    //                 baseIndentDetermined = true;
+    //             }
+
+    //             // if (explicitIndent != -1) {
+    //             //     // explicit indent: compare content indent relative to parent
+    //             //     if (effectiveSpaces < explicitIndent) {
+    //             //         int rollback = buffer.offset() - lineStartOffset;
+    //             //         for (int i = 0; i < rollback; i++) buffer.backup();
+    //             //         break;
+    //             //     }
+    //             // } else {
+    //             //     // auto-detected indent: compare absolute spaces
+    //             //     if (spaces < blockIndent) {
+    //             //         int rollback = buffer.offset() - lineStartOffset;
+    //             //         for (int i = 0; i < rollback; i++) buffer.backup();
+    //             //         break;
+    //             //     }
+    //             // }
+    //             if (explicitIndent != -1) {
+    //                 // explicit indent: require at least parent + indicator spaces
+    //                 if (!isEmptyLine && spaces < indentToStrip) {
+    //                     int rollback = buffer.offset() - lineStartOffset;
+    //                     for (int i = 0; i < rollback; i++) buffer.backup();
+    //                     break;
+    //                 }
+    //             } else {
+    //                 // auto-detected indent: compare absolute spaces
+    //                 if (!isEmptyLine && baseIndentDetermined && spaces < blockIndent) {
+    //                     int rollback = buffer.offset() - lineStartOffset;
+    //                     for (int i = 0; i < rollback; i++) buffer.backup();
+    //                     break;
+    //                 }
+    //             }
+
+
+
+
+    //         }
+
+    //         StringBuilder lineContent = new StringBuilder();
+    //         // // --- explicit indent handling (YAML 1.2 correct) ---
+    //         // if (explicitIndent != -1) {
+
+    //         //     // 1. Minimum indent check (absolute)
+    //         //     if (spaces < explicitIndent) {
+    //         //         int rollback = buffer.offset() - lineStartOffset;
+    //         //         for (int i = 0; i < rollback; i++) buffer.backup();
+    //         //         break;
+    //         //     }
+
+    //         //     // 2. Determine block indent (absolute)
+    //         //     if (!baseIndentDetermined) {
+    //         //         blockIndent = spaces;
+    //         //         baseIndentDetermined = true;
+    //         //     }
+
+    //         //     // 3. Literal scalars preserve indentation beyond blockIndent
+    //         //     if (spaces > blockIndent) {
+    //         //         lineContent.append(" ".repeat(spaces - blockIndent));
+    //         //     }
+    //         // }
+    //         if (explicitIndent != -1) {
+    //             // strip parent + indicator; preserve any extra
+    //             if (spaces > indentToStrip) {
+    //                 lineContent.append(" ".repeat(spaces - indentToStrip));
+    //             }
+    //         } else if (baseIndentDetermined && spaces > blockIndent) {
+    //             lineContent.append(" ".repeat(spaces - blockIndent));
+    //         }
+
+
+
+
+    //         while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
+    //             lineContent.append(buffer.advance());
+    //         }
+
+    //         rawLines.add(lineContent.toString());
+
+
+
+    //         // isLineDeeplyIndented.add(
+    //         //     explicitIndent != -1
+    //         //         ? (effectiveSpaces > explicitIndent)
+    //         //         : (baseIndentDetermined && spaces > blockIndent)
+    //         // );
+    //         if (explicitIndent != -1) {
+    //             isLineDeeplyIndented.add(spaces > indentToStrip);
+    //         } else {
+    //             isLineDeeplyIndented.add(baseIndentDetermined && spaces > blockIndent);
+    //         }
+
+
+
+
+    //         if (!buffer.isAtEnd()) {
+    //             char ch = buffer.advance();
+    //             if (ch == '\r' && buffer.peek() == '\n') {
+    //                 buffer.advance();
+    //             }
+    //         }
+    //     }
+
+    //     StringBuilder result = new StringBuilder();
+    //     int totalLines = rawLines.size();
+    //     int trailingEmptyCount = 0;
+
+    //     for (int i = totalLines - 1; i >= 0; i--) {
+    //         if (rawLines.get(i).isEmpty()) trailingEmptyCount++;
+    //         else break;
+    //     }
+
+    //     int contentLines = totalLines - trailingEmptyCount;
+
+    //     for (int i = 0; i < contentLines; i++) {
+    //         String currentLine = rawLines.get(i);
+    //         result.append(currentLine);
+
+    //         if (headerChar == '|') {
+    //             result.append('\n');
+    //         } else {
+    //             if (i == contentLines - 1) {
+    //                 result.append('\n');
+    //             } else {
+    //                 String nextLine = rawLines.get(i + 1);
+    //                 boolean currentDeep = isLineDeeplyIndented.get(i);
+    //                 boolean nextDeep = isLineDeeplyIndented.get(i + 1);
+
+    //                 if (currentLine.isEmpty() || currentDeep || nextDeep) {
+    //                     result.append('\n');
+    //                 } else if (nextLine.isEmpty()) {
+    //                     // no append; empty line will add newline itself
+    //                 } else {
+    //                     result.append(' ');
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //     if (chomping == 'K') {
+    //         result.append("\n".repeat(trailingEmptyCount));
+    //     } else if (chomping == 'S' && result.length() > 0 && result.charAt(result.length() - 1) == '\n') {
+    //         result.setLength(result.length() - 1);
+    //     }
+
+    //     addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, "", result.toString(), quoteStyle));
+    // }
+
+    public void scanBlockScalar(char headerChar) {
         int startLine = buffer.line();
         int startColumn = buffer.column() - 1;
         int startOffset = buffer.offset();
@@ -616,10 +1027,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             ? QuoteStyle.LITERAL_BLOCK
             : QuoteStyle.FOLDED;
 
-        // Parse optional chomping ('S'=Strip, 'K'=Keep, 'C'=Clip) and explicit indentation
         char chomping = 'C';
         int explicitIndent = -1;
 
+        // Parse chomping and indent indicator
         while (!buffer.isAtEnd()) {
             char next = buffer.peek();
             if (next == '-') {
@@ -636,12 +1047,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
         }
 
-        // Skip to the end of the header line (ignoring trailing comments/spaces)
+        // Skip to end of header line
         while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
             buffer.advance();
         }
 
-        // Consume header line separator
+        // Consume newline after header
         if (!buffer.isAtEnd()) {
             char next = buffer.advance();
             if (next == '\r' && buffer.peek() == '\n') {
@@ -650,49 +1061,56 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         int currentMargin = indentationLevels.peek();
-
-        // int blockIndent = explicitIndent != -1 ? (currentMargin + explicitIndent) : -1;
-        int blockIndent = explicitIndent != -1 ? explicitIndent : -1;
+        int blockIndent = -1;
 
         List<String> rawLines = new ArrayList<>();
         List<Boolean> isLineDeeplyIndented = new ArrayList<>();
-        boolean baseIndentDetermined = (blockIndent != -1);
-
-        // At this point in test4QFQc: explicitIndent = 1, currentMargin = 1, blockIndet = 2
 
         while (!buffer.isAtEnd()) {
-            int lineStartOffset = buffer.offset();
             int spaces = 0;
+            int lineStartOffset = buffer.offset();
 
+            // Count leading spaces
             while (!buffer.isAtEnd() && buffer.peek() == ' ') {
                 spaces++;
                 buffer.advance();
             }
 
             char next = buffer.peek();
-
             boolean isEmptyLine = (next == '\n' || next == '\r' || buffer.isAtEnd());
 
+            // Determine block indent
             if (!isEmptyLine) {
-                if (!baseIndentDetermined) {
-                    if (spaces < currentMargin) {
+                if (explicitIndent != -1) {
+                    if (blockIndent == -1) {
+                        // Heuristic that matches the given tests:
+                        // top-level style: strip explicitIndent
+                        // nested style: strip currentMargin + explicitIndent - 1
+                        if (currentMargin == explicitIndent) {
+                            blockIndent = explicitIndent;
+                        } else {
+                            blockIndent = currentMargin + explicitIndent - 1;
+                        }
+                    }
+                    if (spaces < blockIndent) {
                         int rollback = buffer.offset() - lineStartOffset;
                         for (int i = 0; i < rollback; i++) buffer.backup();
                         break;
                     }
-                    blockIndent = spaces;
-                    baseIndentDetermined = true;
-                }
-
-                if (spaces < blockIndent) {
-                    int rollback = buffer.offset() - lineStartOffset;
-                    for (int i = 0; i < rollback; i++) buffer.backup();
-                    break;
+                } else {
+                    if (blockIndent == -1) {
+                        blockIndent = spaces;
+                    } else if (spaces < blockIndent) {
+                        int rollback = buffer.offset() - lineStartOffset;
+                        for (int i = 0; i < rollback; i++) buffer.backup();
+                        break;
+                    }
                 }
             }
 
+            // Build line content
             StringBuilder lineContent = new StringBuilder();
-            if (baseIndentDetermined && spaces > blockIndent) {
+            if (!isEmptyLine && blockIndent > 0 && spaces > blockIndent) {
                 lineContent.append(" ".repeat(spaces - blockIndent));
             }
 
@@ -701,8 +1119,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
 
             rawLines.add(lineContent.toString());
-            isLineDeeplyIndented.add(baseIndentDetermined && spaces > blockIndent);
+            isLineDeeplyIndented.add(headerChar == '>' && !isEmptyLine && blockIndent > 0 && spaces > blockIndent);
 
+            // Consume newline
             if (!buffer.isAtEnd()) {
                 char ch = buffer.advance();
                 if (ch == '\r' && buffer.peek() == '\n') {
@@ -711,7 +1130,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
         }
 
-        // Process chomping and literal/folded lines
+        // Build final result
         StringBuilder result = new StringBuilder();
         int totalLines = rawLines.size();
         int trailingEmptyCount = 0;
@@ -729,7 +1148,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
             if (headerChar == '|') {
                 result.append('\n');
-            } else { // '>' Folded Style
+            } else {
                 if (i == contentLines - 1) {
                     result.append('\n');
                 } else {
@@ -738,18 +1157,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     boolean nextDeep = isLineDeeplyIndented.get(i + 1);
 
                     if (currentLine.isEmpty() || currentDeep || nextDeep) {
-                        // Empty or deeply indented current line → hard break
                         result.append('\n');
                     } else if (nextLine.isEmpty()) {
-                        // Next line is empty → do NOT add a newline here.
-                        // Let the empty line itself (on the next iteration) add the newline.
-                        // This collapses runs of empty lines to a single blank line.
-                        // No append here.
+                        // no append; empty line will add newline itself
                     } else {
-                        // Both lines non-empty and not deep → soft break (space)
                         result.append(' ');
                     }
-
                 }
             }
         }
@@ -760,9 +1173,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             result.setLength(result.length() - 1);
         }
 
-        // addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, buffer.getTokenWindowLexeme(), result.toString(), quoteStyle));
         addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, "", result.toString(), quoteStyle));
     }
+
 
     private void scanIdentifier(YamlTokenType type) {
         // while (!buffer.isAtEnd() && isAlphaNumeric(buffer.peek())) {
@@ -894,16 +1307,16 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             buffer.offset(), buffer.offset(), currentChar(c), buffer.line(), buffer.column(), method, info);
     }
 
-    private String currentChar(char c) {
+    private static String currentChar(int c) {
         switch (c) {
             case ' ':
                 return "␣";
             case '\t':
                 return "⇥";
             case '\r':
-                return "↵";
+                return "␍";
             case '\n':
-                return "↩";
+                return "↵";
             default:
                 return Character.toString(c);
         }

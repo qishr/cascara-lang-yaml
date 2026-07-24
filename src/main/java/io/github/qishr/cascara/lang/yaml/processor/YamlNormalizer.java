@@ -56,7 +56,7 @@ public class YamlNormalizer {
 
     public static YamlNode normalize(YamlNode node) {
 
-        reporter.debug("normalize %s", node.getClass().getSimpleName());
+        // reporter.debug("normalize %s", node.getClass().getSimpleName());
 
         // // If the document's body is a !!str scalar, fold its sibling scalars
         // if (node instanceof YamlDocumentNode doc) {

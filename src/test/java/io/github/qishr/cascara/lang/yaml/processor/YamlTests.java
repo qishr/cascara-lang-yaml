@@ -113,7 +113,8 @@ class YamlTests {
         YamlAstParser parser = new YamlAstParser();
         YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
         String name = yaml.getString("name");
-        assertEquals("One\nTwo", name);
+        // assertEquals("One\nTwo", name);
+        assertEquals("One Two", name);
     }
 
     @Test

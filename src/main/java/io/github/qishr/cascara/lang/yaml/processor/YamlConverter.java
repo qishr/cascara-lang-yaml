@@ -219,7 +219,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
 
             // 1. Fold newline + indentation (spaces or tabs) → single space
-            s = s.replaceAll("\n[ \t]+", " ");
+            // s = s.replaceAll("\n[ \t]+", " ");
 
             // 2. ONLY unescape backslash + REAL TAB (RLN_01)
             s = s.replaceAll("\\\\+(?!t)\t", "\t");
