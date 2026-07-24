@@ -35,6 +35,7 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -51,6 +52,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 class YamlTests {
 
@@ -210,6 +212,28 @@ class YamlTests {
         YamlNode first = seq.get(0);
         assertInstanceOf(YamlMapNode.class, first);
         assertNotNull(seq);
+    }
+
+    // Search for test_ahh in YamlAstParser for the fix to this
+    @Test
+    void test_ahh() {
+        String yamlString = """
+          a:
+            - b: w
+              c:
+                - x
+            - d: y
+          """;
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        List<YamlToken> tokens = tokenizer.tokenize(yamlString);
+        TestUtil.dumpTokens(tokens);
+
+        YamlAstParser parser = new YamlAstParser()
+                .setReporter(new StandardReporter().setLevel(Level.TRACE));
+
+
+        assertDoesNotThrow(() -> parser.parse(yamlString));
     }
 }
 

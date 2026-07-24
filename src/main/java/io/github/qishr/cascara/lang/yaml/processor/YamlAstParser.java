@@ -50,7 +50,6 @@ import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.annotation.Experimental;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
-import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
@@ -361,9 +360,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         return streamNode;
     }
 
-
-
-
     /// Parses a single document context, safely handling layout tokens near explicit boundaries
     private YamlDocumentNode parseDocument() {
         trace(">parseDocument");
@@ -433,8 +429,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 YamlNode body = parseValue();
                 document.setBody(body);
                 document.setTag(body.getTag());   // if any
-                // return document;
-
             }
 
             if (match(YamlTokenType.DOCUMENT_END)) {
@@ -446,11 +440,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             trace("<parseDocument");
         }
     }
-
-
-
-
-
 
     /// Safely looks ahead to check for an explicit document boundary or directive.
     /// Uses a clean index bound to prevent infinite spin conditions.
@@ -479,443 +468,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     /// 1. Handling anchors (`&`) and aliases (`*`).
     /// 2. Managing block indentation tokens (`INDENT`/`DEDENT`).
     /// 3. Determining the structural type (Map, Sequence, or Scalar) via lookahead.
-    // private YamlNode parseValue() {
-    //     trace(">parseValue");
-    //     depth++;
-    //     if (depth > DEPTH_LIMIT) {
-    //         error(peek(), YamlDiagnosticCode.DEPTH_LIMIT);
-    //     }
-    //     try {
-    //         if (check(YamlTokenType.ERROR)) {
-    //             error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, peek().getType());
-    //         }
-
-
-
-    //         // skipTrivia();
-    //         if (!check(YamlTokenType.SCALAR) ||
-    //                 peek().getQuoteStyle() != QuoteStyle.FOLDED) {
-    //             skipTrivia();
-    //         }
-
-
-    //         trace("PV-after-skipTrivia");
-
-    //         if (check(YamlTokenType.DEDENT) || check(YamlTokenType.EOF)) {
-    //             return new YamlScalarNode(
-    //                 peek(),
-    //                 PrimitiveType.NULL,
-    //                 options
-    //             );
-    //         }
-
-    //         YamlNode result;
-
-    //         // 1. Capture anchor if present
-    //         String pendingAnchor = null;
-
-    //         if (check(YamlTokenType.ANCHOR)) {
-    //             trace("PV-in-if-anchor1");
-
-    //             if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-    //                 result = parseMap();
-    //                 attachComments(result);
-    //                 return result;
-    //             } else {
-
-    //                 YamlToken anchorTok = advance();
-    //                 trace("PV-in-if-anchor2");
-
-    //                 String raw = anchorTok.getContent();
-    //                 pendingAnchor = raw.startsWith("&") ? raw.substring(1) : raw;
-
-    //                 if (check(YamlTokenType.VALUE_INDICATOR)) {
-    //                     YamlNode innerMap = parseMap();
-    //                     // Normalizer will unwrap this later
-    //                     return new YamlAnchorNode(
-    //                         innerMap.getStartLine(),
-    //                         innerMap.getStartColumn(),
-    //                         pendingAnchor,
-    //                         innerMap
-    //                     );
-    //                 }
-
-    //                 // Fast-path: &anchor scalar
-    //                 else if (check(YamlTokenType.SCALAR)) {
-    //                     trace("PV-in-if-scalar1");
-    //                     YamlNode scalar = parseScalar();
-    //                     trace("PV-in-if-scalar2");
-
-    //                     anchorRegistry.put(pendingAnchor, scalar);
-
-    //                     YamlAnchorNode anchorNode = new YamlAnchorNode(
-    //                         scalar.getStartLine(),
-    //                         scalar.getStartColumn(),
-    //                         pendingAnchor,
-    //                         scalar
-    //                     );
-
-    //                     return attachComments(anchorNode);
-    //                 }
-    //             }
-
-    //             skipTrivia();
-    //         }
-
-    //         trace("PV-after-if-anchor");
-
-
-
-    //         // List<YamlToken> tags = new ArrayList<>();
-    //         // while (check(YamlTokenType.TAG)) {
-    //         //     tags.add(advance());
-    //         //     skipTrivia();
-    //         // }
-
-    //         // 1. Collect tags (node-level, including !!str on the document body)
-    //         String pendingTag = null;
-    //         while (check(YamlTokenType.TAG)) {
-    //             trace("PV-TAG");
-    //             YamlToken tagTok = advance();
-    //             pendingTag = tagTok.getContent(); // or getLexeme() - *assuming the lexeme has no quotes at this point*
-    //             skipTrivia();
-    //         }
-
-    //         // 2. Structural dispatch
-
-    //         if (check(YamlTokenType.INDENT)) {
-    //             trace("PV-in-if-indent1");
-    //             advance();
-    //             trace("PV-in-if-indent2");
-    //             skipTrivia();
-    //             trace("PV-in-if-indent3");
-
-    //             if (check(YamlTokenType.ANCHOR)) {
-    //                 YamlToken anchorTok = advance();
-    //                 String raw = anchorTok.getContent();
-    //                 String pendingAnchor2 = raw.startsWith("&") ? raw.substring(1) : raw;
-
-    //                 skipTrivia();
-
-    //                 // If this is a key (SCALAR + ":"), parse a map
-    //                 if ((check(YamlTokenType.SCALAR) || check(YamlTokenType.ALIAS)) &&
-    //                     lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-
-    //                     YamlNode innerMap = parseMap();
-
-    //                     // Normalizer will unwrap this later
-    //                     return new YamlAnchorNode(
-    //                         innerMap.getStartLine(),
-    //                         innerMap.getStartColumn(),
-    //                         pendingAnchor2,
-    //                         innerMap
-    //                     );
-    //                 }
-
-    //                 // Otherwise fall through to normal structural parsing
-    //             }
-
-    //             if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
-    //                 result = parseSequence();
-    //             } else if (check(YamlTokenType.KEY_INDICATOR)) {
-    //                 result = parseMap();
-    //             } else if ((check(YamlTokenType.SCALAR) ||
-    //                         check(YamlTokenType.ALIAS) ||
-    //                         check(YamlTokenType.ANCHOR))
-    //                     && lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-    //                 result = parseMap();
-    //             }
-    //             //else {
-
-
-
-    //             //     // result = parseValue();
-
-
-
-    //             //     // We are at INDENT followed by a node; for this test, it's SCALAR(d)
-    //             //     if (check(YamlTokenType.SCALAR)) {
-    //             //         // parse first scalar
-    //             //         YamlScalarNode first = (YamlScalarNode) parseScalar();
-
-    //             //         // If this node is tagged !!str, fold subsequent plain scalars
-    //             //         if ("!!str".equals(pendingTag)) {
-
-    //             //             StringBuilder sb = new StringBuilder(first.asString());
-    //             //             int column = first.getStartColumn();
-
-    //             //             // consume NEWLINE + SCALAR at same column
-    //             //             while (check(YamlTokenType.NEWLINE)) {
-    //             //                 advance(); // newline
-
-    //             //                 if (!check(YamlTokenType.SCALAR)) {
-    //             //                     break;
-    //             //                 }
-
-    //             //                 // If this scalar is a mapping key (followed by ":"), stop folding
-    //             //                 if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-    //             //                     break;
-    //             //                 }
-
-    //             //                 YamlScalarNode next = (YamlScalarNode) parseScalar();
-
-    //             //                 if (next.getStartColumn() != column) {
-    //             //                     // different indentation → stop folding
-    //             //                     break;
-    //             //                 }
-
-    //             //                 sb.append(" ").append(next.asString());
-    //             //             }
-
-    //             //             // build folded scalar node
-    //             //             result = new YamlScalarNode(
-    //             //                 sb.toString(),
-    //             //                 QuoteStyle.PLAIN,
-    //             //                 first.getOptions()
-    //             //             );
-    //             //         } else {
-    //             //             // normal scalar
-    //             //             result = first;
-    //             //         }
-    //             //     } else {
-    //             //         // fallback for other structures if they appear
-    //             //         result = parseValue();
-    //             //     }
-    //             // }
-
-    //             // else {
-    //             //     if (check(YamlTokenType.SCALAR)) {
-    //             //         YamlScalarNode first = (YamlScalarNode) parseScalar();
-
-    //             //         // Always fold subsequent plain scalars that are not structural
-    //             //         StringBuilder sb = new StringBuilder(first.asString());
-    //             //         int column = first.getStartColumn();
-
-    //             //         while (check(YamlTokenType.NEWLINE)) {
-    //             //             advance(); // newline
-
-    //             //             if (!check(YamlTokenType.SCALAR)) {
-    //             //                 break;
-    //             //             }
-
-    //             //             // stop if this scalar is a mapping key (followed by ":")
-    //             //             if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-    //             //                 break;
-    //             //             }
-
-    //             //             YamlScalarNode next = (YamlScalarNode) parseScalar();
-
-    //             //             if (next.getStartColumn() != column) {
-    //             //                 break;
-    //             //             }
-
-    //             //             sb.append(" ").append(next.asString());
-    //             //         }
-
-    //             //         result = new YamlScalarNode(
-    //             //             sb.toString(),
-    //             //             QuoteStyle.PLAIN,
-    //             //             first.getOptions()
-    //             //         );
-    //             //     } else {
-    //             //         result = parseValue();
-    //             //     }
-    //             // }
-
-    //             else {
-    //                 if (check(YamlTokenType.SCALAR)) {
-    //                     YamlScalarNode first = (YamlScalarNode) parseScalar();
-
-    //                     StringBuilder sb = new StringBuilder(first.asString());
-    //                     int column = first.getStartColumn();
-
-    //                     while (check(YamlTokenType.NEWLINE)) {
-    //                         advance(); // newline
-
-    //                         if (check(YamlTokenType.SCALAR)) {
-    //                             // stop if this scalar is a mapping key
-    //                             if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-    //                                 break;
-    //                             }
-
-    //                             YamlScalarNode next = (YamlScalarNode) parseScalar();
-
-    //                             if (next.getStartColumn() != column) {
-    //                                 break;
-    //                             }
-
-    //                             sb.append(" ").append(next.asString());
-    //                         } else if (check(YamlTokenType.INDENT)) {
-    //                             advance(); // INDENT
-
-    //                             // StringBuilder line = new StringBuilder();
-    //                             // while (!check(YamlTokenType.NEWLINE) && !check(YamlTokenType.EOF)) {
-    //                             //     YamlToken tok = advance();
-
-    //                             //     if (tok.getType() == YamlTokenType.VALUE_INDICATOR) {
-    //                             //         // hit real mapping, stop folding
-    //                             //         result = new YamlScalarNode(
-    //                             //             sb.toString(),
-    //                             //             QuoteStyle.PLAIN,
-    //                             //             first.getOptions()
-    //                             //         );
-    //                             //         // let outer logic handle the map
-    //                             //         return attachComments(result);
-    //                             //     }
-
-    //                             //     line.append(tok.getContent());
-    //                             // }
-
-
-    //                             StringBuilder line = new StringBuilder();
-    //                             while (!check(YamlTokenType.NEWLINE) && !check(YamlTokenType.EOF)) {
-    //                                 // If this is a comment, STOP — do not consume it here
-    //                                 if (check(YamlTokenType.COMMENT)) {
-    //                                     break;
-    //                                 }
-
-    //                                 YamlToken tok = advance();
-
-    //                                 if (tok.getType() == YamlTokenType.VALUE_INDICATOR) {
-    //                                     // hit real mapping, stop folding
-    //                                     result = new YamlScalarNode(
-    //                                         sb.toString(),
-    //                                         QuoteStyle.PLAIN,
-    //                                         first.getOptions()
-    //                                     );
-    //                                     return attachComments(result);
-    //                                 }
-
-    //                                 if (line.length() > 0) {
-    //                                     line.append(' ');
-    //                                 }
-    //                                 line.append(tok.getContent());
-    //                             }
-
-    //                             if (line.length() == 0) {
-    //                                 break;
-    //                             }
-
-    //                             sb.append(" ").append(line.toString());
-
-
-
-    //                         } else {
-    //                             break;
-    //                         }
-    //                     }
-
-    //                     result = new YamlScalarNode(
-    //                         sb.toString(),
-    //                         QuoteStyle.PLAIN,
-    //                         first.getOptions()
-    //                     );
-    //                 } else {
-    //                     result = parseValue();
-    //                 }
-    //             }
-
-    //             trace("PV-in-if-indent4");
-    //             skipTrivia();
-    //             trace("PV-in-if-indent5");
-
-    //             if (options.isStrict()) {
-    //                 consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
-    //             } else if (check(YamlTokenType.DEDENT)) {
-    //                 advance();
-    //             }
-    //         }
-
-    //         else if (check(YamlTokenType.KEY_INDICATOR)) {
-    //             result = parseMap();
-    //         }
-
-    //         else if (check(YamlTokenType.ALIAS)) {
-    //             trace("PV-in-if-alias1");
-    //             YamlToken tok = advance();
-    //             trace("PV-in-if-alias2");
-
-    //             String name = tok.getContent().substring(1);
-    //             YamlAliasNode alias = new YamlAliasNode(
-    //                 tok.getStartLine(),
-    //                 tok.getStartColumn(),
-    //                 name
-    //             );
-
-    //             if (anchorRegistry.containsKey(name)) {
-    //                 alias.setResolvedNode(anchorRegistry.get(name));
-    //             }
-
-    //             result = alias;
-    //         }
-
-    //         else if (check(YamlTokenType.MAP_START)) {
-    //             result = parseFlowMap();
-    //         }
-
-    //         else if (check(YamlTokenType.SEQUENCE_START)) {
-    //             result = parseFlowSequence();
-    //         }
-
-    //         else if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
-    //             result = parseSequence();
-    //         }
-
-    //         else if (check(YamlTokenType.SCALAR)) {
-    //             if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-    //                 result = parseMap();
-    //             } else {
-    //                 result = parseScalar();
-    //             }
-    //         }
-
-    //         else {
-    //             result = new YamlScalarNode(
-    //                 peek(),
-    //                 PrimitiveType.NULL,
-    //                 options
-    //             );
-    //         }
-
-    //         // 3. Apply anchor to the produced node
-    //         if (pendingAnchor != null && result != null) {
-
-    //             result.setAnchor(pendingAnchor);
-
-    //             YamlAnchorNode anchorNode = new YamlAnchorNode(
-    //                 result.getStartLine(),
-    //                 result.getStartColumn(),
-    //                 pendingAnchor,
-    //                 result
-    //             );
-
-    //             anchorRegistry.put(pendingAnchor, result);
-
-    //             result = anchorNode;
-    //         }
-
-    //         // 3. Attach tags
-    //         // for (YamlToken tagToken : tags) {
-    //         //     result.setTag(tagToken.getLexeme());
-    //         // }
-    //         if (pendingTag != null && result != null) {
-    //             trace("PV-setTag");
-    //             result.setTag(pendingTag);
-    //         }
-
-    //         return attachComments(result);
-
-    //     } finally {
-    //         depth--;
-    //         trace("<parseValue");
-    //     }
-    // }
-
-
-
-
-
-
     private YamlNode parseValue() {
         trace(">parseValue");
         depth++;
@@ -927,14 +479,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, peek().getType());
             }
 
-
-
-            // skipTrivia();
             if (!check(YamlTokenType.SCALAR) ||
                     peek().getQuoteStyle() != QuoteStyle.FOLDED) {
                 skipTrivia();
             }
-
 
             trace("PV-after-skipTrivia");
 
@@ -1242,14 +790,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         }
     }
 
-
-
-
-
-
-
-
-
     /// Parses a block-level mapping and enforces strict key indentation.
     /// This method captures the column of the first key encountered and ensures
     /// all subsequent sibling keys in this map align perfectly.
@@ -1278,7 +818,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     }
                 }
 
-                // if (check(YamlTokenType.DEDENT)) break;
                 if (check(YamlTokenType.DEDENT)) {
                     // Only break if this dedent closes the current map
                     if (!isIndentedDeeperThan(mapColumn)) {
@@ -1309,6 +848,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                 // A map entry must start with '?', SCALAR, ALIAS, or ANCHOR
                 if (!isExplicitKey && !isScalarKeyStart) {
+
+                    if (peek().getStartColumn() > map.getStartColumn()) {
+                        error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
+                    }
+
                     trace("at break");
                     break;
                 }
@@ -1514,15 +1058,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         }
     }
 
-
-
-
-
-
-
-
-
-
     /// Parses a block sequence (list) indicated by leading dashes.
     private YamlSequenceNode parseSequence() {
         trace(">parseSequence");
@@ -1543,14 +1078,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 // If we see a DEDENT but the next token is still a '-', this is misaligned indentation
                 if (check(YamlTokenType.DEDENT)) {
                     trace("PS-while-dedent");
-                    if (peek(2).getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR) {
-                        trace("PS-while-seq-indicator");
-                        YamlToken bad = peek(1);
-                        error(bad, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
-                    }
+                    // Regardless of the DEDENT being valid or not, we exit because it's
+                    // not part of this sequence and is up to the caller to deal with.
                     break;
                 }
-
 
                 if (!check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
                     trace("PS-while-not-seq-indicator");
@@ -1561,7 +1092,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 if (currentColumn != indicatorColumn) {
                     error(peek(), YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                 }
-
 
                 advance(); // Consume the '-'
 
@@ -1660,309 +1190,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             trace("<parseFlowMap");
         }
     }
-
-    // private YamlScalarNode parseScalar() {
-    //     trace(">parseScalar");
-    //     ++depth;
-    //     try {
-    //         YamlToken token = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
-
-    //         String raw = token.getLexeme();
-    //         String content = token.getContent();
-    //         QuoteStyle quoteStyle = QuoteStyle.PLAIN;
-
-    //         if (raw.startsWith("\"")) {
-    //             quoteStyle = QuoteStyle.DOUBLE;
-    //         } else if (raw.startsWith("'")) {
-    //             quoteStyle = QuoteStyle.SINGLE;
-    //         } else if (raw.startsWith("|")) {
-    //             quoteStyle = QuoteStyle.LITERAL_BLOCK;
-    //         } else if (raw.startsWith(">")) {
-    //             quoteStyle = QuoteStyle.FOLDED;
-    //         }
-
-    //         boolean foldedBlock = (quoteStyle == QuoteStyle.FOLDED);
-
-    //         // Start with the first chunk
-    //         StringBuilder foldedContent = new StringBuilder(content);
-    //         boolean folded = false;
-
-    //         if (quoteStyle == QuoteStyle.PLAIN || foldedBlock) {
-    //             if (foldedBlock) {
-    //                 // Skip exactly one newline after the '>' header
-    //                 if (check(YamlTokenType.NEWLINE)) {
-    //                     advance();
-    //                 }
-    //             }
-    //             while (true) {
-
-    //                 if (nextNonTriviaIsMapKey()) {
-    //                     break;
-    //                 }
-
-    //                 // Consume layout between scalar chunks
-    //                 int newlineCount = 0;
-    //                 while (check(YamlTokenType.NEWLINE)) {
-    //                     newlineCount++;
-    //                     advance();
-    //                 }
-    //                 while (check(YamlTokenType.INDENT)) {
-    //                     advance();
-    //                 }
-
-    //                 // First, fold any following anchor/tag tokens into the scalar
-    //                 boolean extended = false;
-    //                 while (check(YamlTokenType.ANCHOR) || check(YamlTokenType.TAG)) {
-    //                     foldedContent.append(" ");
-    //                     foldedContent.append(peek().getContent());
-    //                     advance();
-    //                     extended = true;
-    //                 }
-
-    //                 // Then handle the next scalar chunk
-    //                 if (check(YamlTokenType.SCALAR)) {
-    //                     // YAML 1.2: single newline between non-empty lines → space, ≥2 → newline
-    //                     if (newlineCount == 0 && !extended) {
-    //                         // same line continuation
-    //                         foldedContent.append(peek().getContent());
-    //                     } else if (newlineCount == 1) {
-    //                         foldedContent.append(" ");
-    //                         foldedContent.append(peek().getContent());
-    //                     } else {
-    //                         foldedContent.append("\n");
-    //                         foldedContent.append(peek().getContent());
-    //                     }
-
-    //                     advance();
-    //                     folded = true;
-    //                 } else {
-    //                     break;
-    //                 }
-    //             }
-    //         }
-
-    //         YamlScalarNode scalar;
-    //         if (folded) {
-    //             scalar = new YamlScalarNode(
-    //                 token,
-    //                 foldedContent.toString(),
-    //                 PrimitiveType.STRING,
-    //                 quoteStyle,
-    //                 options
-    //             );
-    //         } else {
-    //             scalar = new YamlScalarNode(
-    //                 token,
-    //                 content,
-    //                 PrimitiveType.ANY,
-    //                 quoteStyle,
-    //                 options
-    //             );
-
-    //         }
-
-    //         if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
-    //             scalar.addComment(parseComment());
-    //         }
-
-    //         parseInlineComment(scalar);
-    //         return scalar;
-    //     } finally {
-    //         --this.depth;
-    //         trace("<parseScalar");
-    //     }
-    // }
-
-
-
-
-
-
-    // private YamlScalarNode parseScalar() {
-    //     trace(">parseScalar");
-    //     ++depth;
-    //     try {
-    //         YamlToken token = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
-
-    //         String content = token.getContent();
-    //         QuoteStyle quoteStyle = token.getQuoteStyle();
-
-    //         if (quoteStyle == QuoteStyle.FOLDED) {
-    //             String[] lines = content.split("\n", -1);
-
-    //             // lines[0] is the header line starting with '>'
-    //             int i = 1;
-    //             StringBuilder sb = new StringBuilder();
-    //             boolean first = true;
-    //             int pendingBlankLines = 0;
-
-    //             while (i < lines.length) {
-    //                 String line = lines[i++];
-    //                 if (line.isEmpty()) {
-    //                     pendingBlankLines++;
-    //                     continue;
-    //                 }
-
-    //                 if (first) {
-    //                     sb.append(line);
-    //                     first = false;
-    //                 } else {
-    //                     if (pendingBlankLines == 0) {
-    //                         sb.append(' ');
-    //                     } else {
-    //                         for (int k = 0; k < pendingBlankLines; k++) {
-    //                             sb.append('\n');
-    //                         }
-    //                     }
-    //                     sb.append(line);
-    //                 }
-
-    //                 pendingBlankLines = 0;
-    //             }
-
-    //             // keep final newline
-    //             sb.append('\n');
-
-    //             YamlScalarNode scalar = new YamlScalarNode(
-    //                 token,
-    //                 sb.toString(),
-    //                 PrimitiveType.STRING,
-    //                 QuoteStyle.FOLDED,
-    //                 options
-    //             );
-
-    //             if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
-    //                 scalar.addComment(parseComment());
-    //             }
-    //             parseInlineComment(scalar);
-    //             return scalar;
-    //         }
-
-    //         // non-folded: existing behavior
-    //         YamlScalarNode scalar = new YamlScalarNode(
-    //             token,
-    //             content,
-    //             PrimitiveType.ANY,
-    //             quoteStyle,
-    //             options
-    //         );
-
-    //         if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
-    //             scalar.addComment(parseComment());
-    //         }
-
-    //         parseInlineComment(scalar);
-    //         return scalar;
-    //     } finally {
-    //         --this.depth;
-    //         trace("<parseScalar");
-    //     }
-    // }
-
-
-
-
-
-
-
-
-    // private YamlScalarNode parseScalar() {
-    //     trace(">parseScalar");
-    //     ++depth;
-    //     try {
-    //         YamlToken token = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
-
-    //         String content = token.getContent();
-    //         QuoteStyle quoteStyle = token.getQuoteStyle();
-
-    //         if (quoteStyle == QuoteStyle.FOLDED) {
-    //             String[] lines = content.split("\n", -1);
-
-    //             int i = 0;
-    //             StringBuilder sb = new StringBuilder();
-    //             boolean first = true;
-    //             int pendingBlankLines = 0;
-
-    //             while (i < lines.length) {
-    //                 String line = lines[i++];
-    //                 if (line.isEmpty()) {
-    //                     pendingBlankLines++;
-    //                     continue;
-    //                 }
-
-    //                 if (first) {
-    //                     sb.append(line);
-    //                     first = false;
-    //                 } else {
-    //                     if (pendingBlankLines == 0) {
-    //                         sb.append(' ');
-    //                     } else {
-    //                         for (int k = 0; k < pendingBlankLines; k++) {
-    //                             sb.append('\n');
-    //                         }
-    //                     }
-    //                     sb.append(line);
-    //                 }
-
-    //                 pendingBlankLines = 0;
-    //             }
-
-    //             sb.append('\n'); // keep final newline
-
-    //             YamlScalarNode scalar = new YamlScalarNode(
-    //                 token,
-    //                 sb.toString(),
-    //                 PrimitiveType.STRING,
-    //                 QuoteStyle.FOLDED,
-    //                 options
-    //             );
-
-    //             if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
-    //                 scalar.addComment(parseComment());
-    //             }
-    //             parseInlineComment(scalar);
-    //             return scalar;
-    //         }
-
-    //         if (quoteStyle == QuoteStyle.PLAIN) {
-    //             // just return the scalar as-is
-    //             YamlScalarNode scalar = new YamlScalarNode(
-    //                 token,
-    //                 content,
-    //                 PrimitiveType.ANY,
-    //                 quoteStyle,
-    //                 options
-    //             );
-
-    //             if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
-    //                 scalar.addComment(parseComment());
-    //             }
-    //             parseInlineComment(scalar);
-    //             return scalar;
-    //         }
-
-    //         YamlScalarNode scalar = new YamlScalarNode(
-    //             token,
-    //             content,
-    //             PrimitiveType.ANY,
-    //             quoteStyle,
-    //             options
-    //         );
-
-    //         if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
-    //             scalar.addComment(parseComment());
-    //         }
-
-    //         parseInlineComment(scalar);
-    //         return scalar;
-    //     } finally {
-    //         --this.depth;
-    //         trace("<parseScalar");
-    //     }
-    // }
-
-
-
 
     // TODO: Tidy this up
     private YamlScalarNode parseScalar() {

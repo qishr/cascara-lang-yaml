@@ -32,6 +32,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 
@@ -521,18 +522,7 @@ public class SpecTests {
 
    @Test
     public void test4QFQ() {
-        String yaml = """
-            - |
-             detected
-            - >
-
-
-              # detected
-            - |1
-              explicit
-            - >
-             detected
-            """;
+        String yaml = "- |\n detected\n- >\n \n  \n  # detected\n- |1\n  explicit\n- >\n detected";
 
         StandardReporter reporter = new StandardReporter()
             .setLevel(Level.TRACE);
@@ -542,6 +532,8 @@ public class SpecTests {
             .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
 
         YamlStreamNode stream = parser.parseMulti(yaml);
+
+        TestUtil.dumpTokens(parser.getTokens());
 
         // The stream must contain exactly one document
         assertEquals(1, stream.getDocuments().size());
@@ -631,4 +623,80 @@ public class SpecTests {
         TestUtil.assertEquals("Empty line\nas a line feed", map.get("Folding").asString());
     }
 
+    @Test
+    void test_tags() {
+        String yamlString = """
+          %TAG !e! tag:example.com,2000:app/
+          ---
+          - !local foo
+          - !!str bar
+          - !e!tag%21 baz
+          """;
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        List<YamlToken> tokens = tokenizer.tokenize(yamlString);
+        TestUtil.dumpTokens(tokens);
+
+
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yamlString);
+
+        TestUtil.dumpTokens(parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+
+        YamlDocumentNode doc = stream.getDocuments().get(0);
+
+
+
+
+
+
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlSequenceNode.class, body);
+        YamlSequenceNode seq = (YamlSequenceNode) body;
+
+        assertEquals(3, seq.size());
+
+        TestUtil.assertEquals("foo", seq.get(0).asString());
+        TestUtil.assertEquals("bar", seq.get(1).asString());
+        TestUtil.assertEquals("baz", seq.get(2).asString());
+    }
+
+    @Test
+    public void test6FWR() {
+        String yaml = "--- |+\nab\n\n \n...\n";
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        TestUtil.dumpTokens(parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocumentNode doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlScalarNode.class, body);
+        YamlScalarNode scalar = (YamlScalarNode) body;
+
+        TestUtil.assertEquals("ab\n\n \n", scalar.asString());
+    }
 }
