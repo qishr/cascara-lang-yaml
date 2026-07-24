@@ -154,15 +154,16 @@ public class YamlEmitterTests {
         System.out.println("OUT:");
         System.out.println(Util.debugString(output));
 
-        assertEquals(yaml, output);
+        Util.assertEquals(yaml, output);
     }
 
     @Test
     void test_emitter_lexeme2() {
-        // String yaml = "\"one\\ntwo\"";
         String yaml = "\"one\\ntwo\"";
         YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
         YamlNode root = parser.parse(yaml);
+
+        Util.dumpTokens(parser.getTokens());
 
         YamlEmitter emitter = new YamlEmitter();
         String output = emitter.emit(root);
