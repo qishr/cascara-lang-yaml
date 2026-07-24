@@ -13,37 +13,37 @@ public class TokenizerScalarTest {
 
     @Test
     void test4Q9F(){
-        Util.assertEquals("ab cd\nef\n\ngh\n", blockScalar(">\n ab\n cd\n\n ef\n\n\n gh\n"));
+        TestUtil.assertEquals("ab cd\nef\n\ngh\n", blockScalar(">\n ab\n cd\n\n ef\n\n\n gh\n"));
     }
 
     @Test
     void test4QFQa(){
-        Util.assertEquals("detected\n", blockScalar("|\n detected\n", 1));
+        TestUtil.assertEquals("detected\n", blockScalar("|\n detected\n", 1));
     }
 
     @Test
     void test4QFQb(){
-        Util.assertEquals("\n\n# detected\n", blockScalar(">\n\n\n  # detected\n", 1));
+        TestUtil.assertEquals("\n\n# detected\n", blockScalar(">\n\n\n  # detected\n", 1));
     }
 
     @Test
     void test4QFQc(){
-        Util.assertEquals(" explicit\n", blockScalar("|1\n  explicit\n", 1));
+        TestUtil.assertEquals(" explicit\n", blockScalar("|1\n  explicit\n", 1));
     }
 
     @Test
     void test4QFQd(){
-        Util.assertEquals("detected\n", blockScalar(">\n detected\n", 1));
+        TestUtil.assertEquals("detected\n", blockScalar(">\n detected\n", 1));
     }
 
     @Test
     void test4WAa(){
-        Util.assertEquals("xxx\n", blockScalar("|2\n    xxx\n", 3));
+        TestUtil.assertEquals("xxx\n", blockScalar("|2\n    xxx\n", 3));
     }
 
     @Test
     void test4WAb(){
-        Util.assertEquals("xxx\n", blockScalar("|\n    xxx\n", 3));
+        TestUtil.assertEquals("xxx\n", blockScalar("|\n    xxx\n", 3));
     }
 
 

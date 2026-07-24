@@ -14,7 +14,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
-public class Util {
+public class TestUtil {
     public static String debugString(String input) {
         if (input == null) return "␀";
         StringBuilder sb = new StringBuilder();
@@ -53,8 +53,8 @@ public class Util {
     private static String error(String expected, String actual) {
         return String.format(
             "Expected: %s  Actual: %s",
-            Util.debugString(expected),
-            Util.debugString(actual)
+            TestUtil.debugString(expected),
+            TestUtil.debugString(actual)
         );
     }
 

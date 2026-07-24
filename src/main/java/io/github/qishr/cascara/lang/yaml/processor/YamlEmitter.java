@@ -82,7 +82,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
     @Override protected YamlEmitter self() { return this; }
 
-    // TODO: emitTagIfPresent
+    // TODO: emitTagIfPresent ?
     @Override public void emitScalar(String value) { sb.append(value); }
     @Override public void emitMapStart() {}
     @Override public void emitMapEnd() {}
@@ -110,13 +110,9 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
                 // Write explicit document markers if there are multiple documents,
                 // or if the document explicitly contains directives.
-                // if (documents.size() > 1 || !doc.getDirectives().isEmpty()) {
-                //     sb.append("---").append(NL);
-                // }
                 if (options.isExplicitStart() || documents.size() > 1 || !doc.getDirectives().isEmpty()) {
                     sb.append("---").append(NL);
                 }
-
 
                 // Process the body of this specific document
                 emitNode(doc.getBody(), 0, false, false);
@@ -157,11 +153,6 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         }
 
         // 3. ANCHOR CHECK (Using targetNode to fetch anchor metadata safely)
-        // String anchor = targetNode.getAnchor();
-        // if (anchor != null && !anchor.isEmpty()) {
-        //     sb.append("&").append(anchor);
-        //     if (targetNode instanceof YamlScalarNode) sb.append(" ");
-        // }
         if (!options.stripAnchors()) {
             String anchor = targetNode.getAnchor();
             if (anchor != null && !anchor.isEmpty()) {
@@ -202,49 +193,21 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     private void emitScalarInternal(YamlScalarNode scalar, int indent, boolean isFlow, boolean isBlockStyle) {
         if (scalar == null) return; // TODO: literal null
 
-        // if (scalar.getToken() != null && scalar.getToken().getLexeme() != null) {
-        //     String lex = scalar.getToken().getLexeme();
+        // USE LEXEME ONLY FOR QUOTED SCALARS WITH NON-EMPTY LEXEME
+        if (scalar.getToken() != null &&
+            scalar.getToken().getLexeme() != null &&
+            !scalar.getToken().getLexeme().isEmpty() &&
+            (scalar.getQuoteStyle() == QuoteStyle.DOUBLE ||
+             scalar.getQuoteStyle() == QuoteStyle.SINGLE)) {
 
-        //     if (!isFlow) sb.append(" ".repeat(indent));
-        //     sb.append(lex);
+            if (!isFlow) sb.append(" ".repeat(indent));
+            sb.append(scalar.getToken().getLexeme());
 
-        //     if (!isFlow) {
-        //         if (!options.stripComments()) handleInlineComments(scalar);
-        //         // DO NOT append NL here — lexeme already contains correct formatting
-        //     }
-        //     return;
-        // }
-
-
-
-        // if (scalar.getToken() != null) {
-        //     String lexeme = scalar.getToken().getLexeme();
-        //     if (lexeme != null) {
-        //         if (isBlockStyle) {
-        //             sb.append("\n");
-        //             sb.append(" ".repeat(indent));
-        //             sb.append(lexeme);
-        //         } else {
-        //             // sb.append(" ".repeat(indent));
-        //             sb.append(lexeme);
-        //         }
-
-        //         if (!isFlow) {
-        //             // handleInlineComments(scalar);
-        //             if (!options.stripComments()) {
-        //                 handleInlineComments(scalar);
-        //             }
-        //             // if (!isBlockStyle) {
-        //             //     sb.append(NL);
-        //             // }
-        //         }
-
-        //         return;
-        //     }
-        // }
-
-
-
+            if (!isFlow && !options.stripComments()) {
+                handleInlineComments(scalar);
+            }
+            return;
+        }
 
         String val = scalar.asString();
 
@@ -418,32 +381,21 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             }
             // Handle multiline string block scalars cleanly (only for plain/block targeted text)
             else if (value instanceof YamlScalarNode scalar
-                    && scalar.getQuoteStyle() != QuoteStyle.DOUBLE
-                    && scalar.getQuoteStyle() != QuoteStyle.SINGLE
-                    && scalar.asString() != null
-                    && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
-                if (!isComplexKey) {
-                    // handleInlineComments(key);
-                    if (!options.stripComments()) {
-                        handleInlineComments(key);
-                    }
-                }
+                && (scalar.getQuoteStyle() == QuoteStyle.LITERAL_BLOCK ||
+                    scalar.getQuoteStyle() == QuoteStyle.FOLDED)) {
+
+                sb.append(" ");
+                // pass the current map indent; block body indent is computed inside
+                emitScalarInternal(scalar, indent, false, true);
+            }
+            else if (value instanceof YamlScalarNode scalar
+                && scalar.getQuoteStyle() == QuoteStyle.PLAIN
+                && scalar.asString() != null
+                && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
+
                 sb.append(" ");
                 emitScalarInternal(scalar, indent + options.getIndentSize(), false, false);
             }
-            // else if (value instanceof YamlScalarNode scalar) {
-            //     boolean isBlockStyle = (scalar.getStartLine() > key.getStartLine());
-            //     if (!isBlockStyle) sb.append(" ");
-            //     int scalarIndent = isBlockStyle ? indent + options.getIndentSize() : 0;
-            //     emitScalarInternal(scalar, scalarIndent, false, isBlockStyle);
-
-
-
-            //     // sb.append(NL);
-
-
-
-            // }
             else {
                 if (!isImplicitNull(value)) sb.append(" ");
                 emitNode(value, 0, false, true); // Clean text
@@ -615,7 +567,8 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     //
 
     public static void main(String[] args) {
-        new YamlEmitter().valid_03_multiline_strings();
+        // new YamlEmitter().valid_03_multiline_strings();
+        new YamlEmitter().valid_12_content_type_records();
     }
 
     private static String VALID_PATH = "src/test/resources/yaml-suite/valid";
@@ -629,24 +582,32 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             .setOptions(options);
     }
 
+    // void valid_file_03_multiline_strings() {
+    //     validateFile("03-multiline-strings.yaml");
+    // }
+
     void valid_03_multiline_strings() {
-        validate("03-multiline-strings.yaml");
+        validate("""
+            description: |
+              This is a multiline
+              string with preserved
+              newlines.
+            """);
     }
 
-    void valid_04_empty_edge_cases() {
-        validate("04-empty-edge-cases.yaml");
-    }
+    // void valid_04_empty_edge_cases() {
+    //     validateFile("04-empty-edge-cases.yaml");
+    // }
 
-    void valid_09_empty_collections() {
-        validate("09-empty-collections.yaml");
-    }
+    // void valid_09_empty_collections() {
+    //     validateFile("09-empty-collections.yaml");
+    // }
 
     void valid_12_content_type_records() {
-        validate("12-content-type-records.yaml");
+        validateFile("12-content-type-records.yaml");
     }
 
-    private void validate(String filename) {
-        test_init();
+    private void validateFile(String filename) {
         Path path = Paths.get(VALID_PATH, filename);
         String fileContent = null;
         try {
@@ -655,24 +616,43 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             System.err.println("Unable to read YAML file " + filename);
             return;
         }
+        validate(fileContent);
+    }
+
+    private void validate(String fileContent) {
+        test_init();
 
         YamlEmitter emitter = new YamlEmitter().setOptions(options);
 
         YamlMapNode firstAst = (YamlMapNode) parser.parse(fileContent);
         String firstYaml = emitter.emit(firstAst);
 
-        YamlMapNode secondAst = (YamlMapNode) parser.parse(firstYaml);
+
+        YamlMapNode secondAst;
+
+        try {
+            secondAst = (YamlMapNode) parser.parse(firstYaml);
+        } catch (RuntimeException e) {
+            System.out.println("Failed to parse emitted YAML");
+            System.out.println("\n=== FIRST EMIT ===");
+            System.out.println(Util.debugString(firstYaml));
+            System.out.println("\n=== FIRST EMIT PLAIN TEXT ===");
+            System.out.println(firstYaml);
+            traceParser(firstYaml, "Emitted Content");
+            return;
+        }
+
         String secondYaml = emitter.emit(secondAst);
 
         if (!firstAst.equals(secondAst)) {
-            System.out.println("validate ast mismatch ["+filename+"]");
-            validateError(filename, fileContent, firstAst, secondAst, firstYaml, secondYaml);
+            System.out.println("validate ast mismatch");
+            validateError(fileContent, firstAst, secondAst, firstYaml, secondYaml);
             return;
         }
 
         if (!firstYaml.equals(secondYaml)) {
-            System.out.println("validate content mismatch ["+filename+"]");
-            validateError(filename, fileContent, firstAst, secondAst, firstYaml, secondYaml);
+            System.out.println("validate content mismatch");
+            validateError(fileContent, firstAst, secondAst, firstYaml, secondYaml);
             return;
         }
     }
@@ -680,7 +660,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     private void traceParser(String content, String title) {
         System.out.println("\n=== Parser Trace for " + title + " ===");
         Reporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE)
+            .setLevel(Level.DEBUG)
             .setDisableFlush(false);
         YamlAstParser parser = new YamlAstParser().setOptions(options).setReporter(reporter);
         parser.parse(content);
@@ -688,7 +668,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         System.out.flush();
     }
 
-    private void validateError(String filename, String fileContent, YamlNode firstAst, YamlNode secondAst, String firstYaml, String secondYaml) {
+    private void validateError(String fileContent, YamlNode firstAst, YamlNode secondAst, String firstYaml, String secondYaml) {
         System.out.println("\nFile content:");
         System.out.println(Util.debugString(fileContent));
 

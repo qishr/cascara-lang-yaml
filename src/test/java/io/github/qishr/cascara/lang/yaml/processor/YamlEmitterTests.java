@@ -61,9 +61,9 @@ public class YamlEmitterTests {
         String emitted = emitter.emit(root);
 
         System.out.println("IN:");
-        System.out.println(Util.debugString(original));
+        System.out.println(TestUtil.debugString(original));
         System.out.println("OUT:");
-        System.out.println(Util.debugString(emitted));
+        System.out.println(TestUtil.debugString(emitted));
 
         assertEquals(original.trim(), emitted.trim());
     }
@@ -150,11 +150,11 @@ public class YamlEmitterTests {
         String output = emitter.emit(root);
 
         System.out.println("IN:");
-        System.out.println(Util.debugString(yaml));
+        System.out.println(TestUtil.debugString(yaml));
         System.out.println("OUT:");
-        System.out.println(Util.debugString(output));
+        System.out.println(TestUtil.debugString(output));
 
-        Util.assertEquals(yaml, output);
+        TestUtil.assertEquals(yaml, output);
     }
 
     @Test
@@ -163,11 +163,11 @@ public class YamlEmitterTests {
         YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
         YamlNode root = parser.parse(yaml);
 
-        Util.dumpTokens(parser.getTokens());
+        TestUtil.dumpTokens(parser.getTokens());
 
         YamlEmitter emitter = new YamlEmitter();
         String output = emitter.emit(root);
 
-        Util.assertEquals(yaml, output);
+        TestUtil.assertEquals(yaml, output);
     }
 }
