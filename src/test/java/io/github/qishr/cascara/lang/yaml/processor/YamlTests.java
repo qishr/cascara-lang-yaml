@@ -51,10 +51,11 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
-import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 class YamlTests {
+
+  private static final Level LEVEL = Level.DEBUG;
 
     @Test
     void test_rootLevel_arrayAfterEmptyArray() {
@@ -66,9 +67,13 @@ class YamlTests {
                             "";
 
         // TODO: diagnostic level in one place for all tests?
-        // YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
+        // YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(LEVEL));
         YamlAstParser parser = new YamlAstParser();
+        parser.setReporter(new StandardReporter().setLevel(LEVEL));
+
         YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
+        TestUtil.dumpTokens(parser.getTokens());
+
         List<YamlNode> array = yaml.getSequence("array").getChildren();
         assertEquals(2, array.size());
     }
@@ -82,7 +87,11 @@ class YamlTests {
                             "    - value2\n" + //
                             "";
         YamlAstParser parser = new YamlAstParser();
+        parser.setReporter(new StandardReporter().setLevel(LEVEL));
+
         YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
+        TestUtil.dumpTokens(parser.getTokens());
+
         YamlMapNode object = yaml.getMap("object");
         List<YamlMapEntryNode> entries = object.getEntries();
 
@@ -102,18 +111,27 @@ class YamlTests {
     @Test
     void test_stringContaining_quotes() {
         String yamlString = "name: \"one \\\"two\\\" three\"";
+
         YamlAstParser parser = new YamlAstParser();
+        parser.setReporter(new StandardReporter().setLevel(LEVEL));
+
         YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
+        TestUtil.dumpTokens(parser.getTokens());
+
         String name = yaml.getString("name");
         assertEquals("one \"two\" three", name);
     }
 
     @Test
     void test_stringContaining_newline() {
-        String yamlString = "name: \"One\n" + //
-                        "Two\"";
+        String yamlString = "name: \"One\nTwo\"";
+
         YamlAstParser parser = new YamlAstParser();
+        parser.setReporter(new StandardReporter().setLevel(LEVEL));
+
         YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
+        TestUtil.dumpTokens(parser.getTokens());
+
         String name = yaml.getString("name");
         // assertEquals("One\nTwo", name);
         assertEquals("One Two", name);
@@ -122,8 +140,13 @@ class YamlTests {
     @Test
     void test_startsWithComment() {
         String yamlString = "#comment\nkey: value\n";
+
         YamlAstParser parser = new YamlAstParser();
+        parser.setReporter(new StandardReporter().setLevel(LEVEL));
+
         YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
+        TestUtil.dumpTokens(parser.getTokens());
+
         String value = yaml.getString("key");
         assertEquals("value", value);
     }
@@ -138,9 +161,11 @@ class YamlTests {
             ]
             """;
         YamlAstParser parser = new YamlAstParser()
-                .setReporter(new StandardReporter().setLevel(Level.TRACE));
+                .setReporter(new StandardReporter().setLevel(LEVEL));
 
         YamlSequenceNode seq = (YamlSequenceNode)parser.parse(yamlString);
+        TestUtil.dumpTokens(parser.getTokens());
+
         YamlNode first = seq.get(0);
         assertInstanceOf(YamlMapNode.class, first);
 
@@ -206,9 +231,11 @@ class YamlTests {
             ]
             """;
         YamlAstParser parser = new YamlAstParser()
-                .setReporter(new StandardReporter().setLevel(Level.TRACE));
+                .setReporter(new StandardReporter().setLevel(LEVEL));
 
         YamlSequenceNode seq = (YamlSequenceNode)parser.parse(yamlString);
+        TestUtil.dumpTokens(parser.getTokens());
+
         YamlNode first = seq.get(0);
         assertInstanceOf(YamlMapNode.class, first);
         assertNotNull(seq);
@@ -230,7 +257,7 @@ class YamlTests {
         TestUtil.dumpTokens(tokens);
 
         YamlAstParser parser = new YamlAstParser()
-                .setReporter(new StandardReporter().setLevel(Level.TRACE));
+                .setReporter(new StandardReporter().setLevel(LEVEL));
 
 
         assertDoesNotThrow(() -> parser.parse(yamlString));

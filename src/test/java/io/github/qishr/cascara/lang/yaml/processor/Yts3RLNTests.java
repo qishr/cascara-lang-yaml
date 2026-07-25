@@ -26,11 +26,11 @@ public class Yts3RLNTests {
         // String expected = "1 leading \ttab";
 
         // Copilot 14:47
-        String expected = "1 leading \\ttab";
+        String expected = "1 leading \ttab";
 
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        assertEquals(expected, actual, error(expected, actual));
+        TestUtil.assertEquals(expected, actual);
     }
 
     @Test
@@ -39,7 +39,7 @@ public class Yts3RLNTests {
         String expected = "2 leading \ttab";
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        assertEquals(expected, actual, error(expected, actual));
+        TestUtil.assertEquals(expected, actual);
     }
 
     @Test
@@ -48,7 +48,7 @@ public class Yts3RLNTests {
         String expected = "3 leading tab";
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        assertEquals(expected, actual, error(expected, actual));
+        TestUtil.assertEquals(expected, actual);
     }
 
     @Test
@@ -72,11 +72,11 @@ public class Yts3RLNTests {
         // String expected = "4 leading \\ tab";
 
         // Copilot 15:25
-        String expected = "4 leading \\t  tab";
+        String expected = "4 leading \t  tab";
 
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        assertEquals(expected, actual, error(expected, actual));
+        TestUtil.assertEquals(expected, actual);
     }
 
     @Test
@@ -94,7 +94,7 @@ public class Yts3RLNTests {
         String expected = "6 leading tab";
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        assertEquals(expected, actual, error(expected, actual));
+        TestUtil.assertEquals(expected, actual);
     }
 
     //

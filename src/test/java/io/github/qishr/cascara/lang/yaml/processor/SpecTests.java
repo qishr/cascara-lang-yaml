@@ -161,8 +161,14 @@ public class SpecTests {
                 &anchor6 'key6' : scalar6
             """;
 
+        //
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+        TestUtil.dumpTokens(tokens);
+
         YamlAstParser parser = new YamlAstParser()
-            .setReporter(new StandardReporter().setLevel(Level.TRACE));
+            .setReporter(new StandardReporter().setLevel(Level.DEBUG));
+
 
         YamlNode root = parser.parse(yaml);
         assertTrue(root instanceof YamlMapNode);
@@ -637,8 +643,6 @@ public class SpecTests {
         List<YamlToken> tokens = tokenizer.tokenize(yamlString);
         TestUtil.dumpTokens(tokens);
 
-
-
         StandardReporter reporter = new StandardReporter()
             .setLevel(Level.TRACE);
 
@@ -654,12 +658,6 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
 
         YamlDocumentNode doc = stream.getDocuments().get(0);
-
-
-
-
-
-
 
         YamlNode body = YamlNormalizer.normalize(doc.getBody());
 
@@ -698,5 +696,130 @@ public class SpecTests {
         YamlScalarNode scalar = (YamlScalarNode) body;
 
         TestUtil.assertEquals("ab\n\n \n", scalar.asString());
+    }
+
+    @Test
+    public void test6KGN() {
+        String yaml = "---\na: &anchor\nb: *anchor";
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        TestUtil.dumpTokens(parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocumentNode doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMapNode map = (YamlMapNode)body;
+        assertEquals(2, map.size());
+
+        TestUtil.assertEquals(null, map.get("a").asString());
+        TestUtil.assertEquals(null, map.get("b").asString());
+    }
+
+    @Test
+    void test6SLA() {
+        String yamlString = """
+            "foo\\nbar:baz\\tx \\\\$%^&*()x": 23
+            'x\\ny:z\\tx $%^&*()x': 24
+            """;
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        List<YamlToken> tokens = tokenizer.tokenize(yamlString);
+        TestUtil.dumpTokens(tokens);
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yamlString);
+
+        TestUtil.dumpTokens(parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+
+        YamlDocumentNode doc = stream.getDocuments().get(0);
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMapNode map = (YamlMapNode)body;
+        assertEquals(2, map.size());
+
+        YamlScalarNode a = map.getScalar("foo\nbar:baz\\tx \\$%^&*()x");
+        YamlScalarNode b = map.getScalar("x\\ny:z\\tx $%^&*()x");
+
+        assertEquals(23, map.getScalar("foo\nbar:baz\tx \\$%^&*()x").asInteger());
+        assertEquals(24, map.getScalar("x\\ny:z\\tx $%^&*()x").asInteger());
+
+
+        // "foo\nbar:baz\tx \\$%^&*()x": 23,
+        // "x\\ny:z\\tx $%^&*()x": 24
+    }
+
+    @Test
+    public void test6VJK() {
+        String yaml = ">\n Sammy Sosa completed another\n fine season with great stats.\n\n   63 Home Runs\n   0.288 Batting Average\n\n What a year!\n";
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        TestUtil.dumpTokens(parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocumentNode doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlScalarNode.class, body);
+        YamlScalarNode scalar = (YamlScalarNode) body;
+
+        TestUtil.assertEquals("Sammy Sosa completed another fine season with great stats.\n\n  63 Home Runs\n  0.288 Batting Average\n\nWhat a year!\n", scalar.asString());
+    }
+
+    @Test
+    public void test6WPF() {
+        String yaml = "---\n\"\n  foo \n \n    bar\n\n  baz\n\"";
+
+        StandardReporter reporter = new StandardReporter()
+            .setLevel(Level.TRACE);
+
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        TestUtil.dumpTokens(parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocumentNode doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlScalarNode.class, body);
+        YamlScalarNode scalar = (YamlScalarNode) body;
+
+        TestUtil.assertEquals(" foo\nbar\nbaz ", scalar.asString());
     }
 }

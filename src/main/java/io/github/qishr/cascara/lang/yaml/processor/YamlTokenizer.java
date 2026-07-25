@@ -44,6 +44,7 @@ import java.util.Deque;
 import java.util.EnumSet;
 import java.io.InputStream;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 
 import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
@@ -132,6 +133,11 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         this.buffer = new SourceInputStreamBuffer(is);
         this.isLegacyMode = false;
         resetCommonState();
+    }
+
+    // TODO: Add to interface
+    public List<YamlToken> tokenize(byte[] bytes) {
+        return tokenize(new String(bytes, StandardCharsets.UTF_8));
     }
 
     @Override
@@ -552,72 +558,105 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 // - newline + spaces -> single space
                 // - multiple newlines -> single newline
                 StringBuilder folded = new StringBuilder();
-                int expectedSpaces = indentationLevels.peek() - 1;
                 int i = 0;
+                int newlines = 0;
+
+                // int offsetFromStartOfLine = 0;
+                boolean lineIsBlank = true;
+                // boolean isMultiLine = false;
+                boolean lineContentEnded = false;
+                int lineContentEnd = -1;
+                int lineEnd = -1;
+
+                // System.out.println("len = " + raw.length());
 
                 while (i < raw.length()) {
                     char ch = raw.charAt(i);
-                    // System.out.println("i="+i+" c="+ch);
-
+                    // System.out.println(ch);
                     if (ch == '\n') {
-                        int startOfLine = i + 1;
-
-                        if (startOfLine >= raw.length()) {
-                            // TODO: Is this a bug? Handle it cleanly.
-                            break;
-                        }
-
-                        if (raw.charAt(startOfLine) == '\n') {
-                            // collapse consecutive newlines
-                            while (i < raw.length() && raw.charAt(i) == '\n') {
-                                i++;
-                                // System.out.println(" i="+i+" c="+raw.charAt(i));
-                            }
-                            if (raw.charAt(i) == ' ' || raw.charAt(i) == '\t') {
-                                i--;
-                                // System.out.println(" back one");
-                            }
-                            folded.append('\n');
-                            // System.out.println("single new line");
-                        } else {
-                            // fold newline + spaces → space
-                            int pos = startOfLine;
-                            int spaces = 0;
-                            while (pos < raw.length() && (
-                                    raw.charAt(pos) == ' ' || raw.charAt(pos) == '\t')) {
-                                spaces++;
-                                pos++;
-                            }
-
-                            if (pos >= raw.length()) {
-                                // TODO: Is this a bug? Handle it cleanly.
-                                break;
-                            }
-
-                            if (raw.charAt(pos) == '\n') {
-                                folded.append('\n');
-                                i = pos;
-                                // System.out.println("single space");
-                            } else {
-                                // System.out.println(" pos="+pos+" c="+raw.charAt(pos));
-                                i = pos;
-                                if (expectedSpaces == -1 || spaces > expectedSpaces) {
-                                    // System.out.println(spaces + " > " + expectedSpaces);
-                                    folded.append(' ');
-                                }
-                                if (expectedSpaces == -1) expectedSpaces = spaces;
-                            }
-
-                        }
-
-
+                        newlines++;
+                        // offsetFromStartOfLine = 0;
+                        lineIsBlank = true;
+                        // isMultiLine = true;
+                        lineContentEnd = -1;
                     } else {
-                        folded.append(ch);
-                        i++;
+                        if (lineIsBlank && (ch == ' ' || ch == '\t')) {
+                            // Leading whitespace is ignored
+                        } else {
+                            if (ch == ' ' || ch == '\t') {
+                                if (lineContentEnd == -1) {
+                                    // System.out.println("Finding end of line");
+                                    // Find end of line
+                                    lineEnd = i + 1;
+                                    if (lineEnd < raw.length()) {
+                                        char endChar = raw.charAt(lineEnd);
+                                        while (lineEnd < raw.length() && endChar != '\n') {
+                                            endChar = raw.charAt(lineEnd);
+                                            lineEnd++;
+                                        }
+                                        // System.out.println(String.format(
+                                        //     "Found at %d [%d]",
+                                        //     lineEnd, (int)endChar
+                                        // ));
+                                        // System.out.println("Finding end of line content");
+                                        // Find end of line content
+                                        // Trailing whitespace is ignored
+                                        lineContentEnd = lineEnd < raw.length()
+                                            ? endChar == '\n'
+                                                ? lineEnd - 1
+                                                : lineEnd
+                                            : raw.length() - 1;
+                                        endChar = raw.charAt(lineContentEnd);
+                                        while (lineContentEnd > i && (endChar == ' ' || endChar == '\t')) {
+                                            endChar = raw.charAt(lineContentEnd);
+                                            lineContentEnd--;
+                                        }
+                                        // if (lineContentEnd > i) {
+                                        //     lineContentEnd--;
+                                        // }
+
+                                        // System.out.println("Found at " + lineContentEnd + " ("+endChar+")");
+                                        // System.out.println(String.format(
+                                        //     "Found at %d [%d]",
+                                        //     lineContentEnd, (int)endChar
+                                        // ));
+                                    }
+                                }
+                                if (i >= lineContentEnd) {
+                                    // System.out.println(String.format(
+                                    //     "i (%d) > lineContentEnd (%d)",
+                                    //     i, lineContentEnd
+                                    // ));
+                                    i = lineEnd;
+                                    continue;
+                                }
+                            }
+                            if (newlines == 1) {
+                                folded.append(' ');
+                                newlines = 0;
+                            } else if (newlines > 1) {
+                                folded.append('\n');
+                                newlines = 0;
+                            }
+                            folded.append(ch);
+                            lineIsBlank = false;
+                        }
+                        // offsetFromStartOfLine++;
                     }
+                    i++;
+                }
+
+                if (newlines == 1) {
+                    folded.append(' ');
+                    newlines = 0;
+                } else if (newlines > 1) {
+                    folded.append('\n');
+                    newlines = 0;
                 }
 
                 String content = folded.toString();
+
+
                 // System.out.println("raw: " + raw);
                 // System.out.println("content: " + content);
 
@@ -828,21 +867,19 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
             boolean folded = (headerChar == '>');
 
-            // if (rawLines.size() == 2) {
-                System.out.println("folded = " + folded);
-                System.out.println("spaces = " + spaces);
-                System.out.println("blockIndent = " + blockIndent);
-                System.out.println("currentMargin = " + currentMargin);
+            // if (rawLines.size() == 6) {
+            //     System.out.println("folded = " + folded);
+            //     System.out.println("spaces = " + spaces);
+            //     System.out.println("blockIndent = " + blockIndent);
+            //     System.out.println("currentMargin = " + currentMargin);
             // }
 
+            // Rule 1: Non-empty lines with indentation beyond block indent
+            // Rule 2: Literal-style empty lines with indentation beyond block indent
             if ((!isEmptyLine && blockIndent > 0 && spaces > blockIndent) ||
                 (!folded && isEmptyLine && spaces > currentMargin && (spaces - blockIndent > 0))) {
                 lineContent.append(" ".repeat(spaces - blockIndent));
             }
-
-
-
-
 
             while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
                 lineContent.append(buffer.advance());
@@ -886,11 +923,19 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     boolean currentDeep = isLineDeeplyIndented.get(i);
                     boolean nextDeep = isLineDeeplyIndented.get(i + 1);
 
-                    if (currentLine.isEmpty() || currentDeep || nextDeep) {
+                    if (currentLine.isEmpty()) {
                         result.append('\n');
-                    } else if (nextLine.isEmpty()) {
+                        if (currentDeep || nextDeep) {
+                            result.append('\n');
+                        }
+                    }
+                    else if (currentDeep) {
+                        result.append('\n');
+                    }
+                    else if (nextLine.isEmpty()) {
                         // no append; empty line will add newline itself
-                    } else {
+                    }
+                    else {
                         result.append(' ');
                     }
                 }
