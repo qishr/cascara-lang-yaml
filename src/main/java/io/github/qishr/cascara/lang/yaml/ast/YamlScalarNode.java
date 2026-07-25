@@ -522,15 +522,13 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return input.replace("\\\"", "\"")
                     .replace("\\\\", "\\")
                     .replace("\\n", "\n")
-                    .replace("\\r", "\r");
+                    .replace("\\r", "\r")
+                    .replace("\\t", "\t");
     }
 
     private String unescapeSingleQuotes(String input) {
         if (input == null) return null;
         return input.replace("''", "'");
-                    // .replace("\\\\", "\\")
-                    // .replace("\\n", "\n")
-                    // .replace("\\r", "\r");
     }
 
     // ------------------------------------------------------------

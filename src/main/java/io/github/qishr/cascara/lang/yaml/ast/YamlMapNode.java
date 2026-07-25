@@ -215,6 +215,16 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
         return null;
     }
 
+    // TODO: Add to interface
+    // @Override
+    @Nullable
+    public YamlScalarNode getScalar(String key) {
+        if (get(key) instanceof YamlScalarNode scalar) {
+            return scalar;
+        }
+        return null;
+    }
+
     /// Associates the specified value with the specified string key.
     ///
     /// If the map previously contained a mapping for the key, the old value
