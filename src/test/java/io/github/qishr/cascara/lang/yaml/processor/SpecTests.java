@@ -1,18 +1,16 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.data.Tree;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.LocalizableIOException;
+import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
-import io.github.qishr.cascara.common.lang.reference.ReferenceNode;
-import io.github.qishr.cascara.common.lang.reference.ReferenceScalarNode;
-import io.github.qishr.cascara.common.lang.util.AstTreeData;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocumentNode;
@@ -26,18 +24,29 @@ import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
-import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
-import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 
 public class SpecTests {
-       private final YamlAstParser parser = new YamlAstParser();
+    private static final Level PARSER_LEVEL = Level.INFO;
+    private static final Level TOKENIZER_LEVEL = Level.DEBUG;
+    private static final boolean dumpTokens = false;
+
+    private YamlAstParser parser;
+    private Reporter reporter;
+
+    @BeforeEach
+    void setup() {
+        reporter = new StandardReporter()
+            .setLevel(PARSER_LEVEL)
+            .setUseAnsiColors(true)
+            .setDisableFlush(true);
+
+        parser = new YamlAstParser()
+            .setReporter(reporter);
+    }
 
     @Test
     public void testLiteral0() {
@@ -46,7 +55,6 @@ public class SpecTests {
                 --- |0
             """;
 
-        parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
         YamlNode root = parser.parse(yaml.getBytes());
 
         assertNotNull(root);
@@ -105,7 +113,7 @@ public class SpecTests {
     //         """;
 
     //     YamlAstParser parser = new YamlAstParser()
-    //         .setReporter(new StandardReporter().setLevel(Level.TRACE));
+    //         .setReporter(new StandardReporter().setLevel(LEVEL));
     //     YamlNode root = parser.parse(yaml);
 
     //     assertTrue(root instanceof YamlMapNode);
@@ -162,13 +170,12 @@ public class SpecTests {
             """;
 
         //
-        YamlTokenizer tokenizer = new YamlTokenizer();
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
-        TestUtil.dumpTokens(tokens);
-
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(new StandardReporter().setLevel(Level.DEBUG));
-
+        if (dumpTokens) {
+            YamlTokenizer tokenizer = new YamlTokenizer()
+                .setReporter(new StandardReporter().setLevel(TOKENIZER_LEVEL));
+            List<YamlToken> tokens = tokenizer.tokenize(yaml);
+            TestUtil.dumpTokens(tokens);
+        }
 
         YamlNode root = parser.parse(yaml);
         assertTrue(root instanceof YamlMapNode);
@@ -237,8 +244,6 @@ public class SpecTests {
             "- !!int 42\n" +
             "- d\n";
 
-        YamlAstParser parser = new YamlAstParser()
-                .setReporter(new StandardReporter().setLevel(Level.TRACE));
         YamlStreamNode stream = parser.parseMulti(yaml);
         assertEquals(1, stream.getDocuments().size());
     }
@@ -254,15 +259,13 @@ public class SpecTests {
         // Collect diagnostics
         List<Diagnostic> diagnostics = new ArrayList<>();
         StandardReporter reporter = new StandardReporter()
-            // .setLevel(Level.TRACE)
+            // .setLevel(LEVEL)
+            .setUseAnsiColors(true)
             .setDiagnosticCollector(d -> {
                 diagnostics.add(d);
             });
 
-        // Parse YAML using the actual compliance parser
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+        parser.setReporter(reporter);
 
         YamlStreamNode stream = parser.parseMulti(yaml);
 
@@ -297,14 +300,6 @@ public class SpecTests {
 
             """;
 
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        // Parse YAML using the actual compliance parser
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
-
         YamlStreamNode stream = parser.parseMulti(yaml);
 
         // The stream must contain exactly one document
@@ -328,14 +323,6 @@ public class SpecTests {
             e
             """;
 
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        // Parse YAML using the actual compliance parser
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
-
         YamlStreamNode stream = parser.parseMulti(yaml);
 
         // The stream must contain exactly one document
@@ -358,14 +345,6 @@ public class SpecTests {
             e
             f: g
             """;
-
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        // Parse YAML using the actual compliance parser
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
 
         YamlStreamNode stream = parser.parseMulti(yaml);
 
@@ -391,14 +370,6 @@ public class SpecTests {
             this is#not: a comment
             """;
 
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        // Parse YAML using the actual compliance parser
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
-
         YamlStreamNode stream = parser.parseMulti(yaml);
 
         // The stream must contain exactly one document
@@ -413,20 +384,12 @@ public class SpecTests {
     }
 
     @Test
-    public void testIndent() {
+    public void testBadIndentReported() {
         String yaml = """
             list:
               - first
              - second  # Only 1 space indent, should fail
             """;
-
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        // Parse YAML using the actual compliance parser
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
 
         assertThrows(YamlParserException.class, () -> parser.parse(yaml));
     }
@@ -438,14 +401,6 @@ public class SpecTests {
             k:#foo
              &a !t s
             """;
-
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        // Parse YAML using the actual compliance parser
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
 
         YamlStreamNode stream = parser.parseMulti(yaml);
 
@@ -465,14 +420,6 @@ public class SpecTests {
     @Test
     public void test2G84() {
         String yaml = "--- |1-";
-
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        // Parse YAML using the actual compliance parser
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
 
         YamlStreamNode stream = parser.parseMulti(yaml);
 
@@ -504,14 +451,6 @@ public class SpecTests {
              gh
             """;
 
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        // Parse YAML using the actual compliance parser
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
-
         YamlStreamNode stream = parser.parseMulti(yaml);
 
         // The stream must contain exactly one document
@@ -530,16 +469,11 @@ public class SpecTests {
     public void test4QFQ() {
         String yaml = "- |\n detected\n- >\n \n  \n  # detected\n- |1\n  explicit\n- >\n detected";
 
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
-
         YamlStreamNode stream = parser.parseMulti(yaml);
 
-        TestUtil.dumpTokens(parser.getTokens());
+        if (dumpTokens) {
+            TestUtil.dumpTokens(parser.getTokens());
+        }
 
         // The stream must contain exactly one document
         assertEquals(1, stream.getDocuments().size());
@@ -568,16 +502,11 @@ public class SpecTests {
                 xxx
             """;
 
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
-
         YamlStreamNode stream = parser.parseMulti(yaml);
 
-        TestUtil.dumpTokens(parser.getTokens());
+        if (dumpTokens) {
+            TestUtil.dumpTokens(parser.getTokens());
+        }
 
         // The stream must contain exactly one document
         assertEquals(1, stream.getDocuments().size());
@@ -606,16 +535,11 @@ public class SpecTests {
               as a line feed"
             """;
 
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
-
         YamlStreamNode stream = parser.parseMulti(yaml);
 
-        TestUtil.dumpTokens(parser.getTokens());
+        if (dumpTokens) {
+            TestUtil.dumpTokens(parser.getTokens());
+        }
 
         // The stream must contain exactly one document
         assertEquals(1, stream.getDocuments().size());
@@ -641,18 +565,15 @@ public class SpecTests {
 
         YamlTokenizer tokenizer = new YamlTokenizer();
         List<YamlToken> tokens = tokenizer.tokenize(yamlString);
-        TestUtil.dumpTokens(tokens);
-
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+        if (dumpTokens) {
+            TestUtil.dumpTokens(tokens);
+        }
 
         YamlStreamNode stream = parser.parseMulti(yamlString);
 
-        TestUtil.dumpTokens(parser.getTokens());
+        if (dumpTokens) {
+            TestUtil.dumpTokens(parser.getTokens());
+        }
 
         // The stream must contain exactly one document
         assertEquals(1, stream.getDocuments().size());
@@ -675,16 +596,11 @@ public class SpecTests {
     public void test6FWR() {
         String yaml = "--- |+\nab\n\n \n...\n";
 
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
-
         YamlStreamNode stream = parser.parseMulti(yaml);
 
-        TestUtil.dumpTokens(parser.getTokens());
+        if (dumpTokens) {
+            TestUtil.dumpTokens(parser.getTokens());
+        }
 
         // The stream must contain exactly one document
         assertEquals(1, stream.getDocuments().size());
@@ -702,16 +618,11 @@ public class SpecTests {
     public void test6KGN() {
         String yaml = "---\na: &anchor\nb: *anchor";
 
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
-
         YamlStreamNode stream = parser.parseMulti(yaml);
 
-        TestUtil.dumpTokens(parser.getTokens());
+        if (dumpTokens) {
+            TestUtil.dumpTokens(parser.getTokens());
+        }
 
         // The stream must contain exactly one document
         assertEquals(1, stream.getDocuments().size());
@@ -735,18 +646,12 @@ public class SpecTests {
 
         YamlTokenizer tokenizer = new YamlTokenizer();
         List<YamlToken> tokens = tokenizer.tokenize(yamlString);
-        TestUtil.dumpTokens(tokens);
 
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+        if (dumpTokens) {
+            TestUtil.dumpTokens(tokens);
+        }
 
         YamlStreamNode stream = parser.parseMulti(yamlString);
-
-        TestUtil.dumpTokens(parser.getTokens());
 
         // The stream must contain exactly one document
         assertEquals(1, stream.getDocuments().size());
@@ -773,16 +678,11 @@ public class SpecTests {
     public void test6VJK() {
         String yaml = ">\n Sammy Sosa completed another\n fine season with great stats.\n\n   63 Home Runs\n   0.288 Batting Average\n\n What a year!\n";
 
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
-
         YamlStreamNode stream = parser.parseMulti(yaml);
 
-        TestUtil.dumpTokens(parser.getTokens());
+        if (dumpTokens) {
+            TestUtil.dumpTokens(parser.getTokens());
+        }
 
         // The stream must contain exactly one document
         assertEquals(1, stream.getDocuments().size());
@@ -800,16 +700,17 @@ public class SpecTests {
     public void test6WPF() {
         String yaml = "---\n\"\n  foo \n \n    bar\n\n  baz\n\"";
 
-        StandardReporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE);
-
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(reporter)
-            .setOptions(YamlOptions.DEFAULT.duplicate().setMultiDocument(true));
+        // parser.getTokenizer().setReporter(
+        //     new StandardReporter()
+        //         .setLevel(TOKENIZER_LEVEL)
+        //         .setUseAnsiColors(true)
+        // );
 
         YamlStreamNode stream = parser.parseMulti(yaml);
 
-        TestUtil.dumpTokens(parser.getTokens());
+        if (dumpTokens) {
+            TestUtil.dumpTokens(parser.getTokens());
+        }
 
         // The stream must contain exactly one document
         assertEquals(1, stream.getDocuments().size());
@@ -821,5 +722,36 @@ public class SpecTests {
         YamlScalarNode scalar = (YamlScalarNode) body;
 
         TestUtil.assertEquals(" foo\nbar\nbaz ", scalar.asString());
+    }
+
+    @Test
+    public void test7A4E() {
+        String yaml = "\" 1st non-empty\n" +
+                      "\n" +
+                      " 2nd non-empty \n" +
+                      "\t3rd non-empty \"\n";
+
+        parser.getTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(TOKENIZER_LEVEL)
+                .setUseAnsiColors(true)
+        );
+
+        YamlStreamNode stream = parser.parseMulti(yaml);
+
+        if (dumpTokens) {
+            TestUtil.dumpTokens(parser.getTokens());
+        }
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocumentNode doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlScalarNode.class, body);
+        YamlScalarNode scalar = (YamlScalarNode) body;
+
+        TestUtil.assertEquals(" 1st non-empty\n2nd non-empty 3rd non-empty ", scalar.asString());
     }
 }

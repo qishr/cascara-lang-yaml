@@ -62,6 +62,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     private String originalContent;
     private ScalarStyle scalarStyle;
     private ChompingStyle chompingStyle;
+    private boolean isMultiLine;
 
     private YamlOptions options;
 
@@ -136,6 +137,15 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
     public YamlOptions getOptions() {
         return options;
+    }
+
+    public boolean isMultiLine() {
+        return isMultiLine;
+    }
+
+    public YamlScalarNode setMultiLine(boolean b) {
+        isMultiLine = b;
+        return this;
     }
 
     // TODO: Add to interface

@@ -79,9 +79,9 @@ public class TestUtil {
             );
         }
 
-        try (PrintWriter pw = new PrintWriter(System.out)) {
-            table.render(pw);
-        }
+        PrintWriter pw = new PrintWriter(System.out);
+        table.render(pw);
+        // pw.flush();
 
 
         // for (int i = 0; i < tokens.size(); i++) {
