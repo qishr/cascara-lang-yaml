@@ -6,15 +6,18 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public class YamlRoundTripTests {
@@ -30,6 +33,7 @@ public class YamlRoundTripTests {
         options = new YamlOptions().setStrict(true);
         parser = new YamlAstParser()
             .setOptions(options);
+        parser.setReporter(new StandardReporter().setLevel(Level.DEBUG));
     }
 
     @Test
@@ -64,10 +68,28 @@ public class YamlRoundTripTests {
         YamlEmitter emitter = new YamlEmitter().setOptions(options);
 
         YamlMapNode firstAst = (YamlMapNode) parser.parse(fileContent);
+        TestUtil.dumpTokens(parser.getTokens());
+
         String firstYaml = emitter.emit(firstAst);
 
+        System.out.println("---INPUT");
+        System.out.println(fileContent);
+        System.out.println("---EMITTED");
+        System.out.println(firstYaml);
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        List<YamlToken> tokens = tokenizer.tokenize(firstYaml);
+        TestUtil.dumpTokens(tokens);
+
         YamlMapNode secondAst = (YamlMapNode) parser.parse(firstYaml);
+
         String secondYaml = emitter.emit(secondAst);
+
+        boolean contentMatches = firstYaml.equals(secondYaml);
+
+        System.out.println("File content: " + StringUtils.debugString(fileContent));
+        System.out.println("First YAML  : " + StringUtils.debugString(firstYaml));
+        System.out.println("Second YAML : " + StringUtils.debugString(secondYaml));
 
         if (!firstAst.equals(secondAst)) {
             System.err.println("validate ast mismatch ["+filename+"]");

@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
-import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 
 public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNode, YamlMapEntryNode> {

@@ -39,12 +39,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.internal.util.StringUtil;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
+import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
@@ -172,8 +174,12 @@ class YamlComprehensiveTest {
     void testRoundTripPreservesStructure() throws Exception {
         String original = "records:\n  -\n    id: \"1\"\n    tags:\n      -\n        a";
 
+        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE));
+
         // 1. Parse
         YamlMapNode originalMap = (YamlMapNode)parser.parse(original);
+
+        TestUtil.dumpTokens(parser.getTokens());
 
 
         YamlOptions options = new YamlOptions().setExpandedStyle(true);
@@ -183,6 +189,15 @@ class YamlComprehensiveTest {
         System.out.println("--- EMITTED START ---");
         System.out.println(emitted);
         System.out.println("--- EMITTED END ---");
+
+        System.out.println("Original: " + StringUtils.debugString(original));
+        System.out.println("Emitted : " + StringUtils.debugString(emitted));
+
+        YamlTokenizer tokenizer = new YamlTokenizer()
+            .setReporter(new StandardReporter().setLevel(Level.INFO));
+        List<YamlToken> tokens = tokenizer.tokenize(emitted);
+        TestUtil.dumpTokens(tokens);
+
 
         // 3. Re-Parse
         YamlMapNode reParsedMap = (YamlMapNode)parser.parse(emitted);

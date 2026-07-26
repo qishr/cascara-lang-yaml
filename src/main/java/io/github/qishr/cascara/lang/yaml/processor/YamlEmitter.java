@@ -35,18 +35,11 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Emitter;
@@ -60,7 +53,6 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStreamNode;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 /// Responsible for converting a [YamlNode] AST back into a valid YAML string.
 ///
@@ -82,7 +74,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
     @Override protected YamlEmitter self() { return this; }
 
-    // TODO: emitTagIfPresent ?
+    // TODO: emitTagIfPresent
     @Override public void emitScalar(String value) { sb.append(value); }
     @Override public void emitMapStart() {}
     @Override public void emitMapEnd() {}
@@ -110,9 +102,13 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
                 // Write explicit document markers if there are multiple documents,
                 // or if the document explicitly contains directives.
+                // if (documents.size() > 1 || !doc.getDirectives().isEmpty()) {
+                //     sb.append("---").append(NL);
+                // }
                 if (options.isExplicitStart() || documents.size() > 1 || !doc.getDirectives().isEmpty()) {
                     sb.append("---").append(NL);
                 }
+
 
                 // Process the body of this specific document
                 emitNode(doc.getBody(), 0, false, false);
@@ -153,6 +149,11 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         }
 
         // 3. ANCHOR CHECK (Using targetNode to fetch anchor metadata safely)
+        // String anchor = targetNode.getAnchor();
+        // if (anchor != null && !anchor.isEmpty()) {
+        //     sb.append("&").append(anchor);
+        //     if (targetNode instanceof YamlScalarNode) sb.append(" ");
+        // }
         if (!options.stripAnchors()) {
             String anchor = targetNode.getAnchor();
             if (anchor != null && !anchor.isEmpty()) {
@@ -193,21 +194,63 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     private void emitScalarInternal(YamlScalarNode scalar, int indent, boolean isFlow, boolean isBlockStyle) {
         if (scalar == null) return; // TODO: literal null
 
-        // USE LEXEME ONLY FOR QUOTED SCALARS WITH NON-EMPTY LEXEME
-        if (scalar.getToken() != null &&
-            scalar.getToken().getLexeme() != null &&
-            !scalar.getToken().getLexeme().isEmpty() &&
-            (scalar.getQuoteStyle() == QuoteStyle.DOUBLE ||
-             scalar.getQuoteStyle() == QuoteStyle.SINGLE)) {
+        // if (scalar.getToken() != null && scalar.getToken().getLexeme() != null) {
+        //     String lex = scalar.getToken().getLexeme();
 
-            if (!isFlow) sb.append(" ".repeat(indent));
-            sb.append(scalar.getToken().getLexeme());
+        //     if (!isFlow) sb.append(" ".repeat(indent));
+        //     sb.append(lex);
 
-            if (!isFlow && !options.stripComments()) {
-                handleInlineComments(scalar);
+        //     if (!isFlow) {
+        //         if (!options.stripComments()) handleInlineComments(scalar);
+        //         // DO NOT append NL here — lexeme already contains correct formatting
+        //     }
+        //     return;
+        // }
+
+
+
+        if (scalar.getToken() != null) {
+            String lexeme = scalar.getToken().getLexeme();
+            if (lexeme != null) {
+                if (isBlockStyle) {
+                    // sb.append("\n");
+
+                    String[] lexemeLines = lexeme.split("\n");
+                    for (int i = 0; i < lexemeLines.length; i++) {
+                        if (i > 0) {
+                            sb.append("\n");
+                            sb.append(" ".repeat(scalar.getStartColumn() - 1));
+                        } else {
+                        }
+                    // for (String lexemeLine : lexemeLines) {
+                        // sb.append(" ".repeat(indent));
+
+                        sb.append(lexemeLines[i]);
+                    }
+                    sb.append(NL);
+                    // sb.append(" ".repeat(indent));
+                    // sb.append(lexeme);
+                } else {
+                    // sb.append(" ".repeat(indent));
+                    sb.append(lexeme);
+                }
+
+                if (!isFlow) {
+                    // handleInlineComments(scalar);
+                    if (!options.stripComments()) {
+                        handleInlineComments(scalar);
+                    }
+                    // if (!isBlockStyle) {
+                    //     sb.append(NL);
+                    // }
+                }
+
+                return;
             }
-            return;
         }
+
+
+
 
         String val = scalar.asString();
 
@@ -381,24 +424,43 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             }
             // Handle multiline string block scalars cleanly (only for plain/block targeted text)
             else if (value instanceof YamlScalarNode scalar
-                && (scalar.getQuoteStyle() == QuoteStyle.LITERAL_BLOCK ||
-                    scalar.getQuoteStyle() == QuoteStyle.FOLDED)) {
+                    && scalar.getQuoteStyle() != QuoteStyle.DOUBLE
+                    && scalar.getQuoteStyle() != QuoteStyle.SINGLE
+                    && scalar.asString() != null
+                    && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
+                if (!isComplexKey) {
+                    // handleInlineComments(key);
+                    if (!options.stripComments()) {
+                        handleInlineComments(key);
+                    }
+                }
+
+
+                // boolean isBlockStyle = (scalar.getStartLine() > key.getStartLine());
+                // boolean isBlockStyle = (scalar.getQuoteStyle() == QuoteStyle.
+                boolean isBlockStyle = scalar.isMultiLine();
+
 
                 sb.append(" ");
-                // pass the current map indent; block body indent is computed inside
-                emitScalarInternal(scalar, indent, false, true);
+                emitScalarInternal(scalar, indent + options.getIndentSize(), false, isBlockStyle);
             }
-            else if (value instanceof YamlScalarNode scalar
-                && scalar.getQuoteStyle() == QuoteStyle.PLAIN
-                && scalar.asString() != null
-                && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
+            // else if (value instanceof YamlScalarNode scalar) {
+            //     boolean isBlockStyle = (scalar.getStartLine() > key.getStartLine());
+            //     if (!isBlockStyle) sb.append(" ");
+            //     int scalarIndent = isBlockStyle ? indent + options.getIndentSize() : 0;
+            //     emitScalarInternal(scalar, scalarIndent, false, isBlockStyle);
 
-                sb.append(" ");
-                emitScalarInternal(scalar, indent + options.getIndentSize(), false, false);
-            }
+
+
+            //     // sb.append(NL);
+
+
+
+            // }
             else {
                 if (!isImplicitNull(value)) sb.append(" ");
-                emitNode(value, 0, false, true);   // <‑‑ inline, no indent, flow=true
+                emitNode(value, 0, false, true); // Clean text
+                // handleInlineComments(value);    // Value's inline comment
                 if (!options.stripComments()) {
                     handleInlineComments(value);
                 }
@@ -422,64 +484,62 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     private void emitSequence(YamlSequenceNode seq, int indent, boolean isSequenceItem) {
         if (seq == null) return;
         var elements = seq.getElements();
-
         for (int i = 0; i < elements.size(); i++) {
             var item = elements.get(i);
 
-            // dash indentation
+            // 1. ALWAYS write the indentation and the dash for every element
             if (!(i == 0 && isSequenceItem)) {
                 sb.append(" ".repeat(indent));
             }
             sb.append("-");
 
-            // --- CASE 1: expanded style only applies to block maps/sequences ---
-            if (options.isExpandedStyle()
-                    && !(item instanceof YamlScalarNode)) {
-
-                sb.append(NL);
-                handleExpandedItem(item, indent);
-                continue;
+            // 2. Now decide how to handle the VALUE after that dash
+            if (options.isExpandedStyle()) {
+                if (isImplicitNull(item)) {
+                    // It's a null value in expanded style.
+                    // We just need the newline to finish this item's line.
+                    sb.append(NL);
+                } else {
+                    sb.append(NL);
+                    // Handle flow vs block indentation
+                    handleExpandedItem(item, indent);
+                }
             }
-
-            // --- CASE 2: block map under dash (compact) ---
-            if (item instanceof YamlMapNode m
-                    && m.getStyle() == CollectionStyle.BLOCK) {
-
+            else if (item instanceof YamlMapNode m && m.getStyle() == CollectionStyle.BLOCK) {
                 sb.append(" ");
                 emitMap(m, indent + 2, true);
-                continue;
             }
-
-            // --- CASE 3: block sequence under dash (compact) ---
-            if (item instanceof YamlSequenceNode s
-                    && s.getStyle() == CollectionStyle.BLOCK) {
-
+            else if (item instanceof YamlSequenceNode s && s.getStyle() == CollectionStyle.BLOCK) {
                 sb.append(NL);
                 emitNode(item, indent + options.getIndentSize(), false, false);
-                continue;
             }
+            else {
+                // COMPACT / FLOW / SCALAR
+                if (item instanceof YamlScalarNode scalar
+                        && scalar.getQuoteStyle() != QuoteStyle.DOUBLE
+                        && scalar.getQuoteStyle() != QuoteStyle.SINGLE
+                        && scalar.asString() != null
+                        && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
+                    // It's a multiline string scalar! It CANNOT be inline/flowed after a compact dash.
+                    // It must trigger a newline and follow block formatting guidelines.
+                    sb.append(NL);
+                    emitScalarInternal(scalar, indent + options.getIndentSize(), false, false);
+                }
+                else {
+                    // True compact inline scalars / flow collections
+                    if (!isImplicitNull(item)) {
+                        sb.append(" ");
+                    }
 
-            // --- CASE 4: multiline scalar (must break) ---
-            if (item instanceof YamlScalarNode scalar
-                    && scalar.asString() != null
-                    && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
-
-                sb.append(NL);
-                emitScalarInternal(scalar, indent + options.getIndentSize(), false, false);
-                continue;
+                    // Force isFlow=true only for single lines / flow structures
+                    emitNode(item, 0, true, true);
+                    // handleInlineComments(item);
+                    if (!options.stripComments()) {
+                        handleInlineComments(item);
+                    }
+                    sb.append(NL);
+                }
             }
-
-            // --- CASE 5: SIMPLE SCALAR (compact) ---
-            if (!isImplicitNull(item)) {
-                sb.append(" ");
-                emitNode(item, 0, true, true);   // inline scalar
-            }
-
-            if (!options.stripComments()) {
-                handleInlineComments(item);
-            }
-
-            sb.append(NL);
         }
     }
 
@@ -561,149 +621,5 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         reporter.trace("--- EMITTER DEBUG START ---");
         reporter.trace(output.replace(" ", "·").replace("\n", "↵\n"));
         reporter.trace("--- EMITTER DEBUG END ---");
-    }
-
-    //
-    // Test
-    //
-
-    public static void main(String[] args) {
-        // new YamlEmitter().valid_03_multiline_strings();
-        // new YamlEmitter().valid_12_content_type_records();
-        test_emitter_lexeme();
-    }
-
-    private static String VALID_PATH = "src/test/resources/yaml-suite/valid";
-    private YamlOptions options = new YamlOptions().setExpandedStyle(true);
-    private YamlAstParser parser;
-    private Reporter reporter;
-
-    void test_init() {
-        options = new YamlOptions().setStrict(true);
-        parser = new YamlAstParser()
-            .setOptions(options);
-    }
-
-    // TODO: This will never work if the map style isn't store in the AST
-    static void test_emitter_lexeme() {
-        String yaml = "key:\n  \"one\n\n  two\"";
-        YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
-        YamlNode root = parser.parse(yaml);
-
-        YamlEmitter emitter = new YamlEmitter();
-        String output = emitter.emit(root);
-
-        if (!yaml.equals(output)) {
-            System.out.println("=== INPUT YAML ===");
-            System.out.println(Util.debugString(yaml));
-            System.out.println("=== EMITTED YAML ===");
-            System.out.println(Util.debugString(output));
-        }
-    }
-
-    // void valid_file_03_multiline_strings() {
-    //     validateFile("03-multiline-strings.yaml");
-    // }
-
-    void valid_03_multiline_strings() {
-        validate("""
-            description: |
-              This is a multiline
-              string with preserved
-              newlines.
-            """);
-    }
-
-    // void valid_04_empty_edge_cases() {
-    //     validateFile("04-empty-edge-cases.yaml");
-    // }
-
-    // void valid_09_empty_collections() {
-    //     validateFile("09-empty-collections.yaml");
-    // }
-
-    void valid_12_content_type_records() {
-        validateFile("12-content-type-records.yaml");
-    }
-
-    private void validateFile(String filename) {
-        Path path = Paths.get(VALID_PATH, filename);
-        String fileContent = null;
-        try {
-            fileContent = Files.readString(path);
-        } catch (IOException e) {
-            System.err.println("Unable to read YAML file " + filename);
-            return;
-        }
-        validate(fileContent);
-    }
-
-    private void validate(String fileContent) {
-        test_init();
-
-        YamlEmitter emitter = new YamlEmitter().setOptions(options);
-
-        YamlMapNode firstAst = (YamlMapNode) parser.parse(fileContent);
-        String firstYaml = emitter.emit(firstAst);
-
-
-        YamlMapNode secondAst;
-
-        try {
-            secondAst = (YamlMapNode) parser.parse(firstYaml);
-        } catch (RuntimeException e) {
-            System.out.println("Failed to parse emitted YAML");
-            System.out.println("\n=== FIRST EMIT ===");
-            System.out.println(Util.debugString(firstYaml));
-            System.out.println("\n=== FIRST EMIT PLAIN TEXT ===");
-            System.out.println(firstYaml);
-            traceParser(firstYaml, "Emitted Content");
-            return;
-        }
-
-        String secondYaml = emitter.emit(secondAst);
-
-        if (!firstAst.equals(secondAst)) {
-            System.out.println("validate ast mismatch");
-            validateError(fileContent, firstAst, secondAst, firstYaml, secondYaml);
-            return;
-        }
-
-        if (!firstYaml.equals(secondYaml)) {
-            System.out.println("validate content mismatch");
-            validateError(fileContent, firstAst, secondAst, firstYaml, secondYaml);
-            return;
-        }
-    }
-
-    private void traceParser(String content, String title) {
-        System.out.println("\n=== Parser Trace for " + title + " ===");
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setDisableFlush(false);
-        YamlAstParser parser = new YamlAstParser().setOptions(options).setReporter(reporter);
-        parser.parse(content);
-        Util.dumpTokens(parser.getTokens());
-        System.out.flush();
-    }
-
-    private void validateError(String fileContent, YamlNode firstAst, YamlNode secondAst, String firstYaml, String secondYaml) {
-        System.out.println("\nFile content:");
-        System.out.println(Util.debugString(fileContent));
-
-        traceParser(fileContent, "File Content");
-        traceParser(firstYaml, "Emitted Content");
-
-        System.out.println("\n=== First AST ===");
-        Util.dumpYamlAst(firstAst, "");
-        System.out.println("\n=== Second AST ===");
-        Util.dumpYamlAst(secondAst, "");
-
-        // System.err.println("\n" + generateDiffMessage(filename, firstYaml, secondYaml) + "\n");
-
-        System.out.println("\n=== FIRST EMIT ===");
-        System.out.println(Util.debugString(firstYaml));
-        System.out.println("\n=== SECOND EMIT ===");
-        System.out.println(Util.debugString(secondYaml));
     }
 }
