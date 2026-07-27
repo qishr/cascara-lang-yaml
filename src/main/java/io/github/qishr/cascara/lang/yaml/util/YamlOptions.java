@@ -32,14 +32,29 @@
 // you do not wish to do so, delete this exception statement from your
 // version.
 
-
 package io.github.qishr.cascara.lang.yaml.util;
 
+import io.github.qishr.cascara.common.diagnostic.LocalizableRuntimeException;
+import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.util.Duplicable;
 
 public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplicable<YamlOptions> {
     public static final YamlOptions DEFAULT = new YamlOptions();
+
+    public static final YamlOptions CANONICAL = new ImmutableYamlOptions(
+        new YamlOptions()
+            .setStripComments(true)
+            .setStripTags(true)
+            .setStripAnchors(true)
+            .setSortKeys(true)
+            .setNormalizeIndent(true)
+            .setNormalizeScalarFormatting(true)
+            .setIndentSize(2)
+            .setExplicitStart(true)
+    );
+
+    private int depthLimit = 500;
 
     private boolean allowUnicode = true;
     private boolean explicitStart = false; // Writes '---' if true
@@ -47,6 +62,56 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     private boolean strict = false;
     private boolean includeComments = false;
     private boolean multiDocument = false;
+
+    private boolean sortKeys = false;
+    private boolean forceQuotes = false; // TODO: Not used
+    private boolean stripComments = false;
+    private boolean stripTags = false;
+    private boolean stripAnchors = false;
+    private boolean normalizeIndent = false;
+    private boolean normalizeScalarFormatting = false;
+
+    public YamlOptions() {}
+
+    public YamlOptions(YamlOptions original) {
+        depthLimit = original.depthLimit;
+
+        allowUnicode = original.allowUnicode;
+        explicitStart = original.explicitStart; // Writes '---' if true
+        expandedStyle = original.expandedStyle;
+        strict = original.strict;
+        includeComments = original.includeComments;
+        multiDocument = original.multiDocument;
+
+        sortKeys = original.sortKeys;
+        forceQuotes = original.forceQuotes; // TODO: Not used
+        stripComments = original.stripComments;
+        stripTags = original.stripTags;
+        stripAnchors = original.stripAnchors;
+
+        normalizeIndent = original.normalizeIndent;
+        normalizeScalarFormatting = original.normalizeScalarFormatting;
+    }
+
+    public int getDepthLimit() {return depthLimit; }
+    public boolean isAllowUnicode() { return allowUnicode; }
+    public boolean isExplicitStart() { return explicitStart; }
+    public boolean isExpandedStyle() { return expandedStyle; }
+    public boolean isStrict() { return strict; }
+    public boolean isIncludeComments() { return includeComments; }
+    public boolean isMultiDocument() { return multiDocument; }
+
+    public boolean stripComments() { return stripComments; }
+    public boolean stripTags() { return stripTags; }
+    public boolean stripAnchors() { return stripAnchors; }
+    public boolean sortKeys() { return sortKeys; }
+    public boolean normalizeIndent() { return normalizeIndent; }
+    public boolean normalizeScalarFormatting() { return normalizeScalarFormatting; }
+
+    public YamlOptions setDepthLimit(int val) {
+        this.depthLimit = val;
+        return this;
+    }
 
     /// Sets whether unicode characters are allowed in scalars.
     public YamlOptions setAllowUnicode(boolean val) {
@@ -80,22 +145,97 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         return this;
     }
 
-    public boolean isAllowUnicode() { return allowUnicode; }
-    public boolean isExplicitStart() { return explicitStart; }
-    public boolean isExpandedStyle() { return expandedStyle; }
-    public boolean isStrict() { return strict; }
-    public boolean isIncludeComments() { return includeComments; }
-    public boolean isMultiDocument() { return multiDocument; }
+    public YamlOptions setStripComments(boolean val) {
+        this.stripComments = val;
+        return this;
+    }
+
+    public YamlOptions setStripTags(boolean val) {
+        this.stripTags = val;
+        return this;
+    }
+
+    public YamlOptions setStripAnchors(boolean val) {
+        this.stripAnchors = val;
+        return this;
+    }
+
+    public YamlOptions setSortKeys(boolean val) {
+        this.sortKeys = val;
+        return this;
+    }
+
+    public YamlOptions setNormalizeIndent(boolean val) {
+        // TODO: Not implemented
+        return this;
+    }
+
+    public YamlOptions setNormalizeScalarFormatting(boolean val) {
+        // TODO: Not implemented
+        return this;
+    }
 
     @Override
     public YamlOptions duplicate() {
-        return new YamlOptions()
-            .setAllowUnicode(allowUnicode)
-            .setExpandedStyle(expandedStyle)
-            .setExplicitStart(explicitStart)
-            .setIncludeComments(includeComments)
-            .setIndentSize(indentSize)
-            .setMultiDocument(multiDocument)
-            .setStrict(strict);
+        return new YamlOptions(this);
+    }
+
+
+    public static class ImmutableYamlOptions extends YamlOptions {
+        public ImmutableYamlOptions(YamlOptions options) {
+            super(options);
+        }
+
+        public YamlOptions setAllowComments(boolean val) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setAllowComments");
+        }
+
+        public YamlOptions setAllowUnicode(boolean val) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setAllowUnicode");
+        }
+
+        public YamlOptions setExplicitStart(boolean val) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setExplicitStart");
+        }
+
+        public YamlOptions setExpandedStyle(boolean val) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setExpandedStyle");
+        }
+
+        public YamlOptions setStrict(boolean val) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setStrict");
+        }
+
+        public YamlOptions setIncludeComments(boolean val) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setIncludeComments");
+        }
+
+        public YamlOptions setMultiDocument(boolean val) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setMultiDocument");
+        }
+
+        public YamlOptions setStripComments(boolean val) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setStripComments");
+        }
+
+        public YamlOptions setStripTags(boolean val) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setStripTags");
+        }
+
+        public YamlOptions setStripAnchors(boolean val) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setStripAnchors");
+        }
+
+        public YamlOptions setSortKeys(boolean val) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setSortKeys");
+        }
+
+        public YamlOptions setNormalizeIndent(boolean val) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setNormalizeIndent");
+        }
+
+        public YamlOptions setNormalizeScalarFormatting(boolean val) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setNormalizeScalarFormatting");
+        }
     }
 }

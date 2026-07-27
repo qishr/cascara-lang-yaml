@@ -35,6 +35,7 @@
 
 module cascara.lang.yaml {
     requires transitive cascara.common;
+    requires javafx.graphics;
 
     exports io.github.qishr.cascara.lang.yaml;
     exports io.github.qishr.cascara.lang.yaml.annotation;
@@ -47,8 +48,9 @@ module cascara.lang.yaml {
     opens io.github.qishr.cascara.lang.yaml.annotation;
     opens io.github.qishr.cascara.lang.yaml.ast;
     opens io.github.qishr.cascara.lang.yaml.exception;
-    opens io.github.qishr.cascara.lang.yaml.processor to cascara.common;
+    opens io.github.qishr.cascara.lang.yaml.processor;
     opens io.github.qishr.cascara.lang.yaml.token;
+    opens io.github.qishr.cascara.lang.yaml.util;
 
     provides io.github.qishr.cascara.common.lang.processor.AstConverter
         with io.github.qishr.cascara.lang.yaml.processor.YamlConverter;

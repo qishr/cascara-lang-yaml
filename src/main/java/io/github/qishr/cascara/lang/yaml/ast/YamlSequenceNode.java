@@ -39,21 +39,24 @@ package io.github.qishr.cascara.lang.yaml.ast;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
+import io.github.qishr.cascara.common.lang.reference.ReferenceNode;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 /// Represents a YAML sequence (a list of items).
 public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNode> {
     private final List<YamlNode> elements = new ArrayList<>();
-    private CollectionStyle style = CollectionStyle.BLOCK;
+    private NodeStyle style = NodeStyle.BLOCK;
     private boolean isExpanded = false; // Default to compact
 
     public YamlSequenceNode() {
         // This method intentionally left blank
     }
 
-    public YamlSequenceNode(int line, int column) {
-        super(line, column);
+    public YamlSequenceNode(YamlToken token) {
+        super(token);
     }
 
     /// {@inheritDoc}
@@ -90,6 +93,22 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
     @Override
     public YamlNode get(int index) { return elements.get(index); }
 
+    @Override
+    public YamlNode getFirst() {
+        if (elements.isEmpty()) {
+            throw new NoSuchElementException();
+        }
+        return elements.getFirst();
+    }
+
+    @Override
+    public YamlNode getLast() {
+        if (elements.isEmpty()) {
+            throw new NoSuchElementException();
+        }
+        return elements.getLast();
+    }
+
     /// {@inheritDoc}
     @Override
     public List<YamlNode> getElements() {
@@ -107,8 +126,8 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
     @Override
     public List<YamlNode> getChildren() { return elements; }
 
-    public CollectionStyle getStyle() { return style; }
-    public YamlSequenceNode setStyle(CollectionStyle style) {
+    public NodeStyle getStyle() { return style; }
+    public YamlSequenceNode setStyle(NodeStyle style) {
          this.style = style;
          return this;
     }

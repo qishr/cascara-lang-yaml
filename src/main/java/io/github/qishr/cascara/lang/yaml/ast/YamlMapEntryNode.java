@@ -44,14 +44,14 @@ public class YamlMapEntryNode extends YamlNode implements MapEntryAstNode<YamlNo
     private final YamlNode key;
     private YamlNode value;
 
-    public YamlMapEntryNode(int line, int column, YamlNode key, YamlNode value) {
-        super(line, column);
-        this.key = key;
-        this.value = value;
-    }
+    // public YamlMapEntryNode(int line, int column, YamlNode key, YamlNode value) {
+    //     super(line, column);
+    //     this.key = key;
+    //     this.value = value;
+    // }
 
     public YamlMapEntryNode(YamlNode key, YamlNode value) {
-        super(0, 0);
+        super(key.getToken());
         this.key = key;
         this.value = value;
     }
