@@ -48,7 +48,6 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.*;
-import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 class YamlStandardComplianceTest {
@@ -81,10 +80,10 @@ class YamlStandardComplianceTest {
     @Test
     void testNestedEmptyCollections() throws Exception {
         String yaml = "empty_map: {}\nempty_seq: []\nnested: [[]]";
-        YamlMapNode root = (YamlMapNode)parser.parse(yaml);
+        YamlMap root = (YamlMap)parser.parse(yaml);
 
-        assertTrue(((YamlMapNode)root.get("empty_map")).getEntries().isEmpty());
-        assertEquals(0, ((YamlSequenceNode)root.get("empty_seq")).size());
+        assertTrue(((YamlMap)root.get("empty_map")).getEntries().isEmpty());
+        assertEquals(0, ((YamlSequence)root.get("empty_seq")).size());
     }
 
     // 2. MIXED BLOCK AND FLOW
@@ -96,10 +95,10 @@ class YamlStandardComplianceTest {
               inner_block:
                 - item
             """;
-        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
+        YamlMap root = (YamlMap) parser.parse(yaml);
 
         // The root contains one key "block_map" which is itself a map
-        YamlMapNode blockMap = (YamlMapNode) root.get("block_map");
+        YamlMap blockMap = (YamlMap) root.get("block_map");
         assertEquals(2, blockMap.getEntries().size());
     }
 
@@ -107,9 +106,9 @@ class YamlStandardComplianceTest {
     @Test
     void testLiteralBlockScalar() throws Exception {
         String yaml = "content: |\n  line one\n  line two";
-        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
+        YamlMap root = (YamlMap) parser.parse(yaml);
 
-        YamlScalarNode scalar = (YamlScalarNode) root.get("content");
+        YamlScalar scalar = (YamlScalar) root.get("content");
         assertTrue(scalar.asString().contains("\n"));
     }
 
@@ -117,10 +116,10 @@ class YamlStandardComplianceTest {
     @Test
     void testExpandedScalarRegression() throws Exception {
         String yaml = "key:\n  -\n    indented_value";
-        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
+        YamlMap root = (YamlMap) parser.parse(yaml);
 
-        YamlSequenceNode seq = (YamlSequenceNode) root.get("key");
-        assertEquals("indented_value", ((YamlScalarNode)seq.get(0)).asString());
+        YamlSequence seq = (YamlSequence) root.get("key");
+        assertEquals("indented_value", ((YamlScalar)seq.get(0)).asString());
     }
 
     // 5. TRAILING COMMENTS AT END OF FILE
@@ -134,7 +133,7 @@ class YamlStandardComplianceTest {
     @Test
     void testDeepNesting() throws Exception {
         String yaml = "a: { b: { c: { d: { e: final } } } }";
-        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
+        YamlMap root = (YamlMap) parser.parse(yaml);
         assertNotNull(root.get("a"));
     }
 
@@ -142,7 +141,7 @@ class YamlStandardComplianceTest {
     @Test
     void testComplexKeys() throws Exception {
         String yaml = "\"quoted key\": value\n'single quoted': value";
-        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
+        YamlMap root = (YamlMap) parser.parse(yaml);
 
         assertEquals(2, root.getEntries().size());
         assertEquals("value", root.getString("quoted key"));
@@ -166,7 +165,7 @@ class YamlStandardComplianceTest {
     @Test
     void testTypeInference() throws Exception {
         String yaml = "bool: true\nnum: 123.45";
-        YamlMapNode root = (YamlMapNode) parser.parse(yaml);
+        YamlMap root = (YamlMap) parser.parse(yaml);
 
         assertTrue(root.getBoolean("bool"));
         assertEquals(123.45, root.getDouble("num"), 0.001);
@@ -177,7 +176,7 @@ class YamlStandardComplianceTest {
     void testEmptyLinesAndTabs() throws Exception {
         String yaml = "key: value\n\n\n    \nnext: value";
         assertDoesNotThrow(() -> {
-            YamlMapNode root = (YamlMapNode) parser.parse(yaml);
+            YamlMap root = (YamlMap) parser.parse(yaml);
             assertEquals(2, root.getEntries().size());
         });
     }

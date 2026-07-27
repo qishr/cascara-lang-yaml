@@ -45,15 +45,15 @@ import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Emitter;
 import io.github.qishr.cascara.lang.yaml.ast.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
-import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlCommentNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlDocumentNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
+import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
+import io.github.qishr.cascara.lang.yaml.ast.YamlComment;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlStreamNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
+import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 
 /// Responsible for converting a [YamlNode] AST back into a valid YAML string.
 ///
@@ -90,16 +90,16 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
     /// Primary entry point for emitting a full document or a multi-document stream.
     ///
-    /// @param root AST root (can be a YamlStreamNode, YamlMapNode, YamlSequenceNode, or YamlScalarNode).
+    /// @param root AST root (can be a YamlStreamNode, YamlMap, YamlSequenceNode, or YamlScalarNode).
     /// @return A formatted YAML string.
     public String emit(YamlNode root) {
         writtenAnchors.clear();
         sb.setLength(0);
 
-        if (root instanceof YamlStreamNode stream) {
+        if (root instanceof YamlStream stream) {
             var documents = stream.getDocuments();
             for (int i = 0; i < documents.size(); i++) {
-                YamlDocumentNode doc = documents.get(i);
+                YamlDocument doc = documents.get(i);
 
                 // Write explicit document markers if there are multiple documents,
                 // or if the document explicitly contains directives.
@@ -139,12 +139,12 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         // 1. Extract the actual target data node if wrapped in an Anchor decorator
         YamlNode targetNode = node;
-        while (targetNode instanceof YamlAnchorNode wrapper) {
+        while (targetNode instanceof YamlAnchor wrapper) {
             targetNode = wrapper.getInnerNode();
         }
 
         // 2. ALIAS CHECK
-        if (targetNode instanceof YamlAliasNode alias) {
+        if (targetNode instanceof YamlAlias alias) {
             sb.append("*").append(alias.getAlias());
             return;
         }
@@ -159,7 +159,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             String anchor = targetNode.getAnchor();
             if (anchor != null && !anchor.isEmpty()) {
                 sb.append("&").append(anchor);
-                if (targetNode instanceof YamlScalarNode) sb.append(" ");
+                if (targetNode instanceof YamlScalar) sb.append(" ");
             }
         }
 
@@ -169,19 +169,19 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         }
 
         // 4. STRUCTURAL EVALUATION (Checking targetNode instead of node)
-        if (targetNode instanceof YamlScalarNode scalar) {
+        if (targetNode instanceof YamlScalar scalar) {
             // If we are a sequence item on the same line as the dash,
             // the dash and space ARE the indent for the first line.
             int scalarIndent = isSequenceItem ? 0 : indent;
             emitScalarInternal(scalar, scalarIndent, isFlow, false);
-        } else if (targetNode instanceof YamlMapNode map) {
+        } else if (targetNode instanceof YamlMap map) {
             if (map.getStyle() == NodeStyle.FLOW) {
                 emitFlowMap(map);
                 if (!isFlow) sb.append(NL);
             } else {
                 emitMap(map, indent, isSequenceItem);
             }
-        } else if (targetNode instanceof YamlSequenceNode seq) {
+        } else if (targetNode instanceof YamlSequence seq) {
             if (seq.getStyle() == NodeStyle.FLOW) {
                 emitFlowSequence(seq);
                 if (!isFlow) sb.append(NL);
@@ -192,7 +192,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     }
 
     /// Handles scalar formatting including Literal (|), Folded (>), and quoted styles.
-    private void emitScalarInternal(YamlScalarNode scalar, int indent, boolean isFlow, boolean isBlockStyle) {
+    private void emitScalarInternal(YamlScalar scalar, int indent, boolean isFlow, boolean isBlockStyle) {
         if (scalar == null) return;
 
         // TODO: Handle literal null here?
@@ -370,7 +370,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     }
 
     /// Iterates over map entries, managing key-value pairs and block/flow transitions.
-    private void emitMap(YamlMapNode map, int indent, boolean isSequenceItem) {
+    private void emitMap(YamlMap map, int indent, boolean isSequenceItem) {
         if (map == null) return;
         var entries = map.getEntries();
         if (options.sortKeys()) {
@@ -387,14 +387,14 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             YamlNode key = entry.getKey();
 
             for (CommentAstNode c : key.getComments()) {
-                if (c instanceof YamlCommentNode ycn && ycn.getStartLine() < key.getStartLine()) {
+                if (c instanceof YamlComment ycn && ycn.getStartLine() < key.getStartLine()) {
                     sb.append("#").append(ycn.asString()).append(NL).append(" ".repeat(indent));
                 }
             }
 
             // Determine if this key requires an explicit complex layout block ('?')
-            boolean isComplexKey = (key instanceof YamlMapNode m && m.getStyle() == NodeStyle.BLOCK) ||
-                                  (key instanceof YamlSequenceNode s && s.getStyle() == NodeStyle.BLOCK);
+            boolean isComplexKey = (key instanceof YamlMap m && m.getStyle() == NodeStyle.BLOCK) ||
+                                  (key instanceof YamlSequence s && s.getStyle() == NodeStyle.BLOCK);
 
             if (isComplexKey) {
                 sb.append("?").append(NL);
@@ -409,8 +409,8 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             }
 
             YamlNode value = entry.getValue();
-            boolean isBlock = (value instanceof YamlMapNode m && m.getStyle() == NodeStyle.BLOCK) ||
-                              (value instanceof YamlSequenceNode s && s.getStyle() == NodeStyle.BLOCK);
+            boolean isBlock = (value instanceof YamlMap m && m.getStyle() == NodeStyle.BLOCK) ||
+                              (value instanceof YamlSequence s && s.getStyle() == NodeStyle.BLOCK);
 
             if (isBlock) {
                 if (!isComplexKey) {
@@ -423,7 +423,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                 emitNode(value, indent + options.getIndentSize(), false, false);
             }
             // Handle multiline string block scalars cleanly (only for plain/block targeted text)
-            else if (value instanceof YamlScalarNode scalar
+            else if (value instanceof YamlScalar scalar
                     && scalar.getQuoteStyle() != QuoteStyle.DOUBLE
                     && scalar.getQuoteStyle() != QuoteStyle.SINGLE
                     && scalar.asString() != null
@@ -481,7 +481,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     /// -
     ///   key: value
     /// ```
-    private void emitSequence(YamlSequenceNode seq, int indent, boolean isSequenceItem) {
+    private void emitSequence(YamlSequence seq, int indent, boolean isSequenceItem) {
         if (seq == null) return;
         var elements = seq.getElements();
         for (int i = 0; i < elements.size(); i++) {
@@ -505,17 +505,17 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                     handleExpandedItem(item, indent);
                 }
             }
-            else if (item instanceof YamlMapNode m && m.getStyle() == NodeStyle.BLOCK) {
+            else if (item instanceof YamlMap m && m.getStyle() == NodeStyle.BLOCK) {
                 sb.append(" ");
                 emitMap(m, indent + 2, true);
             }
-            else if (item instanceof YamlSequenceNode s && s.getStyle() == NodeStyle.BLOCK) {
+            else if (item instanceof YamlSequence s && s.getStyle() == NodeStyle.BLOCK) {
                 sb.append(NL);
                 emitNode(item, indent + options.getIndentSize(), false, false);
             }
             else {
                 // COMPACT / FLOW / SCALAR
-                if (item instanceof YamlScalarNode scalar
+                if (item instanceof YamlScalar scalar
                         && scalar.getQuoteStyle() != QuoteStyle.DOUBLE
                         && scalar.getQuoteStyle() != QuoteStyle.SINGLE
                         && scalar.asString() != null
@@ -544,11 +544,11 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     }
 
     private boolean isImplicitNull(YamlNode node) {
-        return node instanceof YamlScalarNode s && s.asString() == null;
+        return node instanceof YamlScalar s && s.asString() == null;
     }
 
     private void handleExpandedItem(YamlNode item, int indent) {
-        // boolean itemIsFlow = (item instanceof YamlMapNode m && m.getStyle() == NodeStyle.FLOW) ||
+        // boolean itemIsFlow = (item instanceof YamlMap m && m.getStyle() == NodeStyle.FLOW) ||
         //                      (item instanceof YamlSequenceNode s && s.getStyle() == NodeStyle.FLOW);
 
         boolean itemIsFlow = item.getNodeStyle() == NodeStyle.FLOW;
@@ -563,13 +563,13 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         }
     }
 
-    private void emitFlowMap(YamlMapNode map) {
+    private void emitFlowMap(YamlMap map) {
         if (map == null) return;
         sb.append("{");
         var entries = map.getEntries();
         for (int i = 0; i < entries.size(); i++) {
             var entry = entries.get(i);
-            if (entry.getKey() instanceof YamlScalarNode s) sb.append(s.asString());
+            if (entry.getKey() instanceof YamlScalar s) sb.append(s.asString());
             sb.append(": ");
             emitNode(entry.getValue(), 0, false, true);
             if (i < entries.size() - 1) sb.append(", ");
@@ -577,7 +577,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         sb.append("}");
     }
 
-    private void emitFlowSequence(YamlSequenceNode seq) {
+    private void emitFlowSequence(YamlSequence seq) {
         if (seq == null) return;
         sb.append("[");
         var items = seq.getElements();
@@ -592,7 +592,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     private void emitBlockComments(YamlNode node, int indent) {
         if (node == null) return;
         for (CommentAstNode comment : node.getComments()) {
-            if (comment instanceof YamlCommentNode ycn && ycn.getStartColumn() <= 1) {
+            if (comment instanceof YamlComment ycn && ycn.getStartColumn() <= 1) {
                 sb.append(" ".repeat(indent)).append("#").append(ycn.asString()).append(NL);
             }
         }
@@ -602,7 +602,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     private void handleInlineComments(YamlNode node) {
         if (node == null) return;
         for (CommentAstNode comment : node.getComments()) {
-            if (comment instanceof YamlCommentNode ycn && ycn.getStartColumn() > 1) {
+            if (comment instanceof YamlComment ycn && ycn.getStartColumn() > 1) {
                 sb.append(" #").append(ycn.asString());
                 break;
             }

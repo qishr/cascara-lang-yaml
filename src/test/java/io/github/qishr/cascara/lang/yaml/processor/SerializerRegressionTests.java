@@ -41,10 +41,9 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.lang.exception.SerializerException;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
-import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.util.ContentTypeRegistryTestClass;
 import io.github.qishr.cascara.lang.yaml.util.ContentTypeTestClass;
 
@@ -64,19 +63,19 @@ public class SerializerRegressionTests {
 
         YamlSerializer yamlSerializer = new YamlSerializer();
         YamlNode yaml = yamlSerializer.toAst(registry);
-        assertInstanceOf(YamlMapNode.class, yaml);
+        assertInstanceOf(YamlMap.class, yaml);
 
-        YamlMapNode registryNode = (YamlMapNode) yaml;
+        YamlMap registryNode = (YamlMap) yaml;
 
         YamlNode recordsNode = registryNode.get("records");
-        assertInstanceOf(YamlSequenceNode.class, recordsNode);
+        assertInstanceOf(YamlSequence.class, recordsNode);
 
-        YamlSequenceNode recordsSequence = (YamlSequenceNode) recordsNode;
+        YamlSequence recordsSequence = (YamlSequence) recordsNode;
 
         YamlNode element1 = recordsSequence.get(0);
-        assertInstanceOf(YamlMapNode.class, element1);
+        assertInstanceOf(YamlMap.class, element1);
 
-        YamlMapNode item1MapNode = (YamlMapNode) element1;
+        YamlMap item1MapNode = (YamlMap) element1;
         assertEquals("Plain Text", item1MapNode.getString("canonicalName"));
      }
 }

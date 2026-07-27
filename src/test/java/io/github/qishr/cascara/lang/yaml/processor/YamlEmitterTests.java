@@ -42,12 +42,12 @@ import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public class YamlEmitterTests {
@@ -61,9 +61,9 @@ public class YamlEmitterTests {
         String emitted = emitter.emit(root);
 
         System.out.println("IN:");
-        System.out.println(TestUtil.debugString(original));
+        System.out.println(StringUtils.debugString(original));
         System.out.println("OUT:");
-        System.out.println(TestUtil.debugString(emitted));
+        System.out.println(StringUtils.debugString(emitted));
 
         assertEquals(original.trim(), emitted.trim());
     }
@@ -89,7 +89,7 @@ public class YamlEmitterTests {
         //     System.err.print(s);
         // }).setLevel(Level.TRACE));
 
-        YamlMapNode yaml = (YamlMapNode)parser.parse(original);
+        YamlMap yaml = (YamlMap)parser.parse(original);
 
         YamlEmitter emitter = new YamlEmitter();
         String result = emitter.emit(yaml);
@@ -114,12 +114,12 @@ public class YamlEmitterTests {
     @Test
     void testExpandedStyleSequence() {
         // Create a simple sequence: ["java", "yaml"]
-        YamlSequenceNode seq = new YamlSequenceNode();
-        seq.add(new YamlScalarNode("java", ScalarStyle.PLAIN));
-        seq.add(new YamlScalarNode("yaml", ScalarStyle.PLAIN));
+        YamlSequence seq = new YamlSequence();
+        seq.add(new YamlScalar("java", ScalarStyle.PLAIN));
+        seq.add(new YamlScalar("yaml", ScalarStyle.PLAIN));
 
         // Wrap it in a document for the emitter
-        YamlMapNode root = new YamlMapNode();
+        YamlMap root = new YamlMap();
 
         root.put("tags", seq);
 
@@ -152,9 +152,9 @@ public class YamlEmitterTests {
         String output = emitter.emit(root);
 
         System.out.println("IN:");
-        System.out.println(TestUtil.debugString(yaml));
+        System.out.println(StringUtils.debugString(yaml));
         System.out.println("OUT:");
-        System.out.println(TestUtil.debugString(output));
+        System.out.println(StringUtils.debugString(output));
 
         TestUtil.assertEquals(yaml, output);
     }

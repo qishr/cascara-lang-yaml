@@ -42,20 +42,19 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
-import io.github.qishr.cascara.common.lang.reference.ReferenceNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 /// Represents a YAML sequence (a list of items).
-public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNode> {
+public class YamlSequence extends YamlNode implements SequenceAstNode<YamlNode> {
     private final List<YamlNode> elements = new ArrayList<>();
     private NodeStyle style = NodeStyle.BLOCK;
     private boolean isExpanded = false; // Default to compact
 
-    public YamlSequenceNode() {
+    public YamlSequence() {
         // This method intentionally left blank
     }
 
-    public YamlSequenceNode(YamlToken token) {
+    public YamlSequence(YamlToken token) {
         super(token);
     }
 
@@ -67,7 +66,7 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
 
     /// {@inheritDoc}
     @Override
-    public YamlSequenceNode remove(int index) {
+    public YamlSequence remove(int index) {
         if (index >= 0 && index < elements.size()) {
             elements.remove(index);
         }
@@ -76,14 +75,14 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
 
     /// {@inheritDoc}
     @Override
-    public YamlSequenceNode clear() {
+    public YamlSequence clear() {
         elements.clear();
         return this;
     }
 
     /// Appends an item to the sequence.
     @Override
-    public YamlSequenceNode add(YamlNode item) { elements.add(item); return this; }
+    public YamlSequence add(YamlNode item) { elements.add(item); return this; }
 
     /// {@inheritDoc}
     @Override
@@ -117,7 +116,7 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
 
     /// {@inheritDoc}
     @Override
-    public YamlSequenceNode remove(YamlNode node) {
+    public YamlSequence remove(YamlNode node) {
         elements.remove(node);
         return this;
     }
@@ -127,7 +126,7 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
     public List<YamlNode> getChildren() { return elements; }
 
     public NodeStyle getStyle() { return style; }
-    public YamlSequenceNode setStyle(NodeStyle style) {
+    public YamlSequence setStyle(NodeStyle style) {
          this.style = style;
          return this;
     }
@@ -141,11 +140,11 @@ public class YamlSequenceNode extends YamlNode implements SequenceAstNode<YamlNo
     }
 
     static class SequenceIterator<T> implements Iterator<YamlNode> {
-        YamlSequenceNode list;
+        YamlSequence list;
         int currentIndex = 0;
 
         // initialize pointer to head of the list for iteration
-        public SequenceIterator(YamlSequenceNode list) {
+        public SequenceIterator(YamlSequence list) {
             this.list = list;
         }
 
