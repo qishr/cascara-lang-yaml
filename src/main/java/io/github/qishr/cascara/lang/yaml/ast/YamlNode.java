@@ -39,9 +39,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 /// Base implementation for all YAML AST nodes.
 ///
@@ -57,6 +59,8 @@ public abstract class YamlNode implements AstNode {
     private String anchor;
     private String tag;
     protected YamlToken token;
+    protected YamlOptions options;
+    protected NodeStyle nodeStyle;
 
     protected YamlNode() {
         startLine = 0;
@@ -65,22 +69,49 @@ public abstract class YamlNode implements AstNode {
 
     public abstract void accept(YamlVisitor visitor);
 
-    /// Constructs a new YamlNode with specific source coordinates.
+    /// Constructs a new YamlNode with specific source coordinates
+    /// obtained from a YamLToken
     ///
-    /// @param line   The 1-based line number in the source document.
-    /// @param column The 1-based column number in the source document.
-    protected YamlNode(int line, int column) {
-        this.startLine = line;
-        this.startColumn = column;
+    /// @param token The YAML token.
+    protected YamlNode(YamlToken token) {
+        this(token, YamlOptions.DEFAULT);
     }
 
-    protected YamlNode(YamlToken token) {
-        if (token == null) {
-            throw new IllegalArgumentException("token must not be null");
-        }
+    /// Constructs a new YamlNode with specific source coordinates
+    /// obtained from a YamLToken and a set of YAML options.
+    ///
+    /// @param token   The YAML token.
+    /// @param options The YAML options.
+    protected YamlNode(YamlToken token, YamlOptions options) {
+        int line = token == null ? Diagnostic.UNKNOWN_COORD : token.getStartLine();
+        int column = token == null ? Diagnostic.UNKNOWN_COORD : token.getStartColumn();
+        this(line, column, options);
         this.token = token;
-        this.startLine = token.getStartLine();
-        this.startColumn = token.getStartColumn();
+    }
+
+    /// Constructs a new YamlNode with specific source coordinates
+    /// and a set of YAML options.
+    ///
+    /// @param line    The line number (1-based).
+    /// @param column  The column number (1-based).
+    /// @param options The YAML options.
+    protected YamlNode(int line, int column, YamlOptions options) {
+        this.startLine = line;
+        this.startColumn = column;
+        this.options = options;
+    }
+
+    public YamlOptions getOptions() {
+        return options;
+    }
+
+    public NodeStyle getNodeStyle() {
+        return nodeStyle;
+    }
+
+    public YamlNode setNodeStyle(NodeStyle nodeStyle) {
+        this.nodeStyle = nodeStyle;
+        return this;
     }
 
     public String getTag() { return tag; }

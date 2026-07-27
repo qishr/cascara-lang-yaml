@@ -40,5 +40,6 @@ public enum ScalarStyle {
     SINGLE_QUOTED,
     DOUBLE_QUOTED,
     LITERAL, // |
-    FOLDED   // >
+    FOLDED,  // >
+    UNDETERMINED
 }

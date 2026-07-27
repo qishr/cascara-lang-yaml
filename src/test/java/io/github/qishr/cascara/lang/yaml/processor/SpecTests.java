@@ -41,8 +41,8 @@ public class SpecTests {
     void setup() {
         reporter = new StandardReporter()
             .setLevel(PARSER_LEVEL)
-            .setUseAnsiColors(true)
-            .setDisableFlush(true);
+            .setAnsiColoringEnabled(true)
+            .setFlushEnabled(false);
 
         parser = new YamlAstParser()
             .setReporter(reporter);
@@ -260,7 +260,7 @@ public class SpecTests {
         List<Diagnostic> diagnostics = new ArrayList<>();
         StandardReporter reporter = new StandardReporter()
             // .setLevel(LEVEL)
-            .setUseAnsiColors(true)
+            .setAnsiColoringEnabled(true)
             .setDiagnosticCollector(d -> {
                 diagnostics.add(d);
             });
@@ -379,7 +379,7 @@ public class SpecTests {
         YamlNode body = YamlNormalizer.normalize(doc.getBody());
 
         assertInstanceOf(YamlMapNode.class, body);
-        YamlMapNode map = (YamlMapNode) body;
+        // YamlMapNode map = (YamlMapNode) body;
 
     }
 
@@ -663,15 +663,8 @@ public class SpecTests {
         YamlMapNode map = (YamlMapNode)body;
         assertEquals(2, map.size());
 
-        YamlScalarNode a = map.getScalar("foo\nbar:baz\\tx \\$%^&*()x");
-        YamlScalarNode b = map.getScalar("x\\ny:z\\tx $%^&*()x");
-
         assertEquals(23, map.getScalar("foo\nbar:baz\tx \\$%^&*()x").asInteger());
         assertEquals(24, map.getScalar("x\\ny:z\\tx $%^&*()x").asInteger());
-
-
-        // "foo\nbar:baz\tx \\$%^&*()x": 23,
-        // "x\\ny:z\\tx $%^&*()x": 24
     }
 
     @Test
@@ -703,7 +696,7 @@ public class SpecTests {
         // parser.getTokenizer().setReporter(
         //     new StandardReporter()
         //         .setLevel(TOKENIZER_LEVEL)
-        //         .setUseAnsiColors(true)
+        //         .setAnsiColoringEnabled(true)
         // );
 
         YamlStreamNode stream = parser.parseMulti(yaml);
@@ -734,7 +727,7 @@ public class SpecTests {
         parser.getTokenizer().setReporter(
             new StandardReporter()
                 .setLevel(TOKENIZER_LEVEL)
-                .setUseAnsiColors(true)
+                .setAnsiColoringEnabled(true)
         );
 
         YamlStreamNode stream = parser.parseMulti(yaml);

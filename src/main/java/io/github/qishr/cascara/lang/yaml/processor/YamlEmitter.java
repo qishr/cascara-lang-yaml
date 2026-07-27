@@ -43,7 +43,8 @@ import java.util.Set;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.processor.Emitter;
-import io.github.qishr.cascara.lang.yaml.ast.CollectionStyle;
+import io.github.qishr.cascara.lang.yaml.ast.NodeStyle;
+import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlCommentNode;
@@ -56,7 +57,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlStreamNode;
 
 /// Responsible for converting a [YamlNode] AST back into a valid YAML string.
 ///
-/// This emitter is high-fidelity: it prioritizes preserving the original [CollectionStyle]
+/// This emitter is high-fidelity: it prioritizes preserving the original [NodeStyle]
 /// and [QuoteStyle] of nodes while ensuring that comments are placed correctly relative
 /// to their owner nodes.
 ///
@@ -174,14 +175,14 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             int scalarIndent = isSequenceItem ? 0 : indent;
             emitScalarInternal(scalar, scalarIndent, isFlow, false);
         } else if (targetNode instanceof YamlMapNode map) {
-            if (map.getStyle() == CollectionStyle.FLOW) {
+            if (map.getStyle() == NodeStyle.FLOW) {
                 emitFlowMap(map);
                 if (!isFlow) sb.append(NL);
             } else {
                 emitMap(map, indent, isSequenceItem);
             }
         } else if (targetNode instanceof YamlSequenceNode seq) {
-            if (seq.getStyle() == CollectionStyle.FLOW) {
+            if (seq.getStyle() == NodeStyle.FLOW) {
                 emitFlowSequence(seq);
                 if (!isFlow) sb.append(NL);
             } else {
@@ -192,7 +193,11 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
     /// Handles scalar formatting including Literal (|), Folded (>), and quoted styles.
     private void emitScalarInternal(YamlScalarNode scalar, int indent, boolean isFlow, boolean isBlockStyle) {
-        if (scalar == null) return; // TODO: literal null
+        if (scalar == null) return;
+
+        // TODO: Handle literal null here?
+
+
 
         // if (scalar.getToken() != null && scalar.getToken().getLexeme() != null) {
         //     String lex = scalar.getToken().getLexeme();
@@ -207,14 +212,10 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         //     return;
         // }
 
-
-
         if (scalar.getToken() != null) {
             String lexeme = scalar.getToken().getLexeme();
             if (lexeme != null) {
                 if (isBlockStyle) {
-                    // sb.append("\n");
-
                     String[] lexemeLines = lexeme.split("\n");
                     for (int i = 0; i < lexemeLines.length; i++) {
                         if (i > 0) {
@@ -222,15 +223,11 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                             sb.append(" ".repeat(scalar.getStartColumn() - 1));
                         } else {
                         }
-                    // for (String lexemeLine : lexemeLines) {
-                        // sb.append(" ".repeat(indent));
-
                         sb.append(lexemeLines[i]);
                     }
                     sb.append(NL);
-                    // sb.append(" ".repeat(indent));
-                    // sb.append(lexeme);
                 } else {
+                    if (!isFlow) sb.append(" ".repeat(indent));
                     // sb.append(" ".repeat(indent));
                     sb.append(lexeme);
                 }
@@ -243,6 +240,10 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                     // if (!isBlockStyle) {
                     //     sb.append(NL);
                     // }
+                }
+
+                if (lexeme.equals("b")) {
+                    System.out.println("Debug");
                 }
 
                 return;
@@ -260,22 +261,22 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             return;
         }
 
-        QuoteStyle style;
+        ScalarStyle style;
         if (options.normalizeScalarFormatting()) {
-            style = QuoteStyle.DOUBLE;
+            style = ScalarStyle.DOUBLE_QUOTED;
         } else {
-            style = scalar.getQuoteStyle();
+            style = scalar.getScalarStyle();
         }
 
         // AUTO-PROMOTION: If the style is PLAIN but the text contains newlines,
         // force it to LITERAL_BLOCK so it serializes into a valid block scalar.
-        if (!isFlow && style == QuoteStyle.PLAIN && (val.contains("\n") || val.contains("\r"))) {
-            style = QuoteStyle.LITERAL_BLOCK;
+        if (!isFlow && style == ScalarStyle.PLAIN && (val.contains("\n") || val.contains("\r"))) {
+            style = ScalarStyle.LITERAL;
         }
 
         // 2. Block Literal (|) and Folded (>)
-        if ((style == QuoteStyle.LITERAL_BLOCK || style == QuoteStyle.FOLDED) && !isFlow) {
-            sb.append(style == QuoteStyle.LITERAL_BLOCK ? "|" : ">").append(NL);
+        if ((style == ScalarStyle.LITERAL || style == ScalarStyle.FOLDED) && !isFlow) {
+            sb.append(style == ScalarStyle.LITERAL ? "|" : ">").append(NL);
 
             int blockIndent = indent + options.getIndentSize();
             String indentation = " ".repeat(blockIndent);
@@ -301,7 +302,6 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         // IF NOT IS FLOW, this is a standalone root scalar or similar
         if (!isFlow) {
-            // handleInlineComments(scalar);
             if (!options.stripComments()) {
                 handleInlineComments(scalar);
             }
@@ -309,18 +309,18 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         }
     }
 
-    private String formatAndIndentMultiline(String text, QuoteStyle style, int amount) {
+    private String formatAndIndentMultiline(String text, ScalarStyle style, int amount) {
         if (text == null) return "";
 
         // Match the original plain scalar fallback rule:
         // If it's plain but unsafe (like containing a newline), force it to DOUBLE quotes.
-        if (style == QuoteStyle.PLAIN && !isSafePlain(text)) {
-            style = QuoteStyle.DOUBLE;
+        if (style == ScalarStyle.PLAIN && !isSafePlain(text)) {
+            style = ScalarStyle.DOUBLE_QUOTED;
         }
 
         if (text.isEmpty()) {
-            if (style == QuoteStyle.DOUBLE) return "\"\"";
-            if (style == QuoteStyle.SINGLE) return "''";
+            if (style == ScalarStyle.DOUBLE_QUOTED) return "\"\"";
+            if (style == ScalarStyle.SINGLE_QUOTED) return "''";
             return "";
         }
 
@@ -329,17 +329,17 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         String indentation = " ".repeat(amount);
         StringBuilder result = new StringBuilder();
 
-        if (style == QuoteStyle.DOUBLE) {
+        if (style == ScalarStyle.DOUBLE_QUOTED) {
             result.append("\"");
-        } else if (style == QuoteStyle.SINGLE) {
+        } else if (style == ScalarStyle.SINGLE_QUOTED) {
             result.append("'");
         }
 
         for (int i = 0; i < lines.length; i++) {
             String processedLine;
-            if (style == QuoteStyle.DOUBLE) {
+            if (style == ScalarStyle.DOUBLE_QUOTED) {
                 processedLine = escapeDoubleQuotesInline(lines[i]);
-            } else if (style == QuoteStyle.SINGLE) {
+            } else if (style == ScalarStyle.SINGLE_QUOTED) {
                 processedLine = lines[i].replace("'", "''");
             } else {
                 processedLine = lines[i];
@@ -353,9 +353,9 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             }
         }
 
-        if (style == QuoteStyle.DOUBLE) {
+        if (style == ScalarStyle.DOUBLE_QUOTED) {
             result.append("\"");
-        } else if (style == QuoteStyle.SINGLE) {
+        } else if (style == ScalarStyle.SINGLE_QUOTED) {
             result.append("'");
         }
 
@@ -393,8 +393,8 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             }
 
             // Determine if this key requires an explicit complex layout block ('?')
-            boolean isComplexKey = (key instanceof YamlMapNode m && m.getStyle() == CollectionStyle.BLOCK) ||
-                                  (key instanceof YamlSequenceNode s && s.getStyle() == CollectionStyle.BLOCK);
+            boolean isComplexKey = (key instanceof YamlMapNode m && m.getStyle() == NodeStyle.BLOCK) ||
+                                  (key instanceof YamlSequenceNode s && s.getStyle() == NodeStyle.BLOCK);
 
             if (isComplexKey) {
                 sb.append("?").append(NL);
@@ -409,8 +409,8 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             }
 
             YamlNode value = entry.getValue();
-            boolean isBlock = (value instanceof YamlMapNode m && m.getStyle() == CollectionStyle.BLOCK) ||
-                              (value instanceof YamlSequenceNode s && s.getStyle() == CollectionStyle.BLOCK);
+            boolean isBlock = (value instanceof YamlMapNode m && m.getStyle() == NodeStyle.BLOCK) ||
+                              (value instanceof YamlSequenceNode s && s.getStyle() == NodeStyle.BLOCK);
 
             if (isBlock) {
                 if (!isComplexKey) {
@@ -505,11 +505,11 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                     handleExpandedItem(item, indent);
                 }
             }
-            else if (item instanceof YamlMapNode m && m.getStyle() == CollectionStyle.BLOCK) {
+            else if (item instanceof YamlMapNode m && m.getStyle() == NodeStyle.BLOCK) {
                 sb.append(" ");
                 emitMap(m, indent + 2, true);
             }
-            else if (item instanceof YamlSequenceNode s && s.getStyle() == CollectionStyle.BLOCK) {
+            else if (item instanceof YamlSequenceNode s && s.getStyle() == NodeStyle.BLOCK) {
                 sb.append(NL);
                 emitNode(item, indent + options.getIndentSize(), false, false);
             }
@@ -523,7 +523,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                     // It's a multiline string scalar! It CANNOT be inline/flowed after a compact dash.
                     // It must trigger a newline and follow block formatting guidelines.
                     sb.append(NL);
-                    emitScalarInternal(scalar, indent + options.getIndentSize(), false, false);
+                    emitScalarInternal(scalar, indent + options.getIndentSize(), false, false); // TODO: Should isBlockStyle not be true here?
                 }
                 else {
                     // True compact inline scalars / flow collections
@@ -548,8 +548,10 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     }
 
     private void handleExpandedItem(YamlNode item, int indent) {
-        boolean itemIsFlow = (item instanceof YamlMapNode m && m.getStyle() == CollectionStyle.FLOW) ||
-                             (item instanceof YamlSequenceNode s && s.getStyle() == CollectionStyle.FLOW);
+        // boolean itemIsFlow = (item instanceof YamlMapNode m && m.getStyle() == NodeStyle.FLOW) ||
+        //                      (item instanceof YamlSequenceNode s && s.getStyle() == NodeStyle.FLOW);
+
+        boolean itemIsFlow = item.getNodeStyle() == NodeStyle.FLOW;
 
         if (itemIsFlow) {
             sb.append(" ".repeat(indent + options.getIndentSize()));
@@ -557,6 +559,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             sb.append(NL);
         } else {
             emitNode(item, indent + options.getIndentSize(), false, false);
+            // sb.append(NL);
         }
     }
 

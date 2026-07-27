@@ -40,6 +40,7 @@ import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 import io.github.qishr.cascara.common.lang.token.Token;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
@@ -426,7 +427,7 @@ public class YamlStreamEngine {
 
         if (currentToken.getType() == YamlTokenType.SCALAR) {
             String value = currentToken.getContent();
-            QuoteStyle style = currentToken.getQuoteStyle();
+            ScalarStyle style = currentToken.getScalarStyle();
 
             // Literal block: already has correct newlines from tokenizer
             // Folded block: already folded by tokenizer

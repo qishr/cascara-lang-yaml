@@ -142,8 +142,8 @@ class YamlAstParserTest {
         YamlSequenceNode compact = (YamlSequenceNode) root.get("compact");
         YamlSequenceNode expanded = (YamlSequenceNode) root.get("expanded");
 
-        assertEquals(CollectionStyle.FLOW, compact.getStyle());
-        assertEquals(CollectionStyle.BLOCK, expanded.getStyle());
+        assertEquals(NodeStyle.FLOW, compact.getStyle());
+        assertEquals(NodeStyle.BLOCK, expanded.getStyle());
     }
 
     @Test

@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
@@ -114,8 +115,8 @@ public class YamlEmitterTests {
     void testExpandedStyleSequence() {
         // Create a simple sequence: ["java", "yaml"]
         YamlSequenceNode seq = new YamlSequenceNode();
-        seq.add(new YamlScalarNode("java", QuoteStyle.PLAIN));
-        seq.add(new YamlScalarNode("yaml", QuoteStyle.PLAIN));
+        seq.add(new YamlScalarNode("java", ScalarStyle.PLAIN));
+        seq.add(new YamlScalarNode("yaml", ScalarStyle.PLAIN));
 
         // Wrap it in a document for the emitter
         YamlMapNode root = new YamlMapNode();

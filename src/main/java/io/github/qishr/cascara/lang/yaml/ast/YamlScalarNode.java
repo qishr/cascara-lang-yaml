@@ -50,7 +50,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     // private final String content;
 
     private PrimitiveType primitiveType;
-    private QuoteStyle quoteStyle = QuoteStyle.UNDETERMINED;
+    // private QuoteStyle quoteStyle = QuoteStyle.UNDETERMINED;
 
     // dialect-aware native value cache
     private Object jvmValue;
@@ -60,7 +60,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     private boolean isStringValueCached = false;
 
     private String originalContent;
-    private ScalarStyle scalarStyle;
+    private ScalarStyle scalarStyle = ScalarStyle.UNDETERMINED;
     private ChompingStyle chompingStyle;
     private boolean isMultiLine;
 
@@ -78,8 +78,12 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         super(token);
         this.originalContent = token.getContent();
         this.primitiveType = primitiveType;
-        this.quoteStyle = token.getQuoteStyle();
+        this.scalarStyle = token.getScalarStyle();
         this.options = (options == null) ? YamlOptions.DEFAULT : options;
+
+        nodeStyle = (scalarStyle == ScalarStyle.LITERAL || scalarStyle == ScalarStyle.FOLDED)
+            ? NodeStyle.BLOCK
+            : NodeStyle.FLOW;
     }
 
     /// Constructor for use in parsers.
@@ -90,14 +94,18 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         YamlToken token,
         String content,
         PrimitiveType primitiveType,
-        QuoteStyle quoteStyle,
+        ScalarStyle scalarStyle,
         YamlOptions options
     ) {
         super(token);
         this.originalContent = content;
         this.primitiveType = primitiveType;
-        this.quoteStyle = quoteStyle;
+        this.scalarStyle = scalarStyle;
         this.options = (options == null) ? YamlOptions.DEFAULT : options;
+
+        nodeStyle = (scalarStyle == ScalarStyle.LITERAL || scalarStyle == ScalarStyle.FOLDED)
+            ? NodeStyle.BLOCK
+            : NodeStyle.FLOW;
     }
 
     /// A programmatic and serializer constructor.
@@ -105,29 +113,36 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// Takes a pre-typed Object and skips text-based type inference.
     public YamlScalarNode(
         Object jvmValue,
-        QuoteStyle quoteStyle,
+        ScalarStyle scalarStyle,
         YamlOptions options
     ) {
         super();
         this.primitiveType = PrimitiveType.of(jvmValue);
-        this.quoteStyle = quoteStyle;
+        this.scalarStyle = scalarStyle;
         this.options = (options == null) ? YamlOptions.DEFAULT : options;
         this.jvmValue = jvmValue;
         this.isJvmValueCached = true;
+
+        nodeStyle = (scalarStyle == ScalarStyle.LITERAL || scalarStyle == ScalarStyle.FOLDED)
+            ? NodeStyle.BLOCK
+            : NodeStyle.FLOW;
     }
 
     /// A programmatic and serializer constructor.
     /// Used when building an AST dynamically in code.
     /// Takes a pre-typed Object and skips text-based type inference.
-    public YamlScalarNode(Object jvmValue, QuoteStyle quoteStyle) {
-        this(jvmValue, quoteStyle, YamlOptions.DEFAULT);
+    public YamlScalarNode(Object jvmValue, ScalarStyle scalarStyle) {
+        this(jvmValue, scalarStyle, YamlOptions.DEFAULT);
+        nodeStyle = (scalarStyle == ScalarStyle.LITERAL || scalarStyle == ScalarStyle.FOLDED)
+            ? NodeStyle.BLOCK
+            : NodeStyle.FLOW;
     }
 
     /// A programmatic and serializer constructor.
     /// Used when building an AST dynamically in code.
     /// Takes a pre-typed Object and skips text-based type inference.
     public YamlScalarNode(Object jvmValue) {
-        this(jvmValue, QuoteStyle.UNDETERMINED);
+        this(jvmValue, ScalarStyle.UNDETERMINED);
     }
 
     /// The default constructor
@@ -139,16 +154,18 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return options;
     }
 
+
+    // TODO: Do this in emitter
     public boolean isMultiLine() {
         return isMultiLine;
     }
-
     public YamlScalarNode setMultiLine(boolean b) {
         isMultiLine = b;
         return this;
     }
 
-    // TODO: Add to interface
+
+    @Override
     public PrimitiveType getPrimitiveType() {
         return primitiveType;
     }
@@ -158,28 +175,40 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return getQuoteStyle() != QuoteStyle.PLAIN;
     }
 
-    /// Gets the quoting style used for this scalar.
-    @Override
-    public QuoteStyle getQuoteStyle() {
-        if (quoteStyle == QuoteStyle.UNDETERMINED) {
-            quoteStyle = inferQuoteStyle(getPrimitive(), false);
-        }
-        return quoteStyle;
-    }
-
-    /// Sets the quoting style and clears the raw cache.
-    @Override
-    public YamlScalarNode setQuoteStyle(QuoteStyle quoteStyle) {
-        this.quoteStyle = quoteStyle;
-        return this;
-    }
-
     public ScalarStyle getScalarStyle() {
+        if (scalarStyle == ScalarStyle.UNDETERMINED) {
+            scalarStyle = inferQuoteStyle(getPrimitive());
+        }
         return scalarStyle;
     }
 
-    public YamlScalarNode setScalarStyle(ScalarStyle style) {
-        this.scalarStyle = style;
+    public YamlScalarNode setScalarStyle(ScalarStyle scalarStyle) {
+        this.scalarStyle = scalarStyle;
+        nodeStyle =  (scalarStyle == ScalarStyle.LITERAL || scalarStyle == ScalarStyle.FOLDED)
+            ? NodeStyle.BLOCK
+            : NodeStyle.FLOW;
+        return this;
+    }
+
+    /// Gets the quoting style used for this scalar.
+    @Override
+    public QuoteStyle getQuoteStyle() {
+        return switch (getScalarStyle()) {
+            case DOUBLE_QUOTED -> QuoteStyle.DOUBLE;
+            case SINGLE_QUOTED -> QuoteStyle.SINGLE;
+            default -> QuoteStyle.PLAIN;
+        };
+    }
+
+    /// Sets the quoting style.
+    @Override
+    public YamlScalarNode setQuoteStyle(QuoteStyle quoteStyle) {
+        setScalarStyle(switch (quoteStyle) {
+            case DOUBLE -> ScalarStyle.DOUBLE_QUOTED;
+            case SINGLE -> ScalarStyle.SINGLE_QUOTED;
+            case PLAIN -> ScalarStyle.PLAIN;
+            case UNDETERMINED -> ScalarStyle.UNDETERMINED;
+        });
         return this;
     }
 
@@ -208,7 +237,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         if (isJvmValueCached) {
             return jvmValue;
         }
-        jvmValue = parse(originalContent, quoteStyle);
+        jvmValue = parse(originalContent, scalarStyle);
         isJvmValueCached = true;
         return jvmValue;
     }
@@ -220,7 +249,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
                 if (token == null) {
                     stringValue = (jvmValue == null) ? null : String.valueOf(jvmValue);
                 } else {
-                    stringValue = unescape(originalContent, quoteStyle);
+                    stringValue = unescape(originalContent, scalarStyle);
                 }
             }
             isStringValueCached = true;
@@ -297,28 +326,31 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     //
     //
 
-    // TODO: Take anchor into consideration here.
     /// Compares this scalar with another for equality.
     ///
-    /// Two scalars are considered equal if they share the same anchor
-    /// and logical string value. Source coordinates and quoting styles
-    /// are ignored.
+    /// https://yaml.org/spec/1.2.2/#3213-node-comparison
+    ///
+    /// Two nodes must have the same tag and content to be equal. Since each tag applies to exactly one kind, this implies that the two nodes must have the same kind to be equal.
+    ///
+    /// Two scalars are equal only when their tags and canonical forms are equal character-by-character. Equality of collections is defined recursively.
     /// {@inheritDoc}
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof YamlScalarNode that)) return false;
 
-        // TODO: Take anchor into account
-        return Objects.equals(this.asString(), that.asString());
+        return Objects.equals(this.asString(), that.asString()) &&
+               Objects.equals(this.getTag(), that.getTag());
     }
 
     /// {@inheritDoc}
     @Override
     public int hashCode() {
-        return Objects.hash(getLexeme(), getContent(), quoteStyle);
+        return Objects.hash(asString(), getTag());
     }
 
+    // TODO: This is temporarily commented out to prevent the debugger
+    // triggering it. Uncomment this later.
     // /// {@inheritDoc}
     // @Override
     // public String toString() {
@@ -330,9 +362,9 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     //
     //
 
-    public QuoteStyle inferQuoteStyle(Object value, boolean isKey) {
+    public static ScalarStyle inferQuoteStyle(Object value) {
         if (value == null) {
-            return QuoteStyle.PLAIN;
+            return ScalarStyle.PLAIN;
         }
 
         if (value instanceof CharSequence cs) {
@@ -340,7 +372,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
             // 1. Empty strings must be quoted
             if (str.isEmpty()) {
-                return QuoteStyle.DOUBLE;
+                return ScalarStyle.DOUBLE_QUOTED;
             }
 
             // 2. If it matches a YAML boolean, null, or numeric literal, it MUST be quoted
@@ -349,19 +381,19 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
             if (lowered.equals("true") || lowered.equals("yes") || lowered.equals("on") ||
                 lowered.equals("false") || lowered.equals("no") || lowered.equals("off") ||
                 lowered.equals("null") || lowered.equals("~")) {
-                return QuoteStyle.DOUBLE;
+                return ScalarStyle.DOUBLE_QUOTED;
             }
 
             // Check if it's a numeric literal that needs quoting
             try {
                 Double.parseDouble(str);
-                return QuoteStyle.DOUBLE;
+                return ScalarStyle.DOUBLE_QUOTED;
             } catch (NumberFormatException ignored) {}
 
             // 3. Check for leading/trailing whitespace or special structural YAML indicators
             char first = str.charAt(0);
             if (Character.isWhitespace(first) || Character.isWhitespace(str.charAt(str.length() - 1))) {
-                return QuoteStyle.DOUBLE;
+                return ScalarStyle.DOUBLE_QUOTED;
             }
 
             // YAML indicators that break plain scalars if present anywhere or at the start
@@ -370,51 +402,37 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
                 first == '#' || first == '&' || first == '*' || first == '!' ||
                 first == '|' || first == '>' || first == '\'' || first == '"' ||
                 first == '%' || first == '@' || first == '_') {
-                return QuoteStyle.DOUBLE;
+                return ScalarStyle.DOUBLE_QUOTED;
             }
 
             // Containment checks for inline structural indicators
             if (str.contains(": ") || str.contains(" #")) {
-                return QuoteStyle.DOUBLE;
+                return ScalarStyle.DOUBLE_QUOTED;
             }
 
-            return QuoteStyle.PLAIN;
+            return ScalarStyle.PLAIN;
         }
 
         if (value instanceof Character) {
             char ch = (Character) value;
             // Quote if it's a structural control character or whitespace
             if (Character.isWhitespace(ch) || ch == ':' || ch == ',' || ch == '-' || ch == '#' || ch == '\'' || ch == '"') {
-                return QuoteStyle.DOUBLE;
+                return ScalarStyle.DOUBLE_QUOTED;
             }
-            return QuoteStyle.PLAIN;
+            return ScalarStyle.PLAIN;
         }
 
-        return QuoteStyle.PLAIN;
+        return ScalarStyle.PLAIN;
     }
 
-
-
-
-
-    public PrimitiveType inferType(String raw, QuoteStyle quoteStyle) {
-
+    public PrimitiveType inferType(String raw, ScalarStyle quoteStyle) {
         // raw should never be null here, right? Is this needed?
         if (raw == null) {
             return PrimitiveType.NULL;
         }
 
-
-        // Quoted strings
-        if (quoteStyle == QuoteStyle.DOUBLE) {
-            return PrimitiveType.STRING;
-        }
-        if (quoteStyle == QuoteStyle.SINGLE) {
-            return PrimitiveType.STRING;
-        }
-
         // Plain scalars
-        if (quoteStyle == QuoteStyle.PLAIN) {
+        if (quoteStyle == ScalarStyle.PLAIN) {
 
             // Boolean
             if ("true".equals(raw) ||
@@ -485,10 +503,8 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return hasDigit ? (hasDot ? PrimitiveType.NUMBER : PrimitiveType.INTEGER) : null;
     }
 
-    // ------------------------------------------------------------
     // Parsing
-    // ------------------------------------------------------------
-    public Object parse(String raw, QuoteStyle quoteStyle) {
+    public Object parse(String raw, ScalarStyle quoteStyle) {
 
         if (primitiveType == null || primitiveType == PrimitiveType.ANY) {
             primitiveType = inferType(raw, quoteStyle);
@@ -513,14 +529,11 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         }
     }
 
-    // ------------------------------------------------------------
     // Unescaping
-    // ------------------------------------------------------------
-
-    public String unescape(String text, QuoteStyle style) {
-        if (style == QuoteStyle.DOUBLE) {
+    public String unescape(String text, ScalarStyle style) {
+        if (style == ScalarStyle.DOUBLE_QUOTED) {
             return unescapeDoubleQuotes(text);
-        } else if (style == QuoteStyle.SINGLE) {
+        } else if (style == ScalarStyle.SINGLE_QUOTED) {
             return unescapeSingleQuotes(text);
         }
         return text;
@@ -541,9 +554,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return input.replace("''", "'");
     }
 
-    // ------------------------------------------------------------
     // Internal helpers (fast, no regex, no startsWith)
-    // ------------------------------------------------------------
     private boolean isIdentifier(String raw) {
         int len = raw.length();
         if (len == 0) return false;
@@ -653,33 +664,22 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return hasDigit;
     }
 
-    // ------------------------------------------------------------
     // Number parsing (fast, correct)
-    // ------------------------------------------------------------
     private double parseNumber(String raw) {
-
-        // // JSON5 hex
-        // if (options.allowHexadecimalNumbers() && isHexRaw(raw)) {
         if (isHexRaw(raw)) {
             String digits = raw.substring(2);
             return Integer.parseUnsignedInt(digits, 16);
         }
 
-        // // JSON5 octal
-        // if (options.allowHexadecimalNumbers() && isOctalRaw(raw)) {
         if (isOctalRaw(raw)) {
             String digits = raw.substring(2);
             return Integer.parseUnsignedInt(digits, 8);
         }
 
-        // // JSON5 special numbers
-        // if (options.allowInfinityAndNaN()) {
-            if (raw.equals("Infinity")) return Double.POSITIVE_INFINITY;
-            if (raw.equals("-Infinity")) return Double.NEGATIVE_INFINITY;
-            if (raw.equals("NaN")) return Double.NaN;
-        // }
+        if (raw.equals("Infinity")) return Double.POSITIVE_INFINITY;
+        if (raw.equals("-Infinity")) return Double.NEGATIVE_INFINITY;
+        if (raw.equals("NaN")) return Double.NaN;
 
-        // JSON strict / JSON5 decimal
         return Double.parseDouble(raw);
     }
 
@@ -696,5 +696,4 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
         return Long.parseLong(raw);
     }
-
 }

@@ -43,29 +43,21 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.IOException;
 import java.nio.file.*;
 import java.util.stream.Stream;
 
-import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 class YamlDirectoryTestSuite {
 
-    private static String VALID_PATH = "src/test/resources/yaml-suite/valid";
-    private static String INVALID_PATH = "src/test/resources/yaml-suite/invalid";
-
     private YamlOptions options = new YamlOptions().setExpandedStyle(true);
 
     private YamlAstParser parser;
-    private Reporter reporter;
+    // private Reporter reporter;
 
     @BeforeEach
     void init() {
@@ -118,12 +110,16 @@ class YamlDirectoryTestSuite {
         YamlMapNode doc = (YamlMapNode)parser.parse(content);
 
         // 1. Setup ONE emitter with desired options
-        YamlOptions testOptions = new YamlOptions().setExpandedStyle(true);
+        YamlOptions testOptions = new YamlOptions();
+        //.setExpandedStyle(true);
         YamlEmitter emitter = new YamlEmitter();
         emitter.setOptions(testOptions);
 
         // 2. First Emit
         String emitted = emitter.emit(doc);
+
+        System.out.println("=== FIRST EMIT ===");
+        System.out.println(emitted);
 
         // 3. Re-parse
         YamlMapNode reParsedDoc = (YamlMapNode)parser.parse(emitted);
@@ -131,11 +127,11 @@ class YamlDirectoryTestSuite {
         // 4. Second Emit (using the SAME emitter instance)
         String secondEmit = emitter.emit(reParsedDoc);
 
-        if (fileName.contains("07-quoted-scalars.yaml")) {
+        if (fileName.contains("01-nested")) {
             System.out.println("=== FIRST EMIT ===");
             System.out.println(emitted);
-            System.out.println("=== SECOND EMIT ===");
 
+            System.out.println("=== SECOND EMIT ===");
             reParsedDoc = (YamlMapNode)parser.parse(emitted);
             System.out.println(secondEmit);
         }
@@ -196,111 +192,31 @@ class YamlDirectoryTestSuite {
     @Test
     void testOne() {
         String content = """
-            records:
-            - canonicalId: "text/markdown"
-              canonicalName: "Markdown"
-              mimeTypes:
-                - "text/x-markdown"
-                - "text/markdown"
-              suffixes:
-                - ".md"
-              moduleId: ""
-            - canonicalId: "text/plain"
-              canonicalName: "Text"
-              mimeTypes:
-                - "text/plain"
-              suffixes:
-                - ".text"
-              moduleId: ""
-            - canonicalId: "application/java-archive"
-              canonicalName: "Java Archive"
-              mimeTypes:
-                - "application/java-archive"
-              suffixes:
-                - ".jar"
-              moduleId: ""
-            - canonicalId: "text/json"
-              canonicalName: "JavaScript object notation"
-              mimeTypes:
-                - "application/json"
-                - "application/schema+json"
-                - "text/json"
-              suffixes:
-                - ".json"
-              moduleId: ""
-            - canonicalId: "application/java"
-              canonicalName: "Java Byte Code"
-              mimeTypes:
-                - "application/x-java-class"
-                - "application/java"
-                - "application/java-byte-code"
-              suffixes:
-                - ".class"
-              moduleId: ""
-            - canonicalId: "text/css"
-              canonicalName: "Cascading style sheet"
-              mimeTypes:
-                - "text/css"
-              suffixes:
-                - ".css"
-              moduleId: ""
-            - canonicalId: "text/yaml"
-              canonicalName: "YAML Ain't Markup Language"
-              mimeTypes:
-                - "text/x-yaml"
-                - "text/yaml"
-                - "application/yaml"
-              suffixes:
-                - ".yaml"
-              moduleId: ""
-            - canonicalId: "text/x-java"
-              canonicalName: "Java source code"
-              mimeTypes:
-                - "text/x-java"
-                - "text/x-java-source"
-              suffixes:
-                - ".java"
-              moduleId: ""
-            """;
+          # Header
+          x: a # Inline
+          # Middle
+          y:
+            - b
+            - c
+          z:
+            - d # List comment
+          # Footer
+          """;
 
-        // // EXACTLY like the directory suite:
-        // StandardReporter reporter = new StandardReporter().setLevel(Level.TRACE);
-
-        // YamlOptions opts = new YamlOptions()
-        //     .setExpandedStyle(true)
-        //     .setIndentSize(2)
-        //     .setStrict(true);
-
-        // YamlAstParser parser = new YamlAstParser()
-        //     .setOptions(opts)
-        //     .setReporter(reporter);
-
-        // YamlEmitter emitter = new YamlEmitter();
-        // emitter.setOptions(opts);
-
-        // // FIRST PARSE
-        // YamlMapNode doc = (YamlMapNode) parser.parse(yaml);
-
-        // // FIRST EMIT
-        // String emitted = emitter.emit(doc);
-
-        // // SECOND PARSE (same parser instance, same options)
-        // YamlMapNode reparsed = (YamlMapNode) parser.parse(emitted);
-
-        // // SECOND EMIT (same emitter instance, same options)
-        // String secondEmit = emitter.emit(reparsed);
-
-        // System.out.println("=== FIRST EMIT ===");
-        // System.out.println(emitted);
-        // System.out.println("=== SECOND EMIT ===");
-        // System.out.println(secondEmit);
-
-        // assertEquals(emitted, secondEmit);
+        content = """
+          map: {}
+          list: []
+          nested_empty:
+            - []
+            - {}
+          """;
 
         YamlMapNode doc = (YamlMapNode)parser.parse(content);
 
         // 1. Setup ONE emitter with desired options
-        YamlOptions testOptions = new YamlOptions().setExpandedStyle(true);
+        YamlOptions testOptions = new YamlOptions();
+        // testOptions.setExpandedStyle(true);
+
         YamlEmitter emitter = new YamlEmitter();
         emitter.setOptions(testOptions);
 

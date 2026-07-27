@@ -41,6 +41,7 @@ import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocumentNode;
@@ -85,13 +86,11 @@ public class YamlNormalizer {
         if (node instanceof YamlMapNode map) {
 
             // First normalize children
-            YamlMapNode newMap = new YamlMapNode(map.getStartLine(), map.getStartColumn());
+            YamlMapNode newMap = new YamlMapNode(map.getToken(), map.getOptions());
             for (YamlMapEntryNode entry : map.getEntries()) {
                 YamlNode key = normalize(entry.getKey());
                 YamlNode value = normalize(entry.getValue());
                 newMap.put(new YamlMapEntryNode(
-                    key.getStartLine(),
-                    key.getStartColumn(),
                     key,
                     value
                 ));
@@ -118,7 +117,7 @@ public class YamlNormalizer {
 
         // normalize sequences
         if (node instanceof YamlSequenceNode seq) {
-            YamlSequenceNode newSeq = new YamlSequenceNode(seq.getStartLine(), seq.getStartColumn());
+            YamlSequenceNode newSeq = new YamlSequenceNode(seq.getToken());
             for (YamlNode child : seq.getChildren()) {
                 newSeq.add(normalize(child));
             }
@@ -159,7 +158,7 @@ public class YamlNormalizer {
 
         return new YamlScalarNode(
             out.toString(),          // JVM value
-            QuoteStyle.PLAIN,        // style
+            ScalarStyle.PLAIN,        // style
             options                  // options from first scalar
         );
 
