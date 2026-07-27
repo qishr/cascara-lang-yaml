@@ -35,7 +35,13 @@
 
 package io.github.qishr.cascara.lang.yaml.ast;
 
-public enum CollectionStyle {
-    BLOCK, // Indentation-based
-    FLOW   // Bracket/Brace-based
+/// The presentation style of a YAML node.
+///
+/// https://yaml.org/spec/1.2.2/#3231-node-styles
+public enum NodeStyle {
+    ///  Block styles use indentation to denote structure.
+    BLOCK,
+
+    /// Flow styles rely on explicit indicators to denote structure.
+    FLOW
 }

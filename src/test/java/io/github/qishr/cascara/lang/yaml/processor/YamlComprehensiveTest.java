@@ -39,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.internal.util.StringUtil;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
@@ -48,9 +47,6 @@ import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.*;
-import io.github.qishr.cascara.lang.yaml.processor.YamlEmitter;
-import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
-import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
@@ -175,6 +171,10 @@ class YamlComprehensiveTest {
         String original = "records:\n  -\n    id: \"1\"\n    tags:\n      -\n        a";
 
         // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE));
+
+        parser.setReporter(new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true));
 
         // 1. Parse
         YamlMapNode originalMap = (YamlMapNode)parser.parse(original);

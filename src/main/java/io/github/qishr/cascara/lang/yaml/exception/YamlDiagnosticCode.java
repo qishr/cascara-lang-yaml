@@ -63,7 +63,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     // Parser
     DEPTH_LIMIT("YAML-202", "Depth limit exceeded"),
     DUPLICATE_KEY("YAML-203", "Duplicate key found: \"{0}\""),
-    UNKNOWN_DIRECTIVE("YAML-204", "Unknown directive: {0}");
+    UNKNOWN_DIRECTIVE("YAML-204", "Unknown directive: '{0}'");
 
     private final String code;
     private final String message;

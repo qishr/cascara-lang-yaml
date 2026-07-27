@@ -38,6 +38,7 @@ package io.github.qishr.cascara.lang.yaml.token;
 import io.github.qishr.cascara.common.lang.token.Token;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 
 public class YamlToken implements Token {
     private int line;
@@ -46,7 +47,7 @@ public class YamlToken implements Token {
     private YamlTokenType type;
     private String lexeme;
     private String content;
-    private final QuoteStyle quoteStyle;
+    private final ScalarStyle scalarStyle;
     private PrimitiveType schemaType;
 
     /// Structural Token
@@ -63,7 +64,7 @@ public class YamlToken implements Token {
 
         this.lexeme = null;
         this.content = null;
-        this.quoteStyle = QuoteStyle.PLAIN;
+        this.scalarStyle = ScalarStyle.PLAIN;
     }
 
     public YamlToken(
@@ -73,7 +74,7 @@ public class YamlToken implements Token {
         YamlTokenType type,
         String lexeme,
         String content,
-        QuoteStyle quoteStyle)
+        ScalarStyle scalarStyle)
     {
         this.line = line;
         this.column = column;
@@ -81,7 +82,7 @@ public class YamlToken implements Token {
         this.type = type;
         this.lexeme = lexeme;
         this.content = content;
-        this.quoteStyle = quoteStyle;
+        this.scalarStyle = scalarStyle;
     }
 
     @Override
@@ -114,8 +115,8 @@ public class YamlToken implements Token {
         return content;
     }
 
-    public QuoteStyle getQuoteStyle() {
-        return quoteStyle;
+    public ScalarStyle getScalarStyle() {
+        return scalarStyle;
     }
 
     public void setType(YamlTokenType type) { this.type = type; }
