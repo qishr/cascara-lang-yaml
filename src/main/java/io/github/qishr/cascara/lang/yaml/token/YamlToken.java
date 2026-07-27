@@ -37,6 +37,8 @@ package io.github.qishr.cascara.lang.yaml.token;
 
 import io.github.qishr.cascara.common.lang.token.Token;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
+import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 
 public class YamlToken implements Token {
     private int line;
@@ -45,15 +47,57 @@ public class YamlToken implements Token {
     private YamlTokenType type;
     private String lexeme;
     private String content;
+    private final ScalarStyle scalarStyle;
     private PrimitiveType schemaType;
 
-    public YamlToken(int line, int column, int startOffset, YamlTokenType type, String lexeme, String content) {
+    /// Structural Token
+    public YamlToken(
+        int line,
+        int column,
+        int startOffset,
+        YamlTokenType type)
+    {
+        this.line = line;
+        this.column = column;
+        this.offset = startOffset;
+        this.type = type;
+
+        this.lexeme = null;
+        this.content = null;
+        this.scalarStyle = ScalarStyle.PLAIN;
+    }
+
+    public YamlToken(
+        int line,
+        int column,
+        int startOffset,
+        YamlTokenType type,
+        String lexeme,
+        String content,
+        ScalarStyle scalarStyle)
+    {
         this.line = line;
         this.column = column;
         this.offset = startOffset;
         this.type = type;
         this.lexeme = lexeme;
         this.content = content;
+        this.scalarStyle = scalarStyle;
+    }
+
+    @Override
+    public int getStartLine() {
+        return line;
+    }
+
+    @Override
+    public int getStartColumn() {
+        return column;
+    }
+
+    @Override
+    public int getOffset() {
+        return offset;
     }
 
     @Override
@@ -71,19 +115,8 @@ public class YamlToken implements Token {
         return content;
     }
 
-    @Override
-    public int getOffset() {
-        return offset;
-    }
-
-    @Override
-    public int getStartLine() {
-        return line;
-    }
-
-    @Override
-    public int getStartColumn() {
-        return column;
+    public ScalarStyle getScalarStyle() {
+        return scalarStyle;
     }
 
     public void setType(YamlTokenType type) { this.type = type; }

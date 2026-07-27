@@ -38,6 +38,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 import io.github.qishr.cascara.common.lang.ast.AstNodeFactory;
 import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
@@ -54,12 +55,12 @@ public class YamlNodeFactory implements AstNodeFactory<YamlNode,YamlScalarNode,Y
 
     @Override
     public YamlScalarNode createScalarNode(Object key, QuoteStyle quoteStyle) {
-        return new YamlScalarNode(key, quoteStyle);
+        return new YamlScalarNode(key, scalarStyle(quoteStyle));
     }
 
 	@Override
 	public YamlScalarNode createScalarNode(Object jvmValue, QuoteStyle quoteStyle, LanguageOptions<?> options) {
-        return new YamlScalarNode(jvmValue, quoteStyle, (YamlOptions)options);
+        return new YamlScalarNode(jvmValue, scalarStyle(quoteStyle), (YamlOptions)options);
 	}
 
     @Override
@@ -75,5 +76,14 @@ public class YamlNodeFactory implements AstNodeFactory<YamlNode,YamlScalarNode,Y
     @Override
     public YamlMapNode createMapNode() {
         return new YamlMapNode();
+    }
+
+    private ScalarStyle scalarStyle(QuoteStyle quoteStyle) {
+        return switch (quoteStyle) {
+            case DOUBLE -> ScalarStyle.DOUBLE_QUOTED;
+            case SINGLE -> ScalarStyle.SINGLE_QUOTED;
+            case PLAIN -> ScalarStyle.PLAIN;
+            case UNDETERMINED -> ScalarStyle.UNDETERMINED;
+        };
     }
 }

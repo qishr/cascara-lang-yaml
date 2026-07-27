@@ -38,12 +38,14 @@ package io.github.qishr.cascara.lang.yaml.ast;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+
 public class YamlDocumentNode extends YamlNode {
     private final List<YamlDirectiveNode> directives = new ArrayList<>();
     private YamlNode body;
 
-    public YamlDocumentNode(int line, int column) {
-        super(line, column);
+    public YamlDocumentNode(YamlToken token) {
+        super(token);
     }
 
     public void addDirective(YamlDirectiveNode directive) {
@@ -70,8 +72,12 @@ public class YamlDocumentNode extends YamlNode {
     }
 
 	@Override
-	public List<? extends YamlNode> getChildren() {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Unimplemented method 'getChildren'");
+	public List<YamlNode> getChildren() {
+        List<YamlNode> children = new ArrayList<>();
+        for (YamlNode node : directives) {
+            children.add(node);
+        }
+        children.add(body);
+        return children;
 	}
 }

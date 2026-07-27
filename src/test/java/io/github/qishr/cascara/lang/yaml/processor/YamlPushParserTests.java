@@ -76,9 +76,12 @@ public class YamlPushParserTests {
         List<StreamingEvent> events = handler.getEvents();
         assertFalse(events.isEmpty(), "Should produce streaming events");
 
-        // Simple values are wrapped inside a root object context
-        assertEquals(StreamingEventType.START_OBJECT, events.get(0).getType());
+        assertEquals(StreamingEventType.START_STREAM, events.get(0).getType());
+        assertEquals(StreamingEventType.START_DOCUMENT, events.get(1).getType());
+        assertEquals(StreamingEventType.VALUE_SCALAR, events.get(2).getType());
+        assertEquals("value", events.get(2).getContent());
     }
+
 
     @Test
     void testSimpleMap() {
@@ -88,14 +91,17 @@ public class YamlPushParserTests {
         List<StreamingEvent> events = handler.getEvents();
         assertFalse(events.isEmpty());
 
-        assertEquals(StreamingEventType.START_OBJECT, events.get(0).getType());
+        assertEquals(StreamingEventType.START_STREAM, events.get(0).getType());
+        assertEquals(StreamingEventType.START_DOCUMENT, events.get(1).getType());
+        assertEquals(StreamingEventType.START_OBJECT, events.get(2).getType());
 
-        assertEquals(StreamingEventType.FIELD_NAME, events.get(1).getType());
-        assertEquals("key", events.get(1).getContent());
+        assertEquals(StreamingEventType.FIELD_NAME, events.get(3).getType());
+        assertEquals("key", events.get(3).getContent());
 
-        assertEquals(StreamingEventType.VALUE_SCALAR, events.get(2).getType());
-        assertEquals("value", events.get(2).getContent());
+        assertEquals(StreamingEventType.VALUE_SCALAR, events.get(4).getType());
+        assertEquals("value", events.get(4).getContent());
     }
+
 
     @Test
     void testMultiDocumentStreamEvents() {
@@ -105,6 +111,7 @@ public class YamlPushParserTests {
         ---
         doc2
         """;
+
         InputStream input = createStream(yaml);
 
         pushParser.setReporter(new StandardReporter().setLevel(Level.TRACE));
@@ -114,12 +121,23 @@ public class YamlPushParserTests {
         List<StreamingEvent> events = handler.getEvents();
         assertFalse(events.isEmpty());
 
-        // Count standard document boundary completions if emitted by the engine
-        long documentEnds = events.stream()
-                .filter(e -> e.getType() == StreamingEventType.END_DOCUMENT)
+        long docStarts = events.stream()
+                .filter(e -> e.getType() == StreamingEventType.START_DOCUMENT)
                 .count();
+        assertEquals(2, docStarts);
 
-        assertTrue(events.stream().anyMatch(e -> e.getType() == StreamingEventType.START_OBJECT));
+        assertTrue(events.stream().anyMatch(e ->
+            e.getType() == StreamingEventType.VALUE_SCALAR &&
+            "doc1".equals(e.getContent())
+        ));
+
+        assertTrue(events.stream().anyMatch(e ->
+            e.getType() == StreamingEventType.VALUE_SCALAR &&
+            "doc2".equals(e.getContent())
+        ));
+
+        assertEquals(StreamingEventType.END_STREAM,
+                     events.get(events.size() - 1).getType());
     }
 
     //

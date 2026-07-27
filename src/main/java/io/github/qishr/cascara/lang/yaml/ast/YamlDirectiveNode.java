@@ -37,11 +37,13 @@ package io.github.qishr.cascara.lang.yaml.ast;
 
 import java.util.List;
 
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+
 public class YamlDirectiveNode extends YamlNode {
     private final String content;
 
-    public YamlDirectiveNode(int line, int column, String content) {
-        super(line, column);
+    public YamlDirectiveNode(YamlToken token, String content) {
+        super(token);
         this.content = content;
     }
 

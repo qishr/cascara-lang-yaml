@@ -39,10 +39,12 @@ import java.util.List;
 
 public class YamlAnchorNode extends YamlNode {
     private final String anchorName;
+
+    // TODO: Should this be called innerNode or wrappedNode, or something else?
     private final YamlNode innerNode;
 
     public YamlAnchorNode(int line, int column, String name, YamlNode node) {
-        super(line, column);
+        super(line, column, null);
         this.anchorName = name;
         this.innerNode = node;
         this.setAnchor(name);

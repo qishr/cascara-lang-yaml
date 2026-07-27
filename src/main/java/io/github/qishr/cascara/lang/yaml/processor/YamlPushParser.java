@@ -54,7 +54,7 @@ public class YamlPushParser extends AbstractYamlProcessor<YamlPushParser> implem
         YamlStreamEngine executionEngine = new YamlStreamEngine(input, getReporter(), getOptions().isIncludeComments());
         executionEngine.setReporter(reporter);
 
-        while (executionEngine.hashNextEvent()) {
+        while (executionEngine.hasNextEvent()) {
             StreamingEvent event = executionEngine.nextEvent();
             if (event != null) {
                 handler.onEvent(event);

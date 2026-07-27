@@ -36,12 +36,13 @@
 package io.github.qishr.cascara.lang.yaml.exception;
 
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.LocatableException;
 
 public class YamlEmitterException extends LocatableException {
 
     public YamlEmitterException(Throwable cause, DiagnosticCode code, Object... details) {
-        super(null, UNKNOWN_COORD, UNKNOWN_COORD, cause, code, details);
+        super(null, Diagnostic.UNKNOWN_COORD, Diagnostic.UNKNOWN_COORD, cause, code, details);
     }
 
     public YamlEmitterException(DiagnosticCode code, Object... details) {

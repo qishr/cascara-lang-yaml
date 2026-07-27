@@ -38,16 +38,18 @@ package io.github.qishr.cascara.lang.yaml.ast;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+
 public class YamlStreamNode extends YamlNode {
     private final List<YamlDocumentNode> documents = new ArrayList<>();
     private final List<YamlCommentNode> comments = new ArrayList<>();
 
     public YamlStreamNode() {
-        super(1, 1);
+        super();
     }
 
-    public YamlStreamNode(int line, int column) {
-        super(line, column);
+    public YamlStreamNode(YamlToken token) {
+        super(token);
     }
 
     public void addDocument(YamlDocumentNode document) {

@@ -38,14 +38,15 @@ package io.github.qishr.cascara.lang.yaml.ast;
 import java.util.List;
 
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 /// Represents a comment within the YAML source.
 public class YamlCommentNode extends YamlNode implements CommentAstNode {
     private final String text;
     private final boolean multiLine;
 
-    public YamlCommentNode(int line, int column, String text, boolean multiLine) {
-        super(line, column);
+    public YamlCommentNode(YamlToken token, String text, boolean multiLine) {
+        super(token);
         this.text = text;
         this.multiLine = multiLine;
     }

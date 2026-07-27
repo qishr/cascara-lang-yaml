@@ -35,16 +35,25 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
+import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
 import io.github.qishr.cascara.common.lang.processor.AstConverter;
+import io.github.qishr.cascara.common.lang.reference.ReferenceMapNode;
+import io.github.qishr.cascara.common.lang.reference.ReferenceNode;
+import io.github.qishr.cascara.common.lang.reference.ReferenceScalarNode;
+import io.github.qishr.cascara.common.lang.reference.ReferenceSequenceNode;
+import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.exception.YamlConverterException;
 
 public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implements AstConverter<YamlNode> {
     @Override protected YamlConverter self() { return this; }
@@ -55,7 +64,10 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         return emitter.emit(yamlNode);
     }
 
+    @Nullable
     public YamlNode fromAst(AstNode ast) {
+        if (ast == null) return null;
+
         if (ast instanceof MapAstNode astMap) {
             YamlMapNode yamlMap = new YamlMapNode();
             for (Object entry : astMap.getEntries()) {
@@ -87,12 +99,168 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             return yamlSeq;
         } else if (ast instanceof ScalarAstNode astScalar) {
             YamlScalarNode yamlScalar = new YamlScalarNode(astScalar.getPrimitive());
-            // yamlScalar.setPrimitive(astScalar.getPrimitive());
-            // yamlScalar.setRaw(astScalar.getString());
             return yamlScalar;
         } else {
-            System.err.println("Unknown AST node");
-            return null;
+            String name = (ast == null) ? "null" : ast.getClass().getSimpleName();
+            throw new YamlConverterException(LangDiagnosticCode.UNKNOWN_NODE_TYPE, name);
+        }
+    }
+
+    @Nullable
+    public ReferenceNode toPlainAst(YamlNode yaml) {
+        if (yaml == null) return null;
+
+        if (yaml instanceof YamlMapNode map) {
+            ReferenceMapNode out = new ReferenceMapNode();
+            for (YamlMapEntryNode e : map.getEntries()) {
+                ReferenceNode key = toPlainAst(e.getKey());
+                ReferenceNode val = toPlainAst(e.getValue());
+                out.put(key, val);
+            }
+            return out;
+        }
+
+        if (yaml instanceof YamlSequenceNode seq) {
+            ReferenceSequenceNode out = new ReferenceSequenceNode();
+            for (YamlNode child : seq.getChildren()) {
+                out.add(toPlainAst(child));
+            }
+            return out;
+        }
+
+        if (yaml instanceof YamlScalarNode scalar) {
+            return convertScalar(scalar);   // tag logic goes here
+        }
+
+        throw new YamlConverterException(
+            LangDiagnosticCode.UNKNOWN_NODE_TYPE,
+            yaml.getClass().getSimpleName()
+        );
+    }
+
+    // @Nullable
+    // private ReferenceScalarNode convertScalar(YamlScalarNode scalar) {
+    //     if (scalar == null) return null;
+    //     String tag = scalar.getTag();
+    //     if (tag == null) {
+    //         return new ReferenceScalarNode(scalar.getPrimitive());
+    //     }
+    //     Object value;
+    //     value = switch(tag) {
+    //         // case "!!str" -> scalar.asString();
+    //         case "!!float" -> scalar.asDouble();
+    //         case "!!int" -> scalar.asInteger();
+    //         case "!!bool" -> scalar.asBoolean();
+    //         case "!!null" -> null;
+    //         default -> {
+    //             String s = scalar.asString();
+    //             if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
+    //                 s = s.replaceAll("\n +", " \t");
+    //             }
+    //             yield s;
+    //         }
+    //     };
+    //     return new ReferenceScalarNode(value);
+    // }
+
+    @Nullable
+    private ReferenceScalarNode convertScalar(YamlScalarNode scalar) {
+        if (scalar == null) return null;
+
+        String tag = scalar.getTag();
+
+        if (tag == null) {
+            // Untagged: if double-quoted, treat as string
+            if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
+                return new ReferenceScalarNode(normalizeDoubleQuotedString(scalar));
+            }
+            return new ReferenceScalarNode(scalar.getPrimitive());
+        }
+
+        Object value = switch (tag) {
+            case "!!str" -> normalizeDoubleQuotedString(scalar);
+            case "!!float" -> scalar.asDouble();
+            case "!!int"   -> scalar.asInteger();
+            case "!!bool"  -> scalar.asBoolean();
+            case "!!null"  -> null;
+            default -> normalizeDoubleQuotedString(scalar);
+        };
+
+        return new ReferenceScalarNode(value);
+    }
+
+    // System.out.println("---=== BEGIN YAML STRING ===---");
+    // debugString(s);
+    // System.out.println("---=== END YAML STRING ===---");
+
+    // Newlines become spaces
+    // Actual tab characters become spaces, unless there is a backslash in front of them.
+    // Tab characters with a backslash in front of them become tab characters
+    // Multiple spaces become one space
+
+    // // 14:20 - The correct conversion method (final, minimal, passes all RLN tests)
+    // private String normalizeDoubleQuotedString(YamlScalarNode scalar) {
+    //     String s = scalar.asString();
+    //     if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
+
+    //         // 1. Fold newline + indentation (spaces or tabs) → single space
+    //         s = s.replaceAll("\n[ \t]+", " ");
+
+    //         // 2. ONLY unescape backslash + REAL TAB (RLN_01)
+    //         //    Do NOT unescape backslash + 't' (RLN_00)
+    //         s = s.replaceAll("\\\\\t", "\t");
+    //     }
+    //     return s;
+    // }
+
+    // 14:26 - The correct conversion method (final)
+    private String normalizeDoubleQuotedString(YamlScalarNode scalar) {
+        String s = scalar.asString();
+        if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
+
+            // 1. Fold newline + indentation (spaces or tabs) → single space
+            // s = s.replaceAll("\n[ \t]+", " ");
+
+            // 2. ONLY unescape backslash + REAL TAB (RLN_01)
+            s = s.replaceAll("\\\\+(?!t)\t", "\t");
+        }
+        return s;
+    }
+
+    // System.out.println("---=== BEGIN YAML STRING ===---");
+    // debugString(s);
+    // System.out.println("---=== END YAML STRING ===---");
+
+    private void debugStringFlat(String input) {
+        for (int codePoint : input.codePoints().toArray()) {
+            System.out.print(currentChar( codePoint ));
+        }
+        System.out.println();
+    }
+
+    private void debugString(String input) {
+        for (int codePoint : input.codePoints().toArray()) {
+            System.out.println
+            (
+                currentChar( codePoint ) +
+                " = # " + codePoint +
+                " " + Character.getName( codePoint )
+            );
+        }
+    }
+
+    private String currentChar(int c) {
+        switch (c) {
+            case ' ':
+                return "␣";
+            case '\t':
+                return "⇥";
+            case '\r':
+                return "↵";
+            case '\n':
+                return "↩";
+            default:
+                return Character.toString(c);
         }
     }
 }

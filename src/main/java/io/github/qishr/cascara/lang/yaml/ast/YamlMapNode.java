@@ -40,24 +40,26 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
-import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNode, YamlMapEntryNode> {
-    private CollectionStyle style = CollectionStyle.BLOCK;
+    private NodeStyle style = NodeStyle.BLOCK;
     private final LinkedHashMap<YamlNode,YamlMapEntryNode> entriesByKey = new LinkedHashMap<>();
 
     public YamlMapNode() {
         // This method intentionally left blank
     }
 
-    public YamlMapNode(int line, int column) {
-        super(line, column);
+    public YamlMapNode(YamlToken token, YamlOptions options) {
+        super(token, options);
     }
 
     /// {@inheritDoc}
@@ -99,6 +101,13 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
         return entriesByKey.get(key);
     }
 
+    @Nullable
+    @Override
+    public YamlMapEntryNode getEntry(int i) {
+        if (i < 0 || i > size()) throw new NoSuchElementException();
+        return entriesByKey.sequencedValues().toArray(new YamlMapEntryNode[]{})[i];
+    }
+
     /// {@inheritDoc}
     @Override
     public List<YamlMapEntryNode> getEntries() {
@@ -106,7 +115,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
     }
 
     /// {@inheritDoc}
-    public CollectionStyle getStyle() { return style; }
+    public NodeStyle getStyle() { return style; }
 
     /// {@inheritDoc}
     @Override
@@ -120,7 +129,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
     public YamlMapNode put(YamlNode key, YamlNode value) {
         YamlMapEntryNode entry = getEntry(key);
         if (entry == null) {
-            entry = new YamlMapEntryNode(0, 0, key, value);
+            entry = new YamlMapEntryNode(key, value);
             entriesByKey.put(key, entry);
             return this;
         }
@@ -150,7 +159,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
     }
 
     /// {@inheritDoc}
-    public YamlMapNode setStyle(CollectionStyle style) {
+    public YamlMapNode setStyle(NodeStyle style) {
         this.style = style;
         return this;
     }
@@ -215,6 +224,15 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
         return null;
     }
 
+    @Override
+    @Nullable
+    public YamlScalarNode getScalar(String key) {
+        if (get(key) instanceof YamlScalarNode scalar) {
+            return scalar;
+        }
+        return null;
+    }
+
     /// Associates the specified value with the specified string key.
     ///
     /// If the map previously contained a mapping for the key, the old value
@@ -236,8 +254,8 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
 
         // TODO: Don't pass null as delegate
         // Only if not found, create the new entry
-        YamlNode keyNode = new YamlScalarNode(0, 0, PrimitiveType.STRING, key, key, QuoteStyle.PLAIN, null);
-        YamlMapEntryNode entry = new YamlMapEntryNode(0, 0, keyNode, value);
+        YamlNode keyNode = new YamlScalarNode(key, ScalarStyle.UNDETERMINED, null);
+        YamlMapEntryNode entry = new YamlMapEntryNode(keyNode, value);
         entriesByKey.put(entry.getKey(), entry);
         return this;
     }

@@ -100,7 +100,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
     /// {@inheritDoc}
     @Override
-    public YamlSerializer setParser(AstParser<YamlNode,?> parser) {
+    public YamlSerializer setParser(AstParser<YamlNode,?,?> parser) {
         if (!(parser instanceof YamlAstParser YamlAstParser)) {
             throw new SerializerException(GenericDiagnosticCode.ERROR, "Parser must be a YamlAstParser");
         }
