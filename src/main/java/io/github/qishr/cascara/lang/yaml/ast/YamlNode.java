@@ -69,6 +69,10 @@ public abstract class YamlNode implements AstNode {
 
     public abstract void accept(YamlVisitor visitor);
 
+    protected YamlNode(YamlOptions options) {
+        this(null, options);
+    }
+
     /// Constructs a new YamlNode with specific source coordinates
     /// obtained from a YamLToken
     ///
@@ -98,7 +102,7 @@ public abstract class YamlNode implements AstNode {
     protected YamlNode(int line, int column, YamlOptions options) {
         this.startLine = line;
         this.startColumn = column;
-        this.options = options;
+        this.options = (options == null) ? YamlOptions.DEFAULT : options;
     }
 
     public YamlOptions getOptions() {

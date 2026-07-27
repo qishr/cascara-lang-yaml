@@ -46,11 +46,7 @@ import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 
 /// Represents a leaf node in the YAML AST containing a single scalar value.
 public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
-    // private final String lexeme;
-    // private final String content;
-
     private PrimitiveType primitiveType;
-    // private QuoteStyle quoteStyle = QuoteStyle.UNDETERMINED;
 
     // dialect-aware native value cache
     private Object jvmValue;
@@ -62,9 +58,6 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
     private String originalContent;
     private ScalarStyle scalarStyle = ScalarStyle.UNDETERMINED;
     private ChompingStyle chompingStyle;
-    private boolean isMultiLine;
-
-    private YamlOptions options;
 
     /// Constructor for use in parsers.
     /// Used when reading raw text from a file stream.
@@ -75,11 +68,10 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
         PrimitiveType primitiveType,
         YamlOptions options
     ) {
-        super(token);
+        super(token, options);
         this.originalContent = token.getContent();
         this.primitiveType = primitiveType;
         this.scalarStyle = token.getScalarStyle();
-        this.options = (options == null) ? YamlOptions.DEFAULT : options;
 
         nodeStyle = (scalarStyle == ScalarStyle.LITERAL || scalarStyle == ScalarStyle.FOLDED)
             ? NodeStyle.BLOCK
@@ -97,11 +89,10 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
         ScalarStyle scalarStyle,
         YamlOptions options
     ) {
-        super(token);
+        super(token, options);
         this.originalContent = content;
         this.primitiveType = primitiveType;
         this.scalarStyle = scalarStyle;
-        this.options = (options == null) ? YamlOptions.DEFAULT : options;
 
         nodeStyle = (scalarStyle == ScalarStyle.LITERAL || scalarStyle == ScalarStyle.FOLDED)
             ? NodeStyle.BLOCK
@@ -116,10 +107,9 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
         ScalarStyle scalarStyle,
         YamlOptions options
     ) {
-        super();
+        super(options);
         this.primitiveType = PrimitiveType.of(jvmValue);
         this.scalarStyle = scalarStyle;
-        this.options = (options == null) ? YamlOptions.DEFAULT : options;
         this.jvmValue = jvmValue;
         this.isJvmValueCached = true;
 
@@ -153,17 +143,6 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
     public YamlOptions getOptions() {
         return options;
     }
-
-
-    // TODO: Do this in emitter
-    public boolean isMultiLine() {
-        return isMultiLine;
-    }
-    public YamlScalar setMultiLine(boolean b) {
-        isMultiLine = b;
-        return this;
-    }
-
 
     @Override
     public PrimitiveType getPrimitiveType() {

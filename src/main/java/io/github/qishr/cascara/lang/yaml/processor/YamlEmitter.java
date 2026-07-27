@@ -173,7 +173,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             // If we are a sequence item on the same line as the dash,
             // the dash and space ARE the indent for the first line.
             int scalarIndent = isSequenceItem ? 0 : indent;
-            emitScalarInternal(scalar, scalarIndent, isFlow, false);
+            emitScalarInternal(scalar, scalarIndent, isFlow);
         } else if (targetNode instanceof YamlMap map) {
             if (map.getStyle() == NodeStyle.FLOW) {
                 emitFlowMap(map);
@@ -192,85 +192,62 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     }
 
     /// Handles scalar formatting including Literal (|), Folded (>), and quoted styles.
-    private void emitScalarInternal(YamlScalar scalar, int indent, boolean isFlow, boolean isBlockStyle) {
+    private void emitScalarInternal(YamlScalar scalar, int indent, boolean isFlow) {
         if (scalar == null) return;
 
-        // TODO: Handle literal null here?
-
-
-
-        // if (scalar.getToken() != null && scalar.getToken().getLexeme() != null) {
-        //     String lex = scalar.getToken().getLexeme();
-
-        //     if (!isFlow) sb.append(" ".repeat(indent));
-        //     sb.append(lex);
-
-        //     if (!isFlow) {
-        //         if (!options.stripComments()) handleInlineComments(scalar);
-        //         // DO NOT append NL here — lexeme already contains correct formatting
-        //     }
-        //     return;
-        // }
-
-        if (scalar.getToken() != null) {
-            String lexeme = scalar.getToken().getLexeme();
-            if (lexeme != null) {
-                if (isBlockStyle) {
-                    String[] lexemeLines = lexeme.split("\n");
-                    for (int i = 0; i < lexemeLines.length; i++) {
-                        if (i > 0) {
-                            sb.append("\n");
-                            sb.append(" ".repeat(scalar.getStartColumn() - 1));
-                        } else {
-                        }
-                        sb.append(lexemeLines[i]);
-                    }
-                    sb.append(NL);
-                } else {
-                    if (!isFlow) sb.append(" ".repeat(indent));
-                    // sb.append(" ".repeat(indent));
-                    sb.append(lexeme);
-                }
-
-                if (!isFlow) {
-                    // handleInlineComments(scalar);
-                    if (!options.stripComments()) {
-                        handleInlineComments(scalar);
-                    }
-                    // if (!isBlockStyle) {
-                    //     sb.append(NL);
-                    // }
-                }
-
-                if (lexeme.equals("b")) {
-                    System.out.println("Debug");
-                }
-
-                return;
-            }
-        }
-
-
-
-
-        String val = scalar.asString();
+        String stringValue = scalar.asString();
 
         // 1. Implicit Null
-        if (val == null) {
+        if (stringValue == null) {
             if (!isFlow) sb.append(" ".repeat(indent));
             return;
         }
 
+        String lexeme = scalar.getToken() == null ? null : scalar.getToken().getLexeme();
+
+        boolean isBlock = scalar.getScalarStyle() == ScalarStyle.LITERAL ||
+                scalar.getScalarStyle() == ScalarStyle.FOLDED;
+
+        boolean isMultiLine = isBlock || (stringValue.contains("\n"));
+
         ScalarStyle style;
         if (options.normalizeScalarFormatting()) {
             style = ScalarStyle.DOUBLE_QUOTED;
-        } else {
+        }
+        else if (lexeme != null) {
+            if (isMultiLine) {
+                String[] lexemeLines = lexeme.split("\n");
+                for (int i = 0; i < lexemeLines.length; i++) {
+                    if (i > 0) {
+                        sb.append("\n");
+                        sb.append(" ".repeat(scalar.getStartColumn() - 1));
+                    } else {
+                    }
+                    sb.append(lexemeLines[i]);
+                }
+                if (isBlock) {
+                    sb.append(NL);
+                }
+            } else {
+                if (!isFlow) sb.append(" ".repeat(indent));
+                sb.append(lexeme);
+            }
+
+            if (!isFlow) {
+                // handleInlineComments(scalar);
+                if (!options.stripComments()) {
+                    handleInlineComments(scalar);
+                }
+            }
+            return;
+        }
+        else {
             style = scalar.getScalarStyle();
         }
 
         // AUTO-PROMOTION: If the style is PLAIN but the text contains newlines,
         // force it to LITERAL_BLOCK so it serializes into a valid block scalar.
-        if (!isFlow && style == ScalarStyle.PLAIN && (val.contains("\n") || val.contains("\r"))) {
+        if (!isFlow && style == ScalarStyle.PLAIN && (stringValue.contains("\n") || stringValue.contains("\r"))) {
             style = ScalarStyle.LITERAL;
         }
 
@@ -281,7 +258,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             int blockIndent = indent + options.getIndentSize();
             String indentation = " ".repeat(blockIndent);
 
-            String[] lines = val.split("\\R", -1);
+            String[] lines = stringValue.split("\\R", -1);
             int limit = lines.length;
 
             // Safe end-of-string newline clipping
@@ -297,7 +274,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         if (!isFlow) sb.append(" ".repeat(indent));
 
-        String content = formatAndIndentMultiline(val, style, indent);
+        String content = formatAndIndentMultiline(stringValue, style, indent);
         sb.append(content);
 
         // IF NOT IS FLOW, this is a standalone root scalar or similar
@@ -435,28 +412,9 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                     }
                 }
 
-
-                // boolean isBlockStyle = (scalar.getStartLine() > key.getStartLine());
-                // boolean isBlockStyle = (scalar.getQuoteStyle() == QuoteStyle.
-                boolean isBlockStyle = scalar.isMultiLine();
-
-
                 sb.append(" ");
-                emitScalarInternal(scalar, indent + options.getIndentSize(), false, isBlockStyle);
+                emitScalarInternal(scalar, indent + options.getIndentSize(), false);
             }
-            // else if (value instanceof YamlScalarNode scalar) {
-            //     boolean isBlockStyle = (scalar.getStartLine() > key.getStartLine());
-            //     if (!isBlockStyle) sb.append(" ");
-            //     int scalarIndent = isBlockStyle ? indent + options.getIndentSize() : 0;
-            //     emitScalarInternal(scalar, scalarIndent, false, isBlockStyle);
-
-
-
-            //     // sb.append(NL);
-
-
-
-            // }
             else {
                 if (!isImplicitNull(value)) sb.append(" ");
                 emitNode(value, 0, false, true); // Clean text
@@ -523,7 +481,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                     // It's a multiline string scalar! It CANNOT be inline/flowed after a compact dash.
                     // It must trigger a newline and follow block formatting guidelines.
                     sb.append(NL);
-                    emitScalarInternal(scalar, indent + options.getIndentSize(), false, false); // TODO: Should isBlockStyle not be true here?
+                    emitScalarInternal(scalar, indent + options.getIndentSize(), false);
                 }
                 else {
                     // True compact inline scalars / flow collections

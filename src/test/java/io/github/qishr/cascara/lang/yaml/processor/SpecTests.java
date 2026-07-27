@@ -11,6 +11,7 @@ import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
+import io.github.qishr.cascara.common.semver.Tokenizer;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
@@ -345,6 +346,11 @@ public class SpecTests {
             e
             f: g
             """;
+
+        // parser.getReporter().setLevel(Level.DEBUG); // TODO: REMOVE THIS
+        // // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE)); // TODO: REMOVE THIS
+        // YamlTokenizer tz = new YamlTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE));
+        // TestUtil.dumpTokens(tz.tokenize(yaml));
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -746,5 +752,54 @@ public class SpecTests {
         YamlScalar scalar = (YamlScalar) body;
 
         TestUtil.assertEquals(" 1st non-empty\n2nd non-empty 3rd non-empty ", scalar.asString());
+    }
+
+    @Test
+    void test7BMT() {
+        String yaml = """
+            ---
+            top1: &node1
+              &k1 key1: one
+            top2: &node2 # comment
+              key2: two
+            top3:
+              &k3 key3: three
+            top4: &node4
+              &k4 key4: four
+            top5: &node5
+              key5: five
+            top6: &val6
+              six
+            top7:
+              &val7 seven
+            """;
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+
+        if (true || dumpTokens) {
+            TestUtil.dumpTokens(tokens);
+        }
+
+        // parser.getReporter().setLevel(Level.DEBUG); // TODO: REMOVE THIS
+
+        YamlMap map = (YamlMap)parser.parse(yaml);
+
+        assertEquals(7, map.size());
+
+        YamlMap top1 = map.getMap("top1");
+        YamlMap top2 = map.getMap("top2");
+        YamlMap top3 = map.getMap("top3");
+        YamlMap top4 = map.getMap("top4");
+        YamlMap top5 = map.getMap("top5");
+
+        assertEquals("one", top1.getScalar("key1").asString());
+        assertEquals("two", top2.getScalar("key2").asString());
+        assertEquals("three", top3.getScalar("key3").asString());
+        assertEquals("four", top4.getScalar("key4").asString());
+        assertEquals("five", top5.getScalar("key5").asString());
+
+        assertEquals("six", map.getScalar("top6").asString());
+        assertEquals("seven", map.getScalar("top7").asString());
     }
 }

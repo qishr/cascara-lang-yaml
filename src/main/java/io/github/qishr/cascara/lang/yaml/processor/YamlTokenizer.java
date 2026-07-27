@@ -270,7 +270,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (c == '!') {
-            // scanIdentifier(YamlTokenType.TAG);
             scanTag();
             return;
         }
