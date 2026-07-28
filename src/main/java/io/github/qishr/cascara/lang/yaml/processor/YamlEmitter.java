@@ -221,7 +221,6 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                     if (i > 0) {
                         sb.append("\n");
                         sb.append(" ".repeat(scalar.getStartColumn() - 1));
-                    } else {
                     }
                     sb.append(lexemeLines[i]);
                 }
@@ -234,7 +233,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             }
 
             if (!isFlow) {
-                // handleInlineComments(scalar);
+                // TODO: handleInlineComments(scalar) ?
                 if (!options.stripComments()) {
                     handleInlineComments(scalar);
                 }

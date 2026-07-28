@@ -188,7 +188,33 @@ public abstract class YamlNode implements AstNode {
     @Nullable
     public YamlToken getToken() { return token; }
 
-    public void setToken(YamlToken token) { this.token = token; }
+    // TODO: Remove this
+    // public void setToken(YamlToken token) { this.token = token; }
+
+    public YamlScalar asScalar() {
+        if (this instanceof YamlScalar scalar) {
+            return scalar;
+        }
+        return null;
+    }
+
+    public YamlMap asMap() {
+        if (this instanceof YamlMap map) {
+            return map;
+        }
+        return null;
+    }
+
+    public YamlSequence asSequence() {
+        if (this instanceof YamlSequence sequence) {
+            return sequence;
+        }
+        return null;
+    }
+
+    //
+    //
+    //
 
     /// Compares this node with another for equality based on its content.
     ///

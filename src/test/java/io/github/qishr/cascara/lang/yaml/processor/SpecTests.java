@@ -12,6 +12,7 @@ import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.semver.Tokenizer;
+import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
@@ -427,6 +428,8 @@ public class SpecTests {
     public void test2G84() {
         String yaml = "--- |1-";
 
+        parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
+
         YamlStream stream = parser.parseMulti(yaml);
 
         // The stream must contain exactly one document
@@ -473,7 +476,9 @@ public class SpecTests {
 
    @Test
     public void test4QFQ() {
-        String yaml = "- |\n detected\n- >\n \n  \n  # detected\n- |1\n  explicit\n- >\n detected";
+        String yaml = "- |\n detected\n- >\n \n  \n  # detected\n- |1\n  explicit\n- >\n detected\n";
+
+        parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -507,6 +512,8 @@ public class SpecTests {
               bbb: |
                 xxx
             """;
+
+        parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -602,6 +609,8 @@ public class SpecTests {
     public void test6FWR() {
         String yaml = "--- |+\nab\n\n \n...\n";
 
+        parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
+
         YamlStream stream = parser.parseMulti(yaml);
 
         if (dumpTokens) {
@@ -677,6 +686,8 @@ public class SpecTests {
     public void test6VJK() {
         String yaml = ">\n Sammy Sosa completed another\n fine season with great stats.\n\n   63 Home Runs\n   0.288 Batting Average\n\n What a year!\n";
 
+        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
+
         YamlStream stream = parser.parseMulti(yaml);
 
         if (dumpTokens) {
@@ -692,7 +703,12 @@ public class SpecTests {
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
 
-        TestUtil.assertEquals("Sammy Sosa completed another fine season with great stats.\n\n  63 Home Runs\n  0.288 Batting Average\n\nWhat a year!\n", scalar.asString());
+        String expected = "Sammy Sosa completed another fine season with great stats.\n\n  63 Home Runs\n  0.288 Batting Average\n\nWhat a year!\n";
+
+        System.out.println("Expected: " + StringUtils.debugString(expected));
+        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+
+        TestUtil.assertEquals(expected, scalar.asString());
     }
 
     @Test
@@ -777,7 +793,7 @@ public class SpecTests {
         YamlTokenizer tokenizer = new YamlTokenizer();
         List<YamlToken> tokens = tokenizer.tokenize(yaml);
 
-        if (true || dumpTokens) {
+        if (dumpTokens) {
             TestUtil.dumpTokens(tokens);
         }
 
@@ -801,5 +817,160 @@ public class SpecTests {
 
         assertEquals("six", map.getScalar("top6").asString());
         assertEquals("seven", map.getScalar("top7").asString());
+    }
+
+    @Test
+    public void test7T8X() {
+        String yaml = """
+            >
+
+             folded
+             line
+
+             next
+             line
+               * bullet
+
+               * list
+               * lines
+
+             last
+             line
+
+            # Comment
+            """;;
+
+        // parser.getTokenizer().setReporter(
+        //     new StandardReporter()
+        //         .setLevel(TOKENIZER_LEVEL)
+        //         .setAnsiColoringEnabled(true)
+        // );
+
+        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (dumpTokens) {
+            TestUtil.dumpTokens(parser.getTokens());
+        }
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlScalar.class, body);
+        YamlScalar scalar = (YamlScalar) body;
+
+        String expected = "\nfolded line\nnext line\n  * bullet\n\n  * list\n  * lines\n\nlast line\n";
+
+        System.out.println("Expected: " + StringUtils.debugString(expected));
+        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+
+        TestUtil.assertEquals(expected, scalar.asString());
+    }
+
+    @Test
+    public void test753E() {
+        String yaml = """
+            --- |-
+            ab
+
+
+           ...
+
+           """;
+
+        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (dumpTokens) {
+            TestUtil.dumpTokens(parser.getTokens());
+        }
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlScalar.class, body);
+        YamlScalar scalar = (YamlScalar) body;
+
+        String expected = "ab";
+
+        System.out.println("Expected: " + StringUtils.debugString(expected));
+        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+
+        TestUtil.assertEquals(expected, scalar.asString());
+    }
+
+    // TODO: Enable this
+    @Disabled
+    @Test
+    public void test7ZZ5() {
+        String yaml = """
+            ---
+            nested sequences:
+            - - - []
+            - - - {}
+            key1: []
+            key2: {}
+            """;
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+        if (true|dumpTokens) {
+            TestUtil.dumpTokens(tokens);
+        }
+
+        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
+        parser.setReporter(new StandardReporter().setLevel(Level.DEBUG));
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlMap.class, body);
+        YamlMap map = (YamlMap) body;
+
+        YamlSequence nestedSequence = map.getSequence("nested sequences");
+        assertNotNull(nestedSequence);
+        assertEquals(4, nestedSequence.size());
+
+        YamlSequence outer1 = nestedSequence.getFirst().asSequence();
+        assertNotNull(outer1);
+
+        YamlSequence middle1 = outer1.getFirst().asSequence();
+        assertNotNull(middle1);
+
+        YamlSequence inner1 = middle1.getFirst().asSequence();
+        assertNotNull(inner1);
+        assertTrue(inner1.isEmpty());
+
+        // TODO: outer2 to inner2 (map)
+
+        // {
+        //     "nested sequences": [
+        //       [
+        //         [
+        //           []
+        //         ]
+        //       ],
+        //       [
+        //         [
+        //           {}
+        //         ]
+        //       ]
+        //     ],
+        //     "key1": [],
+        //     "key2": {}
+        //   }
+
     }
 }

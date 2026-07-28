@@ -460,28 +460,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             debug("PV-after-skipTrivia");
 
-
-            // // TODO: This was likely intended to skip the closing INDENT of a map or sequence that has finished parsing
-            // if (check(YamlTokenType.DEDENT) || check(YamlTokenType.EOF)) {
-            //     debug("UNEXPECTED DEDENT------------------*********************************************");
-            //     return new YamlScalar(
-            //         peek(),
-            //         PrimitiveType.NULL,
-            //         options
-            //     );
-            // }
-
-
             YamlToken startToken = peek();
             YamlNode result;
             String pendingAnchor = null;
 
             if (check(YamlTokenType.ANCHOR)) {
                 debug("PV-in-if-anchor1");
-
-                //
-                // TODO: All the returns in here cause a DEDENT to be left in the queue
-                //
 
                 if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
                     result = parseMap();
@@ -490,7 +474,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                     // Consume the DEDENT that closes the map
                     consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
-
 
                     return result;
                 } else {
@@ -510,7 +493,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                             pendingAnchor,
                             innerMap
                         );
-
 
                         // Consume the DEDENT that closes the map
                         consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
@@ -543,11 +525,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     }
                 }
 
-
-
-
-
-
                 skipTrivia();
                 startToken = peek();
             }
@@ -558,7 +535,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             while (check(YamlTokenType.TAG)) {
                 debug("PV-TAG");
                 YamlToken tagTok = advance();
-                pendingTag = tagTok.getContent(); // or getLexeme() - *assuming the lexeme has no quotes at this point*
+                pendingTag = tagTok.getContent();
                 skipTrivia();
             }
 
@@ -961,6 +938,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     // For scalars, track the underlying unescaped string value.
                     // YamlScalarNode.asString() uses Primitive.asString() - Primitive is immutable and aggressively caches things.
                     // For complex structural nodes, track the node identity/structural equivalence.
+                    // TODO: Why not track the lexeme? Surely that's more efficient.
                     Object keyTrackingToken = (key instanceof YamlScalar scalarKey) ? scalarKey.asString() : key;
 
                     if (!seenKeys.add(keyTrackingToken)) {
@@ -983,16 +961,26 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     advance();
                     skipTrivia();
                 }
+
                 consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_MAP_KEY);
                 parseInlineComment(key);
 
                 debug("before parseValue");
                 YamlNode value;
+                YamlToken t0 = peek();
+                YamlToken t1 = peek(1);
                 if (check(YamlTokenType.NEWLINE) && !isIndentedDeeperThan(keyColumn)) {
                     value = new YamlScalar(
                         peek(), PrimitiveType.NULL, options
                     );
                 } else {
+                    // TODO: skipTrivia - there's an optional newline to skip here.
+                    // Or should parseValue() deal with it?
+                    while (check(YamlTokenType.NEWLINE)) {
+                        advance();
+                        skipTrivia();
+                    }
+
                     value = parseValue(mapColumn);
                 }
                 debug("after parseValue");
