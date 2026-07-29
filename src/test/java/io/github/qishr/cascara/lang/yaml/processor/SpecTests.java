@@ -11,7 +11,6 @@ import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
-import io.github.qishr.cascara.common.semver.Tokenizer;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
@@ -174,7 +173,7 @@ public class SpecTests {
         //
         if (true|dumpTokens) {
             YamlTokenizer tokenizer = new YamlTokenizer()
-                .setReporter(new StandardReporter().setLevel(TOKENIZER_LEVEL));
+                .setReporter(new StandardReporter().setLevel(TOKENIZER_LEVEL).setAnsiColoringEnabled(true));
             List<YamlToken> tokens = tokenizer.tokenize(yaml);
             TestUtils.dumpTokens(tokens);
         }
@@ -354,10 +353,10 @@ public class SpecTests {
             f: g
             """;
 
-        // parser.getReporter().setLevel(Level.DEBUG); // TODO: REMOVE THIS
+        parser.getReporter().setLevel(Level.DEBUG); // TODO: REMOVE THIS
         // // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE)); // TODO: REMOVE THIS
-        // YamlTokenizer tz = new YamlTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE));
-        // TestUtil.dumpTokens(tz.tokenize(yaml));
+        YamlTokenizer tz = new YamlTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE));
+        TestUtils.dumpTokens(tz.tokenize(yaml));
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -414,6 +413,11 @@ public class SpecTests {
             k:#foo
              &a !t s
             """;
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+        TestUtils.dumpTokens(tokens);
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -554,6 +558,15 @@ public class SpecTests {
               as a line feed"
             """;
 
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+        if (true|dumpTokens) {
+            TestUtils.dumpTokens(tokens);
+        }
+
+        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
+        reporter.setLevel(Level.DEBUG);
+
         YamlStream stream = parser.parseMulti(yaml);
 
         if (dumpTokens) {
@@ -639,9 +652,20 @@ public class SpecTests {
     public void test6KGN() {
         String yaml = "---\na: &anchor\nb: *anchor";
 
+        parser.getTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(TOKENIZER_LEVEL)
+                .setAnsiColoringEnabled(true)
+        );
+
+        parser.setReporter(
+            new StandardReporter()
+                .setLevel(TOKENIZER_LEVEL)
+                .setAnsiColoringEnabled(true));
+
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (true|dumpTokens) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -799,13 +823,19 @@ public class SpecTests {
         YamlTokenizer tokenizer = new YamlTokenizer();
         List<YamlToken> tokens = tokenizer.tokenize(yaml);
 
-        if (dumpTokens) {
+        if (true|dumpTokens) {
             TestUtils.dumpTokens(tokens);
         }
 
-        // parser.getReporter().setLevel(Level.DEBUG); // TODO: REMOVE THIS
+        parser.setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true)); // TODO: REMOVE THIS
 
-        YamlMap map = (YamlMap)parser.parse(yaml);
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
 
         assertEquals(7, map.size());
 

@@ -40,11 +40,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
-class YamlAstParserTest {
+class YamlParserTest {
 
     private final YamlAstParser parser = new YamlAstParser();
 
@@ -74,6 +76,13 @@ class YamlAstParserTest {
                   -
                     "text/css"
                 """;
+
+
+            YamlTokenizer tokenizer = new YamlTokenizer()
+                .setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
+            List<YamlToken> tokens = tokenizer.tokenize(yaml);
+            TestUtils.dumpTokens(tokens);
+
 
         YamlMap rootMap = (YamlMap)parser.parse(yaml);
 
@@ -134,6 +143,12 @@ class YamlAstParserTest {
                   -
                     2
                 """;
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+        TestUtils.dumpTokens(tokens);
+        parser.setReporter(new StandardReporter().setLevel(Level.DEBUG)); // TODO: REMOVE THIS
+
         YamlMap root = (YamlMap) parser.parse(yaml);
 
         // Accessing values by key and checking style

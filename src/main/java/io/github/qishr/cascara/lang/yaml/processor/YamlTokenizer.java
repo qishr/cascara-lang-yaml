@@ -143,11 +143,15 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         return tokenize(new String(bytes, StandardCharsets.UTF_8));
     }
 
+    String debugSource;
+
     @Override
     public List<YamlToken> tokenize(String source) {
         if (source == null || source.isEmpty()) {
             return List.of();
         }
+
+        this.debugSource = source;
 
         this.tokens = new ArrayList<>();
         this.streamStarted = false;
@@ -197,6 +201,15 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         while (!buffer.isAtEnd() && pendingTokens.isEmpty()) {
             buffer.startTokenWindow();
             scanToken();
+            char shouldBeNewline = buffer.peek();
+            int pos = buffer.offset();
+            if (!buffer.isAtEnd()) {
+                char again = buffer.charAt(pos);
+                debug(StringUtils.debugString(this.debugSource, pos));
+                if (buffer.peek() == '\r' || buffer.peek() == '\n') {
+                    handleNewlineAndIndentation(buffer.advance());
+                }
+            }
         }
 
         // 3. If scanning populated tokens, return the first one
@@ -396,64 +409,236 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     }
 
     /// Scans a [plain scalar](https://yaml.org/spec/1.2.2/#733-plain-style).
+    /// Scans a plain scalar. Supports multi-line continuation only when the next
+    /// line is a valid YAML continuation line:
+    ///   - non-empty
+    ///   - not starting a structural token
+    ///   - indentation strictly greater than the current structural margin
+    ///   - base indentation inferred from the first continuation line
     private void scanPlainScalar(char firstChar) {
-        // firstChar already consumed and already in the token window
+        debug("----scanPlainScalar----");
 
-        char prevChar = firstChar;
-        boolean isFirstChar = false; // we've already seen the first char
+        final int startLine   = buffer.windowStartLine();
+        final int startColumn = buffer.windowStartColumn();
+        final int startOffset = buffer.windowStartOffset();
 
-        while (!buffer.isAtEnd()) {
-            char c = buffer.peek();
+        int margin = indentationLevels.peek();
+        boolean isDocumentLevel = (margin == 1);
+        boolean isKey = false;
+        int blockIndent = - 1;
+        boolean prevEmpty = true;
+        boolean finished = false;
 
-            // 1. Stop at Newlines
-            if (c == '\n' || c == '\r') break;
+        StringBuilder lexeme = new StringBuilder();
+        StringBuilder content = new StringBuilder();
 
-            // 2. Stop at Comments (Space + #, or start-of-scalar + #)
-            if (c == '#') {
-                if (!isFirstChar && !isWhitespace(prevChar)) {
-                    // It's part of the scalar value literal, keep consuming
-                } else {
+        String line = "" + firstChar;
+        int lineNum = 0;
+
+        int endOfPrevLine = -1;
+        int lastContentPos = -1;
+        char prev = 0;
+
+        while (!buffer.isAtEnd() && !finished) {
+
+            int firstContentPos = -1;
+            int pos = 0; // Within the current line
+            char ch = 0;
+            int lineOffset = buffer.offset();
+
+            // TODO: Use StringBuffer
+
+            // Consume a line
+            while (!buffer.isAtEnd() && ch != '\n') {
+                ch = buffer.peek();
+                char next = buffer.peekAhead(1);
+                debugString(Character.toString(ch));
+
+                // ch == '*' || ch == '%' || ch == '!' || ch == '&' ||
+
+                // TODO: For complex keys, there must be a space or newline after
+                // the key indicator and the value indicator
+                if (line.isEmpty() && (ch == '?' || ch == ':')) {
+                    finished = true;
                     break;
                 }
+
+                if ((ch == '#' && prev == ' ') ||
+                    (ch == ':' && (next == ' ' || next == '\r' || next == '\n')) ||
+                    (ch == '-' && (next == ' ' || next == '\r' || next == '\n')) ||
+                    (flowDepth > 0 && (ch == ',' || ch == '{' || ch == '}' || ch == '[' || ch == ']')))
+                {
+                    finished = true;
+                    if (endOfPrevLine > -1) {
+                        debug("---key is next token: " + line);
+                        debug(StringUtils.debugString(line));
+
+                        int target;
+                        if (lastContentPos == -1) {
+                            target = buffer.windowStartOffset() + 1;
+                        } else {
+                            target = endOfPrevLine;
+                        }
+
+                        for (int i = buffer.offset(); i > target; i--) {
+                            buffer.backup();
+                        }
+
+                        // int newPos = buffer.offset();
+                        // if (!buffer.isAtEnd()) {
+                        //     debug(StringUtils.debugString(this.debugSource, "newPos", newPos));
+                        // }
+
+                    } else {
+                        // This line is the key
+                        debug("---key is this token");
+                        isKey = true;
+                    }
+                    break;
+                }
+
+                ch = buffer.advance();
+
+                if (ch == '\n') {
+                    endOfPrevLine = buffer.offset() - 1;
+                    break;
+                }
+
+                if (ch != ' ' && ch != '\t') {
+
+                    // End of document
+                    if (pos == 0 && ch == '.') {
+                        char ahead0 = buffer.peekAhead(0);
+                        char ahead1 = buffer.peekAhead(1);
+                        char ahead2 = buffer.peekAhead(2);
+                        if (ahead0 == '.' && ahead1 == '.' && (ahead2 == '\n' || ahead2 == '\r')) {
+                            debug("Document end - exiting");
+                            finished = true;
+
+                            // Use backup() instead of setOffset() as not all buffers have the latter.
+                            // SourceInputStreamBuffer should be amended to provide an efficient way
+                            // of doing this.
+                            // buffer.setOffset(lineOffset);
+                            for (int i = buffer.offset(); i > lineOffset; i--) {
+                                buffer.backup();
+                            }
+
+                            break;
+                        }
+                    }
+
+                    // End of scalar
+                    if (pos < blockIndent) {
+                        debug("Indent %d < %d - exiting", pos, blockIndent);
+                        finished = true;
+
+                        // Use backup() instead of setOffset() as not all buffers have the latter.
+                        // SourceInputStreamBuffer should be amended to provide an efficient way
+                        // of doing this.
+                        // buffer.setOffset(lineOffset);
+                        for (int i = buffer.offset(); i > lineOffset; i--) {
+                            buffer.backup();
+                        }
+                        break;
+                    }
+
+                    // Start of content
+                    if (firstContentPos == -1) {
+                        debug("blockIndent detection");
+                        // TODO: Does this only apply after the first newline ?
+                        firstContentPos = pos;
+                        if (lineNum > 0 && blockIndent == -1) {
+                            blockIndent = firstContentPos;
+                            debug("Block indent = %d", blockIndent);
+                        }
+                    }
+
+                    if (lineNum == 0 || (blockIndent > -1 && pos >= blockIndent)) {
+                        line += ch;
+
+                        // Debugging test_16_KE
+                        if (line.equals("bar")) {
+                            System.out.println("Debug Bar");
+                        }
+
+                        lastContentPos = pos;
+                        debug("MOL content (append %d, %d): %s", blockIndent, pos, StringUtils.debugString(line));
+                    }
+                } else {
+                    // Whitespace
+
+                    if (blockIndent > -1 && pos >= blockIndent) {
+                        // Block indent has been found and we are at least that far in
+                        // TODO: Don't append trailing spaces?
+                        if (firstContentPos == -1) {
+                        //     if (!isDocumentLevel) {
+                        //         startOfLine.append(ch);
+                        //         debug("SOL whitespace (prepend)");
+                        //     }
+                        } else {
+                            line += ch;
+                            lastContentPos = pos;
+                            debug("MOL whitespace (append)");
+                        }
+                    } else {
+                        // TODO: Something like this, but this exact thing breaks tests...
+                        // Likely because sometimes lineNum 0 is the line after the value indicator?
+
+                        // if (lineNum == 0 && !line.isEmpty()) {
+
+                        // if (blockIndent == -1 && firstContentPos == 0 && lineNum == 0 && !isDocumentLevel && lastContentPos > -1) {
+                        //     // Still on the first line
+                        //     line += ch;
+                        //     lastContentPos = pos;
+                        // } else {
+                        //     debug("blockindent whitespace (discard)");
+                        // }
+                    }
+                }
+                pos++;
+                prev = ch;
             }
 
-            // 3. Stop at flow indicators only inside flow
-            if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c) && flowDepth > 0) {
+            if (isKey) {
+                debug("Key: " + StringUtils.debugString(line));
+                content.append(line);
+                lexeme.append(line);
                 break;
             }
 
-            // 4. Colon rule: stop only if it's a value indicator
-            char next = buffer.peekNext();
-            if (c == ':' && (isWhitespace(next) || buffer.isAtEnd())) {
-                break;
+            if (!finished) {
+                debug("Line: " + StringUtils.debugString(line));
+                if (lineNum > 0) {
+                    // if (prevEmpty) {
+                    if ((prevEmpty && lineNum > 1)) {
+                        content.append('\n');
+                        lexeme.append('\n');
+                    } else {
+                        content.append(' ');
+                        lexeme.append(' ');
+                    }
+                }
+                content.append(line);
+                lexeme.append(line);
             }
 
-            // 5. Explicit key rule: stop if this is a block key indicator
-            if (c == '?' && (isWhitespace(next) || buffer.isAtEnd())) {
-                break;
-            }
-
-            prevChar = buffer.advance();
-            isFirstChar = false;
+            prevEmpty = firstContentPos == -1;
+            lineNum++;
+            line = "";
         }
 
-        String rawLexeme = buffer.getTokenWindowLexeme();
-        if (rawLexeme.isEmpty()) {
-            error(YamlDiagnosticCode.UNEXPECTED_EMPTY_LEXEME);
-            return;
-        }
+        debug("Scalar: " + StringUtils.debugString(content.toString()));
 
-        String trimmedLexeme = rawLexeme.stripTrailing();
-        int trimmedLength = rawLexeme.length() - trimmedLexeme.length();
-        for (int i = 0; i < trimmedLength; i++) {
-            buffer.backup();
-        }
-
-        addToken(YamlTokenType.SCALAR, trimmedLexeme);
+        addToken(new YamlToken(
+            startLine,
+            startColumn,
+            startOffset,
+            YamlTokenType.SCALAR,
+            lexeme.toString(),
+            content.toString(),
+            ScalarStyle.PLAIN
+        ));
     }
-
-
-
 
 
     /// Scans a single quoted scalar, handling escape sequences for double quotes.
@@ -956,6 +1141,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     private void handleNewlineAndIndentation(char c) {
 
+        // TOOO: This method is not meant to be called from scan*leQuotedScalar
+
         if (inQuotedScalar) {
             // Consume the newline (CR or LF or CRLF)
             buffer.advance();
@@ -1007,7 +1194,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         if (currentColumn > expectedIndent) {
             indentationLevels.push(currentColumn);
             if (flowDepth == 0) {
-                debug("handleNewlineAndIndentation INDENT");
+                // debug("handleNewlineAndIndentation INDENT");
                 addStructuralToken(YamlTokenType.INDENT, currentColumn);
             }
         }
@@ -1016,7 +1203,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             while (indentationLevels.size() > 1 && indentationLevels.peek() > currentColumn) {
                 indentationLevels.pop();
                 if (flowDepth == 0) {
-                    debug("handleNewlineAndIndentation DEDENT");
+                    // debug("handleNewlineAndIndentation DEDENT");
                     addStructuralToken(YamlTokenType.DEDENT, currentColumn);
                 }
             }

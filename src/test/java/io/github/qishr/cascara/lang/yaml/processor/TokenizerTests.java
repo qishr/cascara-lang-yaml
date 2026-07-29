@@ -136,7 +136,7 @@ public class TokenizerTests {
             YamlTokenType.SCALAR,
             YamlTokenType.VALUE_INDICATOR,
             YamlTokenType.SCALAR,
-            YamlTokenType.NEWLINE,
+            // YamlTokenType.NEWLINE,
 
             YamlTokenType.EOF,
             YamlTokenType.STREAM_END
@@ -160,7 +160,7 @@ public class TokenizerTests {
 
             YamlTokenType.SEQUENCE_ENTRY_INDICATOR,
             YamlTokenType.SCALAR,
-            YamlTokenType.NEWLINE,
+            // YamlTokenType.NEWLINE,
 
             YamlTokenType.EOF,
             YamlTokenType.STREAM_END

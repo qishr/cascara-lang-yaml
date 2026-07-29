@@ -253,6 +253,8 @@ class YamlTests {
           """;
 
         YamlTokenizer tokenizer = new YamlTokenizer();
+
+        tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG));
         List<YamlToken> tokens = tokenizer.tokenize(yamlString);
         TestUtils.dumpTokens(tokens);
 
@@ -262,5 +264,35 @@ class YamlTests {
 
         assertDoesNotThrow(() -> parser.parse(yamlString));
     }
+
+    @Test
+    void test_16_KE() {
+        String yamlString = """
+            mapping:
+              ? foo
+              : 1
+              ? bar baz
+              : 2
+              ? "qux:quux"
+              : 3
+            tiles:
+              ? X: -10
+                Y: -10
+              : 2
+            """;
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+
+        tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG));
+        List<YamlToken> tokens = tokenizer.tokenize(yamlString);
+        TestUtils.dumpTokens(tokens);
+
+        YamlAstParser parser = new YamlAstParser()
+                .setReporter(new StandardReporter().setLevel(LEVEL));
+
+
+        assertDoesNotThrow(() -> parser.parse(yamlString));
+    }
+
 }
 

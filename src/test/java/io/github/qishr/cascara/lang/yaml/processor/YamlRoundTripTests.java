@@ -56,6 +56,17 @@ public class YamlRoundTripTests {
         validate("12-content-type-records.yaml");
     }
 
+    @Test
+    void valid_16_keys_explicit() {
+        validate("16-keys-explicit.yaml");
+    }
+
+
+
+    //
+    // Utils
+    //
+
     private void validate(String filename) {
         Path path = Paths.get(VALID_PATH, filename);
         String fileContent = null;
