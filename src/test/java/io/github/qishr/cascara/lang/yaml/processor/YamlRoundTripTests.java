@@ -68,7 +68,7 @@ public class YamlRoundTripTests {
         YamlEmitter emitter = new YamlEmitter().setOptions(options);
 
         YamlMap firstAst = (YamlMap) parser.parse(fileContent);
-        TestUtil.dumpTokens(parser.getTokens());
+        TestUtils.dumpTokens(parser.getTokens());
 
         String firstYaml = emitter.emit(firstAst);
 
@@ -79,7 +79,7 @@ public class YamlRoundTripTests {
 
         YamlTokenizer tokenizer = new YamlTokenizer();
         List<YamlToken> tokens = tokenizer.tokenize(firstYaml);
-        TestUtil.dumpTokens(tokens);
+        TestUtils.dumpTokens(tokens);
 
         YamlMap secondAst = (YamlMap) parser.parse(firstYaml);
 
@@ -107,7 +107,7 @@ public class YamlRoundTripTests {
         reporter = new StandardReporter().setLevel(Level.TRACE);
         YamlAstParser parser = new YamlAstParser().setOptions(options).setReporter(reporter);
         parser.parse(content);
-        TestUtil.dumpTokens(parser.getTokens());
+        TestUtils.dumpTokens(parser.getTokens());
     }
 
     private void validateError(String filename, String fileContent, YamlNode firstAst, YamlNode secondAst, String firstYaml, String secondYaml) {
@@ -118,9 +118,9 @@ public class YamlRoundTripTests {
         traceParser(firstYaml, "Emitted Content");
 
         System.out.println("\n=== First AST ===");
-        TestUtil.dumpYamlAst(firstAst, "");
+        TestUtils.dumpYamlAst(firstAst, "");
         System.out.println("\n=== Second AST ===");
-        TestUtil.dumpYamlAst(secondAst, "");
+        TestUtils.dumpYamlAst(secondAst, "");
 
         // System.err.println("\n" + generateDiffMessage(filename, firstYaml, secondYaml) + "\n");
 

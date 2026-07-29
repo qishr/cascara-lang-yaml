@@ -156,7 +156,7 @@ public class YamlEmitterTests {
         System.out.println("OUT:");
         System.out.println(StringUtils.debugString(output));
 
-        TestUtil.assertEquals(yaml, output);
+        TestUtils.assertEquals(yaml, output);
     }
 
     @Test
@@ -165,11 +165,11 @@ public class YamlEmitterTests {
         YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
         YamlNode root = parser.parse(yaml);
 
-        TestUtil.dumpTokens(parser.getTokens());
+        TestUtils.dumpTokens(parser.getTokens());
 
         YamlEmitter emitter = new YamlEmitter();
         String output = emitter.emit(root);
 
-        TestUtil.assertEquals(yaml, output);
+        TestUtils.assertEquals(yaml, output);
     }
 }

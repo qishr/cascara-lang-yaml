@@ -59,6 +59,8 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     INCONSISTENT_INDENTATION("YAML-114", "Inconsistent indentation"),
     EXPECTED_INDENTATION_BLOCK_SCALAR("YAML-115", "Inconsistent indentation for block scalar"),
     EXPECTED_DEDENT_BLOCK_COMMENT("YAML-116", "Expected dedent after block content"),
+    UNEXPECTED_EMPTY_LEXEME("YAML-115", "Unexpected empty lexeme"),
+    UNEXPECTED_END_OF_BUFFER("YAML-116", "Unexpected end of buffer"),
 
     // Parser
     DEPTH_LIMIT("YAML-202", "Depth limit exceeded"),

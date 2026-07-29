@@ -72,7 +72,7 @@ class YamlTests {
         parser.setReporter(new StandardReporter().setLevel(LEVEL));
 
         YamlMap yaml = (YamlMap)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        TestUtils.dumpTokens(parser.getTokens());
 
         List<YamlNode> array = yaml.getSequence("array").getChildren();
         assertEquals(2, array.size());
@@ -90,7 +90,7 @@ class YamlTests {
         parser.setReporter(new StandardReporter().setLevel(LEVEL));
 
         YamlMap yaml = (YamlMap)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        TestUtils.dumpTokens(parser.getTokens());
 
         YamlMap object = yaml.getMap("object");
         List<YamlMapEntry> entries = object.getEntries();
@@ -116,7 +116,7 @@ class YamlTests {
         parser.setReporter(new StandardReporter().setLevel(LEVEL));
 
         YamlMap yaml = (YamlMap)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        TestUtils.dumpTokens(parser.getTokens());
 
         String name = yaml.getString("name");
         assertEquals("one \"two\" three", name);
@@ -130,7 +130,7 @@ class YamlTests {
         parser.setReporter(new StandardReporter().setLevel(LEVEL));
 
         YamlMap yaml = (YamlMap)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        TestUtils.dumpTokens(parser.getTokens());
 
         String name = yaml.getString("name");
         // assertEquals("One\nTwo", name);
@@ -145,7 +145,7 @@ class YamlTests {
         parser.setReporter(new StandardReporter().setLevel(LEVEL));
 
         YamlMap yaml = (YamlMap)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        TestUtils.dumpTokens(parser.getTokens());
 
         String value = yaml.getString("key");
         assertEquals("value", value);
@@ -164,7 +164,7 @@ class YamlTests {
                 .setReporter(new StandardReporter().setLevel(LEVEL));
 
         YamlSequence seq = (YamlSequence)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        TestUtils.dumpTokens(parser.getTokens());
 
         YamlNode first = seq.get(0);
         assertInstanceOf(YamlMap.class, first);
@@ -234,7 +234,7 @@ class YamlTests {
                 .setReporter(new StandardReporter().setLevel(LEVEL));
 
         YamlSequence seq = (YamlSequence)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        TestUtils.dumpTokens(parser.getTokens());
 
         YamlNode first = seq.get(0);
         assertInstanceOf(YamlMap.class, first);
@@ -254,7 +254,7 @@ class YamlTests {
 
         YamlTokenizer tokenizer = new YamlTokenizer();
         List<YamlToken> tokens = tokenizer.tokenize(yamlString);
-        TestUtil.dumpTokens(tokens);
+        TestUtils.dumpTokens(tokens);
 
         YamlAstParser parser = new YamlAstParser()
                 .setReporter(new StandardReporter().setLevel(LEVEL));

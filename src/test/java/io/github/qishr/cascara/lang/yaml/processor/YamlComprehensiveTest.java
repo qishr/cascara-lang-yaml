@@ -179,7 +179,7 @@ class YamlComprehensiveTest {
         // 1. Parse
         YamlMap originalMap = (YamlMap)parser.parse(original);
 
-        TestUtil.dumpTokens(parser.getTokens());
+        TestUtils.dumpTokens(parser.getTokens());
 
 
         YamlOptions options = new YamlOptions().setExpandedStyle(true);
@@ -196,7 +196,7 @@ class YamlComprehensiveTest {
         YamlTokenizer tokenizer = new YamlTokenizer()
             .setReporter(new StandardReporter().setLevel(Level.INFO));
         List<YamlToken> tokens = tokenizer.tokenize(emitted);
-        TestUtil.dumpTokens(tokens);
+        TestUtils.dumpTokens(tokens);
 
 
         // 3. Re-Parse

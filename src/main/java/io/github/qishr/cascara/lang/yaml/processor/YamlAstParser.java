@@ -1250,9 +1250,9 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     options
                 );
 
-                if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
-                    scalar.addComment(parseComment());
-                }
+                // if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
+                //     scalar.addComment(parseComment());
+                // }
                 parseInlineComment(scalar);
                 return scalar;
             }
@@ -1266,9 +1266,9 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     options
                 );
 
-                if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
-                    scalar.addComment(parseComment());
-                }
+                // if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
+                //     scalar.addComment(parseComment());
+                // }
                 parseInlineComment(scalar);
                 return scalar;
             }

@@ -11,9 +11,10 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
+import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
-public class TestUtil {
+public class TestUtils {
 
 
     public static void assertEquals(String expected, String actual) {
@@ -39,13 +40,32 @@ public class TestUtil {
 
         for (int i = 0; i < tokens.size(); i++) {
             YamlToken t = tokens.get(i);
-            table.addRow(
-                String.format("%2d", i),
-                t.getType().toString(),
-                String.format("L:%-3d C:%-3d", t.getStartLine(), t.getStartColumn()),
-                StringUtils.debugString(t.getLexeme()),
-                StringUtils.debugString(t.getContent())
-            );
+            switch(t.getType()) {
+                case ERROR:
+                    YamlErrorToken et = (YamlErrorToken)t;
+                    table.addRow(
+                        String.format("%2d", i),
+                        t.getType().toString(),
+                        String.format("L:%-3d C:%-3d", t.getStartLine(), t.getStartColumn()),
+                        "", et.getCode().getMessage()
+                    );
+                    break;
+                case SCALAR, ALIAS, ANCHOR, TAG, COMMENT:
+                    table.addRow(
+                        String.format("%2d", i),
+                        t.getType().toString(),
+                        String.format("L:%-3d C:%-3d", t.getStartLine(), t.getStartColumn()),
+                        StringUtils.debugString(t.getLexeme()),
+                        StringUtils.debugString(t.getContent())
+                    );
+                    break;
+                default:
+                    table.addRow(
+                        String.format("%2d", i),
+                        t.getType().toString(),
+                        String.format("L:%-3d C:%-3d", t.getStartLine(), t.getStartColumn()), "", ""
+                    );
+            }
         }
 
         PrintWriter pw = new PrintWriter(System.out);

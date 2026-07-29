@@ -48,6 +48,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
 import io.github.qishr.cascara.common.lang.util.SourceBuffer;
@@ -314,12 +315,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         if (c == '-') {
             if (isWhitespace(buffer.peek()) || buffer.isAtEnd()) {
-                int dashColumn = buffer.column() - 1;
+                int dashColumn = tokenStartColumn;
                 int currentMargin = indentationLevels.peek();
 
                 if (dashColumn > currentMargin) {
                     indentationLevels.push(dashColumn);
-                    addStructuralToken(YamlTokenType.INDENT, dashColumn - 1);
+                    debug("scanToke INDENT-1");
+                    addStructuralToken(YamlTokenType.INDENT, dashColumn);
                 }
 
                 addToken(YamlTokenType.SEQUENCE_ENTRY_INDICATOR);
@@ -330,7 +332,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     if (willBeMappingKey()) {
                         if (buffer.column() > indentationLevels.peek()) {
                             indentationLevels.push(buffer.column());
-                            addStructuralToken(YamlTokenType.INDENT, buffer.column() - 1);
+                            debug("scanToke INDENT-2");
+                            addStructuralToken(YamlTokenType.INDENT, buffer.column());
                         }
                     }
                 }
@@ -380,18 +383,123 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (c == '%') {
-            // if (indentationLevels.peek() == 0) {
-                trace(method, "directive");
-                // Directives are line-oriented metadata (e.g., %YAML 1.2)
-                while (buffer.peek() != '\n' && buffer.peek() != '\r' && !buffer.isAtEnd()) {
-                    buffer.advance();
-                }
-                addToken(YamlTokenType.DIRECTIVE);
-                return;
-            // }
+            trace(method, "directive");
+            // Directives are line-oriented metadata (e.g., %YAML 1.2)
+            while (buffer.peek() != '\n' && buffer.peek() != '\r' && !buffer.isAtEnd()) {
+                buffer.advance();
+            }
+            addToken(YamlTokenType.DIRECTIVE);
+            return;
         }
 
         scanPlainScalar(c);
+    }
+
+    /// Scans a [plain scalar](https://yaml.org/spec/1.2.2/#733-plain-style).
+    private void scanPlainScalar(char firstChar) {
+        // firstChar already consumed and already in the token window
+
+        char prevChar = firstChar;
+        boolean isFirstChar = false; // we've already seen the first char
+
+        while (!buffer.isAtEnd()) {
+            char c = buffer.peek();
+
+            // 1. Stop at Newlines
+            if (c == '\n' || c == '\r') break;
+
+            // 2. Stop at Comments (Space + #, or start-of-scalar + #)
+            if (c == '#') {
+                if (!isFirstChar && !isWhitespace(prevChar)) {
+                    // It's part of the scalar value literal, keep consuming
+                } else {
+                    break;
+                }
+            }
+
+            // 3. Stop at flow indicators only inside flow
+            if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c) && flowDepth > 0) {
+                break;
+            }
+
+            // 4. Colon rule: stop only if it's a value indicator
+            char next = buffer.peekNext();
+            if (c == ':' && (isWhitespace(next) || buffer.isAtEnd())) {
+                break;
+            }
+
+            // 5. Explicit key rule: stop if this is a block key indicator
+            if (c == '?' && (isWhitespace(next) || buffer.isAtEnd())) {
+                break;
+            }
+
+            prevChar = buffer.advance();
+            isFirstChar = false;
+        }
+
+        String rawLexeme = buffer.getTokenWindowLexeme();
+        if (rawLexeme.isEmpty()) {
+            error(YamlDiagnosticCode.UNEXPECTED_EMPTY_LEXEME);
+            return;
+        }
+
+        String trimmedLexeme = rawLexeme.stripTrailing();
+        int trimmedLength = rawLexeme.length() - trimmedLexeme.length();
+        for (int i = 0; i < trimmedLength; i++) {
+            buffer.backup();
+        }
+
+        addToken(YamlTokenType.SCALAR, trimmedLexeme);
+    }
+
+
+
+
+
+    /// Scans a single quoted scalar, handling escape sequences for double quotes.
+    private void scanSingleQuotedScalar() {
+        // https://yaml.org/spec/1.2.2/#732-single-quoted-style
+        trace("scanSingleQuotedScalar");
+        inQuotedScalar = true;
+
+        // 1. Capture the starting coordinates using the buffer state
+        int startLine = buffer.line();
+
+        // The opening quote is the character before the current one
+        int startColumn = buffer.column() - 1;
+
+        int startOffset = buffer.offset();
+
+        while (!buffer.isAtEnd()) {
+            char c = buffer.peek();
+
+            if (c == '\n' || c == '\r') {
+                handleNewlineAndIndentation(c);
+                continue;
+            }
+
+            if (c == '\'' && buffer.peekAhead(1) == '\'') {
+                buffer.advance(); // consume first '
+                buffer.advance(); // consume second '
+                continue;
+            }
+
+            if (c == '\'') {
+                // TODO: https://yaml.org/spec/1.2.2/#63-line-prefixes
+                buffer.advance();
+                String lexeme = buffer.getTokenWindowLexeme();
+                String content = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
+                addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, content, ScalarStyle.SINGLE_QUOTED));
+                inQuotedScalar = false;
+                return;
+            }
+
+            buffer.advance();
+        }
+
+        if (buffer.isAtEnd()) {
+            error(YamlDiagnosticCode.UNEXPECTED_END_OF_BUFFER);
+        }
     }
 
     /// Scans a quoted scalar, handling escape sequences for double quotes.
@@ -400,9 +508,17 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         trace("scanDoubleQuotedScalar");
         inQuotedScalar = true;
 
+        // Remaining tasks:
+        // - EOL escapes
+        // - Whitespace at end of line
+        // - Carriage returns
+
         // 1. Capture the starting coordinates using the buffer state
         int startLine = buffer.line();
+
+        // The opening quote is one character before the current position
         int startColumn = buffer.column() - 1;
+
         int startOffset = buffer.offset();
 
         while (!buffer.isAtEnd()) {
@@ -423,10 +539,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 buffer.advance();
                 String lexeme = buffer.getTokenWindowLexeme();
                 String raw = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
-
-                // YAML 1.2 double-quoted folding:
-                // - newline + spaces -> single space
-                // - multiple newlines -> single newline
 
                 int rawLength = raw.length();
                 int newlines = 0;
@@ -537,122 +649,21 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (buffer.isAtEnd()) {
-            addToken(YamlTokenType.ERROR);
+            error(YamlDiagnosticCode.UNEXPECTED_END_OF_BUFFER);
         }
 
         inQuotedScalar = false;
     }
 
-    /// Scans a quoted scalar, handling escape sequences for double quotes.
-    private void scanSingleQuotedScalar() {
-        // https://yaml.org/spec/1.2.2/#732-single-quoted-style
-        trace("scanSingleQuotedScalar");
-        inQuotedScalar = true;
-
-        // 1. Capture the starting coordinates using the buffer state
-        int startLine = buffer.line();
-        int startColumn = buffer.column() - 1;
-        int startOffset = buffer.offset();
-
-        while (!buffer.isAtEnd()) {
-            char c = buffer.peek();
-
-            if (c == '\n' || c == '\r') {
-                handleNewlineAndIndentation(c);
-                continue;
-            }
-
-            if (c == '\'' && buffer.peekAhead(1) == '\'') {
-                buffer.advance(); // consume first '
-                buffer.advance(); // consume second '
-                continue;
-            }
-
-            if (c == '\'') {
-                // TODO: https://yaml.org/spec/1.2.2/#63-line-prefixes
-                buffer.advance();
-                String lexeme = buffer.getTokenWindowLexeme();
-                String content = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
-                addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, content, ScalarStyle.SINGLE_QUOTED));
-                inQuotedScalar = false;
-                return;
-            }
-
-            buffer.advance();
-        }
-
-        if (buffer.isAtEnd()) {
-            addToken(YamlTokenType.ERROR);
-        }
-    }
-
-    private void scanPlainScalar(char firstChar) {
-        // https://yaml.org/spec/1.2.2/#733-plain-style
-        trace("scanPlainScalar");
-
-        char prevChar = '\0';
-        boolean isFirstChar = true;
-
-        do {
-            char c = buffer.peek();
-
-            // 1. Stop at Newlines
-            if (c == '\n' || c == '\r') break;
-
-            // 2. Stop at Comments (Space + #)
-            // A '#' is only a comment if it is preceded by whitespace, or if it's the very first char
-            if (c == '#') {
-                if (!isFirstChar && !isWhitespace(prevChar)) {
-                    // It's part of the scalar value literal, keep consuming
-                } else {
-                    break;
-                }
-            }
-
-            if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c) && flowDepth > 0) {
-                break;
-            }
-
-            // 4. The Colon Rule: Stop ONLY if it's a value indicator
-            char next = buffer.peekNext();
-
-            if (c == ':' && (isWhitespace(next) || buffer.isAtEnd())) {
-                break;
-            }
-
-            // 4b. The Explicit Key Rule: Stop if this is a block key indicator
-            if (c == '?' && (isWhitespace(next) || buffer.isAtEnd())) {
-                break;
-            }
-
-            prevChar = buffer.advance();
-            isFirstChar = false;
-        } while (!buffer.isAtEnd());
-
-        // Get the accumulated text inside our window
-        String rawLexeme = buffer.getTokenWindowLexeme();
-
-        if (rawLexeme.isEmpty()) {
-             addToken(YamlTokenType.ERROR);
-             return;
-        }
-
-        // 5. Trim trailing whitespace
-        String trimmedLexeme = rawLexeme.stripTrailing();
-
-        // 6. Backup the pointer for every character trimmed
-        int trimmedLength = rawLexeme.length() - trimmedLexeme.length();
-        for (int i = 0; i < trimmedLength; i++) {
-            buffer.backup();
-        }
-
-        addToken(YamlTokenType.SCALAR, trimmedLexeme);
-    }
-
     /// Scans a folded or literal block scalar
     public void scanBlockScalar(char headerChar) {
+        // Remaining tasks:
+        // - EOL escapes
+        // - Whitespace at end of line
+        // - Carriage returns
+
         int startLine = buffer.line();
-        int startColumn = buffer.column() - 1;
+        int startColumn = buffer.column();
         int startOffset = buffer.offset();
 
         ScalarStyle scalarStyle = (headerChar == '|')
@@ -725,10 +736,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         StringBuilder content = new StringBuilder();
 
         while (!buffer.isAtEnd() && !finished) {
-            // boolean isLineBlank = false;
-            // int lineEndPos = -1;
             int firstContentPos = -1;
-            int lastContentPos = -1;
             int pos = 0; // Within the current line
             char ch = 0;
             int lineOffset = buffer.offset();
@@ -839,7 +847,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                         line += ch;
                         debug("MOL content (append %d, %d): %s", blockIndent, pos, StringUtils.debugString(line));
                     }
-                    lastContentPos = pos;
                     consecutiveNewlines = 0;
                 } else {
                     // Whitespace
@@ -970,7 +977,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         if (lexeme.length() == 2) buffer.advance();
 
         // Use column - lexeme.length() to point to the start of the newline
-        addStructuralToken(YamlTokenType.NEWLINE, buffer.column() - lexeme.length());
+        addStructuralToken(YamlTokenType.NEWLINE, buffer.column() - lexeme.length() + 1);
 
         // 2. Keep eating newlines and spaces as long as the line is "empty"
         while (!buffer.isAtEnd()) {
@@ -985,7 +992,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 if (nl.length() == 2) buffer.advance();
 
                 if (flowDepth == 0) {
-                    addStructuralToken(YamlTokenType.NEWLINE, buffer.column() - nl.length());
+                    addStructuralToken(YamlTokenType.NEWLINE, buffer.column() - nl.length() + 1);
                 }
             } else {
                 // We hit actual content (or a comment)
@@ -996,34 +1003,20 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         int currentColumn = buffer.column();
         int expectedIndent = indentationLevels.peek();
 
-
-
-
-
         // 3. Indentation Logic
         if (currentColumn > expectedIndent) {
             indentationLevels.push(currentColumn);
             if (flowDepth == 0) {
-                addStructuralToken(YamlTokenType.INDENT, currentColumn - 1);
+                debug("handleNewlineAndIndentation INDENT");
+                addStructuralToken(YamlTokenType.INDENT, currentColumn);
             }
         }
-
-        // boolean suppressIndent = lastSignificantTokenType == YamlTokenType.SEQUENCE_ENTRY_INDICATOR &&
-        // flowDepth == 0;
-
-        // if (currentColumn > expectedIndent) {
-        //     indentationLevels.push(currentColumn);
-        //     if (!suppressIndent) {
-        //         addStructuralToken(YamlTokenType.INDENT, currentColumn);
-        //     }
-        //     return;
-        // }
 
         else if (currentColumn < expectedIndent) {
             while (indentationLevels.size() > 1 && indentationLevels.peek() > currentColumn) {
                 indentationLevels.pop();
                 if (flowDepth == 0) {
-                    // Restored the proper structural token generation helper pointing to the exact column index
+                    debug("handleNewlineAndIndentation DEDENT");
                     addStructuralToken(YamlTokenType.DEDENT, currentColumn);
                 }
             }
@@ -1050,7 +1043,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         this.flowDepth = 0;
         this.indentationLevels.clear();
-        this.indentationLevels.push(0);
+        this.indentationLevels.push(1);
 
         pendingTokens.clear();
 
@@ -1071,7 +1064,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     // TODO: Why do we have both queueToken (above) and addToken (below) ?
     private YamlToken addToken(YamlToken token) {
-        trace("addToken");
+        debug("addToken: " + token.getType());
         if (token != null) {
             pendingTokens.add(token); // Queue it up so nextToken() can yield it!
         }
@@ -1090,7 +1083,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     }
 
     private void addStructuralToken(YamlTokenType type, int tokenColumn) {
-        trace("addStructuralToken");
         addToken(new YamlToken(buffer.windowStartLine(), tokenColumn, buffer.windowStartOffset(), type));
     }
 
@@ -1124,7 +1116,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         // 4. Check for the value indicator
-        return buffer.peekAhead(steps) == ':';
+        boolean willBeMappingKey = buffer.peekAhead(steps) == ':';
+        return willBeMappingKey;
     }
 
     private boolean isWhitespace(char c) {
