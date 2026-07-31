@@ -987,8 +987,6 @@ public class SpecTests {
         TestUtils.assertEquals(expected, scalar.asString());
     }
 
-    // TODO: Enable this
-    @Disabled
     @Test
     public void test7ZZ5() {
         String yaml = """
@@ -1021,7 +1019,7 @@ public class SpecTests {
 
         YamlSequence nestedSequence = map.getSequence("nested sequences");
         assertNotNull(nestedSequence);
-        assertEquals(4, nestedSequence.size());
+        assertEquals(2, nestedSequence.size());
 
         YamlSequence outer1 = nestedSequence.getSequence(0);
         assertNotNull(outer1);
@@ -1033,25 +1031,21 @@ public class SpecTests {
         assertNotNull(inner1);
         assertTrue(inner1.isEmpty());
 
-        // TODO: outer2 to inner2 (map)
+        YamlSequence outer2 = nestedSequence.getSequence(1);
+        assertNotNull(outer2);
 
-        // {
-        //     "nested sequences": [
-        //       [
-        //         [
-        //           []
-        //         ]
-        //       ],
-        //       [
-        //         [
-        //           {}
-        //         ]
-        //       ]
-        //     ],
-        //     "key1": [],
-        //     "key2": {}
-        //   }
+        YamlSequence middle2 = outer2.getSequence(0);
+        assertNotNull(middle2);
 
+        YamlMap inner2 = middle2.getMap(0);
+        assertNotNull(inner2);
+        assertTrue(inner2.isEmpty());
+
+        YamlSequence val1 = map.getSequence("key1");
+        YamlMap val2= map.getMap("key2");
+
+        assertTrue(val1.isEmpty());
+        assertTrue(val2.isEmpty());
     }
 
     @Test

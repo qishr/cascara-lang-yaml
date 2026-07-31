@@ -828,14 +828,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                 debug("before parseValue");
                 YamlNode value;
-                // if (check(YamlTokenType.NEWLINE) && !isIndentedDeeperThan(keyColumn)) {
-                //     value = new YamlScalar(
-                //         peek(), PrimitiveType.NULL, options
-                //     );
-                // }
-                // if (check(YamlTokenType.NEWLINE) && !nextNodeIndentedDeeperThan(keyColumn)) {
-                //     value = new YamlScalar(peek(), PrimitiveType.NULL, options);
-                // }
                 if (check(YamlTokenType.NEWLINE) && !hasIndentedValueAfterNewline()) {
                     value = new YamlScalar(peek(), PrimitiveType.NULL, options);
                 }
@@ -1286,7 +1278,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
 
             // First non‑trivia, non‑INDENT token
-            return sawIndent;
+            // First non‑trivia token
+            if (tt == YamlTokenType.SEQUENCE_ENTRY_INDICATOR) {
+                return true; // sequence value
+            }
+
+            return sawIndent; // fallback for indented block values
         }
     }
 
