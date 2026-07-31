@@ -201,11 +201,15 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         while (!buffer.isAtEnd() && pendingTokens.isEmpty()) {
             buffer.startTokenWindow();
             scanToken();
+
             char shouldBeNewline = buffer.peek();
             int pos = buffer.offset();
+
             if (!buffer.isAtEnd()) {
+
                 char again = buffer.charAt(pos);
                 debug(StringUtils.debugString(this.debugSource, pos));
+
                 if (buffer.peek() == '\r' || buffer.peek() == '\n') {
                     handleNewlineAndIndentation(buffer.advance());
                 }
@@ -278,9 +282,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         if (c == ' ' || c == '\t') {
             trace(method, "space or tab");
-            // if (c == '\t') {
-            //     error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
-            // }
             return;
         }
 
@@ -290,10 +291,16 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (c == '-' && buffer.peek() == '-' && buffer.peekNext() == '-') {
-            trace(method, "dash1");
-            buffer.advance(); buffer.advance();
-            addToken(YamlTokenType.DOCUMENT_START);
-            return;
+            char afterDocStart = buffer.peekAhead(2);
+            if (afterDocStart == ' ' ||
+                afterDocStart == '\t' ||
+                afterDocStart == '\n' ||
+                afterDocStart == '\r') {
+                trace(method, "dash1");
+                buffer.advance(); buffer.advance();
+                addToken(YamlTokenType.DOCUMENT_START);
+                return;
+            }
         }
 
         if (c == '.' && buffer.peek() == '.' && buffer.peekNext() == '.') {
