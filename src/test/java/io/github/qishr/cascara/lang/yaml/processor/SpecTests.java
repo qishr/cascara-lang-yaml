@@ -1239,4 +1239,48 @@ public class SpecTests {
 
         TestUtils.assertEquals(expected, scalar.asString());
     }
+
+    @Test
+    public void test8XYN() {
+        String yaml = """
+            ---
+            - &😁 unicode anchor
+            """;
+
+        parser.getTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(TOKENIZER_LEVEL)
+                .setAnsiColoringEnabled(true)
+        );
+
+        parser.setReporter(
+            new StandardReporter()
+                .setLevel(Level.DEBUG)
+                .setAnsiColoringEnabled(true)
+        );
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (true|dumpTokens) {
+            TestUtils.dumpTokens(parser.getTokens());
+        }
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlSequence.class, body);
+        YamlSequence seq = (YamlSequence)body;
+
+        YamlScalar scalar = seq.getScalar(0);
+
+        String expected = "unicode anchor";
+
+        System.out.println("Expected: " + StringUtils.debugString(expected));
+        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+
+        TestUtils.assertEquals(expected, scalar.asString());
+    }
 }

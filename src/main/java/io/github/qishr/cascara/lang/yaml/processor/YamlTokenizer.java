@@ -1161,12 +1161,42 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
 
     private void scanIdentifier(YamlTokenType type) {
-        while (!buffer.isAtEnd() && (isAlphaNumeric(buffer.peek()) || buffer.peek() == '!')) {
+        if (!isIdentifierStartChar(buffer.peek())) {
+            return;
+        }
+        buffer.advance();
+        for (char ch = buffer.peek(); !buffer.isAtEnd() && !(ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n'); ch = buffer.peek()) {
+            ch = buffer.peek();
+            char next = buffer.peekNext();
+            if ((ch == ':' && (next == ' ' || next == '\t' || next == '\r' || next == '\n')) ||
+                (ch == '-' && (next == ' ' || next == '\t' || next == '\r' || next == '\n')) ||
+                (flowDepth > 0 && (ch == ',' || ch == '{' || ch == '}' || ch == '[' || ch == ']'))) {
+                break;
+            }
             buffer.advance();
         }
         addToken(type);
     }
 
+    private boolean isIdentifierStartChar(char c) {
+        // ns-anchor-char: any non-space, non-flow-indicator, non-comment char
+        return !isWhitespace(c)
+            && c != ':'
+            && c != ','
+            && c != '['
+            && c != ']'
+            && c != '{'
+            && c != '}'
+            && c != '&'
+            && c != '*'
+            && c != '#'
+            && c != '?'
+            && c != '|'
+            && c != '-'
+            && c != '<'
+            && c != '>'
+            && c != '!';
+    }
 
     private void scanTag() {
         // URI tag: !<...>
