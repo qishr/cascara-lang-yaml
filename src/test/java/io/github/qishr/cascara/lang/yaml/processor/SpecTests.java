@@ -1197,4 +1197,46 @@ public class SpecTests {
         TestUtils.assertEquals("Block scalar\n", seq.getScalar(1).asString());
         TestUtils.assertEquals("bar", map.getScalar("foo").asString());
     }
+
+    @Test
+    public void test82AN() {
+        String yaml = """
+            ---word1
+            word2
+            """;
+
+        parser.getTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(TOKENIZER_LEVEL)
+                .setAnsiColoringEnabled(true)
+        );
+
+        parser.setReporter(
+            new StandardReporter()
+                .setLevel(Level.DEBUG)
+                .setAnsiColoringEnabled(true)
+        );
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (true|dumpTokens) {
+            TestUtils.dumpTokens(parser.getTokens());
+        }
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlScalar.class, body);
+        YamlScalar scalar = (YamlScalar) body;
+
+        String expected = "---word1 word2";
+
+        System.out.println("Expected: " + StringUtils.debugString(expected));
+        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+
+        TestUtils.assertEquals(expected, scalar.asString());
+    }
 }
