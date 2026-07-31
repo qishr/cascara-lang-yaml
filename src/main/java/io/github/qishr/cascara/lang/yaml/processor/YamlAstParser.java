@@ -53,6 +53,7 @@ import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
+import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
@@ -86,6 +87,8 @@ import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 ///   tokens through the [parseValue] dispatcher.
 
 public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implements AstParser<YamlNode, YamlToken, YamlTokenizer> {
+
+    private static final int MAX_DEBUG_STRING_LENGTH = 20;
 
     private YamlTokenizer tokenizer;
 
@@ -1477,16 +1480,22 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 token.getType() == YamlTokenType.TAG ||
                 token.getType() == YamlTokenType.DIRECTIVE
             ){
+                String lexeme = StringUtils.debugString(token.getLexeme());
                 sb.append("(");
                 sb.append(ANSI_WHITE);
-                sb.append(
-                    token.getLexeme() == null
-                        ? "null"
-                        : token.getLexeme().replace("\n", "\\n").replace("\r", "\\r")
-                );
+                if (lexeme.length() <= MAX_DEBUG_STRING_LENGTH) {
+                    sb.append(lexeme);
+                } else {
+                    sb.append(lexeme.substring(0, MAX_DEBUG_STRING_LENGTH - 1));
+                    sb.append(StringUtils.ELLIPSIS);
+                }
                 sb.append(ANSI_RESET);
                 sb.append(")");
             }
+        }
+        if (tokenBuffer.size() - current > distance) {
+            sb.append(", ");
+            sb.append(StringUtils.ELLIPSIS);
         }
         return sb.toString();
     }

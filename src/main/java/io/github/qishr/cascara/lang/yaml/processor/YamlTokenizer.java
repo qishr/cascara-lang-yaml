@@ -423,7 +423,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         final int startOffset = buffer.windowStartOffset();
 
         int margin = indentationLevels.peek();
-        boolean isDocumentLevel = false; //(margin == 1);
+        boolean isDocumentLevel = false;
 
         boolean isKey = false;
         int blockIndent = - 1;
@@ -449,7 +449,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             char ch = 0;
             int lineOffset = buffer.offset();
 
-            // TODO: Use StringBuffer
+            // Remaining tasks:
+            // - EOL escapes
+            // - Carriage returns
+            // - Use StringBuffer
 
             // Consume a line
             while (!buffer.isAtEnd() && ch != '\n') {
@@ -505,6 +508,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                 ch = buffer.advance();
 
+                // TODO: I don't think this can be true
                 if (ch == '\n') {
                     endOfPrevLine = buffer.offset() - 1;
                     break;
@@ -574,15 +578,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                     if (blockIndent > -1 && pos >= blockIndent) {
                         // Block indent has been found and we are at least that far in
-                        if (firstContentPos == -1) {
-                        //     if (!isDocumentLevel) {
-                        //         startOfLine.append(ch);
-                        //         debug("SOL whitespace (prepend)");
-                        //     }
-                        } else {
+                        if (firstContentPos != -1) {
                             trailingWhitespace += ch;
-                            // line += ch;
-                            // lastContentPos = pos;
                             debug("MOL whitespace (append)");
                         }
                     } else {
@@ -590,8 +587,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                         if (blockIndent == -1 && firstContentPos == 0 && lineNum == 0 && !isDocumentLevel && lastContentPos > -1) {
                             // Still on the first line
                             trailingWhitespace += ch;
-                            // line += ch;
-                            // lastContentPos = pos;
                         } else {
                             debug("blockindent whitespace (discard)");
                         }
@@ -612,7 +607,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 debug("Line: " + StringUtils.debugString(line));
                 if (lineNum > 0) {
                     if ((prevEmpty && lineNum > 1)) {
-                    // if ((prevEmpty && lineNum > 0)) {
                         content.append('\n');
                         lexeme.append('\n');
                     } else {
@@ -626,7 +620,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 lexeme.append(line);
             }
 
-            // prevEmpty = firstContentPos == -1;
             prevEmpty = line.isEmpty();
             lineNum++;
             line = "";
@@ -702,8 +695,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         inQuotedScalar = true;
 
         // Remaining tasks:
-        // - EOL escapes
-        // - Whitespace at end of line
         // - Carriage returns
 
         // 1. Capture the starting coordinates using the buffer state
@@ -734,18 +725,22 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 String raw = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
 
                 int rawLength = raw.length();
-                int newlines = 0;
+                int newLines = 0;
                 boolean isLineBlank = true;
                 boolean isFirstLine = true;
+                boolean isEolEscaped = false;
 
                 int lineEndPos = -1;
                 int lastNonWhitespacePos = -1;
+                char prev = '\0';
                 int pos;
-                for (pos = 0; pos < rawLength && raw.charAt(pos) != '\n'; pos++) {
+                for (pos = 0; pos < rawLength && !(raw.charAt(pos) == '\n'); pos++) {
+                // for (pos = 0; pos < rawLength && !(raw.charAt(pos) == '\n' && prev != '\\'); pos++) {
                     char potentialWhitespace = raw.charAt(pos);
                     if (potentialWhitespace != ' ' && potentialWhitespace != '\t') {
                         lastNonWhitespacePos = pos;
                     }
+                    prev = potentialWhitespace;
                 }
                 if (pos < rawLength && raw.charAt(pos) == '\n') {
                     lineEndPos = pos;
@@ -757,51 +752,79 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     debugString(raw, "lineEndPos", lineEndPos);
                 }
 
+                prev = '\0';
                 StringBuilder folded = new StringBuilder();
                 for (int i = 0; i < rawLength;) {
                     char ch = raw.charAt(i);
 
                     if (ch == '\n') {
-                        newlines++;
-                        isLineBlank = true;
                         isFirstLine = false;
-                        lineEndPos = -1;
+                        isLineBlank = true;
                         lastNonWhitespacePos = -1;
-                        if (i + 1 < rawLength) {
-                            for (pos = i + 1; pos < rawLength && raw.charAt(pos) != '\n'; pos++) {
-                                char potentialWhitespace = raw.charAt(pos);
-                                if (potentialWhitespace != ' ' && potentialWhitespace != '\t') {
-                                    lastNonWhitespacePos = pos;
+                        if (prev == '\\') {
+                            isEolEscaped = true;
+                        } else {
+                            newLines++;
+                            lineEndPos = -1;
+                            if (i + 1 < rawLength) {
+                                char tmpPrev = '\0';
+                                for (pos = i + 1; pos < rawLength && !(raw.charAt(pos) == '\n'); pos++) {
+                                // for (pos = i + 1; pos < rawLength && !(raw.charAt(pos) == '\n' && tmpPrev != '\\'); pos++) {
+                                    char potentialWhitespace = raw.charAt(pos);
+                                    if (potentialWhitespace != ' ' && potentialWhitespace != '\t') {
+                                        lastNonWhitespacePos = pos;
+                                    }
+                                    tmpPrev = potentialWhitespace;
+                                }
+                                if (pos < rawLength && raw.charAt(pos) == '\n') {
+                                    lineEndPos = pos;
+                                }
+                                if (lastNonWhitespacePos > -1) {
+                                    debugString(raw, "lastNonWhitespacePos", lastNonWhitespacePos);
+                                }
+                                if (lineEndPos > -1) {
+                                    debugString(raw, "lineEndPos", lineEndPos);
                                 }
                             }
-                            if (pos < rawLength && raw.charAt(pos) == '\n') {
-                                lineEndPos = pos;
-                            }
-                            if (lastNonWhitespacePos > -1) {
-                                debugString(raw, "lastNonWhitespacePos", lastNonWhitespacePos);
-                            }
-                            if (lineEndPos > -1) {
-                                debugString(raw, "lineEndPos", lineEndPos);
-                            }
                         }
-
                     } else {
                         // https://yaml.org/spec/1.2.2/#63-line-prefixes
-                        if (isLineBlank && (ch == ' ' || ch == '\t')) {
+                        // if (isLineBlank && (ch == ' ' || ch == '\t')) {
+                        if ((lastNonWhitespacePos == -1 || isLineBlank) && (ch == ' ' || ch == '\t')) {
                             // Leading whitespace is ignored beyond the first line
                             if (isFirstLine) {
                                 folded.append(ch);
                             }
                         } else {
 
-                            if (newlines == 1) {
+                            // if (isEolEscaped) {
+                            //     System.out.println("Debug EOL escape");
+                            // }
+                            // if (ch == '\\') {
+                            //     // System.out.println("Debug backslash");
+                            //     debugString(raw, "backslash", pos);
+                            // }
+
+                            if (newLines == 1) {
                                 folded.append(' ');
-                                newlines = 0;
-                            } else if (newlines > 1) {
+                                newLines = 0;
+                            } else if (newLines > 1) {
                                 folded.append('\n');
-                                newlines = 0;
+                                newLines = 0;
                             }
-                            folded.append(ch);
+
+                            // TODO: Do this for literal scalars too.
+                            // Don't immediately append backslashes.
+                            // Wait until the next character and append them just before it.
+                            // This lets us check if the backslash is escaping an EOL.
+                            if (prev == '\\' && !isEolEscaped) {
+                                folded.append('\\');
+                            }
+                            if (ch != '\\') {
+                                folded.append(ch);
+                            }
+
+                            isEolEscaped = false;
                             isLineBlank = false;
 
                             // Skip trailing whitespace
@@ -817,17 +840,19 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                                 } else {
                                     // Skip to the newline
                                     i = lineEndPos;
+                                    prev = raw.charAt(i-1);
                                     continue;
                                 }
                             }
                         }
                     }
                     i++;
+                    prev = ch;
                 }
 
-                if (newlines == 1) {
+                if (newLines == 1) {
                     folded.append(' ');
-                } else if (newlines > 1) {
+                } else if (newLines > 1) {
                     folded.append('\n');
                 }
 
