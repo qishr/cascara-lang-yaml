@@ -423,7 +423,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         final int startOffset = buffer.windowStartOffset();
 
         int margin = indentationLevels.peek();
-        boolean isDocumentLevel = (margin == 1);
+        boolean isDocumentLevel = false; //(margin == 1);
+
         boolean isKey = false;
         int blockIndent = - 1;
         boolean prevEmpty = true;
@@ -437,12 +438,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         int lineNum = 0;
 
         int endOfPrevLine = -1;
-        int lastContentPos = -1;
+        int firstContentPos = (firstChar == ' ' || firstChar == '\t' ? -1 : 0);
+        int lastContentPos = firstContentPos;
         char prev = 0;
+
 
         while (!buffer.isAtEnd() && !finished) {
 
-            int firstContentPos = -1;
             int pos = 0; // Within the current line
             char ch = 0;
             int lineOffset = buffer.offset();
@@ -549,6 +551,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     // Start of content
                     if (firstContentPos == -1) {
                         debug("blockIndent detection");
+                        isDocumentLevel = (buffer.column() == 1);
                         // TODO: Does this only apply after the first newline ?
                         firstContentPos = pos;
                         if (lineNum > 0 && blockIndent == -1) {
@@ -609,20 +612,25 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 debug("Line: " + StringUtils.debugString(line));
                 if (lineNum > 0) {
                     if ((prevEmpty && lineNum > 1)) {
+                    // if ((prevEmpty && lineNum > 0)) {
                         content.append('\n');
                         lexeme.append('\n');
                     } else {
-                        content.append(' ');
-                        lexeme.append(' ');
+                        if (!line.isEmpty()) {
+                            content.append(' ');
+                            lexeme.append(' ');
+                        }
                     }
                 }
                 content.append(line);
                 lexeme.append(line);
             }
 
-            prevEmpty = firstContentPos == -1;
+            // prevEmpty = firstContentPos == -1;
+            prevEmpty = line.isEmpty();
             lineNum++;
             line = "";
+            firstContentPos = -1;
         }
 
         String contentString = content.toString().stripTrailing();

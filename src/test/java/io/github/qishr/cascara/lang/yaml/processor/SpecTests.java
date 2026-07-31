@@ -382,6 +382,11 @@ public class SpecTests {
             this is#not: a comment
             """;
 
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+        TestUtils.dumpTokens(tokens);
+
         YamlStream stream = parser.parseMulti(yaml);
 
         // The stream must contain exactly one document
@@ -391,8 +396,12 @@ public class SpecTests {
         YamlNode body = YamlNormalizer.normalize(doc.getBody());
 
         assertInstanceOf(YamlMap.class, body);
-        // YamlMap map = (YamlMap) body;
+        YamlMap map = (YamlMap) body;
 
+        TestUtils.assertEquals("safe question mark",map.getScalar("?foo").asString());
+        TestUtils.assertEquals("safe colon",map.getScalar(":foo").asString());
+        TestUtils.assertEquals("safe dash",map.getScalar("-foo").asString());
+        TestUtils.assertEquals("a comment",map.getScalar("this is#not").asString());
     }
 
     @Test
@@ -908,6 +917,41 @@ public class SpecTests {
     }
 
     @Test
+    public void test36F6() {
+        String yaml = """
+            ---
+            plain: a
+             b
+
+             c
+            """;;
+
+        parser.getTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(TOKENIZER_LEVEL)
+                .setAnsiColoringEnabled(true)
+        );
+
+        parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (true|dumpTokens) {
+            TestUtils.dumpTokens(parser.getTokens());
+        }
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlMap map = (YamlMap) body;
+
+        YamlScalar scalar = map.getScalar("plain");
+        TestUtils.assertEquals("a b\nc", scalar.asString());
+    }
+
+    @Test
     public void test753E() {
         String yaml = """
             --- |-
@@ -979,13 +1023,13 @@ public class SpecTests {
         assertNotNull(nestedSequence);
         assertEquals(4, nestedSequence.size());
 
-        YamlSequence outer1 = nestedSequence.getFirst().asSequence();
+        YamlSequence outer1 = nestedSequence.getSequence(0);
         assertNotNull(outer1);
 
-        YamlSequence middle1 = outer1.getFirst().asSequence();
+        YamlSequence middle1 = outer1.getSequence(0);
         assertNotNull(middle1);
 
-        YamlSequence inner1 = middle1.getFirst().asSequence();
+        YamlSequence inner1 = middle1.getSequence(0);
         assertNotNull(inner1);
         assertTrue(inner1.isEmpty());
 

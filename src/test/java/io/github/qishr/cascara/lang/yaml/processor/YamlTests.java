@@ -265,9 +265,7 @@ class YamlTests {
         assertDoesNotThrow(() -> parser.parse(yamlString));
     }
 
-    @Test
-    void test_16_KE() {
-        // String yamlString = """
+    // String yamlString = """
         //     mapping:
         //       ? foo
         //       : 1
@@ -288,6 +286,9 @@ class YamlTests {
         //       : 2
         //     """;
 
+
+    @Test
+    void test_16_KE() {
         String yamlString = """
               ? X: -10
                 Y: -10
@@ -306,7 +307,6 @@ class YamlTests {
                     .setLevel(LEVEL)
                     .setAnsiColoringEnabled(true)
             );
-
 
         assertDoesNotThrow(() -> parser.parse(yamlString));
     }

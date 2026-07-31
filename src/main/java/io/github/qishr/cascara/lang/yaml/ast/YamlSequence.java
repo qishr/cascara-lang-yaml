@@ -108,6 +108,27 @@ public class YamlSequence extends YamlNode implements SequenceAstNode<YamlNode> 
         return elements.getLast();
     }
 
+    public YamlMap getMap(int i) {
+        if (get(i) instanceof YamlMap map) {
+            return map;
+        }
+        return null;
+    }
+
+    public YamlSequence getSequence(int i) {
+        if (get(i) instanceof YamlSequence sequence) {
+            return sequence;
+        }
+        return null;
+    }
+
+    public YamlScalar getScalar(int i) {
+        if (get(i) instanceof YamlScalar scalar) {
+            return scalar;
+        }
+        return null;
+    }
+
     /// {@inheritDoc}
     @Override
     public List<YamlNode> getElements() {
