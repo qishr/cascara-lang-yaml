@@ -1247,6 +1247,50 @@ public class SpecTests {
             - &😁 unicode anchor
             """;
 
+        // parser.getTokenizer().setReporter(
+        //     new StandardReporter()
+        //         .setLevel(TOKENIZER_LEVEL)
+        //         .setAnsiColoringEnabled(true)
+        // );
+
+        // parser.setReporter(
+        //     new StandardReporter()
+        //         .setLevel(Level.DEBUG)
+        //         .setAnsiColoringEnabled(true)
+        // );
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (dumpTokens) {
+            TestUtils.dumpTokens(parser.getTokens());
+        }
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlSequence.class, body);
+        YamlSequence seq = (YamlSequence)body;
+
+        YamlScalar scalar = seq.getScalar(0);
+
+        String expected = "unicode anchor";
+
+        System.out.println("Expected: " + StringUtils.debugString(expected));
+        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+
+        TestUtils.assertEquals(expected, scalar.asString());
+    }
+
+    @Test
+    public void test96NN_00() {
+        String yaml = """
+            foo: |-
+             \tbar
+            """;
+
         parser.getTokenizer().setReporter(
             new StandardReporter()
                 .setLevel(TOKENIZER_LEVEL)
@@ -1271,12 +1315,11 @@ public class SpecTests {
 
         YamlNode body = YamlNormalizer.normalize(doc.getBody());
 
-        assertInstanceOf(YamlSequence.class, body);
-        YamlSequence seq = (YamlSequence)body;
+        YamlMap map = (YamlMap)body;
 
-        YamlScalar scalar = seq.getScalar(0);
+        YamlScalar scalar = map.getScalar("foo");
 
-        String expected = "unicode anchor";
+        String expected = "\tbar";
 
         System.out.println("Expected: " + StringUtils.debugString(expected));
         System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
