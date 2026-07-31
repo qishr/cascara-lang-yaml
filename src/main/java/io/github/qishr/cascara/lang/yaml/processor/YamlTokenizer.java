@@ -445,7 +445,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         int lineNum = 0;
 
         int endOfPrevLine = -1;
-        int firstContentPos = (firstChar == ' ' || firstChar == '\t' ? -1 : 0);
+        // int firstContentPos = (firstChar == ' ' || firstChar == '\t' ? -1 : 0);
+        int firstContentPos = (firstChar == ' ' ? -1 : 0);
         int lastContentPos = firstContentPos;
         char prev = 0;
 
@@ -521,7 +522,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     break;
                 }
 
-                if (ch != ' ' && ch != '\t') {
+                // if (ch != ' ' && ch != '\t') {
+                if (ch != ' ') {
 
                     // End of document check
                     if (pos == 0 && ch == '.') {
@@ -979,7 +981,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     consecutiveNewlines++;
                     break;
                 }
-                if (ch != ' ' && ch != '\t') {
+                // if (ch != ' ' && ch != '\t') {
+                if (ch != ' ') {
 
                     // End of document
                     if (pos == 0 && ch == '.') {
