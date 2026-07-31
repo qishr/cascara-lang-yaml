@@ -474,7 +474,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     attachComments(result);
                     debug("PV-after-parseMap-1");
 
-                    debug("-------------------OLD DEDENT CODE");
                     // Consume the DEDENT that closes the map
                     consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
 
@@ -487,12 +486,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                     String raw = anchorTok.getContent();
                     pendingAnchor = raw.startsWith("&") ? raw.substring(1) : raw;
-
-                    skipTrivia();
-
-                    // TODO: Anchor belongs to the next node ONLY IF the next node's indent is greated than the parent's
                     int ahead = 0;
                     YamlToken candidate = null;
+
+                    skipTrivia();
 
                     candidate = peek(ahead);
                     while (candidate.getType() == YamlTokenType.NEWLINE ||
@@ -502,16 +499,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         System.out.println(candidate.getType());
                     }
 
-                    // for (candidate = peek(ahead);
-                    //      candidate.getType() == YamlTokenType.NEWLINE ||
-                    //      candidate.getType() == YamlTokenType.COMMENT;
-                    //      ahead++);
-
-                    // YamlToken anchoredToken = null;
                     if (candidate.getStartColumn() > parentIndent) {
                         skipTrivia();
-                        // anchoredToken = candidate;
-
                     } else {
                         result = new YamlScalar(
                             peek(),
@@ -527,10 +516,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         anchorRegistry.put(pendingAnchor, anchorNode);
                         return attachComments(anchorNode);
                     }
-
-
-                    // TODO: Only do this if the anchor belongs to its following node
-                    // startToken = peek();
                 }
             }
             debug("PV-after-if-anchor");
@@ -555,27 +540,16 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 debug("Setting pending dedent");
             }
 
-
             if (check(YamlTokenType.SCALAR) && peek().getContent().equals("foo")) {
                 System.out.println("Debug Foo");
             }
-            if (check(YamlTokenType.SCALAR) && peek().getContent().equals("1")) {
-                System.out.println("Debug One");
-            }
-
 
             if (check(YamlTokenType.KEY_INDICATOR)) {
                 result = parseMap();
-
-                // debug("------NEW DENDENT CODE");
-                // consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
             }
 
             else if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
                 result = parseMap();
-
-                // debug("------NEW DENDENT CODE");
-                // consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
             }
 
             else if (check(YamlTokenType.ANCHOR)) {
@@ -627,28 +601,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
 
             else {
-
-                if (check(YamlTokenType.SCALAR) && startToken.getStartColumn() == parentIndent) {
-                    // 2026-07-27:
-                    // The above else-if wasn't true because either:
-                    // - startToken is not a scalar
-                    // - startToken is a scalar but its indent level is the same as the
-                    //   parent meaning it's not part of what we should be parsing here
-                    //
-                    // TODO: Is it okay to assume startToken is not what we should be
-                    //       parsing and that we have a null at this point?
-
-                    // 2026-07-29:
-                    // It's not okay to assume that. We end up here for complex keys.
-                    debug("Debug complex keys");
-                    // For this complex key:
-                    //   startToken.getStartColumn() == 5
-                    //   and
-                    //   parentIndent ==5
-                    //
-                    // I'm not sure if this is valid
-                }
-
                 result = new YamlScalar(
                     peek(),
                     PrimitiveType.NULL,
@@ -657,9 +609,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
 
             if (pendingDedent) {
-                debug("Consuming pending dedent");
-                // consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
                 if (check(YamlTokenType.DEDENT)) {
+                    debug("Consuming pending dedent");
                     advance();
                 }
             }
@@ -709,16 +660,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             Set<Object> seenKeys = new HashSet<>();
             int mapColumn = -1;
 
-            // if ("key1".equals(startToken.getContent())) {
-            //     System.out.println("Debug key1");
-            // }
-
             while (!isAtEnd()) {
                 skipTrivia();
 
                 // TODO: Determine which of these INDENTs/DEDENTs comply with spec.
 
                 if (check(YamlTokenType.INDENT)) {
+                    // This block runs for key 'Y' in test_16_KE
                     if (lookAheadIgnoringComments(YamlTokenType.NEWLINE)) {
                         // debug("--------------- MARKER 1"); // TODO: Resolve this problem
                         advance(); // Consume INDENT
@@ -729,6 +677,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         continue;
                     }
                 }
+
                 if (check(YamlTokenType.DEDENT)) {
                     // Only break if this dedent closes the current map
                     if (!isIndentedDeeperThan(mapColumn)) {
@@ -744,22 +693,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     skipTrivia();
                     continue;
                 }
-                // TODO: This next block should not be here or should signal an error ?
-                // TODO: Block we were supposed to remove but breaks tests if it's removed:
-                if (check(YamlTokenType.INDENT)) {
-                    // debug("--------------- MARKER 3"); // TODO: Resolve this problem
-                    advance();
-                    skipTrivia();
-                }
 
                 // Peek at the token that will tell us if an entry is actually here
                 debug("at markerToken");
                 YamlToken markerToken = peek();
-
-                // if (markerToken.getStartColumn() != map.getStartColumn()) {
-                //     // TODO: Why are these values different?
-                //     debug("--------------- MARKER 4");
-                // }
 
                 boolean isExplicitKey = check(YamlTokenType.KEY_INDICATOR);
                 boolean isScalarKeyStart =
@@ -824,7 +761,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                         // // Inline key evaluation: check if a colon belongs to the same line context
 
-                        // // Sandy says: This code was here, but using parseValue to parse keys doesn't work.
+                        // This code was here, but using parseValue to parse keys doesn't work.
+
                         // if (hasInlineValueIndicator()) {
                         //     debug("Calling parseValue for KEY");
                         //     key = parseValue(markerColumn); // Parse inline nested map/sequence
@@ -869,14 +807,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                 skipTrivia();
 
-                // TODO: Block we were supposed to remove but breaks tests if it's removed:
-                // Clear any leftover indentation noise caused by the complex key block structure
-                // There should be no "noise"
-                while (check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
-                    advance();
-                    skipTrivia();
-                }
-
                 consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_MAP_KEY);
                 parseInlineComment(key);
 
@@ -889,8 +819,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         peek(), PrimitiveType.NULL, options
                     );
                 } else {
-                    // TODO: skipTrivia - there's an optional newline to skip here.
-                    // Or should parseValue() deal with it?
                     while (check(YamlTokenType.NEWLINE)) {
                         advance();
                         skipTrivia();
