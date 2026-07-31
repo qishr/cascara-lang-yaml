@@ -1162,13 +1162,37 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
 
     private void scanTag() {
+        // URI tag: !<...>
+        // if (buffer.peek() == '!' && buffer.peekAhead(1) == '<') {
+        if (buffer.peek()  == '<') {
+            buffer.advance(); // '!'
+            buffer.advance(); // '<'
+
+            while (!buffer.isAtEnd() && buffer.peek() != '>') {
+                buffer.advance();
+            }
+
+            if (!buffer.isAtEnd()) {
+                buffer.advance(); // consume '>'
+            }
+
+            addToken(YamlTokenType.TAG);
+            return;
+        }
+
+        // Non‑URI tag: !foo, !!str, !e!tag%21, etc.
         while (!buffer.isAtEnd() &&
-                (isAlphaNumeric(buffer.peek()) ||
-                 buffer.peek() == '!' ||
-                 buffer.peek() == '%'))
+               (isAlphaNumeric(buffer.peek()) ||
+                buffer.peek() == '!' ||
+                buffer.peek() == '%' ||
+                buffer.peek() == '-' ||
+                buffer.peek() == '_' ||
+                buffer.peek() == ':' ||
+                buffer.peek() == '/'))
         {
             buffer.advance();
         }
+
         addToken(YamlTokenType.TAG);
     }
 
