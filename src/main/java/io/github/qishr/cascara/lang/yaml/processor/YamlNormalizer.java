@@ -34,23 +34,16 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
-import io.github.qishr.cascara.common.lang.util.QuoteStyle;
-import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
-import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlDocumentNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
+import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 
 public class YamlNormalizer {
     public static StandardReporter reporter = new StandardReporter().setLevel(Level.DEBUG);
@@ -73,24 +66,24 @@ public class YamlNormalizer {
         // }
 
         // unwrap anchors
-        if (node instanceof YamlAnchorNode anchor) {
+        if (node instanceof YamlAnchor anchor) {
             return normalize(anchor.getInnerNode());
         }
 
         // resolve aliases
-        if (node instanceof YamlAliasNode alias) {
+        if (node instanceof YamlAlias alias) {
             return normalize(alias.getResolvedNode());
         }
 
         // normalize maps
-        if (node instanceof YamlMapNode map) {
+        if (node instanceof YamlMap map) {
 
             // First normalize children
-            YamlMapNode newMap = new YamlMapNode(map.getToken(), map.getOptions());
-            for (YamlMapEntryNode entry : map.getEntries()) {
+            YamlMap newMap = new YamlMap(map.getToken(), map.getOptions());
+            for (YamlMapEntry entry : map.getEntries()) {
                 YamlNode key = normalize(entry.getKey());
                 YamlNode value = normalize(entry.getValue());
-                newMap.put(new YamlMapEntryNode(
+                newMap.put(new YamlMapEntry(
                     key,
                     value
                 ));
@@ -99,11 +92,11 @@ public class YamlNormalizer {
             // *** SPECIAL CASE FOR TEST SUITE 2SXE ***
             // Collapse { resolvedAlias → null } into resolvedAlias
             if (newMap.getEntries().size() == 1) {
-                YamlMapEntryNode entry = newMap.getEntries().getFirst();
+                YamlMapEntry entry = newMap.getEntries().getFirst();
 
                 // Key must be a scalar (resolved alias)
-                if (entry.getKey() instanceof YamlScalarNode scalarKey &&
-                    entry.getValue() instanceof YamlScalarNode scalarValue &&
+                if (entry.getKey() instanceof YamlScalar scalarKey &&
+                    entry.getValue() instanceof YamlScalar scalarValue &&
                     scalarValue.getPrimitiveType() == PrimitiveType.NULL &&
                     scalarKey.getAnchor() != null) {
 
@@ -116,8 +109,8 @@ public class YamlNormalizer {
         }
 
         // normalize sequences
-        if (node instanceof YamlSequenceNode seq) {
-            YamlSequenceNode newSeq = new YamlSequenceNode(seq.getToken());
+        if (node instanceof YamlSequence seq) {
+            YamlSequence newSeq = new YamlSequence(seq.getToken());
             for (YamlNode child : seq.getChildren()) {
                 newSeq.add(normalize(child));
             }
@@ -126,41 +119,5 @@ public class YamlNormalizer {
 
         // scalars are already normalized
         return node;
-    }
-
-    private static YamlScalarNode foldPlainScalars(List<? extends YamlNode> nodes) {
-
-        YamlOptions options = null;
-        if (nodes.getFirst() instanceof YamlScalarNode scalar) {
-            options = scalar.getOptions();
-        }
-
-        List<String> lines = new ArrayList<>();
-
-        for (YamlNode n : nodes) {
-            if (n instanceof YamlScalarNode s) {
-                lines.add(s.asString());
-            }
-        }
-
-        StringBuilder out = new StringBuilder();
-        boolean first = true;
-
-        for (String line : lines) {
-            if (first) {
-                out.append(line);
-                first = false;
-            } else {
-                out.append(" ");
-                out.append(line);
-            }
-        }
-
-        return new YamlScalarNode(
-            out.toString(),          // JVM value
-            ScalarStyle.PLAIN,        // style
-            options                  // options from first scalar
-        );
-
     }
 }

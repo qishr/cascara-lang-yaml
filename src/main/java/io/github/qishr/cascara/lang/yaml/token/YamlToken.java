@@ -36,8 +36,6 @@
 package io.github.qishr.cascara.lang.yaml.token;
 
 import io.github.qishr.cascara.common.lang.token.Token;
-import io.github.qishr.cascara.common.lang.type.PrimitiveType;
-import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 
 public class YamlToken implements Token {
@@ -48,7 +46,6 @@ public class YamlToken implements Token {
     private String lexeme;
     private String content;
     private final ScalarStyle scalarStyle;
-    private PrimitiveType schemaType;
 
     /// Structural Token
     public YamlToken(

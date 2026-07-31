@@ -1,67 +1,38 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 import java.io.PrintWriter;
 import java.util.List;
 
 import org.junit.jupiter.api.AssertionFailureBuilder;
 
-import io.github.qishr.cascara.common.data.Table;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.common.data.TextualTable;
+import io.github.qishr.cascara.common.util.StringUtils;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
+import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
-public class TestUtil {
-    public static String debugString(String input) {
-        if (input == null) return "␀";
-        StringBuilder sb = new StringBuilder();
-        for (int codePoint : input.codePoints().toArray()) {
-            sb.append(currentChar( codePoint ));
-        }
-        return sb.toString();
-    }
+public class TestUtils {
 
-    private static String currentChar(int c) {
-        switch (c) {
-            case ' ':
-                return "␣";
-            case '\t':
-                return "⇥";
-            case '\r':
-                return "␍";
-            case '\n':
-                return "↵";
-            default:
-                return Character.toString(c);
-        }
-    }
 
     public static void assertEquals(String expected, String actual) {
         if (expected == actual) return;
         if (expected == null || !expected.equals(actual)) {
             AssertionFailureBuilder.assertionFailure()
                 // .message(error(expected, actual))
-				.expected(debugString(expected))
-				.actual(debugString(actual))
+				.expected(StringUtils.debugString(expected))
+				.actual(StringUtils.debugString(actual))
 				.buildAndThrow();
         }
-    }
-
-    private static String error(String expected, String actual) {
-        return String.format(
-            "Expected: %s  Actual: %s",
-            TestUtil.debugString(expected),
-            TestUtil.debugString(actual)
-        );
     }
 
     public static void dumpTokens(List<YamlToken> tokens) {
         System.out.println();
         // System.out.println("------------TOKENS-----------");
-        Table table = new Table();
+        TextualTable table = new TextualTable();
+        table.setStyle(TextualTable.Style.ROUNDED);
         table.addColumn("#");
         table.addColumn("Token");
         table.addColumn("Location");
@@ -70,17 +41,40 @@ public class TestUtil {
 
         for (int i = 0; i < tokens.size(); i++) {
             YamlToken t = tokens.get(i);
-            table.addRow(
-                String.format("%2d", i),
-                t.getType().toString(),
-                String.format("L:%-3d C:%-3d", t.getStartLine(), t.getStartColumn()),
-                debugString(t.getLexeme()),
-                debugString(t.getContent())
-            );
+            switch(t.getType()) {
+                case ERROR:
+                    YamlErrorToken et = (YamlErrorToken)t;
+                    table.addRow(
+                        String.format("%2d", i),
+                        t.getType().toString(),
+                        String.format("L:%-3d C:%-3d", t.getStartLine(), t.getStartColumn()),
+                        "", et.getCode().getMessage()
+                    );
+                    break;
+                case SCALAR, ALIAS, ANCHOR, TAG, COMMENT:
+                    table.addRow(
+                        String.format("%2d", i),
+                        t.getType().toString(),
+                        String.format("L:%-3d C:%-3d", t.getStartLine(), t.getStartColumn()),
+                        StringUtils.debugString(t.getLexeme()),
+                        StringUtils.debugString(t.getContent())
+                    );
+                    break;
+                default:
+                    table.addRow(
+                        String.format("%2d", i),
+                        t.getType().toString(),
+                        String.format("L:%-3d C:%-3d", t.getStartLine(), t.getStartColumn()), "", ""
+                    );
+            }
         }
 
         PrintWriter pw = new PrintWriter(System.out);
-        table.render(pw);
+        try {
+            table.render(pw);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         // pw.flush();
 
 
@@ -97,7 +91,7 @@ public class TestUtil {
     }
 
     public static void dumpYamlAst(YamlNode node, String indent) {
-        if (node instanceof YamlScalarNode s) {
+        if (node instanceof YamlScalar s) {
             System.out.println(indent + "Scalar:");
             System.out.println(indent + "  value      = " + s.asString());
             System.out.println(indent + "  quoteStyle = " + s.getQuoteStyle());
@@ -105,7 +99,7 @@ public class TestUtil {
             return;
         }
 
-        if (node instanceof YamlSequenceNode arr) {
+        if (node instanceof YamlSequence arr) {
             System.out.println(indent + "Array:");
             for (YamlNode child : arr.getElements()) {
                 dumpYamlAst(child, indent + "  ");
@@ -113,7 +107,7 @@ public class TestUtil {
             return;
         }
 
-        if (node instanceof YamlMapNode obj) {
+        if (node instanceof YamlMap obj) {
             System.out.println(indent + "Object:");
             for (var entry : obj.getEntries()) {
                 System.out.println(indent + "  key = " + entry.getKeyString());

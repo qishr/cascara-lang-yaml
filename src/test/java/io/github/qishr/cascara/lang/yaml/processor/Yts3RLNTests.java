@@ -6,9 +6,10 @@ import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlDocumentNode;
+import io.github.qishr.cascara.common.util.StringUtils;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlStreamNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 
 public class Yts3RLNTests {
     @Test
@@ -30,7 +31,7 @@ public class Yts3RLNTests {
 
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        TestUtil.assertEquals(expected, actual);
+        TestUtils.assertEquals(expected, actual);
     }
 
     @Test
@@ -39,7 +40,7 @@ public class Yts3RLNTests {
         String expected = "2 leading \ttab";
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        TestUtil.assertEquals(expected, actual);
+        TestUtils.assertEquals(expected, actual);
     }
 
     @Test
@@ -48,7 +49,7 @@ public class Yts3RLNTests {
         String expected = "3 leading tab";
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        TestUtil.assertEquals(expected, actual);
+        TestUtils.assertEquals(expected, actual);
     }
 
     @Test
@@ -76,7 +77,7 @@ public class Yts3RLNTests {
 
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        TestUtil.assertEquals(expected, actual);
+        TestUtils.assertEquals(expected, actual);
     }
 
     @Test
@@ -94,7 +95,7 @@ public class Yts3RLNTests {
         String expected = "6 leading tab";
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        TestUtil.assertEquals(expected, actual);
+        TestUtils.assertEquals(expected, actual);
     }
 
     //
@@ -102,18 +103,18 @@ public class Yts3RLNTests {
     //
 
     private void debug(String yaml, String expected, String actual) {
-        System.out.println("YAML: " + TestUtil.debugString(yaml));
-        System.out.println("Converted: " + TestUtil.debugString(actual));
-        System.out.println("Expected: " + TestUtil.debugString(expected));
+        System.out.println("YAML: " + StringUtils.debugString(yaml));
+        System.out.println("Converted: " + StringUtils.debugString(actual));
+        System.out.println("Expected: " + StringUtils.debugString(expected));
     }
 
     private String convert(String yaml) {
         YamlAstParser parser = new YamlAstParser();
 
-        YamlStreamNode stream = parser.parseMulti(yaml);
+        YamlStream stream = parser.parseMulti(yaml);
 
         assertEquals(1, stream.getDocuments().size());
-        YamlDocumentNode doc = stream.getDocuments().getFirst();
+        YamlDocument doc = stream.getDocuments().getFirst();
 
         YamlConverter converter = new YamlConverter();
         YamlNode normalized = YamlNormalizer.normalize(doc.getBody());
@@ -127,8 +128,8 @@ public class Yts3RLNTests {
     private String error(String expected, String actual) {
         return String.format(
             "Expected: %s  Actual: %s",
-            TestUtil.debugString(expected),
-            TestUtil.debugString(actual)
+            StringUtils.debugString(expected),
+            StringUtils.debugString(actual)
         );
     }
 }
