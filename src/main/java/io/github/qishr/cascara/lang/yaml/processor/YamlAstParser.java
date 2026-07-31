@@ -555,6 +555,15 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 debug("Setting pending dedent");
             }
 
+
+            if (check(YamlTokenType.SCALAR) && peek().getContent().equals("foo")) {
+                System.out.println("Debug Foo");
+            }
+            if (check(YamlTokenType.SCALAR) && peek().getContent().equals("1")) {
+                System.out.println("Debug One");
+            }
+
+
             if (check(YamlTokenType.KEY_INDICATOR)) {
                 result = parseMap();
 
@@ -620,6 +629,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             else {
 
                 if (check(YamlTokenType.SCALAR) && startToken.getStartColumn() == parentIndent) {
+                    // 2026-07-27:
                     // The above else-if wasn't true because either:
                     // - startToken is not a scalar
                     // - startToken is a scalar but its indent level is the same as the
@@ -627,6 +637,16 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     //
                     // TODO: Is it okay to assume startToken is not what we should be
                     //       parsing and that we have a null at this point?
+
+                    // 2026-07-29:
+                    // It's not okay to assume that. We end up here for complex keys.
+                    debug("Debug complex keys");
+                    // For this complex key:
+                    //   startToken.getStartColumn() == 5
+                    //   and
+                    //   parentIndent ==5
+                    //
+                    // I'm not sure if this is valid
                 }
 
                 result = new YamlScalar(
@@ -800,15 +820,19 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     if (check(YamlTokenType.INDENT) || check(YamlTokenType.NEWLINE)) {
                         key = parseValue(markerColumn);
                     } else {
-                        // Inline key evaluation: check if a colon belongs to the same line context
 
 
+                        // // Inline key evaluation: check if a colon belongs to the same line context
+
+                        // // Sandy says: This code was here, but using parseValue to parse keys doesn't work.
                         // if (hasInlineValueIndicator()) {
                         //     debug("Calling parseValue for KEY");
                         //     key = parseValue(markerColumn); // Parse inline nested map/sequence
                         // } else {
                         //     key = parseScalar(); // Parse inline simple scalar key
                         // }
+
+
                         key = parseKeyNode(markerColumn);
 
 
@@ -931,9 +955,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     advance(); // consume &anchor
                     String raw = tok.getContent();
                     String name = raw.startsWith("&") ? raw.substring(1) : raw;
-
-                    // // Consume the ':' that belongs to the anchored key
-                    // consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_MAP_KEY);
 
                     // Parse the scalar key that follows
                     YamlNode key = parseScalar();

@@ -81,6 +81,7 @@ public class YamlEmitterTests {
             "    - safe";
 
         YamlAstParser parser = new YamlAstParser();
+        parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
 
         parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
 
@@ -90,6 +91,10 @@ public class YamlEmitterTests {
         // }).setLevel(Level.TRACE));
 
         YamlMap yaml = (YamlMap)parser.parse(original);
+
+        if (true) {
+            TestUtils.dumpTokens(parser.getTokens());
+        }
 
         YamlEmitter emitter = new YamlEmitter();
         String result = emitter.emit(yaml);

@@ -433,6 +433,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         StringBuilder content = new StringBuilder();
 
         String line = "" + firstChar;
+        String trailingWhitespace = "";
         int lineNum = 0;
 
         int endOfPrevLine = -1;
@@ -458,12 +459,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                 // TODO: For complex keys, there must be a space or newline after
                 // the key indicator and the value indicator
-                if (line.isEmpty() && (ch == '?' || ch == ':')) {
+                if (line.isEmpty() && (ch == '?' || ch == ':' || ch == '#')) { // TODO other chars?
                     finished = true;
                     break;
                 }
 
-                if ((ch == '#' && prev == ' ') ||
+                // TODO: Do tabs count as whitespace here?
+                if ((ch == '#' && prev == ' ' || prev == '\r' || prev == '\n') ||
                     (ch == ':' && (next == ' ' || next == '\r' || next == '\n')) ||
                     (ch == '-' && (next == ' ' || next == '\r' || next == '\n')) ||
                     (flowDepth > 0 && (ch == ',' || ch == '{' || ch == '}' || ch == '[' || ch == ']')))
@@ -474,7 +476,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                         debug(StringUtils.debugString(line));
 
                         int target;
-                        if (lastContentPos == -1) {
+                        if (ch == '#') {
+                            target = buffer.windowStartOffset() + pos - 2;
+                        } else if (lastContentPos == -1) {
                             target = buffer.windowStartOffset() + 1;
                         } else {
                             target = endOfPrevLine;
@@ -506,7 +510,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                 if (ch != ' ' && ch != '\t') {
 
-                    // End of document
+                    // End of document check
                     if (pos == 0 && ch == '.') {
                         char ahead0 = buffer.peekAhead(0);
                         char ahead1 = buffer.peekAhead(1);
@@ -527,7 +531,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                         }
                     }
 
-                    // End of scalar
+                    // End of scalar check
                     if (pos < blockIndent) {
                         debug("Indent %d < %d - exiting", pos, blockIndent);
                         finished = true;
@@ -554,12 +558,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     }
 
                     if (lineNum == 0 || (blockIndent > -1 && pos >= blockIndent)) {
+                        line += trailingWhitespace; // TODO: Do this in block scanner too.
                         line += ch;
 
-                        // Debugging test_16_KE
-                        if (line.equals("bar")) {
-                            System.out.println("Debug Bar");
-                        }
+                        trailingWhitespace = "";
 
                         lastContentPos = pos;
                         debug("MOL content (append %d, %d): %s", blockIndent, pos, StringUtils.debugString(line));
@@ -569,30 +571,27 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                     if (blockIndent > -1 && pos >= blockIndent) {
                         // Block indent has been found and we are at least that far in
-                        // TODO: Don't append trailing spaces?
                         if (firstContentPos == -1) {
                         //     if (!isDocumentLevel) {
                         //         startOfLine.append(ch);
                         //         debug("SOL whitespace (prepend)");
                         //     }
                         } else {
-                            line += ch;
-                            lastContentPos = pos;
+                            trailingWhitespace += ch;
+                            // line += ch;
+                            // lastContentPos = pos;
                             debug("MOL whitespace (append)");
                         }
                     } else {
-                        // TODO: Something like this, but this exact thing breaks tests...
-                        // Likely because sometimes lineNum 0 is the line after the value indicator?
-
-                        // if (lineNum == 0 && !line.isEmpty()) {
-
-                        // if (blockIndent == -1 && firstContentPos == 0 && lineNum == 0 && !isDocumentLevel && lastContentPos > -1) {
-                        //     // Still on the first line
-                        //     line += ch;
-                        //     lastContentPos = pos;
-                        // } else {
-                        //     debug("blockindent whitespace (discard)");
-                        // }
+                        // TODO: Clean this up
+                        if (blockIndent == -1 && firstContentPos == 0 && lineNum == 0 && !isDocumentLevel && lastContentPos > -1) {
+                            // Still on the first line
+                            trailingWhitespace += ch;
+                            // line += ch;
+                            // lastContentPos = pos;
+                        } else {
+                            debug("blockindent whitespace (discard)");
+                        }
                     }
                 }
                 pos++;
@@ -609,7 +608,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             if (!finished) {
                 debug("Line: " + StringUtils.debugString(line));
                 if (lineNum > 0) {
-                    // if (prevEmpty) {
                     if ((prevEmpty && lineNum > 1)) {
                         content.append('\n');
                         lexeme.append('\n');
@@ -627,15 +625,17 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             line = "";
         }
 
-        debug("Scalar: " + StringUtils.debugString(content.toString()));
+        String contentString = content.toString().stripTrailing();
+
+        debug("Scalar: " + StringUtils.debugString(contentString));
 
         addToken(new YamlToken(
             startLine,
             startColumn,
             startOffset,
             YamlTokenType.SCALAR,
-            lexeme.toString(),
-            content.toString(),
+            lexeme.toString().stripTrailing(),
+            contentString,
             ScalarStyle.PLAIN
         ));
     }

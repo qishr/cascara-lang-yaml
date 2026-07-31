@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.AssertionFailureBuilder;
 
-import io.github.qishr.cascara.common.data.Table;
+import io.github.qishr.cascara.common.data.TextualTable;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
@@ -31,7 +31,8 @@ public class TestUtils {
     public static void dumpTokens(List<YamlToken> tokens) {
         System.out.println();
         // System.out.println("------------TOKENS-----------");
-        Table table = new Table();
+        TextualTable table = new TextualTable();
+        table.setStyle(TextualTable.Style.ROUNDED);
         table.addColumn("#");
         table.addColumn("Token");
         table.addColumn("Location");
@@ -69,7 +70,11 @@ public class TestUtils {
         }
 
         PrintWriter pw = new PrintWriter(System.out);
-        table.render(pw);
+        try {
+            table.render(pw);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         // pw.flush();
 
 
