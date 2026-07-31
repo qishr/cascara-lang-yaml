@@ -278,9 +278,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         if (c == ' ' || c == '\t') {
             trace(method, "space or tab");
-            if (c == '\t') {
-                error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
-            }
+            // if (c == '\t') {
+            //     error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
+            // }
             return;
         }
 
@@ -470,9 +470,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 }
 
                 // TODO: Do tabs count as whitespace here?
-                if ((ch == '#' && prev == ' ' || prev == '\r' || prev == '\n') ||
-                    (ch == ':' && (next == ' ' || next == '\r' || next == '\n')) ||
-                    (ch == '-' && (next == ' ' || next == '\r' || next == '\n')) ||
+                if ((ch == '#' && (prev == ' ' || prev == '\t' || prev == '\r' || prev == '\n')) ||
+                    (ch == ':' && (next == ' ' || next == '\t' || next == '\r' || next == '\n')) ||
+                    (ch == '-' && (next == ' ' || next == '\t' || next == '\r' || next == '\n')) ||
                     (flowDepth > 0 && (ch == ',' || ch == '{' || ch == '}' || ch == '[' || ch == ']')))
                 {
                     finished = true;
@@ -1192,6 +1192,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             return;
         }
 
+        if (c == '\t') {
+            error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
+        }
+
         // 1. First Newline
         String lexeme = (c == '\r' && buffer.peek() == '\n') ? "\r\n" : "\n";
         if (lexeme.length() == 2) buffer.advance();
@@ -1218,6 +1222,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 // We hit actual content (or a comment)
                 break;
             }
+        }
+
+        if (buffer.peek() == '\t') {
+            error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
         }
 
         int currentColumn = buffer.column();
