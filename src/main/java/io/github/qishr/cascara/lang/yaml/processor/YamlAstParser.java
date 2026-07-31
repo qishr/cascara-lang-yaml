@@ -530,22 +530,23 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             // 2. Structural dispatch
 
+            // TODO: Should this come after the INDENT below?
+            // 1. Collect tags (node-level, including !!str on the document body)
+            String pendingTag = null;
+            while (check(YamlTokenType.TAG)) {
+                debug("PV-TAG start");
+                YamlToken tagTok = advance();
+                pendingTag = tagTok.getContent();
+                skipTrivia();
+                debug("PV-TAG end");
+            }
+
             boolean pendingDedent = false;
             if (check(YamlTokenType.INDENT)) {
                 advance();
                 skipTrivia();
                 pendingDedent = true;
                 debug("Setting pending dedent");
-            }
-
-            // TODO: Should this come after the INDENT below?
-            // 1. Collect tags (node-level, including !!str on the document body)
-            String pendingTag = null;
-            while (check(YamlTokenType.TAG)) {
-                debug("PV-TAG");
-                YamlToken tagTok = advance();
-                pendingTag = tagTok.getContent();
-                skipTrivia();
             }
 
             if (check(YamlTokenType.KEY_INDICATOR)) {

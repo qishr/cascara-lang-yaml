@@ -1166,4 +1166,41 @@ public class SpecTests {
 
         TestUtils.assertEquals("baz", map.getString("foo"));
     }
+
+    @Test
+    public void test735Y() {
+        String yaml = """
+            -
+              "flow in block"
+            - >
+             Block scalar
+            - !!map # Block collection
+              foo : bar
+            """;
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+        if (true|dumpTokens) {
+            TestUtils.dumpTokens(tokens);
+        }
+
+        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
+        reporter.setLevel(Level.DEBUG);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlSequence.class, body);
+        YamlSequence seq = (YamlSequence) body;
+
+        YamlMap map = seq.getMap(2);
+
+        TestUtils.assertEquals("flow in block", seq.getScalar(0).asString());
+        TestUtils.assertEquals("Block scalar\n", seq.getScalar(1).asString());
+        TestUtils.assertEquals("bar", map.getScalar("foo").asString());
+    }
 }
