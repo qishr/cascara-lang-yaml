@@ -523,13 +523,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
             debug("PV-after-if-anchor");
 
-            // TODO: Should this come after the INDENT below?
-            // 1. Collect tags (node-level, including !!str on the document body)
-            String pendingTag = null;
-            while (check(YamlTokenType.TAG)) {
-                debug("PV-TAG");
-                YamlToken tagTok = advance();
-                pendingTag = tagTok.getContent();
+            if (check(YamlTokenType.NEWLINE)) {
+                advance();
                 skipTrivia();
             }
 
@@ -541,6 +536,16 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 skipTrivia();
                 pendingDedent = true;
                 debug("Setting pending dedent");
+            }
+
+            // TODO: Should this come after the INDENT below?
+            // 1. Collect tags (node-level, including !!str on the document body)
+            String pendingTag = null;
+            while (check(YamlTokenType.TAG)) {
+                debug("PV-TAG");
+                YamlToken tagTok = advance();
+                pendingTag = tagTok.getContent();
+                skipTrivia();
             }
 
             if (check(YamlTokenType.KEY_INDICATOR)) {
@@ -665,7 +670,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                 if (check(YamlTokenType.INDENT)) {
 
-                    // NEW: Only allow nested keys if previous key was complex
+                    // Only allow nested keys if previous key was complex
                     if (previousKeyWasComplex &&
                         (lookAheadIgnoringComments(YamlTokenType.SCALAR) ||
                          lookAheadIgnoringComments(YamlTokenType.ALIAS) ||
@@ -734,8 +739,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 if (mapColumn == -1) {
                     mapColumn = markerColumn;
                 } else {
-                    boolean isAliasKey = check(YamlTokenType.ALIAS);
-                    boolean isAnchorKey = check(YamlTokenType.ANCHOR);
+                    // boolean isAliasKey = check(YamlTokenType.ALIAS);
+                    // boolean isAnchorKey = check(YamlTokenType.ANCHOR);
 
                     if (markerColumn == mapColumn) {
                         // sibling -> OK
@@ -773,23 +778,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     if (check(YamlTokenType.INDENT) || check(YamlTokenType.NEWLINE)) {
                         key = parseValue(markerColumn);
                     } else {
-
-
-                        // // Inline key evaluation: check if a colon belongs to the same line context
-
-                        // This code was here, but using parseValue to parse keys doesn't work.
-
-                        // if (hasInlineValueIndicator()) {
-                        //     debug("Calling parseValue for KEY");
-                        //     key = parseValue(markerColumn); // Parse inline nested map/sequence
-                        // } else {
-                        //     key = parseScalar(); // Parse inline simple scalar key
-                        // }
-
-
                         key = parseKeyNode(markerColumn);
-
-
                     }
 
                 } else {
@@ -838,13 +827,18 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                 debug("before parseValue");
                 YamlNode value;
-                // YamlToken t0 = peek();
-                // YamlToken t1 = peek(1);
-                if (check(YamlTokenType.NEWLINE) && !isIndentedDeeperThan(keyColumn)) {
-                    value = new YamlScalar(
-                        peek(), PrimitiveType.NULL, options
-                    );
-                } else {
+                // if (check(YamlTokenType.NEWLINE) && !isIndentedDeeperThan(keyColumn)) {
+                //     value = new YamlScalar(
+                //         peek(), PrimitiveType.NULL, options
+                //     );
+                // }
+                // if (check(YamlTokenType.NEWLINE) && !nextNodeIndentedDeeperThan(keyColumn)) {
+                //     value = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                // }
+                if (check(YamlTokenType.NEWLINE) && !hasIndentedValueAfterNewline()) {
+                    value = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                }
+                else {
                     while (check(YamlTokenType.NEWLINE)) {
                         advance();
                         skipTrivia();
@@ -1268,6 +1262,33 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         return false;
     }
 
+    private boolean hasIndentedValueAfterNewline() {
+        int i = 1;
+        boolean sawIndent = false;
+
+        while (true) {
+            int targetIndex = current + i;
+            if (targetIndex >= tokenBuffer.size()) return false;
+
+            YamlToken t = tokenBuffer.get(targetIndex);
+            YamlTokenType tt = t.getType();
+
+            if (tt == YamlTokenType.NEWLINE || tt == YamlTokenType.COMMENT) {
+                i++;
+                continue;
+            }
+
+            if (tt == YamlTokenType.INDENT) {
+                sawIndent = true;
+                i++;
+                continue;
+            }
+
+            // First non‑trivia, non‑INDENT token
+            return sawIndent;
+        }
+    }
+
     private boolean isIndentedDeeperThan(int parentColumn) {
         int i = 1;
         while (true) {
@@ -1282,6 +1303,25 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 return false;
             }
             i++;
+        }
+    }
+
+    private boolean nextNodeIndentedDeeperThan(int parentColumn) {
+        int i = 1;
+        while (true) {
+            int targetIndex = current + i;
+            if (targetIndex >= tokenBuffer.size()) return false;
+
+            YamlToken t = tokenBuffer.get(targetIndex);
+            YamlTokenType tt = t.getType();
+
+            if (tt == YamlTokenType.NEWLINE || tt == YamlTokenType.COMMENT) {
+                i++;
+                continue;
+            }
+
+            // Any structural node starting at a greater column is "deeper"
+            return t.getStartColumn() > parentColumn;
         }
     }
 

@@ -1135,4 +1135,35 @@ public class SpecTests {
         TestUtils.assertEquals("baz", seq.getFirst().asString());
         TestUtils.assertEquals("baz", seq.getLast().asString());
     }
+
+    @Test
+    public void test7FWL() {
+        String yaml = """
+            !<tag:yaml.org,2002:str> foo :
+              !<!bar> baz
+            """;
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+        if (true|dumpTokens) {
+            TestUtils.dumpTokens(tokens);
+        }
+
+        parser.getTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(Level.DEBUG)
+                .setAnsiColoringEnabled(true)
+        );
+        reporter.setLevel(Level.DEBUG);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlMap map = (YamlMap) body;
+
+        TestUtils.assertEquals("baz", map.getString("foo"));
+    }
 }
