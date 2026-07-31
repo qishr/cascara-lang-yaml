@@ -1100,4 +1100,39 @@ public class SpecTests {
         TestUtils.assertEquals("R0lGODlhDAAMAIQAAP//9/X17unp5WZmZgAAAOfn515eXvPz7Y6OjuDg4J+fn5\nOTk6enp56enmlpaWNjY6Ojo4SEhP/++f/++f/++f/++f/++f/++f/++f/++f/+\n+f/++f/++f/++f/++f/++SH+Dk1hZGUgd2l0aCBHSU1QACwAAAAADAAMAAAFLC\nAgjoEwnuNAFOhpEMTRiggcz4BNJHrv/zCFcLiwMWYNG84BwwEeECcgggoBADs=\n", generic.asString());
         TestUtils.assertEquals("The binary value above is a tiny arrow encoded as a gif image.", description.asString());
     }
+
+    @Test
+    public void test6BCT() {
+        String yaml = """
+            - foo:	 bar
+            - - baz
+              -	baz
+            """;
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+        if (true|dumpTokens) {
+            TestUtils.dumpTokens(tokens);
+        }
+
+        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
+        reporter.setLevel(Level.DEBUG);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        assertInstanceOf(YamlSequence.class, body);
+        YamlSequence bodySeq = (YamlSequence) body;
+
+        YamlMap map = bodySeq.getMap(0);
+        YamlSequence seq = bodySeq.getSequence(1);
+
+        TestUtils.assertEquals("bar", map.getString("foo"));
+        TestUtils.assertEquals("baz", seq.getFirst().asString());
+        TestUtils.assertEquals("baz", seq.getLast().asString());
+    }
 }
