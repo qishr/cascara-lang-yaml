@@ -29,15 +29,20 @@ public class TestUtils {
     }
 
     public static void dumpTokens(List<YamlToken> tokens) {
+        dumpTokens(tokens, -1);
+    }
+
+    public static void dumpTokens(List<YamlToken> tokens, int maxColumnWidth) {
         System.out.println();
         // System.out.println("------------TOKENS-----------");
-        TextualTable table = new TextualTable();
-        table.setStyle(TextualTable.Style.ROUNDED);
-        table.addColumn("#");
-        table.addColumn("Token");
-        table.addColumn("Location");
-        table.addColumn("Lexeme");
-        table.addColumn("Content");
+        TextualTable table = new TextualTable()
+            .setStyle(TextualTable.Style.ROUNDED)
+            .setMaxColumnWidth(maxColumnWidth)
+            .addColumn("#")
+            .addColumn("Token")
+            .addColumn("Location")
+            .addColumn("Lexeme")
+            .addColumn("Content");
 
         for (int i = 0; i < tokens.size(); i++) {
             YamlToken t = tokens.get(i);
