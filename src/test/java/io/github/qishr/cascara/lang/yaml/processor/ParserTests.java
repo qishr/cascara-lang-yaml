@@ -43,12 +43,11 @@ import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
+import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
-import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 
 public class ParserTests {
     @Test
@@ -57,8 +56,8 @@ public class ParserTests {
         YamlAstParser parser = new YamlAstParser();
         YamlNode doc = parser.parse(yaml);
 
-        assertInstanceOf(YamlMapNode.class, doc);
-        YamlMapNode map = (YamlMapNode) doc;
+        assertInstanceOf(YamlMap.class, doc);
+        YamlMap map = (YamlMap) doc;
         YamlNode statusValue = map.get("status");
 
         // Check Anchor
@@ -66,19 +65,19 @@ public class ParserTests {
         assertEquals("val", statusValue.getAnchor());
 
         // We need to get the actual scalar content inside the anchor wrapper
-        if (statusValue instanceof YamlAnchorNode wrapper) {
+        if (statusValue instanceof YamlAnchor wrapper) {
             YamlNode inner = wrapper.getInnerNode();
-            assertInstanceOf(YamlScalarNode.class, inner);
-            assertEquals("active", ((YamlScalarNode)inner).getPrimitive()); // or .getString() if it exists there
+            assertInstanceOf(YamlScalar.class, inner);
+            assertEquals("active", ((YamlScalar)inner).getPrimitive()); // or .getString() if it exists there
         } else {
             // If it's not a wrapper, it must be the scalar itself
-            assertEquals("active", ((YamlScalarNode)statusValue).getPrimitive());
+            assertEquals("active", ((YamlScalar)statusValue).getPrimitive());
         }
 
         // Check Alias
         YamlNode linkValue = map.get("link");
-        assertTrue(linkValue instanceof YamlAliasNode);
-        assertEquals("val", ((YamlAliasNode)linkValue).getAlias());
+        assertTrue(linkValue instanceof YamlAlias);
+        assertEquals("val", ((YamlAlias)linkValue).getAlias());
     }
 
     @Test
@@ -89,15 +88,15 @@ public class ParserTests {
                       "current: *settings";
         YamlAstParser parser = new YamlAstParser();
         parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
-        YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
+        YamlMap doc = (YamlMap)parser.parse(yaml);
 
         YamlNode defaults = doc.get("defaults");
 
         // The entire MapNode should have the anchorName
-        assertTrue(defaults instanceof YamlMapNode);
+        assertTrue(defaults instanceof YamlMap);
         assertEquals("settings", defaults.getAnchor());
 
         YamlNode current = doc.get("current");
-        assertTrue(current instanceof YamlAliasNode);
+        assertTrue(current instanceof YamlAlias);
     }
 }

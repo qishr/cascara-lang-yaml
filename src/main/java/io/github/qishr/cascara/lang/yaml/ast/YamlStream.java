@@ -33,32 +33,51 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.processor;
+package io.github.qishr.cascara.lang.yaml.ast;
 
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import java.util.ArrayList;
+import java.util.List;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
-import org.junit.jupiter.api.Test;
+public class YamlStream extends YamlNode {
+    private final List<YamlDocument> documents = new ArrayList<>();
+    private final List<YamlComment> comments = new ArrayList<>();
 
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
-import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-
-public class StreamTests {
-    @Test
-    void test_simpleKeyValue() {
-        String yamlString = "key: value";
-
-        InputStream stream = new ByteArrayInputStream(yamlString.getBytes(StandardCharsets.UTF_8));
-
-        YamlAstParser parser = new YamlAstParser()
-                .setReporter(new StandardReporter().setLevel(Level.TRACE));
-
-        YamlNode node = parser.parse(stream);
-        assertInstanceOf(YamlMap.class, node);
+    public YamlStream() {
+        super();
     }
+
+    public YamlStream(YamlToken token) {
+        super(token);
+    }
+
+    public void addDocument(YamlDocument document) {
+        if (document != null) {
+            this.documents.add(document);
+        }
+    }
+
+    public List<YamlDocument> getDocuments() {
+        return documents;
+    }
+
+    public List<YamlComment> getComments() {
+        return comments;
+    }
+
+    public boolean isEmpty() {
+        return documents.isEmpty();
+    }
+
+    @Override
+    public void accept(YamlVisitor visitor) {
+        visitor.visit(this);
+    }
+
+	@Override
+	public List<? extends YamlNode> getChildren() {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("Unimplemented method 'getChildren'");
+	}
 }

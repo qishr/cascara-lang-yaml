@@ -56,14 +56,19 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     UNEXPECTED_CLOSE_BRACKET("YAML-112", "Unexpected \"]\""),
     UNEXPECTED_CLOSE_BRACE("YAML-113", "Unexpected \"}\""),
 
+    // TODO: Move these to parser section
     INCONSISTENT_INDENTATION("YAML-114", "Inconsistent indentation"),
     EXPECTED_INDENTATION_BLOCK_SCALAR("YAML-115", "Inconsistent indentation for block scalar"),
     EXPECTED_DEDENT_BLOCK_COMMENT("YAML-116", "Expected dedent after block content"),
 
+    UNEXPECTED_EMPTY_LEXEME("YAML-115", "Unexpected empty lexeme"),
+    UNEXPECTED_END_OF_BUFFER("YAML-116", "Unexpected end of buffer"),
+
     // Parser
     DEPTH_LIMIT("YAML-202", "Depth limit exceeded"),
     DUPLICATE_KEY("YAML-203", "Duplicate key found: \"{0}\""),
-    UNKNOWN_DIRECTIVE("YAML-204", "Unknown directive: '{0}'");
+    UNKNOWN_DIRECTIVE("YAML-204", "Unknown directive: '{0}'"),
+    EXPECTED_DEDENT("YAML-205", "Expected dedent");
 
     private final String code;
     private final String message;

@@ -40,21 +40,21 @@ import java.util.List;
 
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
-public class YamlDocumentNode extends YamlNode {
-    private final List<YamlDirectiveNode> directives = new ArrayList<>();
+public class YamlDocument extends YamlNode {
+    private final List<YamlDirective> directives = new ArrayList<>();
     private YamlNode body;
 
-    public YamlDocumentNode(YamlToken token) {
+    public YamlDocument(YamlToken token) {
         super(token);
     }
 
-    public void addDirective(YamlDirectiveNode directive) {
+    public void addDirective(YamlDirective directive) {
         if (directive != null) {
             this.directives.add(directive);
         }
     }
 
-    public List<YamlDirectiveNode> getDirectives() {
+    public List<YamlDirective> getDirectives() {
         return directives;
     }
 

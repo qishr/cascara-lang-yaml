@@ -46,19 +46,18 @@ import java.util.stream.Collectors;
 
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
-import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
-public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNode, YamlMapEntryNode> {
+public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, YamlMapEntry> {
     private NodeStyle style = NodeStyle.BLOCK;
-    private final LinkedHashMap<YamlNode,YamlMapEntryNode> entriesByKey = new LinkedHashMap<>();
+    private final LinkedHashMap<YamlNode,YamlMapEntry> entriesByKey = new LinkedHashMap<>();
 
-    public YamlMapNode() {
+    public YamlMap() {
         // This method intentionally left blank
     }
 
-    public YamlMapNode(YamlToken token, YamlOptions options) {
+    public YamlMap(YamlToken token, YamlOptions options) {
         super(token, options);
     }
 
@@ -84,33 +83,33 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
     @Override
     @Nullable
     public YamlNode get(YamlNode key) {
-        YamlMapEntryNode value = getEntry(key);
+        YamlMapEntry value = getEntry(key);
         return value == null ? null : value.getValue();
     }
 
     /// {@inheritDoc}
     @Override
-    public List<YamlMapEntryNode> getChildren() {
+    public List<YamlMapEntry> getChildren() {
         return List.copyOf(entriesByKey.values());
     }
 
     /// {@inheritDoc}
     @Override
     @Nullable
-    public YamlMapEntryNode getEntry(YamlNode key) {
+    public YamlMapEntry getEntry(YamlNode key) {
         return entriesByKey.get(key);
     }
 
     @Nullable
     @Override
-    public YamlMapEntryNode getEntry(int i) {
+    public YamlMapEntry getEntry(int i) {
         if (i < 0 || i > size()) throw new NoSuchElementException();
-        return entriesByKey.sequencedValues().toArray(new YamlMapEntryNode[]{})[i];
+        return entriesByKey.sequencedValues().toArray(new YamlMapEntry[]{})[i];
     }
 
     /// {@inheritDoc}
     @Override
-    public List<YamlMapEntryNode> getEntries() {
+    public List<YamlMapEntry> getEntries() {
         return List.copyOf(entriesByKey.values());
     }
 
@@ -126,10 +125,10 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
     // TODO: PERFORMANCE: This is looking up the hash entry more than once
     /// {@inheritDoc}
     @Override
-    public YamlMapNode put(YamlNode key, YamlNode value) {
-        YamlMapEntryNode entry = getEntry(key);
+    public YamlMap put(YamlNode key, YamlNode value) {
+        YamlMapEntry entry = getEntry(key);
         if (entry == null) {
-            entry = new YamlMapEntryNode(key, value);
+            entry = new YamlMapEntry(key, value);
             entriesByKey.put(key, entry);
             return this;
         }
@@ -139,16 +138,16 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
 
     /// {@inheritDoc}
     @Override
-    public YamlMapNode remove(YamlNode key) {
+    public YamlMap remove(YamlNode key) {
         entriesByKey.remove(key);
         return this;
     }
 
     /// {@inheritDoc}
     @Override
-    public YamlMapNode remove(String key) {
-        for (Map.Entry<YamlNode,YamlMapEntryNode> entry : entriesByKey.entrySet()) {
-            if (entry.getKey() instanceof YamlScalarNode scalar) {
+    public YamlMap remove(String key) {
+        for (Map.Entry<YamlNode,YamlMapEntry> entry : entriesByKey.entrySet()) {
+            if (entry.getKey() instanceof YamlScalar scalar) {
                 if (scalar.asString().equals(key)) {
                     entriesByKey.remove(scalar);
                     return this;
@@ -159,7 +158,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
     }
 
     /// {@inheritDoc}
-    public YamlMapNode setStyle(NodeStyle style) {
+    public YamlMap setStyle(NodeStyle style) {
         this.style = style;
         return this;
     }
@@ -172,7 +171,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
     @Override
     public boolean containsKey(String key) {
         for (YamlNode keyNode : entriesByKey.keySet()) {
-            if (keyNode instanceof YamlScalarNode scalar && key.equals(scalar.asString())) {
+            if (keyNode instanceof YamlScalar scalar && key.equals(scalar.asString())) {
                 return true;
             }
         }
@@ -185,12 +184,12 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
     public YamlNode get(String key) {
         if (key == null) return null;
 
-        for (Map.Entry<YamlNode,YamlMapEntryNode> entry : entriesByKey.entrySet()) {
-            YamlMapEntryNode entryNode = entry.getValue();
+        for (Map.Entry<YamlNode,YamlMapEntry> entry : entriesByKey.entrySet()) {
+            YamlMapEntry entryNode = entry.getValue();
 
             YamlNode kNode = entryNode.getKey();
             String entryKey = null;
-            if (kNode instanceof YamlScalarNode scalar) {
+            if (kNode instanceof YamlScalar scalar) {
                 entryKey = scalar.asString();
             } else {
                 entryKey = kNode.toString();
@@ -198,7 +197,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
 
             if (key.equals(entryKey)) {
                 YamlNode val = entryNode.getValue();
-                return (val instanceof YamlAnchorNode a) ? a.getInnerNode() : val;
+                return (val instanceof YamlAnchor a) ? a.getInnerNode() : val;
             }
         }
         return null;
@@ -207,8 +206,8 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
     /// {@inheritDoc}
     @Override
     @Nullable
-    public YamlMapNode getMap(String key) {
-        if (get(key) instanceof YamlMapNode map) {
+    public YamlMap getMap(String key) {
+        if (get(key) instanceof YamlMap map) {
             return map;
         }
         return null;
@@ -217,8 +216,8 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
     /// {@inheritDoc}
     @Override
     @Nullable
-    public YamlSequenceNode getSequence(String key) {
-        if (get(key) instanceof YamlSequenceNode seq) {
+    public YamlSequence getSequence(String key) {
+        if (get(key) instanceof YamlSequence seq) {
             return seq;
         }
         return null;
@@ -226,8 +225,8 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
 
     @Override
     @Nullable
-    public YamlScalarNode getScalar(String key) {
-        if (get(key) instanceof YamlScalarNode scalar) {
+    public YamlScalar getScalar(String key) {
+        if (get(key) instanceof YamlScalar scalar) {
             return scalar;
         }
         return null;
@@ -242,11 +241,11 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
     /// @param key   The string key to be associated with the value.
     /// @param value The value node to be associated with the key.
     @Override
-    public YamlMapNode put(String key, YamlNode value) {
-        for (YamlMapEntryNode entry : entriesByKey.values()) {
+    public YamlMap put(String key, YamlNode value) {
+        for (YamlMapEntry entry : entriesByKey.values()) {
             YamlNode kNode = entry.getKey();
             // Check if the existing key's string value matches the requested key
-            if (kNode instanceof YamlScalarNode scalar && key.equals(scalar.asString())) {
+            if (kNode instanceof YamlScalar scalar && key.equals(scalar.asString())) {
                 entry.setRaw(value);
                 return this;
             }
@@ -254,35 +253,35 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
 
         // TODO: Don't pass null as delegate
         // Only if not found, create the new entry
-        YamlNode keyNode = new YamlScalarNode(key, ScalarStyle.UNDETERMINED, null);
-        YamlMapEntryNode entry = new YamlMapEntryNode(keyNode, value);
+        YamlNode keyNode = new YamlScalar(key, ScalarStyle.UNDETERMINED, null);
+        YamlMapEntry entry = new YamlMapEntry(keyNode, value);
         entriesByKey.put(entry.getKey(), entry);
         return this;
     }
 
     /// {@inheritDoc}
-    public YamlMapNode put(YamlMapEntryNode entry) {
+    public YamlMap put(YamlMapEntry entry) {
         entriesByKey.put(entry.getKey(), entry);
         return this;
     }
 
     /// {@inheritDoc}
     @Override
-    public Set<YamlMapEntryNode> entrySet() {
-        return new HashSet<YamlMapEntryNode>(entriesByKey.values());
+    public Set<YamlMapEntry> entrySet() {
+        return new HashSet<YamlMapEntry>(entriesByKey.values());
     }
 
     /// {@inheritDoc}
     @Override
     public List<YamlNode> values() {
-        return entriesByKey.values().stream().map(YamlMapEntryNode::getValue).collect(Collectors.toList());
+        return entriesByKey.values().stream().map(YamlMapEntry::getValue).collect(Collectors.toList());
     }
 
     /// {@inheritDoc}
     @Override
-    public YamlMapNode put(String key, String value) {
+    public YamlMap put(String key, String value) {
         // TODO: This should not be forcing double quotes
-        return put(key, new YamlScalarNode(value));
+        return put(key, new YamlScalar(value));
     }
 
     @Override
@@ -291,7 +290,7 @@ public class YamlMapNode extends YamlNode implements MapAstNode<YamlNode, YamlNo
     }
 
 	@Override
-	public Iterator<YamlMapEntryNode> iterator() {
+	public Iterator<YamlMapEntry> iterator() {
         return entriesByKey.sequencedValues().iterator();
 	}
 }

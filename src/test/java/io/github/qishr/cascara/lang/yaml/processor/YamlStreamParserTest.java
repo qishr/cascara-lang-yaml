@@ -64,23 +64,23 @@ class YamlStreamParserTest {
             "doc: 2";
 
         // Since we changed parser.parse() to return a YamlStreamNode
-        YamlStreamNode stream = (YamlStreamNode) parser.parse(yaml);
+        YamlStream stream = (YamlStream) parser.parse(yaml);
 
         assertNotNull(stream);
-        List<YamlDocumentNode> docs = stream.getDocuments();
+        List<YamlDocument> docs = stream.getDocuments();
         assertEquals(2, docs.size());
 
         // Validate Document 1
-        YamlDocumentNode doc1 = docs.get(0);
+        YamlDocument doc1 = docs.get(0);
         assertEquals(1, doc1.getDirectives().size());
         assertEquals("%YAML 1.2", doc1.getDirectives().get(0).getContent());
-        assertTrue(doc1.getBody() instanceof YamlMapNode);
+        assertTrue(doc1.getBody() instanceof YamlMap);
 
         // Validate Document 2
-        YamlDocumentNode doc2 = docs.get(1);
+        YamlDocument doc2 = docs.get(1);
         assertEquals(1, doc2.getDirectives().size());
         assertEquals("%TAG !yaml! tag:yaml.org,2002:", doc2.getDirectives().get(0).getContent());
-        assertTrue(doc2.getBody() instanceof YamlMapNode);
+        assertTrue(doc2.getBody() instanceof YamlMap);
     }
 
     @Test
@@ -91,13 +91,13 @@ class YamlStreamParserTest {
             "payload: true\n" +
             "# File Footer Comment";
 
-        YamlStreamNode stream = (YamlStreamNode) parser.parse(yaml);
+        YamlStream stream = (YamlStream) parser.parse(yaml);
 
         assertNotNull(stream);
         assertEquals(1, stream.getDocuments().size());
 
         // Comments belonging to the stream level (outside documents)
-        List<YamlCommentNode> streamComments = stream.getComments();
+        List<YamlComment> streamComments = stream.getComments();
         assertEquals(2, streamComments.size());
         assertEquals(" File Header Comment", streamComments.get(0).asString());
         assertEquals(" File Footer Comment", streamComments.get(1).asString());
@@ -106,14 +106,14 @@ class YamlStreamParserTest {
     @Test
     void testEmptyExplicitDocument() {
         String yaml = "--- ...";
-        YamlStreamNode stream = (YamlStreamNode) parser.parse(yaml);
+        YamlStream stream = (YamlStream) parser.parse(yaml);
 
         assertEquals(1, stream.getDocuments().size());
         YamlNode body = stream.getDocuments().get(0).getBody();
 
         // An empty document body defaults to an empty scalar
-        assertTrue(body instanceof YamlScalarNode);
-        String strVal = ((YamlScalarNode) body).asString();
+        assertTrue(body instanceof YamlScalar);
+        String strVal = ((YamlScalar) body).asString();
         assertEquals("", strVal);
     }
 }

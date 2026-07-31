@@ -48,11 +48,11 @@ import io.github.qishr.cascara.common.lang.reference.ReferenceNode;
 import io.github.qishr.cascara.common.lang.reference.ReferenceScalarNode;
 import io.github.qishr.cascara.common.lang.reference.ReferenceSequenceNode;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.exception.YamlConverterException;
 
 public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implements AstConverter<YamlNode> {
@@ -69,20 +69,20 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         if (ast == null) return null;
 
         if (ast instanceof MapAstNode astMap) {
-            YamlMapNode yamlMap = new YamlMapNode();
+            YamlMap yamlMap = new YamlMap();
             for (Object entry : astMap.getEntries()) {
                 // TODO: MapEntryAstNode should probably have a method of obtaining a string key
                 if (entry instanceof MapEntryAstNode astMapEntry) {
                     if (astMapEntry.getKey() instanceof AstNode astKey) {
                         AstNode astValue = astMapEntry.getValue();
                         if (astKey instanceof ScalarAstNode astScalarKey) {
-                            YamlScalarNode yamlKey = new YamlScalarNode(astScalarKey.asString());
+                            YamlScalar yamlKey = new YamlScalar(astScalarKey.asString());
                             YamlNode yamlValue = fromAst(astValue);
                             yamlMap.put(yamlKey, yamlValue);
                         }
                     } else if (astMapEntry.getKey() instanceof String stringKey) {
                         AstNode astValue = astMapEntry.getValue();
-                        YamlScalarNode yamlKey = new YamlScalarNode(stringKey);
+                        YamlScalar yamlKey = new YamlScalar(stringKey);
                         YamlNode yamlValue = fromAst(astValue);
                         yamlMap.put(yamlKey, yamlValue);
                     }
@@ -90,7 +90,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             }
             return yamlMap;
         } else if (ast instanceof SequenceAstNode astSeq) {
-            YamlSequenceNode yamlSeq = new YamlSequenceNode();
+            YamlSequence yamlSeq = new YamlSequence();
             for (Object element : astSeq.getElements()) {
                 if (element instanceof AstNode astElement) {
                     yamlSeq.add(fromAst(astElement));
@@ -98,7 +98,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             }
             return yamlSeq;
         } else if (ast instanceof ScalarAstNode astScalar) {
-            YamlScalarNode yamlScalar = new YamlScalarNode(astScalar.getPrimitive());
+            YamlScalar yamlScalar = new YamlScalar(astScalar.getPrimitive());
             return yamlScalar;
         } else {
             String name = (ast == null) ? "null" : ast.getClass().getSimpleName();
@@ -110,9 +110,9 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
     public ReferenceNode toPlainAst(YamlNode yaml) {
         if (yaml == null) return null;
 
-        if (yaml instanceof YamlMapNode map) {
+        if (yaml instanceof YamlMap map) {
             ReferenceMapNode out = new ReferenceMapNode();
-            for (YamlMapEntryNode e : map.getEntries()) {
+            for (YamlMapEntry e : map.getEntries()) {
                 ReferenceNode key = toPlainAst(e.getKey());
                 ReferenceNode val = toPlainAst(e.getValue());
                 out.put(key, val);
@@ -120,7 +120,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             return out;
         }
 
-        if (yaml instanceof YamlSequenceNode seq) {
+        if (yaml instanceof YamlSequence seq) {
             ReferenceSequenceNode out = new ReferenceSequenceNode();
             for (YamlNode child : seq.getChildren()) {
                 out.add(toPlainAst(child));
@@ -128,7 +128,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             return out;
         }
 
-        if (yaml instanceof YamlScalarNode scalar) {
+        if (yaml instanceof YamlScalar scalar) {
             return convertScalar(scalar);   // tag logic goes here
         }
 
@@ -164,7 +164,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
     // }
 
     @Nullable
-    private ReferenceScalarNode convertScalar(YamlScalarNode scalar) {
+    private ReferenceScalarNode convertScalar(YamlScalar scalar) {
         if (scalar == null) return null;
 
         String tag = scalar.getTag();
@@ -214,7 +214,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
     // }
 
     // 14:26 - The correct conversion method (final)
-    private String normalizeDoubleQuotedString(YamlScalarNode scalar) {
+    private String normalizeDoubleQuotedString(YamlScalar scalar) {
         String s = scalar.asString();
         if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
 
@@ -225,42 +225,5 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             s = s.replaceAll("\\\\+(?!t)\t", "\t");
         }
         return s;
-    }
-
-    // System.out.println("---=== BEGIN YAML STRING ===---");
-    // debugString(s);
-    // System.out.println("---=== END YAML STRING ===---");
-
-    private void debugStringFlat(String input) {
-        for (int codePoint : input.codePoints().toArray()) {
-            System.out.print(currentChar( codePoint ));
-        }
-        System.out.println();
-    }
-
-    private void debugString(String input) {
-        for (int codePoint : input.codePoints().toArray()) {
-            System.out.println
-            (
-                currentChar( codePoint ) +
-                " = # " + codePoint +
-                " " + Character.getName( codePoint )
-            );
-        }
-    }
-
-    private String currentChar(int c) {
-        switch (c) {
-            case ' ':
-                return "␣";
-            case '\t':
-                return "⇥";
-            case '\r':
-                return "↵";
-            case '\n':
-                return "↩";
-            default:
-                return Character.toString(c);
-        }
     }
 }

@@ -45,12 +45,8 @@ import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 
 /// Represents a leaf node in the YAML AST containing a single scalar value.
-public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> {
-    // private final String lexeme;
-    // private final String content;
-
+public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
     private PrimitiveType primitiveType;
-    // private QuoteStyle quoteStyle = QuoteStyle.UNDETERMINED;
 
     // dialect-aware native value cache
     private Object jvmValue;
@@ -62,24 +58,20 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     private String originalContent;
     private ScalarStyle scalarStyle = ScalarStyle.UNDETERMINED;
     private ChompingStyle chompingStyle;
-    private boolean isMultiLine;
-
-    private YamlOptions options;
 
     /// Constructor for use in parsers.
     /// Used when reading raw text from a file stream.
     /// Takes a token and triggers full lexical dialect type
-    ///  inference from the token's content.
-    public YamlScalarNode(
+    /// inference from the token's content.
+    public YamlScalar(
         YamlToken token,
         PrimitiveType primitiveType,
         YamlOptions options
     ) {
-        super(token);
+        super(token, options);
         this.originalContent = token.getContent();
         this.primitiveType = primitiveType;
         this.scalarStyle = token.getScalarStyle();
-        this.options = (options == null) ? YamlOptions.DEFAULT : options;
 
         nodeStyle = (scalarStyle == ScalarStyle.LITERAL || scalarStyle == ScalarStyle.FOLDED)
             ? NodeStyle.BLOCK
@@ -90,18 +82,17 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// Used when content is not identical to the token's content
     /// Takes a token and a string and triggers full lexical
     /// dialect type inference from the string.
-    public YamlScalarNode(
+    public YamlScalar(
         YamlToken token,
         String content,
         PrimitiveType primitiveType,
         ScalarStyle scalarStyle,
         YamlOptions options
     ) {
-        super(token);
+        super(token, options);
         this.originalContent = content;
         this.primitiveType = primitiveType;
         this.scalarStyle = scalarStyle;
-        this.options = (options == null) ? YamlOptions.DEFAULT : options;
 
         nodeStyle = (scalarStyle == ScalarStyle.LITERAL || scalarStyle == ScalarStyle.FOLDED)
             ? NodeStyle.BLOCK
@@ -111,15 +102,14 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// A programmatic and serializer constructor.
     /// Used when building an AST dynamically in code.
     /// Takes a pre-typed Object and skips text-based type inference.
-    public YamlScalarNode(
+    public YamlScalar(
         Object jvmValue,
         ScalarStyle scalarStyle,
         YamlOptions options
     ) {
-        super();
+        super(options);
         this.primitiveType = PrimitiveType.of(jvmValue);
         this.scalarStyle = scalarStyle;
-        this.options = (options == null) ? YamlOptions.DEFAULT : options;
         this.jvmValue = jvmValue;
         this.isJvmValueCached = true;
 
@@ -131,7 +121,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// A programmatic and serializer constructor.
     /// Used when building an AST dynamically in code.
     /// Takes a pre-typed Object and skips text-based type inference.
-    public YamlScalarNode(Object jvmValue, ScalarStyle scalarStyle) {
+    public YamlScalar(Object jvmValue, ScalarStyle scalarStyle) {
         this(jvmValue, scalarStyle, YamlOptions.DEFAULT);
         nodeStyle = (scalarStyle == ScalarStyle.LITERAL || scalarStyle == ScalarStyle.FOLDED)
             ? NodeStyle.BLOCK
@@ -141,29 +131,18 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     /// A programmatic and serializer constructor.
     /// Used when building an AST dynamically in code.
     /// Takes a pre-typed Object and skips text-based type inference.
-    public YamlScalarNode(Object jvmValue) {
+    public YamlScalar(Object jvmValue) {
         this(jvmValue, ScalarStyle.UNDETERMINED);
     }
 
     /// The default constructor
-    public YamlScalarNode() {
+    public YamlScalar() {
         this(null);
     }
 
     public YamlOptions getOptions() {
         return options;
     }
-
-
-    // TODO: Do this in emitter
-    public boolean isMultiLine() {
-        return isMultiLine;
-    }
-    public YamlScalarNode setMultiLine(boolean b) {
-        isMultiLine = b;
-        return this;
-    }
-
 
     @Override
     public PrimitiveType getPrimitiveType() {
@@ -182,7 +161,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return scalarStyle;
     }
 
-    public YamlScalarNode setScalarStyle(ScalarStyle scalarStyle) {
+    public YamlScalar setScalarStyle(ScalarStyle scalarStyle) {
         this.scalarStyle = scalarStyle;
         nodeStyle =  (scalarStyle == ScalarStyle.LITERAL || scalarStyle == ScalarStyle.FOLDED)
             ? NodeStyle.BLOCK
@@ -202,7 +181,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
 
     /// Sets the quoting style.
     @Override
-    public YamlScalarNode setQuoteStyle(QuoteStyle quoteStyle) {
+    public YamlScalar setQuoteStyle(QuoteStyle quoteStyle) {
         setScalarStyle(switch (quoteStyle) {
             case DOUBLE -> ScalarStyle.DOUBLE_QUOTED;
             case SINGLE -> ScalarStyle.SINGLE_QUOTED;
@@ -216,7 +195,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return chompingStyle;
     }
 
-    public YamlScalarNode setChompingStyle(ChompingStyle style) {
+    public YamlScalar setChompingStyle(ChompingStyle style) {
         this.chompingStyle = style;
         return this;
     }
@@ -337,7 +316,7 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof YamlScalarNode that)) return false;
+        if (!(o instanceof YamlScalar that)) return false;
 
         return Objects.equals(this.asString(), that.asString()) &&
                Objects.equals(this.getTag(), that.getTag());
@@ -349,14 +328,11 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return Objects.hash(asString(), getTag());
     }
 
-    // TODO: This is temporarily commented out to prevent the debugger
-    // triggering it. Uncomment this later.
-    // /// {@inheritDoc}
-    // @Override
-    // public String toString() {
-    //     return asString();
-    //     // return lexeme != null ? lexeme : String.valueOf(getPrimitive());
-    // }
+    /// {@inheritDoc}
+    @Override
+    public String toString() {
+        return asString();
+    }
 
     //
     //
@@ -554,37 +530,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return input.replace("''", "'");
     }
 
-    // Internal helpers (fast, no regex, no startsWith)
-    private boolean isIdentifier(String raw) {
-        int len = raw.length();
-        if (len == 0) return false;
-
-        char c = raw.charAt(0);
-        if (!((c >= 'A' && c <= 'Z') ||
-              (c >= 'a' && c <= 'z') ||
-              c == '_')) {
-            return false;
-        }
-
-        for (int i = 1; i < len; i++) {
-            c = raw.charAt(i);
-            if (!((c >= 'A' && c <= 'Z') ||
-                  (c >= 'a' && c <= 'z') ||
-                  (c >= '0' && c <= '9') ||
-                  c == '_')) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private boolean isSpecialNumber(String raw) {
-        return raw.equals("Infinity") ||
-               raw.equals("-Infinity") ||
-               raw.equals("NaN");
-    }
-
     private boolean isHexRaw(String raw) {
         return raw.length() > 2 &&
                raw.charAt(0) == '0' &&
@@ -595,46 +540,6 @@ public class YamlScalarNode extends YamlNode implements ScalarAstNode<YamlNode> 
         return raw.length() > 2 &&
                raw.charAt(0) == '0' &&
                (raw.charAt(1) == 'o' || raw.charAt(1) == 'O');
-    }
-
-    private boolean isDecimalNumber(String s) {
-        int len = s.length();
-        if (len == 0) return false;
-
-        int i = 0;
-        char c = s.charAt(0);
-
-        // optional sign
-        if (c == '-' || c == '+') {
-            if (len == 1) return false;
-            i = 1;
-        }
-
-        boolean hasDigit = false;
-        boolean hasDot = false;
-
-        for (; i < len; i++) {
-            c = s.charAt(i);
-
-            if (c >= '0' && c <= '9') {
-                hasDigit = true;
-                continue;
-            }
-
-            if (c == '.') {
-                if (hasDot) return false;
-                hasDot = true;
-                continue;
-            }
-
-            if (c == 'e' || c == 'E') {
-                return isScientific(s, i);
-            }
-
-            return false;
-        }
-
-        return hasDigit;
     }
 
     private boolean isScientific(String s, int ePos) {
