@@ -463,7 +463,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             debug("PV-after-skipTrivia");
 
-            YamlToken startToken = peek();
             YamlNode result = null;
             String pendingAnchor = null;
 
@@ -549,6 +548,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 debug("Setting pending dedent");
             }
 
+            // YamlToken t = peek();
+
             if (check(YamlTokenType.KEY_INDICATOR)) {
                 result = parseMap();
             }
@@ -593,8 +594,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 result = parseSequence();
             }
 
-            // else if (check(YamlTokenType.SCALAR)) {
-            else if (check(YamlTokenType.SCALAR) && startToken.getStartColumn() != parentIndent) {
+            else if (check(YamlTokenType.SCALAR)) {
+            // else if (check(YamlTokenType.SCALAR) && startToken.getStartColumn() != parentIndent) {
                 if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
                     result = parseMap();
                 } else {
@@ -612,6 +613,9 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     options
                 );
             }
+
+            // TODO: pending comments should probably be attached to the result before this skipTrivia.
+            skipTrivia();
 
             if (pendingDedent) {
                 if (check(YamlTokenType.DEDENT)) {
@@ -703,7 +707,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     // Only break if this dedent closes the current map
                     if (!isIndentedDeeperThan(mapColumn)) {
                         if (mapColumn == -1) {
-                            System.out.println("Debug: mapColumn is -1");
+                            debug("mapColumn is -1");
                         } else {
                             break;
                         }
@@ -1194,8 +1198,15 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
     /// Collects comments and skips newlines, storing comments in the buffer.
     private void skipTrivia() {
+        debug("skipTrivia");
+        int extraIndent = 0;
+
+        // If this gets set, we must continue until indentation is back at the level it specified.
+        int skipUntilIndentLevel = -1;
+
         while (current < tokenBuffer.size()) {
-            YamlTokenType type = peek().getType();
+            YamlToken token = peek();
+            YamlTokenType type = token.getType();
             if (type == YamlTokenType.EOF || type == YamlTokenType.STREAM_END) {
                 break;
             }
@@ -1204,6 +1215,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 continue;
             }
             if (type == YamlTokenType.COMMENT) {
+                // TODO: This is rubbish. Document level comments don't have to be at column 1.
                 // If it's a root-level comment at the end of the file, leave it for the stream
                 if (peek().getStartColumn() == 1 && isTrailingStreamComment(current)) {
                     break;
@@ -1211,8 +1223,77 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 pendingComments.add(parseComment());
                 continue;
             }
+
+            // Comments can be indented
+            if (type == YamlTokenType.INDENT) {
+                // Find the matching DEDENT.
+                // If there is nothing but comments and whitespace in between,
+                // consume up to and including the DEDENT.
+                if (skipUntilIndentLevel > -1) {
+                    // debug("can skip indented region");
+                    extraIndent++;
+                    advance();
+                    continue;
+                }
+                else if (skipUntilIndentLevel == -1 && lookAheadToMatchingIndentTriviaOnly()) {
+                    skipUntilIndentLevel = extraIndent;
+                    extraIndent++;
+                    advance();
+                    continue;
+                }
+                break;
+            }
+            if (skipUntilIndentLevel > -1 && type == YamlTokenType.DEDENT) {
+                extraIndent--;
+                if (extraIndent == 0) {
+                    // debug("finished indented region");
+                    skipUntilIndentLevel = -1;
+                }
+                advance();
+                continue;
+            }
             break;
         }
+    }
+
+    private boolean lookAheadToMatchingIndentTriviaOnly() {
+        // debug("lookAheadToMatchingIndentTriviaOnly");
+        int indentLevel = 0;
+        int ahead = 0;
+        while (current + ahead < tokenBuffer.size()) {
+            YamlToken token = peek(ahead);
+            YamlTokenType type = token.getType();
+            if (type == YamlTokenType.EOF || type == YamlTokenType.STREAM_END) {
+                // debug("lookAheadToMatchingIndentTriviaOnly - end - " + ahead);
+                break;
+            }
+            if (type == YamlTokenType.NEWLINE || type == YamlTokenType.COMMENT) {
+                // debug("lookAheadToMatchingIndentTriviaOnly - trivia - " + ahead);
+                ahead++;
+                continue;
+            }
+            if (type == YamlTokenType.INDENT) {
+                // debug("lookAheadToMatchingIndentTriviaOnly - indent - " + ahead);
+                indentLevel++;
+                ahead++;
+                continue;
+            }
+            if (type == YamlTokenType.DEDENT) {
+                // debug("lookAheadToMatchingIndentTriviaOnly - dedent - " + ahead);
+                indentLevel--;
+                if (indentLevel == 0) {
+                    // debug("lookAheadToMatchingIndentTriviaOnly - true - " + ahead);
+                    return true;
+                }
+                // debug("lookAheadToMatchingIndentTriviaOnly - continue - " + ahead);
+                ahead++;
+                continue;
+            }
+            // debug("lookAheadToMatchingIndentTriviaOnly - false 1 - " + ahead);
+            return false;
+        }
+        // debug("lookAheadToMatchingIndentTriviaOnly - false 2 - " + ahead);
+        return false;
     }
 
     //
@@ -1453,7 +1534,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     /// Log the current method name and upcoming tokens
-    private void debug(String methodName) {
+    private void debug(String methodName, Object... details) {
         if (reporter == null ||
             reporter.isSilent() ||
             !reporter.getLevel().includes(Level.DEBUG)) return;
@@ -1466,7 +1547,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         String indent = "  ".repeat(Math.max(0, depth));
 
         char first = methodName.charAt(0);
-        String prefix;
         String message;
 
         if (first == '>' || first == '<') {
@@ -1476,12 +1556,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         }
 
         reporter.debug("L%3d C%3d I%3d %s%s: %s",
-                tokenBuffer.get(current).getStartLine(),
-                tokenBuffer.get(current).getStartColumn(),
-                current,
-                indent,
-                message,
-                upcomingTokens());
+            tokenBuffer.get(current).getStartLine(),
+            tokenBuffer.get(current).getStartColumn(),
+            current,
+            indent,
+            message,
+            upcomingTokens());
     }
 
     private static final String ANSI_RESET = "\u001B[0m";

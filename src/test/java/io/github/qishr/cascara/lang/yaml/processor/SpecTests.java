@@ -1321,8 +1321,8 @@ public class SpecTests {
 
         String expected = "\tbar";
 
-        System.out.println("Expected: " + StringUtils.debugString(expected));
-        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        // System.out.println("Expected: " + StringUtils.debugString(expected));
+        // System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
 
         TestUtils.assertEquals(expected, scalar.asString());
     }
@@ -1336,21 +1336,21 @@ public class SpecTests {
             b"
             """;
 
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(TOKENIZER_LEVEL)
-                .setAnsiColoringEnabled(true)
-        );
+        // parser.getTokenizer().setReporter(
+        //     new StandardReporter()
+        //         .setLevel(TOKENIZER_LEVEL)
+        //         .setAnsiColoringEnabled(true)
+        // );
 
-        parser.setReporter(
-            new StandardReporter()
-                .setLevel(Level.DEBUG)
-                .setAnsiColoringEnabled(true)
-        );
+        // parser.setReporter(
+        //     new StandardReporter()
+        //         .setLevel(Level.DEBUG)
+        //         .setAnsiColoringEnabled(true)
+        // );
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (true|dumpTokens) {
+        if (dumpTokens) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -1364,8 +1364,8 @@ public class SpecTests {
 
         String expected = "a ...x b";
 
-        System.out.println("Expected: " + StringUtils.debugString(expected));
-        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        // System.out.println("Expected: " + StringUtils.debugString(expected));
+        // System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
 
         TestUtils.assertEquals(expected, scalar.asString());
     }
@@ -1374,14 +1374,212 @@ public class SpecTests {
     public void test9YRD() {
         String yaml = "a\nb  \n  c\nd\n\ne";
 
-        Reporter reporter =  new StandardReporter()
-        .setLevel(TOKENIZER_LEVEL)
-        .setAnsiColoringEnabled(true);
+        // Reporter reporter =  new StandardReporter()
+        //     .setLevel(TOKENIZER_LEVEL)
+        //     .setAnsiColoringEnabled(true);
 
+        // parser.getTokenizer().setReporter(reporter);
+        // parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (dumpTokens) {
+            TestUtils.dumpTokens(parser.getTokens());
+            // TestUtils.dumpTokens(reporter, parser.getTokens());
+        }
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlScalar scalar = (YamlScalar)body;
+
+        String expected = "a b c d\ne";
+
+        // System.out.println("Expected: " + StringUtils.debugString(expected));
+        // System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+
+        TestUtils.assertEquals(expected, scalar.asString());
+    }
+
+    @Disabled("Come back to this one later")
+    @Test
+    public void testAB8U() {
+        String yaml = """
+            - single multiline
+             - sequence entry
+            """;;
+
+        // Reporter reporter =  new StandardReporter()
+        //     .setLevel(TOKENIZER_LEVEL)
+        //     .setAnsiColoringEnabled(true);
+
+        // parser.getTokenizer().setReporter(reporter);
+        // // parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (dumpTokens) {
+
+            TestUtils.dumpTokens(parser.getTokens());
+            // TestUtils.dumpTokens(reporter, parser.getTokens());
+        }
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlSequence seq = (YamlSequence)body;
+        YamlScalar scalar = seq.getScalar(0);
+
+        String expected = "single multiline - sequence entry";
+
+        System.out.println("Expected: " + StringUtils.debugString(expected));
+        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+
+        TestUtils.assertEquals(expected, scalar.asString());
+    }
+
+    @Test
+    public void testC4HZ() {
+        String yaml = """
+            %TAG ! tag:clarkevans.com,2002:
+            --- !shape
+              # Use the ! handle for presenting
+              # tag:clarkevans.com,2002:circle
+            - !circle
+              center: &ORIGIN {x: 73, y: 129}
+              radius: 7
+            - !line
+              start: *ORIGIN
+              finish: { x: 89, y: 102 }
+            - !label
+              start: *ORIGIN
+              color: 0xFFEEBB
+              text: Pretty vector drawing.
+            """;
+
+        // Reporter reporter =  new StandardReporter()
+        //     .setLevel(TOKENIZER_LEVEL)
+        //     .setAnsiColoringEnabled(true);
+
+        // parser.getTokenizer().setReporter(reporter);
+        // parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (dumpTokens) {
+
+            TestUtils.dumpTokens(parser.getTokens());
+            // TestUtils.dumpTokens(reporter, parser.getTokens());
+        }
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlSequence seq = (YamlSequence)body;
+
+        YamlMap map0 = seq.getMap(0);
+        YamlMap map0circle = map0.getMap("center");
+        assertEquals(7, map0.getInteger("radius"));
+        assertEquals(73, map0circle.getInteger("x"));
+        assertEquals(129, map0circle.getInteger("y"));
+
+
+        YamlMap map1 = seq.getMap(1);
+        YamlMap map1start = map1.getMap("start");
+        YamlMap map1finish = map1.getMap("finish");
+        assertEquals(73, map1start.getInteger("x"));
+        assertEquals(129, map1start.getInteger("y"));
+        assertEquals(89, map1finish.getInteger("x"));
+        assertEquals(102, map1finish.getInteger("y"));
+
+
+        YamlMap map2 = seq.getMap(2);
+        YamlMap map2start = map2.getMap("start");
+        assertEquals(73, map2start.getInteger("x"));
+        assertEquals(129, map2start.getInteger("y"));
+        assertEquals(16772795, map2.getInteger("color"));
+        assertEquals("Pretty vector drawing.", map2.getString("text"));
+    }
+
+    @Test
+    public void testDBG4() {
+        String yaml = """
+            # Outside flow collection:
+            - ::vector
+            - ": - ()"
+            - Up, up, and away!
+            - -123
+            - http://example.com/foo#bar
+            # Inside flow collection:
+            - [ ::vector,
+              ": - ()",
+              "Up, up and away!",
+              -123,
+              http://example.com/foo#bar ]
+            """;
+
+        // Reporter reporter =  new StandardReporter()
+        //     .setLevel(TOKENIZER_LEVEL)
+        //     .setAnsiColoringEnabled(true);
+
+        // parser.getTokenizer().setReporter(reporter);
+        // parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (dumpTokens) {
+
+            TestUtils.dumpTokens(parser.getTokens());
+            // TestUtils.dumpTokens(reporter, parser.getTokens());
+        }
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlSequence seq = (YamlSequence)body;
+
+        assertEquals(6, seq.size());
+
+        assertEquals("::vector", seq.getScalar(0).asString());
+        assertEquals(": - ()", seq.getScalar(1).asString());
+        assertEquals("Up, up, and away!", seq.getScalar(2).asString());
+        assertEquals(-123, seq.getScalar(3).asInteger());
+        assertEquals("http://example.com/foo#bar", seq.getScalar(4).asString());
+
+        YamlSequence seq2 = seq.getSequence(5);
+
+        assertEquals(5, seq2.size());
+
+        assertEquals("::vector", seq2.getScalar(0).asString());
+        assertEquals(": - ()", seq2.getScalar(1).asString());
+        assertEquals("Up, up and away!", seq2.getScalar(2).asString());
+        assertEquals(-123, seq2.getScalar(3).asInteger());
+        assertEquals("http://example.com/foo#bar", seq2.getScalar(4).asString());
+    }
+
+    @Disabled("The test seems wrong")
+    @Test
+    public void testDE56_02() {
+        String yaml = "3 trailing\\\t\n    tab";
+
+        Reporter reporter =  new StandardReporter()
+            .setLevel(TOKENIZER_LEVEL)
+            .setAnsiColoringEnabled(true);
 
         parser.getTokenizer().setReporter(reporter);
-
-        parser.setReporter(reporter);
+        // parser.setReporter(reporter);
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -1399,7 +1597,42 @@ public class SpecTests {
 
         YamlScalar scalar = (YamlScalar)body;
 
-        String expected = "a b c d\ne";
+        String expected = "3 trailing\t tab";
+
+        System.out.println("Expected: " + StringUtils.debugString(expected));
+        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+
+        TestUtils.assertEquals(expected, scalar.asString());
+    }
+
+    @Test
+    public void testDWX9() {
+        String yaml = "|\n \n  \n  literal\n   \n  \n  text\n\n # Comment";
+
+        Reporter reporter =  new StandardReporter()
+            .setLevel(TOKENIZER_LEVEL)
+            .setAnsiColoringEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+        // parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (true|dumpTokens) {
+
+            TestUtils.dumpTokens(parser.getTokens());
+            // TestUtils.dumpTokens(reporter, parser.getTokens());
+        }
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlScalar scalar = (YamlScalar)body;
+
+        String expected = "\n\nliteral\n \n\ntext\n";
 
         System.out.println("Expected: " + StringUtils.debugString(expected));
         System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
