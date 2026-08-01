@@ -119,6 +119,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     @Override
     public void open(String text) {
+        this.debugSource = text;
+
         this.buffer = new SourceStringBuffer(text);
         this.isLegacyMode = false;
         resetCommonState();
@@ -146,18 +148,18 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     String debugSource;
 
     @Override
-    public List<YamlToken> tokenize(String source) {
-        if (source == null || source.isEmpty()) {
+    public List<YamlToken> tokenize(String text) {
+        if (text == null || text.isEmpty()) {
             return List.of();
         }
 
-        this.debugSource = source;
+        this.debugSource = text;
 
         this.tokens = new ArrayList<>();
         this.streamStarted = false;
         this.streamEnded = false;
 
-        open(source);
+        open(text);
         this.isLegacyMode = true;
 
         // Drain the stream using the sequential nextToken logic
@@ -769,15 +771,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                 int lineEndPos = -1;
                 int lastNonWhitespacePos = -1;
-                char prev = '\0';
                 int pos;
                 for (pos = 0; pos < rawLength && !(raw.charAt(pos) == '\n'); pos++) {
-                // for (pos = 0; pos < rawLength && !(raw.charAt(pos) == '\n' && prev != '\\'); pos++) {
                     char potentialWhitespace = raw.charAt(pos);
                     if (potentialWhitespace != ' ' && potentialWhitespace != '\t') {
                         lastNonWhitespacePos = pos;
                     }
-                    prev = potentialWhitespace;
                 }
                 if (pos < rawLength && raw.charAt(pos) == '\n') {
                     lineEndPos = pos;
@@ -789,7 +788,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     debugString(raw, "lineEndPos", lineEndPos);
                 }
 
-                prev = '\0';
+                char prev = '\0';
                 StringBuilder folded = new StringBuilder();
                 for (int i = 0; i < rawLength;) {
                     char ch = raw.charAt(i);
@@ -804,14 +803,11 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                             newLines++;
                             lineEndPos = -1;
                             if (i + 1 < rawLength) {
-                                char tmpPrev = '\0';
                                 for (pos = i + 1; pos < rawLength && !(raw.charAt(pos) == '\n'); pos++) {
-                                // for (pos = i + 1; pos < rawLength && !(raw.charAt(pos) == '\n' && tmpPrev != '\\'); pos++) {
                                     char potentialWhitespace = raw.charAt(pos);
                                     if (potentialWhitespace != ' ' && potentialWhitespace != '\t') {
                                         lastNonWhitespacePos = pos;
                                     }
-                                    tmpPrev = potentialWhitespace;
                                 }
                                 if (pos < rawLength && raw.charAt(pos) == '\n') {
                                     lineEndPos = pos;
@@ -833,14 +829,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                                 folded.append(ch);
                             }
                         } else {
-
-                            // if (isEolEscaped) {
-                            //     System.out.println("Debug EOL escape");
-                            // }
-                            // if (ch == '\\') {
-                            //     // System.out.println("Debug backslash");
-                            //     debugString(raw, "backslash", pos);
-                            // }
 
                             if (newLines == 1) {
                                 folded.append(' ');
@@ -949,11 +937,28 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
         }
 
+
+
+
         // Skip to the end of the header line
-        while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
-            // TODO: Comments
-            buffer.advance();
+
+        if (scalarStyle == ScalarStyle.FOLDED) {
+
+            while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
+                // TODO: Comments
+                buffer.advance();
+            }
+
+        } else {
+
+            while (!buffer.isAtEnd() && buffer.peek() != '\n') {
+                // TODO: Comments
+                buffer.advance();
+            }
+            buffer.advance(); // consume the newline
         }
+
+
 
         int currentMargin = indentationLevels.peek();
 
@@ -982,7 +987,14 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         boolean prevDeeplyIndented = false;
         boolean prevEmpty = true;
         boolean finished = false;
-        int lineNum = 0;
+
+
+
+        // int lineNum = 0;
+        int lineNum = scalarStyle == ScalarStyle.FOLDED ? 0 : 1;
+
+
+
         int consecutiveNewlines = 0;
 
         // TODO: Include header details in header line - style, explicitIndent...
@@ -1004,6 +1016,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             while (!buffer.isAtEnd() && ch != '\n') {
                 ch = buffer.advance();
                 debugString(Character.toString(ch));
+
+                // debugString(buffer.getTokenWindowLexeme(), "pos", pos);
 
                 if (ch == '\n') {
                     consecutiveNewlines++;
@@ -1073,8 +1087,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                             int newLines = consecutiveNewlines -
                                     (deeplyIndented || prevDeeplyIndented || literalNewline ? 0 : 1);
 
-                            debug("Adding %d new lines %b %b %b",
-                                newLines, foldedNewline, deeplyNewline, literalNewline);
+                            debug("Adding %d new lines %b %b %b at line %d",
+                                newLines, foldedNewline, deeplyNewline, literalNewline, lineNum);
 
                             for (int i = 0; i < newLines; i++) {
                                 content.append('\n');

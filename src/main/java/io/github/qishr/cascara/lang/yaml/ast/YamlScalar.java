@@ -438,6 +438,9 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
     }
 
     private PrimitiveType inferNumberType(String s) {
+        if (isHexRaw(s)) return PrimitiveType.INTEGER;
+        if (isOctalRaw(s)) return PrimitiveType.INTEGER;
+
         int len = s.length();
         if (len == 0) return null;
 
