@@ -1103,7 +1103,14 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                         }
 
                         boolean foldedNewline = consecutiveNewlines > 1;
-                        boolean deeplyNewline = deeplyIndented && lineNum > 1;
+
+
+
+                        // boolean deeplyNewline = deeplyIndented && lineNum > 1;
+                        boolean deeplyNewline = (deeplyIndented && lineNum > 1) || (!deeplyIndented && prevDeeplyIndented);
+
+
+
                         boolean literalNewline = scalarStyle == ScalarStyle.LITERAL && lineNum > 1;
 
                         if (foldedNewline || deeplyNewline || literalNewline) {
@@ -1169,22 +1176,50 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                                 }
                                 else if (pos > blockIndent) {
                                     deeplyIndented = true;
+                                } else {
+                                    debug("**** Unhandled 3rd option ****");
                                 }
                             }
                             consecutiveNewlines = 0;
+                            line += ch;
+                        } else {
+                            // Block indent has been found and we are at least that far in
+                            // TODO: Don't append trailing spaces?
+                            if (firstContentPos == -1) {
+
+
+                                if (pos == blockIndent) {
+                                    deeplyIndented = false;
+                                }
+                                else if (pos > blockIndent) {
+                                    deeplyIndented = true;
+                                } else {
+                                    debug("**** Unhandled 3rd option ****");
+                                }
+
+
+                                startOfLine.append(ch);
+                                debug("SOL whitespace (prepend)");
+                            } else {
+                                // content.append(ch);
+                                // lexeme.append(ch);
+                                line += ch;
+                                debug("MOL whitespace (append)");
+                            }
                         }
 
-                        // Block indent has been found and we are at least that far in
-                        // TODO: Don't append trailing spaces?
-                        if (firstContentPos == -1) {
-                            startOfLine.append(ch);
-                            debug("SOL whitespace (prepend)");
-                        } else {
-                            // content.append(ch);
-                            // lexeme.append(ch);
-                            line += ch;
-                            debug("MOL whitespace (append)");
-                        }
+                        // // Block indent has been found and we are at least that far in
+                        // // TODO: Don't append trailing spaces?
+                        // if (firstContentPos == -1) {
+                        //     startOfLine.append(ch);
+                        //     debug("SOL whitespace (prepend)");
+                        // } else {
+                        //     // content.append(ch);
+                        //     // lexeme.append(ch);
+                        //     line += ch;
+                        //     debug("MOL whitespace (append)");
+                        // }
+
                     } else {
                         debug("blockindent whitespace (discard)");
                     }

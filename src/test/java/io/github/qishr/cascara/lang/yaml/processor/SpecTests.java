@@ -1753,6 +1753,51 @@ public class SpecTests {
 
             """;
 
+        // Reporter reporter =  new StandardReporter()
+        //     .setLevel(TOKENIZER_LEVEL)
+        //     .setAnsiColoringEnabled(true);
+
+        // parser.getTokenizer().setReporter(reporter);
+        // parser.setReporter(reporter);
+
+        // if (true|dumpTokens) {
+        //     TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
+        //     // TestUtils.dumpTokens(reporter, parser.getTokens());
+        // }
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (true|dumpTokens) {
+            TestUtils.dumpTokens(parser.getTokens());
+            // TestUtils.dumpTokens(reporter, parser.getTokens());
+        }
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap)body;
+
+        TestUtils.assertEquals("", map.getScalar("strip").asString());
+        TestUtils.assertEquals("", map.getScalar("clip").asString());
+        TestUtils.assertEquals("\n", map.getScalar("keep").asString());
+    }
+
+    @Test
+    public void testF6MC() {
+        String yaml = """
+            ---
+            a: >2
+               more indented
+              regular
+            b: >2
+
+
+               more indented
+              regular
+            """;
+
         Reporter reporter =  new StandardReporter()
             .setLevel(TOKENIZER_LEVEL)
             .setAnsiColoringEnabled(true);
@@ -1779,8 +1824,7 @@ public class SpecTests {
 
         YamlMap map = (YamlMap)body;
 
-        TestUtils.assertEquals("", map.getScalar("strip").asString());
-        TestUtils.assertEquals("", map.getScalar("clip").asString());
-        TestUtils.assertEquals("\n", map.getScalar("keep").asString());
+        TestUtils.assertEquals(" more indented\nregular\n", map.getScalar("a").asString());
+        TestUtils.assertEquals("\n\n more indented\nregular\n", map.getScalar("b").asString());
     }
 }
