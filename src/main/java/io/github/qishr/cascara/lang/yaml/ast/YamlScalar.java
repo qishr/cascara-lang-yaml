@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
@@ -519,14 +520,68 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
     }
 
     /// Simple unescaper for double-quoted YAML strings
-    private String unescapeDoubleQuotes(String input) {
-        if (input == null) return null;
-        return input.replace("\\\"", "\"")
-                    .replace("\\\\", "\\")
-                    .replace("\\n", "\n")
-                    .replace("\\r", "\r")
-                    .replace("\\t", "\t");
+    private String unescapeDoubleQuotes(String s) {
+        StringBuilder out = new StringBuilder(s.length());
+        int i = 0;
+        int len = s.length();
+
+        while (i < len) {
+            char c = s.charAt(i);
+
+            if (c != '\\' || i + 1 >= len) {
+                out.append(c);
+                i++;
+                continue;
+            }
+
+            char esc = s.charAt(i + 1);
+
+            // --- Standard escapes ---
+            switch (esc) {
+                case 'n':  out.append('\n'); i += 2; continue;
+                case 't':  out.append('\t'); i += 2; continue;
+                case 'r':  out.append('\r'); i += 2; continue;
+                case 'b':  out.append('\b'); i += 2; continue;
+                // case 'f':  out.append('\f'); i += 2; continue;
+                case '\\': out.append('\\'); i += 2; continue;
+                case '"':  out.append('"');  i += 2; continue;
+                // case '\'': out.append('\''); i += 2; continue;
+            }
+
+            // --- \\uXXXX ---
+            if (esc == 'u' && i + 5 < len) {
+                int code = 0;
+                boolean ok = true;
+                for (int j = i + 2; j < i + 6; j++) {
+                    int d = Character.digit(s.charAt(j), 16);
+                    if (d < 0) { ok = false; break; }
+                    code = (code << 4) | d;
+                }
+                if (ok) {
+                    out.append((char) code);
+                    i += 6;
+                    continue;
+                }
+            }
+
+            // --- \xXX ---
+            if (esc == 'x' && i + 3 < len) {
+                int d1 = Character.digit(s.charAt(i + 2), 16);
+                int d2 = Character.digit(s.charAt(i + 3), 16);
+                if (d1 >= 0 && d2 >= 0) {
+                    out.append((char) ((d1 << 4) | d2));
+                    i += 4;
+                    continue;
+                }
+            }
+
+            // Fallback: keep the backslash literally
+            out.append('\\');
+            i++;
+        }
+        return out.toString();
     }
+
 
     private String unescapeSingleQuotes(String input) {
         if (input == null) return null;
