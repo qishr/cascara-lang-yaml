@@ -1,6 +1,7 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.util.List;
 
 import org.junit.jupiter.api.AssertionFailureBuilder;
@@ -13,6 +14,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import net.bytebuddy.asm.MemberSubstitution.Substitution.Chain.Step.ForDelegation.OffsetMapping.Factory.WithParameterSupportOnly;
 
 public class TestUtils {
 
@@ -29,10 +31,18 @@ public class TestUtils {
     }
 
     public static void dumpTokens(List<YamlToken> tokens) {
-        dumpTokens(tokens, -1);
+        dumpTokens(new PrintWriter(System.out), tokens, -1);
     }
 
     public static void dumpTokens(List<YamlToken> tokens, int maxColumnWidth) {
+        dumpTokens(new PrintWriter(System.out), tokens, maxColumnWidth);
+    }
+
+    public static void dumpTokens(Writer writer, List<YamlToken> tokens) {
+        dumpTokens(writer, tokens, -1);
+    }
+
+    public static void dumpTokens(Writer writer, List<YamlToken> tokens, int maxColumnWidth) {
         System.out.println();
         // System.out.println("------------TOKENS-----------");
         TextualTable table = new TextualTable()
@@ -74,9 +84,9 @@ public class TestUtils {
             }
         }
 
-        PrintWriter pw = new PrintWriter(System.out);
+        // PrintWriter pw = new PrintWriter(System.out);
         try {
-            table.render(pw);
+            table.render(writer);
         } catch (Exception e) {
             e.printStackTrace();
         }
