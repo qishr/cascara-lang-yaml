@@ -892,6 +892,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     /// Scans a folded or literal block scalar
     public void scanBlockScalar(char headerChar) {
+        debug("---- scanBlockScalar ----");
+
         // Remaining tasks:
         // - EOL escapes
         // - Whitespace at end of line
@@ -937,7 +939,22 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         if (scalarStyle == ScalarStyle.FOLDED) {
 
-            while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
+
+            // [1]
+            // Originally the first of the two options.
+            // while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
+            //
+            //
+
+            // TODO: Swapping these round switches which test passes.
+            // I suspect the second option might be the right one and something is wrong later on.
+
+            // while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
+            while (!buffer.isAtEnd() && buffer.peek() != '\n') {
+
+            //
+            //
+
                 // TODO: Comments
                 buffer.advance();
             }
@@ -985,6 +1002,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         boolean prevDeeplyIndented = false;
         boolean prevEmpty = true;
         boolean finished = false;
+        boolean foundLineWithContent = false;
 
 
 
@@ -1003,6 +1021,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         char prev = '\0';
 
+        // String windowLexeme = buffer.getTokenWindowLexeme();
+
         while (!buffer.isAtEnd() && !finished) {
             int firstContentPos = -1;
             pos = 0; // Within the current line
@@ -1020,9 +1040,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                 debugString(Character.toString(ch));
 
-                // debugString(buffer.getTokenWindowLexeme(), "pos", pos);
+                // debugString(windowLexeme, "offset", buffer.offset());
 
                 if (ch == '\n') {
+                    debug("NEWLINE");
                     consecutiveNewlines++;
                     break;
                 }
@@ -1100,26 +1121,72 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                         }
                         else if (pos > blockIndent) {
                             deeplyIndented = true;
+                            debug("Indented = true");
                         }
 
                         boolean foldedNewline = consecutiveNewlines > 1;
 
 
+                        // [2]
+                        // Originally the second of the 3 options.
+                        // boolean deeplyNewline = (deeplyIndented && lineNum > 1) || (!deeplyIndented && prevDeeplyIndented);
+                        //
+                        //
 
                         // boolean deeplyNewline = deeplyIndented && lineNum > 1;
                         boolean deeplyNewline = (deeplyIndented && lineNum > 1) || (!deeplyIndented && prevDeeplyIndented);
+                        // boolean deeplyNewline = (!deeplyIndented && prevDeeplyIndented);
 
+                        //
+                        //
 
 
                         boolean literalNewline = scalarStyle == ScalarStyle.LITERAL && lineNum > 1;
 
                         if (foldedNewline || deeplyNewline || literalNewline) {
 
-                            int newLines = consecutiveNewlines -
-                                    (deeplyIndented || prevDeeplyIndented || literalNewline ? 0 : 1);
 
-                            debug("Adding %d new lines %b %b %b at line %d",
-                                newLines, foldedNewline, deeplyNewline, literalNewline, lineNum);
+
+
+                            int newLines = consecutiveNewlines -
+
+                            // /gradlew build -x javadoc test --rerun-tasks --tests "*test7T8X" --tests "*test6VJK" --tests "*testF6MC"
+
+                            // [3] Swapping these around:
+                            // Originally the first of the 2 options.
+                            // (deeplyIndented || prevDeeplyIndented || literalNewline ? 0 : 1);
+                            //
+                            // With the top one, only testF6MC fails.
+                            // With the bottom one, test6VJK & test7T8X also fail.
+                            //
+                            //
+
+                            (deeplyIndented || prevDeeplyIndented || literalNewline ? 0 : 1);
+                            // (literalNewline ? 0 : 1);
+
+                                    //explicitIndent > -1 ||
+
+                                    // (((deeplyIndented && !prevDeeplyIndented) || (!deeplyIndented && prevDeeplyIndented)) || literalNewline ? 0 : 1);
+                                    // (consecutiveNewlines == 1 || (deeplyIndented || prevDeeplyIndented || literalNewline) ? 0 : 1);
+
+                            //
+                            //
+                            // What causes `newLines` to be 3 instead of 2 for testF6MC?
+                            //
+                            // For the other 2, the second option causes `newLines` to be
+                            // 0 instead of 1, despite `consecutiveNewlines` being 1 in
+                            // both cases.
+
+                            // // TODO: This if statement breaks 4QFQ but fixes testF6MC
+                            // if (!foundLineWithContent && newLines > 1 && scalarStyle == ScalarStyle.FOLDED) {
+                            //     newLines--;
+                            // }
+
+
+
+
+                            debug("Adding %d new lines %b %b %b at line %d (cons=%d)",
+                                newLines, foldedNewline, deeplyNewline, literalNewline, lineNum, consecutiveNewlines);
 
                             for (int i = 0; i < newLines; i++) {
                                 // content.append('\n');
@@ -1149,6 +1216,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                         debug("MOL content (append %d, %d): %s", blockIndent, pos, StringUtils.debugString(line));
                     }
                     consecutiveNewlines = 0;
+                    foundLineWithContent = true;
                 } else {
                     // Whitespace
 
@@ -1176,6 +1244,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                                 }
                                 else if (pos > blockIndent) {
                                     deeplyIndented = true;
+                                    debug("Indented = true");
                                 } else {
                                     debug("**** Unhandled 3rd option ****");
                                 }
@@ -1190,9 +1259,11 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                                 if (pos == blockIndent) {
                                     deeplyIndented = false;
+                                    debug("Indented = false");
                                 }
                                 else if (pos > blockIndent) {
                                     deeplyIndented = true;
+                                    debug("Indented = true");
                                 } else {
                                     debug("**** Unhandled 3rd option ****");
                                 }
@@ -1231,7 +1302,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
 
             if (!finished) {
-                debug("Line: " + StringUtils.debugString(line));
+                debug("**** Line: " + StringUtils.debugString(line));
                 // if (lineNum > 0) {
                 //     if ((prevEmpty && lineNum > 1)) {
                 //         // content.append('\n');
