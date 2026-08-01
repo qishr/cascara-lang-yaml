@@ -1716,7 +1716,42 @@ public class SpecTests {
 
     @Test
     public void testJEF9_02() {
-        String yaml = "- |+\n";
+        String yaml = "- |+\n   ";
+
+        // Reporter reporter =  new StandardReporter()
+        //     .setLevel(TOKENIZER_LEVEL)
+        //     .setAnsiColoringEnabled(true);
+
+        // parser.getTokenizer().setReporter(reporter);
+        // parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (dumpTokens) {
+            TestUtils.dumpTokens(parser.getTokens());
+            // TestUtils.dumpTokens(reporter, parser.getTokens());
+        }
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlSequence seq = (YamlSequence)body;
+
+        TestUtils.assertEquals("\n", seq.getScalar(0).asString());
+    }
+
+    @Test
+    public void testK858() {
+        String yaml = """
+            strip: >-
+
+            clip: >
+
+            keep: |+
+
+            """;
 
         Reporter reporter =  new StandardReporter()
             .setLevel(TOKENIZER_LEVEL)
@@ -1724,6 +1759,11 @@ public class SpecTests {
 
         parser.getTokenizer().setReporter(reporter);
         parser.setReporter(reporter);
+
+        if (true|dumpTokens) {
+            TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
+            // TestUtils.dumpTokens(reporter, parser.getTokens());
+        }
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -1737,15 +1777,10 @@ public class SpecTests {
 
         YamlNode body = YamlNormalizer.normalize(doc.getBody());
 
-        YamlSequence seq = (YamlSequence)body;
+        YamlMap map = (YamlMap)body;
 
-        // YamlScalar scalar = (YamlScalar)body;
-
-        // String expected = "";
-
-        // System.out.println("Expected: " + StringUtils.debugString(expected));
-        // System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
-
-        TestUtils.assertEquals("\n", seq.getScalar(0).asString());
+        TestUtils.assertEquals("", map.getScalar("strip").asString());
+        TestUtils.assertEquals("", map.getScalar("clip").asString());
+        TestUtils.assertEquals("\n", map.getScalar("keep").asString());
     }
 }

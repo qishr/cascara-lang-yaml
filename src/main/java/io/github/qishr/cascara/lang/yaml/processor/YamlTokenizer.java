@@ -480,7 +480,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                 // ch == '*' || ch == '%' || ch == '!' || ch == '&' ||
 
-                // TODO: For complex keys, there must be a space or newline after
+                // For complex keys, there must be a space or newline after
                 // the key indicator and the value indicator
                 if (line.isEmpty() && (ch == '?' || ch == ':' || ch == '#')) { // TODO other chars?
                     finished = true;
@@ -949,6 +949,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 buffer.advance();
             }
             buffer.advance(); // consume the newline
+
+            // TODO: If this (the second line) is not empty and only contains whitespace, add a newline
             // if (buffer.peek() != '\n' && !(buffer.peek() == '\r' && buffer.peekNext() == '\n')) {
             //     consecutiveNewlines = 1;
             // }
@@ -992,14 +994,18 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
 
 
-        // TODO: Include header details in header line - style, explicitIndent...
+        // TODO: Include header details in header line or lexeme - style, explicitIndent...
         StringBuilder lexeme = new StringBuilder().append(headerString).append('\n');
 
         StringBuilder content = new StringBuilder();
 
+        int pos = -1;
+
+        char prev = '\0';
+
         while (!buffer.isAtEnd() && !finished) {
             int firstContentPos = -1;
-            int pos = 0; // Within the current line
+            pos = 0; // Within the current line
             char ch = 0;
             int lineOffset = buffer.offset();
             StringBuilder startOfLine = new StringBuilder();
@@ -1010,6 +1016,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             // Consume a line
             while (!buffer.isAtEnd() && ch != '\n') {
                 ch = buffer.advance();
+                char next = buffer.peek();
+
                 debugString(Character.toString(ch));
 
                 // debugString(buffer.getTokenWindowLexeme(), "pos", pos);
@@ -1020,6 +1028,27 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 }
                 // if (ch != ' ' && ch != '\t') {
                 if (ch != ' ') {
+
+                    // For complex keys, there must be a space or newline after
+                    // the key indicator and the value indicator
+                    // if (line.isEmpty() && (ch == '?' || ch == ':' || ch == '#')) {
+                    if (line.isEmpty() && (ch == '?' || ch == ':')) { // TODO other chars?
+                        finished = true;
+                        break;
+                    }
+                    // TODO: Do tabs count as whitespace here?
+                    if (//(ch == '#' && (prev == ' ' || prev == '\t' || prev == '\r' || prev == '\n')) ||
+                        (ch == ':' && (next == ' ' || next == '\t' || next == '\r' || next == '\n'))
+                        // (ch == '-' && (next == ' ' || next == '\t' || next == '\r' || next == '\n')) ||
+                        // (flowDepth > 0 && (ch == ',' || ch == '{' || ch == '}' || ch == '[' || ch == ']'))
+                    ){
+                        finished = true;
+                        // Roll back to start of line
+                        for (int i = buffer.offset(); i > lineOffset; i--) {
+                            buffer.backup();
+                        }
+                        break;
+                    }
 
                     // End of document
                     if (pos == 0 && ch == '.') {
@@ -1086,29 +1115,29 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                                 newLines, foldedNewline, deeplyNewline, literalNewline, lineNum);
 
                             for (int i = 0; i < newLines; i++) {
-                                content.append('\n');
-                                lexeme.append('\n');
+                                // content.append('\n');
+                                // lexeme.append('\n');
                                 line += '\n';
                                 debug(">1 newline (append): " + StringUtils.debugString(line));
                             }
                         }
                         else if (consecutiveNewlines == 1 && !literalNewline) {
                             if (!prevEmpty) {
-                                content.append(' ');
-                                lexeme.append(' ');
+                                // content.append(' ');
+                                // lexeme.append(' ');
                                 line += ' ';
                                 debug("=1 newline (append): " + StringUtils.debugString(line));
                             }
                         }
-                        content.append(startOfLine);
+                        // content.append(startOfLine);
                         lexeme.append(startOfLine.toString());
                         line += startOfLine.toString();
                         debug("SOC content (append): " + StringUtils.debugString(line));
                     }
 
                     if (blockIndent > -1 && pos >= blockIndent) {
-                        content.append(ch);
-                        lexeme.append(ch);
+                        // content.append(ch);
+                        // lexeme.append(ch);
                         line += ch;
                         debug("MOL content (append %d, %d): %s", blockIndent, pos, StringUtils.debugString(line));
                     }
@@ -1124,8 +1153,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                         if (scalarStyle == ScalarStyle.LITERAL) {
                             if (lineNum > 1) {
                                 for (int i = 0; i < consecutiveNewlines; i++) {
-                                    content.append('\n');
-                                    lexeme.append('\n');
+                                    // content.append('\n');
+                                    // lexeme.append('\n');
                                     line += '\n';
                                     debug(">LIT newline (append): " + StringUtils.debugString(line));
                                 }
@@ -1151,8 +1180,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                             startOfLine.append(ch);
                             debug("SOL whitespace (prepend)");
                         } else {
-                            content.append(ch);
-                            lexeme.append(ch);
+                            // content.append(ch);
+                            // lexeme.append(ch);
                             line += ch;
                             debug("MOL whitespace (append)");
                         }
@@ -1163,10 +1192,41 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 pos++;
             }
 
-            debug("Line: " + StringUtils.debugString(line));
+
+
+
+            if (!finished) {
+                debug("Line: " + StringUtils.debugString(line));
+                // if (lineNum > 0) {
+                //     if ((prevEmpty && lineNum > 1)) {
+                //         // content.append('\n');
+                //         // lexeme.append('\n');
+                //     } else {
+                //         if (!line.isEmpty()) {
+                //             content.append(' ');
+                //             lexeme.append(' ');
+                //         }
+                //     }
+                // }
+                content.append(line);
+                lexeme.append(line);
+            }
+
+
+
+
+            // debug("Line: " + StringUtils.debugString(line));
             prevDeeplyIndented = deeplyIndented;
             prevEmpty = firstContentPos == -1;
             lineNum++;
+            prev = ch;
+        }
+
+        if (scalarStyle == ScalarStyle.LITERAL && lineNum == 2) {
+            if (pos > -1 &&
+                consecutiveNewlines == 0) {
+                consecutiveNewlines = 1;
+            }
         }
 
         debug("Trailing newlines = %d", consecutiveNewlines);
