@@ -430,10 +430,16 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         final int startOffset = buffer.windowStartOffset();
 
         int margin = indentationLevels.peek();
-        boolean isDocumentLevel = false;
+
+
+        // We've already advanced past the first character.
+        // If the current column is 2, the first was 1 (document level).
+        // boolean isDocumentLevel = false;
+        boolean isDocumentLevel = buffer.column() == 2;
+
 
         boolean isKey = false;
-        int blockIndent = - 1;
+        int blockIndent = isDocumentLevel ? 0 : - 1;
         boolean prevEmpty = true;
         boolean finished = false;
 
@@ -446,7 +452,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         int endOfPrevLine = -1;
         // int firstContentPos = (firstChar == ' ' || firstChar == '\t' ? -1 : 0);
+
+        /// The position of the first non-whitespace character on the current line.
         int firstContentPos = (firstChar == ' ' ? -1 : 0);
+
         int lastContentPos = firstContentPos;
         char prev = 0;
 
@@ -516,7 +525,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                 ch = buffer.advance();
 
-                // TODO: I don't think this can be true
+                //
                 if (ch == '\n') {
                     endOfPrevLine = buffer.offset() - 1;
                     break;
@@ -563,18 +572,37 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                     // Start of content
                     if (firstContentPos == -1) {
-                        debug("blockIndent detection");
-                        isDocumentLevel = (buffer.column() == 1);
+                        // debug("blockIndent detection");
+
+
+                        // TODO: This is not neccessary. Only the position of the first character matters.
+                        // // isDocumentLevel = (buffer.column() == 1);
+                        // if (lineNum == 0 && buffer.column() == 1) {
+                        //     isDocumentLevel = true;
+                        // }
+
+
                         // TODO: Does this only apply after the first newline ?
                         firstContentPos = pos;
+
+                        // If this is a document-level scalar, blockIndent is already set to 0.
                         if (lineNum > 0 && blockIndent == -1) {
+                        // if (lineNum > 0 && blockIndent == -1 && !isDocumentLevel) {
                             blockIndent = firstContentPos;
                             debug("Block indent = %d", blockIndent);
                         }
                     }
 
+                    // pos and blockIndent are zero-based.
                     if (lineNum == 0 || (blockIndent > -1 && pos >= blockIndent)) {
-                        line += trailingWhitespace; // TODO: Do this in block scanner too.
+                        // For a line that starts with "  x" trailingWhitespace will be "  " when x is being scanned.
+
+
+                        if (!line.isEmpty()) {
+                            line += trailingWhitespace; // TODO: Do this in block scanner too.
+                        }
+
+
                         line += ch;
 
                         trailingWhitespace = "";
