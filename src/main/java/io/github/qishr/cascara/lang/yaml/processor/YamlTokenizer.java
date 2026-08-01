@@ -48,7 +48,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
 import io.github.qishr.cascara.common.lang.util.SourceBuffer;
@@ -533,8 +532,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     break;
                 }
 
-                // if (ch != ' ' && ch != '\t') {
-                if (ch != ' ') {
+                if (ch != ' ' && ch != '\t') {
 
                     // End of document check
                     if (pos == 0 && ch == '.') {
@@ -576,20 +574,11 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     if (firstContentPos == -1) {
                         // debug("blockIndent detection");
 
-
-                        // TODO: This is not neccessary. Only the position of the first character matters.
-                        // // isDocumentLevel = (buffer.column() == 1);
-                        // if (lineNum == 0 && buffer.column() == 1) {
-                        //     isDocumentLevel = true;
-                        // }
-
-
                         // TODO: Does this only apply after the first newline ?
                         firstContentPos = pos;
 
                         // If this is a document-level scalar, blockIndent is already set to 0.
                         if (lineNum > 0 && blockIndent == -1) {
-                        // if (lineNum > 0 && blockIndent == -1 && !isDocumentLevel) {
                             blockIndent = firstContentPos;
                             debug("Block indent = %d", blockIndent);
                         }
@@ -601,7 +590,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
 
                         if (!line.isEmpty()) {
-                            line += trailingWhitespace; // TODO: Do this in block scanner too.
+                            line += trailingWhitespace;
                         }
 
 
@@ -735,6 +724,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         // Remaining tasks:
         // - Carriage returns
+        // - Unicode escapes
 
         // 1. Capture the starting coordinates using the buffer state
         int startLine = buffer.line();
@@ -842,8 +832,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                             // Don't immediately append backslashes.
                             // Wait until the next character and append them just before it.
                             // This lets us check if the backslash is escaping an EOL.
-                            if (prev == '\\' && !isEolEscaped) {
-                                folded.append('\\');
+                            if (prev == '\\') {
+                                if (!isEolEscaped) {
+                                    folded.append('\\');
+                                }
                             }
                             if (ch != '\\') {
                                 folded.append(ch);
@@ -938,6 +930,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
 
+        int consecutiveNewlines = 0;
 
 
         // Skip to the end of the header line
@@ -956,6 +949,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 buffer.advance();
             }
             buffer.advance(); // consume the newline
+            // if (buffer.peek() != '\n' && !(buffer.peek() == '\r' && buffer.peekNext() == '\n')) {
+            //     consecutiveNewlines = 1;
+            // }
         }
 
 
@@ -995,7 +991,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
 
 
-        int consecutiveNewlines = 0;
 
         // TODO: Include header details in header line - style, explicitIndent...
         StringBuilder lexeme = new StringBuilder().append(headerString).append('\n');

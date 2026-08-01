@@ -1609,16 +1609,16 @@ public class SpecTests {
     public void testDWX9() {
         String yaml = "|\n \n  \n  literal\n   \n  \n  text\n\n # Comment";
 
-        Reporter reporter =  new StandardReporter()
-            .setLevel(TOKENIZER_LEVEL)
-            .setAnsiColoringEnabled(true);
+        // Reporter reporter =  new StandardReporter()
+        //     .setLevel(TOKENIZER_LEVEL)
+        //     .setAnsiColoringEnabled(true);
 
-        parser.getTokenizer().setReporter(reporter);
+        // parser.getTokenizer().setReporter(reporter);
         // parser.setReporter(reporter);
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (true|dumpTokens) {
+        if (dumpTokens) {
 
             TestUtils.dumpTokens(parser.getTokens());
             // TestUtils.dumpTokens(reporter, parser.getTokens());
@@ -1638,5 +1638,114 @@ public class SpecTests {
         System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
 
         TestUtils.assertEquals(expected, scalar.asString());
+    }
+
+    @Test
+    public void testG4RS() {
+        String yaml = """
+            unicode: "Sosa did fine.\\u263A"
+            control: "\\b1998\\t1999\\t2000\\n"
+            hex esc: "\\x0d\\x0a is \\r\\n"
+
+            single: '"Howdy!" he cried.'
+            quoted: ' # Not a ''comment''.'
+            tie-fighter: '|\\-*-/|'
+            """;
+
+        Reporter reporter =  new StandardReporter()
+            .setLevel(TOKENIZER_LEVEL)
+            .setAnsiColoringEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+        parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (true|dumpTokens) {
+            TestUtils.dumpTokens(parser.getTokens());
+            // TestUtils.dumpTokens(reporter, parser.getTokens());
+        }
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap)body;
+
+        TestUtils.assertEquals("Sosa did fine.☺", map.getString("unicode"));
+        TestUtils.assertEquals("\b1998\t1999\t2000\n", map.getString("control"));
+        TestUtils.assertEquals("\r\n is \r\n", map.getString("hex esc"));
+        TestUtils.assertEquals("\"Howdy!\" he cried.", map.getString("single"));
+        TestUtils.assertEquals(" # Not a 'comment'.", map.getString("quoted"));
+        TestUtils.assertEquals("|\\-*-/|", map.getString("tie-fighter"));
+    }
+
+    @Test
+    public void testHS5T() {
+        String yaml = "1st non-empty\n\n 2nd non-empty \n\t3rd non-empty";
+
+        // Reporter reporter =  new StandardReporter()
+        //     .setLevel(TOKENIZER_LEVEL)
+        //     .setAnsiColoringEnabled(true);
+
+        // parser.getTokenizer().setReporter(reporter);
+        // parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (dumpTokens) {
+            TestUtils.dumpTokens(parser.getTokens());
+            // TestUtils.dumpTokens(reporter, parser.getTokens());
+        }
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlScalar scalar = (YamlScalar)body;
+
+        String expected = "1st non-empty\n2nd non-empty 3rd non-empty";
+
+        System.out.println("Expected: " + StringUtils.debugString(expected));
+        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+
+        TestUtils.assertEquals(expected, scalar.asString());
+    }
+
+    @Test
+    public void testJEF9_02() {
+        String yaml = "- |+\n";
+
+        Reporter reporter =  new StandardReporter()
+            .setLevel(TOKENIZER_LEVEL)
+            .setAnsiColoringEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+        parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (true|dumpTokens) {
+            TestUtils.dumpTokens(parser.getTokens());
+            // TestUtils.dumpTokens(reporter, parser.getTokens());
+        }
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlSequence seq = (YamlSequence)body;
+
+        // YamlScalar scalar = (YamlScalar)body;
+
+        // String expected = "";
+
+        // System.out.println("Expected: " + StringUtils.debugString(expected));
+        // System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+
+        TestUtils.assertEquals("\n", seq.getScalar(0).asString());
     }
 }
