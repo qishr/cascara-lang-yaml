@@ -1598,7 +1598,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 token.getType() == YamlTokenType.TAG ||
                 token.getType() == YamlTokenType.DIRECTIVE
             ){
-                String lexeme = StringUtils.debugString(token.getLexeme());
+                String lexeme = StringUtils.debugString(token.getContent());
                 sb.append("(");
                 sb.append(ANSI_WHITE);
                 if (lexeme.length() <= MAX_DEBUG_STRING_LENGTH) {

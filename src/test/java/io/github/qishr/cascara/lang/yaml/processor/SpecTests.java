@@ -725,7 +725,11 @@ public class SpecTests {
     public void test6VJK() {
         String yaml = ">\n Sammy Sosa completed another\n fine season with great stats.\n\n   63 Home Runs\n   0.288 Batting Average\n\n What a year!\n";
 
-        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
+        parser.getTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(TOKENIZER_LEVEL)
+                .setAnsiColoringEnabled(true)
+        );
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -885,11 +889,11 @@ public class SpecTests {
             # Comment
             """;;
 
-        // parser.getTokenizer().setReporter(
-        //     new StandardReporter()
-        //         .setLevel(TOKENIZER_LEVEL)
-        //         .setAnsiColoringEnabled(true)
-        // );
+        parser.getTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(TOKENIZER_LEVEL)
+                .setAnsiColoringEnabled(true)
+        );
 
         // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
 
@@ -1803,16 +1807,16 @@ public class SpecTests {
             .setAnsiColoringEnabled(true);
 
         parser.getTokenizer().setReporter(reporter);
-        parser.setReporter(reporter);
+        // parser.setReporter(reporter);
 
-        if (true|dumpTokens) {
-            TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
-            // TestUtils.dumpTokens(reporter, parser.getTokens());
-        }
+        // if (true|dumpTokens) {
+        //     TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
+        //     // TestUtils.dumpTokens(reporter, parser.getTokens());
+        // }
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (true|dumpTokens) {
+        if (dumpTokens) {
             TestUtils.dumpTokens(parser.getTokens());
             // TestUtils.dumpTokens(reporter, parser.getTokens());
         }
@@ -1824,7 +1828,16 @@ public class SpecTests {
 
         YamlMap map = (YamlMap)body;
 
-        TestUtils.assertEquals(" more indented\nregular\n", map.getScalar("a").asString());
-        TestUtils.assertEquals("\n\n more indented\nregular\n", map.getScalar("b").asString());
+        String expected1 = " more indented\nregular\n";
+        String expected2 = "\n\n more indented\nregular\n";
+
+        System.out.println("Expected: " + StringUtils.debugString(expected1));
+        System.out.println("Actual  : " + StringUtils.debugString(map.getScalar("a").asString()));
+
+        System.out.println("Expected: " + StringUtils.debugString(expected2));
+        System.out.println("Actual  : " + StringUtils.debugString(map.getScalar("b").asString()));
+
+        TestUtils.assertEquals(expected1, map.getScalar("a").asString());
+        TestUtils.assertEquals(expected2, map.getScalar("b").asString());
     }
 }
