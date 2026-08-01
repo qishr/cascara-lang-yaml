@@ -1110,20 +1110,20 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             if (style == ScalarStyle.FOLDED) {
                 debug("FOLDED");
 
-                YamlToken contentToken = null;
+                // YamlToken contentToken = null;
                 String content;
 
-                if (check(YamlTokenType.SCALAR)) {
-                    contentToken = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
-                    content = contentToken.getContent();
-                } else {
+                // if (check(YamlTokenType.SCALAR)) {
+                //     contentToken = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
+                //     content = contentToken.getContent();
+                // } else {
                     content = token.getContent();
-                }
+                // }
 
                 // If the tokenizer already produced multi-line content,
                 // DO NOT re-fold it. Just return it as-is.
                 YamlScalar scalar = new YamlScalar(
-                    contentToken != null ? contentToken : token,
+                    token, //contentToken != null ? contentToken : token,
                     content,
                     PrimitiveType.STRING,
                     ScalarStyle.FOLDED,
