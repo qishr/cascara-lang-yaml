@@ -35,56 +35,49 @@
 
 package io.github.qishr.cascara.lang.yaml.ast;
 
-import java.util.List;
+import io.github.qishr.cascara.common.lang.ast.AstNodeFactory;
+import io.github.qishr.cascara.common.lang.util.LanguageOptions;
+import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
-import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
+public class YamlNodeFactory implements AstNodeFactory<YamlNode,YamlScalar,YamlSequence,YamlMap,YamlMapEntry,YamlNode> {
 
-/// Represents the structural pairing of a key and a value.
-public class YamlMapEntryNode extends YamlNode implements MapEntryAstNode<YamlNode,YamlNode> {
-    private final YamlNode key;
-    private YamlNode value;
-
-    // public YamlMapEntryNode(int line, int column, YamlNode key, YamlNode value) {
-    //     super(line, column);
-    //     this.key = key;
-    //     this.value = value;
-    // }
-
-    public YamlMapEntryNode(YamlNode key, YamlNode value) {
-        super(key.getToken());
-        this.key = key;
-        this.value = value;
-    }
-
-    /// {@inheritDoc}
     @Override
-    public YamlNode getKey() { return key; }
-
-    /// {@inheritDoc}
-    @Override
-    public YamlNode getValue() { return value; }
-
-    /// {@inheritDoc}
-    @Override
-    public YamlMapEntryNode setRaw(YamlNode value) {
-        this.value = (YamlNode) value;
-        return this;
-    }
-
-    /// {@inheritDoc}
-    @Override
-    public List<YamlNode> getChildren() {
-        return List.of(key, value);
+    public YamlScalar createScalarNode(Object jvmValue) {
+        return new YamlScalar(jvmValue);
     }
 
     @Override
-    public void accept(YamlVisitor visitor) {
-        visitor.visit(this);
+    public YamlScalar createScalarNode(Object key, QuoteStyle quoteStyle) {
+        return new YamlScalar(key, scalarStyle(quoteStyle));
     }
 
 	@Override
-	public YamlNode setValue(YamlNode value) {
-        this.value = value;
-        return this;
+	public YamlScalar createScalarNode(Object jvmValue, QuoteStyle quoteStyle, LanguageOptions<?> options) {
+        return new YamlScalar(jvmValue, scalarStyle(quoteStyle), (YamlOptions)options);
 	}
+
+    @Override
+    public YamlScalar createKey(Object key) {
+        return new YamlScalar(key);
+    }
+
+    @Override
+    public YamlSequence createSequenceNode() {
+        return new YamlSequence();
+    }
+
+    @Override
+    public YamlMap createMapNode() {
+        return new YamlMap();
+    }
+
+    private ScalarStyle scalarStyle(QuoteStyle quoteStyle) {
+        return switch (quoteStyle) {
+            case DOUBLE -> ScalarStyle.DOUBLE_QUOTED;
+            case SINGLE -> ScalarStyle.SINGLE_QUOTED;
+            case PLAIN -> ScalarStyle.PLAIN;
+            case UNDETERMINED -> ScalarStyle.UNDETERMINED;
+        };
+    }
 }

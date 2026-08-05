@@ -39,8 +39,6 @@ import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 import io.github.qishr.cascara.common.lang.token.Token;
-import io.github.qishr.cascara.common.lang.util.QuoteStyle;
-import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
@@ -67,7 +65,6 @@ public class YamlStreamEngine {
     private boolean documentOpened = false;
     private boolean documentClosed = false;
     private boolean isDocumentEnded = false;
-    private boolean insideExplicitKey = false;
     private boolean insideBlockScalar = false;
     private final StringBuilder blockScalarBuffer = new StringBuilder();
 
@@ -419,7 +416,6 @@ public class YamlStreamEngine {
 
         // Explicit key indicator '?'
         if (currentToken.getType() == YamlTokenType.KEY_INDICATOR) {
-            insideExplicitKey = true;
             return nextEvent();
         }
 
@@ -427,7 +423,6 @@ public class YamlStreamEngine {
 
         if (currentToken.getType() == YamlTokenType.SCALAR) {
             String value = currentToken.getContent();
-            ScalarStyle style = currentToken.getScalarStyle();
 
             // Literal block: already has correct newlines from tokenizer
             // Folded block: already folded by tokenizer
@@ -492,36 +487,6 @@ public class YamlStreamEngine {
         }
 
         throw new ParserException(currentToken, YamlDiagnosticCode.UNEXPECTED_TOKEN, currentToken.getType());
-    }
-
-    private String foldBlockScalar(String content) {
-        String[] lines = content.split("\n", -1);
-
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        int pendingBlank = 0;
-
-        for (String line : lines) {
-            if (line.isEmpty()) {
-                pendingBlank++;
-                continue;
-            }
-
-            if (first) {
-                sb.append(line);
-                first = false;
-            } else {
-                if (pendingBlank == 0) sb.append(' ');
-                else for (int i = 0; i < pendingBlank; i++) sb.append('\n');
-
-                sb.append(line);
-            }
-
-            pendingBlank = 0;
-        }
-
-        sb.append('\n');
-        return sb.toString();
     }
 
     private boolean isNextTokenValueIndicator() throws ParserException {

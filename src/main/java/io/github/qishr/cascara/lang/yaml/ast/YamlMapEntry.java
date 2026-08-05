@@ -35,39 +35,46 @@
 
 package io.github.qishr.cascara.lang.yaml.ast;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
 
-public class YamlStreamNode extends YamlNode {
-    private final List<YamlDocumentNode> documents = new ArrayList<>();
-    private final List<YamlCommentNode> comments = new ArrayList<>();
+/// Represents the structural pairing of a key and a value.
+public class YamlMapEntry extends YamlNode implements MapEntryAstNode<YamlNode,YamlNode> {
+    private final YamlNode key;
+    private YamlNode value;
 
-    public YamlStreamNode() {
-        super();
+    // public YamlMapEntryNode(int line, int column, YamlNode key, YamlNode value) {
+    //     super(line, column);
+    //     this.key = key;
+    //     this.value = value;
+    // }
+
+    public YamlMapEntry(YamlNode key, YamlNode value) {
+        super(key.getToken());
+        this.key = key;
+        this.value = value;
     }
 
-    public YamlStreamNode(YamlToken token) {
-        super(token);
+    /// {@inheritDoc}
+    @Override
+    public YamlNode getKey() { return key; }
+
+    /// {@inheritDoc}
+    @Override
+    public YamlNode getValue() { return value; }
+
+    /// {@inheritDoc}
+    @Override
+    public YamlMapEntry setRaw(YamlNode value) {
+        this.value = (YamlNode) value;
+        return this;
     }
 
-    public void addDocument(YamlDocumentNode document) {
-        if (document != null) {
-            this.documents.add(document);
-        }
-    }
-
-    public List<YamlDocumentNode> getDocuments() {
-        return documents;
-    }
-
-    public List<YamlCommentNode> getComments() {
-        return comments;
-    }
-
-    public boolean isEmpty() {
-        return documents.isEmpty();
+    /// {@inheritDoc}
+    @Override
+    public List<YamlNode> getChildren() {
+        return List.of(key, value);
     }
 
     @Override
@@ -76,8 +83,8 @@ public class YamlStreamNode extends YamlNode {
     }
 
 	@Override
-	public List<? extends YamlNode> getChildren() {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Unimplemented method 'getChildren'");
+	public YamlNode setValue(YamlNode value) {
+        this.value = value;
+        return this;
 	}
 }

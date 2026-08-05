@@ -61,7 +61,7 @@ public abstract class AbstractYamlTypeSerializer<T> extends AbstractTypeDescript
 
     /// Deserializes an AST node into a strongly-typed Java object.
     ///
-    /// @param node        The structural AST node being parsed (e.g., YamlScalarNode, YamlMapNode).
+    /// @param node        The structural AST node being parsed (e.g., YamlScalarNode, YamlMap).
     /// @return            The fully constructed Java object instance.
     /// @throws SerializerException If the node structure violates the type constraints.
     public T deserialize(YamlNode node) throws SerializerException {

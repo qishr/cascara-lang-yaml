@@ -46,11 +46,11 @@ import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 class YamlTests {
@@ -66,13 +66,20 @@ class YamlTests {
                             "  - value2\n" +
                             "";
 
+        YamlTokenizer tokenizer = new YamlTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(Level.TRACE)
+                .setAnsiColoringEnabled(true)
+        );
+        TestUtils.dumpTokens(tokenizer.tokenize(yamlString));
+
         // TODO: diagnostic level in one place for all tests?
         // YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(LEVEL));
         YamlAstParser parser = new YamlAstParser();
         parser.setReporter(new StandardReporter().setLevel(LEVEL));
 
-        YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        YamlMap yaml = (YamlMap)parser.parse(yamlString);
+        // TestUtils.dumpTokens(parser.getTokens());
 
         List<YamlNode> array = yaml.getSequence("array").getChildren();
         assertEquals(2, array.size());
@@ -89,21 +96,21 @@ class YamlTests {
         YamlAstParser parser = new YamlAstParser();
         parser.setReporter(new StandardReporter().setLevel(LEVEL));
 
-        YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        YamlMap yaml = (YamlMap)parser.parse(yamlString);
+        TestUtils.dumpTokens(parser.getTokens());
 
-        YamlMapNode object = yaml.getMap("object");
-        List<YamlMapEntryNode> entries = object.getEntries();
+        YamlMap object = yaml.getMap("object");
+        List<YamlMapEntry> entries = object.getEntries();
 
-        YamlMapEntryNode entry1 = entries.getFirst();
+        YamlMapEntry entry1 = entries.getFirst();
         YamlNode key1 = entry1.getKey();
-        if (key1 instanceof YamlScalarNode scalar) {
+        if (key1 instanceof YamlScalar scalar) {
             assertEquals("emptyarray", scalar.asString());
         }
 
-        YamlMapEntryNode entry2 = entries.getLast();
+        YamlMapEntry entry2 = entries.getLast();
         YamlNode key2 = entry2.getKey();
-        if (key2 instanceof YamlScalarNode scalar) {
+        if (key2 instanceof YamlScalar scalar) {
             assertEquals("array", scalar.asString());
         }
     }
@@ -115,8 +122,8 @@ class YamlTests {
         YamlAstParser parser = new YamlAstParser();
         parser.setReporter(new StandardReporter().setLevel(LEVEL));
 
-        YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        YamlMap yaml = (YamlMap)parser.parse(yamlString);
+        TestUtils.dumpTokens(parser.getTokens());
 
         String name = yaml.getString("name");
         assertEquals("one \"two\" three", name);
@@ -129,8 +136,8 @@ class YamlTests {
         YamlAstParser parser = new YamlAstParser();
         parser.setReporter(new StandardReporter().setLevel(LEVEL));
 
-        YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        YamlMap yaml = (YamlMap)parser.parse(yamlString);
+        TestUtils.dumpTokens(parser.getTokens());
 
         String name = yaml.getString("name");
         // assertEquals("One\nTwo", name);
@@ -144,8 +151,8 @@ class YamlTests {
         YamlAstParser parser = new YamlAstParser();
         parser.setReporter(new StandardReporter().setLevel(LEVEL));
 
-        YamlMapNode yaml = (YamlMapNode)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        YamlMap yaml = (YamlMap)parser.parse(yamlString);
+        TestUtils.dumpTokens(parser.getTokens());
 
         String value = yaml.getString("key");
         assertEquals("value", value);
@@ -163,13 +170,18 @@ class YamlTests {
         YamlAstParser parser = new YamlAstParser()
                 .setReporter(new StandardReporter().setLevel(LEVEL));
 
-        YamlSequenceNode seq = (YamlSequenceNode)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        parser.getTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(Level.DEBUG)
+                .setAnsiColoringEnabled(true)
+        );
+        YamlSequence seq = (YamlSequence)parser.parse(yamlString);
+        TestUtils.dumpTokens(parser.getTokens());
 
         YamlNode first = seq.get(0);
-        assertInstanceOf(YamlMapNode.class, first);
+        assertInstanceOf(YamlMap.class, first);
 
-        YamlMapNode map = (YamlMapNode) first;
+        YamlMap map = (YamlMap) first;
 
         String value = map.getString("key");
         assertEquals("value", value);
@@ -233,11 +245,11 @@ class YamlTests {
         YamlAstParser parser = new YamlAstParser()
                 .setReporter(new StandardReporter().setLevel(LEVEL));
 
-        YamlSequenceNode seq = (YamlSequenceNode)parser.parse(yamlString);
-        TestUtil.dumpTokens(parser.getTokens());
+        YamlSequence seq = (YamlSequence)parser.parse(yamlString);
+        TestUtils.dumpTokens(parser.getTokens());
 
         YamlNode first = seq.get(0);
-        assertInstanceOf(YamlMapNode.class, first);
+        assertInstanceOf(YamlMap.class, first);
         assertNotNull(seq);
     }
 
@@ -253,11 +265,88 @@ class YamlTests {
           """;
 
         YamlTokenizer tokenizer = new YamlTokenizer();
+
+        tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG));
         List<YamlToken> tokens = tokenizer.tokenize(yamlString);
-        TestUtil.dumpTokens(tokens);
+        TestUtils.dumpTokens(tokens);
 
         YamlAstParser parser = new YamlAstParser()
                 .setReporter(new StandardReporter().setLevel(LEVEL));
+
+
+        assertDoesNotThrow(() -> parser.parse(yamlString));
+    }
+
+    // String yamlString = """
+        //     mapping:
+        //       ? foo
+        //       : 1
+        //       ? bar baz
+        //       : 2
+        //       ? "qux:quux"
+        //       : 3
+        //     tiles:
+        //       ? X: -10
+        //         Y: -10
+        //       : 2
+        //     """;
+
+        // String yamlString = """
+        //     tiles:
+        //       ? X: -10
+        //         Y: -10
+        //       : 2
+        //     """;
+
+
+    @Test
+    void test_16_KE() {
+        String yamlString = """
+              ? X: -10
+                Y: -10
+              : 2
+              """;
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+
+        tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG));
+        List<YamlToken> tokens = tokenizer.tokenize(yamlString);
+        TestUtils.dumpTokens(tokens);
+
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(
+                new StandardReporter()
+                    .setLevel(LEVEL)
+                    .setAnsiColoringEnabled(true)
+            );
+
+        assertDoesNotThrow(() -> parser.parse(yamlString));
+    }
+
+    @Test
+    void test_11_ELWS() {
+        String yamlString = """
+            key: value
+
+            next_key: value
+            """;
+
+        YamlTokenizer tokenizer = new YamlTokenizer();
+
+        tokenizer.setReporter(
+            new StandardReporter()
+                .setLevel(Level.DEBUG)
+                .setAnsiColoringEnabled(true)
+        );
+        List<YamlToken> tokens = tokenizer.tokenize(yamlString);
+        TestUtils.dumpTokens(tokens);
+
+        YamlAstParser parser = new YamlAstParser()
+            .setReporter(
+                new StandardReporter()
+                    .setLevel(LEVEL)
+                    .setAnsiColoringEnabled(true)
+            );
 
 
         assertDoesNotThrow(() -> parser.parse(yamlString));

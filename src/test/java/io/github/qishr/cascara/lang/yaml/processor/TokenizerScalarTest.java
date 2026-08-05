@@ -7,43 +7,44 @@ import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.util.SourceStringBuffer;
+import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 public class TokenizerScalarTest {
 
     @Test
     void test4Q9F(){
-        TestUtil.assertEquals("ab cd\nef\n\ngh\n", blockScalar(">\n ab\n cd\n\n ef\n\n\n gh\n"));
+        TestUtils.assertEquals("ab cd\nef\n\ngh\n", blockScalar(">\n ab\n cd\n\n ef\n\n\n gh\n"));
     }
 
     @Test
     void test4QFQa(){
-        TestUtil.assertEquals("detected\n", blockScalar("|\n detected\n", 1));
+        TestUtils.assertEquals("detected\n", blockScalar("|\n detected\n", 1));
     }
 
     @Test
     void test4QFQb(){
-        TestUtil.assertEquals("\n\n# detected\n", blockScalar(">\n\n\n  # detected\n", 1));
+        TestUtils.assertEquals("\n\n# detected\n", blockScalar(">\n\n\n  # detected\n", 1));
     }
 
     @Test
     void test4QFQc(){
-        TestUtil.assertEquals(" explicit\n", blockScalar("|1\n  explicit\n", 1));
+        TestUtils.assertEquals(" explicit\n", blockScalar("|1\n  explicit\n", 1));
     }
 
     @Test
     void test4QFQd(){
-        TestUtil.assertEquals("detected\n", blockScalar(">\n detected\n", 1));
+        TestUtils.assertEquals("detected\n", blockScalar(">\n detected\n", 1));
     }
 
     @Test
     void test4WAa(){
-        TestUtil.assertEquals("xxx\n", blockScalar("|2\n    xxx\n", 3));
+        TestUtils.assertEquals("xxx\n", blockScalar("|2\n    xxx\n", 3));
     }
 
     @Test
     void test4WAb(){
-        TestUtil.assertEquals("xxx\n", blockScalar("|\n    xxx\n", 3));
+        TestUtils.assertEquals("xxx\n", blockScalar("|\n    xxx\n", 3));
     }
 
 
@@ -60,13 +61,16 @@ public class TokenizerScalarTest {
         tokenizer.setReporter(new StandardReporter().setLevel(Level.TRACE));
 
         char header = source.charAt(0);
-        String string = source.substring(1);
+        ScalarStyle style = header == '>'
+            ? ScalarStyle.FOLDED
+            : ScalarStyle.LITERAL;
+        // String string = source.substring(1);
 
-        SourceStringBuffer buffer = new SourceStringBuffer(string);
+        SourceStringBuffer buffer = new SourceStringBuffer(source);
 
         tokenizer.indentationLevels.push(indent);
         tokenizer.buffer = buffer;
-        tokenizer.scanBlockScalar(header);
+        tokenizer.scanScalar(style);
 
         assertEquals(1, tokenizer.pendingTokens.size());
         YamlToken token = tokenizer.pendingTokens.peek();

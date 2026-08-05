@@ -55,7 +55,7 @@ public abstract class YamlNode implements AstNode {
     private final int startColumn;
     private final int endLine = 0;
     private final int endColumn = 0;
-    private List<YamlCommentNode> comments = null;
+    private List<YamlComment> comments = null;
     private String anchor;
     private String tag;
     protected YamlToken token;
@@ -68,6 +68,10 @@ public abstract class YamlNode implements AstNode {
     }
 
     public abstract void accept(YamlVisitor visitor);
+
+    protected YamlNode(YamlOptions options) {
+        this(null, options);
+    }
 
     /// Constructs a new YamlNode with specific source coordinates
     /// obtained from a YamLToken
@@ -98,7 +102,7 @@ public abstract class YamlNode implements AstNode {
     protected YamlNode(int line, int column, YamlOptions options) {
         this.startLine = line;
         this.startColumn = column;
-        this.options = options;
+        this.options = (options == null) ? YamlOptions.DEFAULT : options;
     }
 
     public YamlOptions getOptions() {
@@ -152,7 +156,7 @@ public abstract class YamlNode implements AstNode {
 
     /// {@inheritDoc}
     @Override
-    public List<YamlCommentNode> getComments() {
+    public List<YamlComment> getComments() {
         if (comments == null) {
             comments = new ArrayList<>();
         }
@@ -162,7 +166,7 @@ public abstract class YamlNode implements AstNode {
     /// Associates a comment node with this specific AST node.
     ///
     /// @param comment The comment node to add.
-    public void addComment(YamlCommentNode comment) {
+    public void addComment(YamlComment comment) {
         if (this.comments == null) {
             this.comments = new ArrayList<>();
         }
@@ -172,7 +176,7 @@ public abstract class YamlNode implements AstNode {
     /// Associates a comment node with this specific AST node.
     ///
     /// @param comment The comment node to add.
-    public void addComments(int pos, List<YamlCommentNode> comments) {
+    public void addComments(int pos, List<YamlComment> comments) {
         if (this.comments == null) {
             this.comments = new ArrayList<>();
         }
@@ -184,7 +188,33 @@ public abstract class YamlNode implements AstNode {
     @Nullable
     public YamlToken getToken() { return token; }
 
-    public void setToken(YamlToken token) { this.token = token; }
+    // TODO: Remove this
+    // public void setToken(YamlToken token) { this.token = token; }
+
+    // public YamlScalar asScalar() {
+    //     if (this instanceof YamlScalar scalar) {
+    //         return scalar;
+    //     }
+    //     return null;
+    // }
+
+    // public YamlMap asMap() {
+    //     if (this instanceof YamlMap map) {
+    //         return map;
+    //     }
+    //     return null;
+    // }
+
+    // public YamlSequence asSequence() {
+    //     if (this instanceof YamlSequence sequence) {
+    //         return sequence;
+    //     }
+    //     return null;
+    // }
+
+    //
+    //
+    //
 
     /// Compares this node with another for equality based on its content.
     ///

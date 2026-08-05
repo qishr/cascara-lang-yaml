@@ -50,11 +50,11 @@ import java.util.ArrayDeque;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
-import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.util.SourceBuffer;
 import io.github.qishr.cascara.common.lang.util.SourceInputStreamBuffer;
 import io.github.qishr.cascara.common.lang.util.SourceStringBuffer;
 import io.github.qishr.cascara.common.util.StringUtils;
+import io.github.qishr.cascara.lang.yaml.ast.ChompingStyle;
 import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
@@ -118,6 +118,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     @Override
     public void open(String text) {
+        this.debugSource = text;
+
         this.buffer = new SourceStringBuffer(text);
         this.isLegacyMode = false;
         resetCommonState();
@@ -142,17 +144,21 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         return tokenize(new String(bytes, StandardCharsets.UTF_8));
     }
 
+    String debugSource;
+
     @Override
-    public List<YamlToken> tokenize(String source) {
-        if (source == null || source.isEmpty()) {
+    public List<YamlToken> tokenize(String text) {
+        if (text == null || text.isEmpty()) {
             return List.of();
         }
+
+        this.debugSource = text;
 
         this.tokens = new ArrayList<>();
         this.streamStarted = false;
         this.streamEnded = false;
 
-        open(source);
+        open(text);
         this.isLegacyMode = true;
 
         // Drain the stream using the sequential nextToken logic
@@ -196,6 +202,19 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         while (!buffer.isAtEnd() && pendingTokens.isEmpty()) {
             buffer.startTokenWindow();
             scanToken();
+
+            char shouldBeNewline = buffer.peek();
+            int pos = buffer.offset();
+
+            if (!buffer.isAtEnd()) {
+
+                char again = buffer.charAt(pos);
+                debug(StringUtils.debugString(this.debugSource, pos));
+
+                if (buffer.peek() == '\r' || buffer.peek() == '\n') {
+                    handleNewlineAndIndentation(buffer.advance());
+                }
+            }
         }
 
         // 3. If scanning populated tokens, return the first one
@@ -243,47 +262,49 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         final String method = "scanToken";
         int tokenStartColumn = buffer.column();
 
-        char c = buffer.advance();
+        char c = buffer.peek();
 
         if (c == '|') {
-            trace(method, "block scalar");
-            scanBlockScalar(c);
+            scanScalar(ScalarStyle.LITERAL);
             return;
         }
 
         if (c == '>') {
-            scanBlockScalar('>');
+            scanScalar(ScalarStyle.FOLDED);
             return;
         }
 
         if (c == '\n' || c == '\r') {
+            buffer.advance();
             trace("scanToken", "");
             handleNewlineAndIndentation(c);
             return;
         }
 
         if (c == ' ' || c == '\t') {
+            buffer.advance();
             trace(method, "space or tab");
-            if (c == '\t') {
-                error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
-            }
             return;
         }
 
         if (c == '!') {
-            // scanIdentifier(YamlTokenType.TAG);
+            buffer.advance();
             scanTag();
             return;
         }
 
-        if (c == '-' && buffer.peek() == '-' && buffer.peekNext() == '-') {
+        if (c == '-' && buffer.peekNext() == '-' && buffer.peekAhead(2) == '-' &&
+            (isWhitespace(buffer.peekAhead(3)))
+        ) {
+            buffer.advance();
             trace(method, "dash1");
             buffer.advance(); buffer.advance();
             addToken(YamlTokenType.DOCUMENT_START);
             return;
         }
 
-        if (c == '.' && buffer.peek() == '.' && buffer.peekNext() == '.') {
+        if (c == '.' && buffer.peekNext() == '.' && buffer.peekAhead(2) == '.') {
+            buffer.advance();
             trace(method, "dot");
             buffer.advance(); buffer.advance();
             addToken(YamlTokenType.DOCUMENT_END);
@@ -291,6 +312,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (c == '#') {
+            buffer.advance();
             trace(method, "hash");
             while (buffer.peek() != '\n' && buffer.peek() != '\r' && !buffer.isAtEnd()) {
                 buffer.advance();
@@ -300,6 +322,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c)) {
+            buffer.advance();
             YamlTokenType type = FLOW_CONTEXT_SINGLE_CHAR_TOKENS.get(c);
 
             // Track entering/leaving flow context
@@ -313,590 +336,686 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             return;
         }
 
-        if (c == '-') {
-            if (isWhitespace(buffer.peek()) || buffer.isAtEnd()) {
-                int dashColumn = buffer.column() - 1;
-                int currentMargin = indentationLevels.peek();
+        if (c == '-' && (isWhitespace(buffer.peekNext()) || buffer.isAtEnd())) {
+            buffer.advance();
+            int dashColumn = tokenStartColumn;
+            int currentMargin = indentationLevels.peek();
 
-                if (dashColumn > currentMargin) {
-                    indentationLevels.push(dashColumn);
-                    addStructuralToken(YamlTokenType.INDENT, dashColumn - 1);
-                }
+            if (dashColumn > currentMargin) {
+                indentationLevels.push(dashColumn);
+                debug("scanToke INDENT-1");
+                addStructuralToken(YamlTokenType.INDENT, dashColumn);
+            }
 
-                addToken(YamlTokenType.SEQUENCE_ENTRY_INDICATOR);
+            addToken(YamlTokenType.SEQUENCE_ENTRY_INDICATOR);
 
-                if (buffer.peek() == ' ') buffer.advance();
+            if (buffer.peek() == ' ') buffer.advance();
 
-                if (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
-                    if (willBeMappingKey()) {
-                        if (buffer.column() > indentationLevels.peek()) {
-                            indentationLevels.push(buffer.column());
-                            addStructuralToken(YamlTokenType.INDENT, buffer.column() - 1);
-                        }
+            if (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
+                if (willBeMappingKey()) {
+                    if (buffer.column() > indentationLevels.peek()) {
+                        indentationLevels.push(buffer.column());
+                        debug("scanToke INDENT-2");
+                        addStructuralToken(YamlTokenType.INDENT, buffer.column());
                     }
                 }
-                return;
             }
+            return;
         }
 
-        if (c == ':') {
+        if (c == ':' && (isWhitespace(buffer.peekNext()) || buffer.isAtEnd())) {
+            buffer.advance();
             trace(method, "colon");
-            if (isWhitespace(buffer.peek()) || buffer.isAtEnd()) {
-                addStructuralToken(YamlTokenType.VALUE_INDICATOR, tokenStartColumn);
-                return;
-            }
+            addStructuralToken(YamlTokenType.VALUE_INDICATOR, tokenStartColumn);
+            return;
         }
 
         if (c == '\'') {
-            trace(method, "single quote");
-            scanSingleQuotedScalar();
+            scanScalar(ScalarStyle.SINGLE_QUOTED);
             return;
         }
 
         if (c == '\"') {
-            trace(method, "double quote");
-            scanDoubleQuotedScalar();
+            scanScalar(ScalarStyle.DOUBLE_QUOTED);
             return;
         }
 
         if (c == '&') {
+            buffer.advance();
             trace(method, "ampersand");
             scanIdentifier(YamlTokenType.ANCHOR);
             return;
         }
 
         if (c == '*') {
+            buffer.advance();
             trace(method, "asterisk");
             scanIdentifier(YamlTokenType.ALIAS);
             return;
         }
 
-        if (c == '?') {
-            trace(method, "question mark");
+        if (c == '?' &&  (isWhitespace(buffer.peekNext()) || buffer.isAtEnd())) {
+            buffer.advance();
             // A '?' is only a structural marker if followed by whitespace/newline/EOF
-            if (isWhitespace(buffer.peek()) || buffer.isAtEnd()) {
-                addStructuralToken(YamlTokenType.KEY_INDICATOR, tokenStartColumn);
-                return;
-            }
+            trace(method, "question mark");
+            addStructuralToken(YamlTokenType.KEY_INDICATOR, tokenStartColumn);
+            return;
         }
 
         if (c == '%') {
-            // if (indentationLevels.peek() == 0) {
-                trace(method, "directive");
-                // Directives are line-oriented metadata (e.g., %YAML 1.2)
-                while (buffer.peek() != '\n' && buffer.peek() != '\r' && !buffer.isAtEnd()) {
+            buffer.advance();
+            trace(method, "directive");
+            // Directives are line-oriented metadata (e.g., %YAML 1.2)
+            while (buffer.peek() != '\n' && buffer.peek() != '\r' && !buffer.isAtEnd()) {
+                buffer.advance();
+            }
+            addToken(YamlTokenType.DIRECTIVE);
+            return;
+        }
+
+        // buffer.advance();
+        // scanPlainScalar(c);
+        scanScalar(ScalarStyle.PLAIN);
+    }
+
+    void scanScalar(final ScalarStyle scalarStyle) {
+        debug("\n**************** scanScalar " + scalarStyle + " **************** ");
+
+        StringBuilder content = new StringBuilder();
+        StringBuilder lexeme = new StringBuilder();
+
+        int startLine = buffer.line();
+        int startColumn = buffer.column();
+        int startOffset = buffer.offset();
+
+        int currentMargin = indentationLevels.peek() - 1;
+        int explicitIndent = -1;
+        boolean isBlock = false;
+        boolean isQuoted = false;
+        ChompingStyle chompingStyle = ChompingStyle.CLIP;
+
+        // 1. Handle header or opening quote
+
+        if (scalarStyle == ScalarStyle.SINGLE_QUOTED || scalarStyle == ScalarStyle.DOUBLE_QUOTED) {
+            lexeme.append(buffer.advance()); // consume the opening quote
+            isQuoted = true;
+        } else if (scalarStyle == ScalarStyle.FOLDED || scalarStyle == ScalarStyle.LITERAL) {
+            buffer.advance();
+            // Parse chomping and indent indicator
+            // https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator
+            while (!buffer.isAtEnd()) {
+                char next = buffer.peek();
+                if (next == '-') {
+                    chompingStyle = ChompingStyle.STRIP;
                     buffer.advance();
-                }
-                addToken(YamlTokenType.DIRECTIVE);
-                return;
-            // }
-        }
-
-        scanPlainScalar(c);
-    }
-
-    /// Scans a quoted scalar, handling escape sequences for double quotes.
-    private void scanDoubleQuotedScalar() {
-        // https://yaml.org/spec/1.2.2/#731-double-quoted-style
-        trace("scanDoubleQuotedScalar");
-        inQuotedScalar = true;
-
-        // 1. Capture the starting coordinates using the buffer state
-        int startLine = buffer.line();
-        int startColumn = buffer.column() - 1;
-        int startOffset = buffer.offset();
-
-        while (!buffer.isAtEnd()) {
-            char c = buffer.peek();
-
-            if (c == '\\') {
-                buffer.advance();
-                if (!buffer.isAtEnd()) buffer.advance();
-                continue;
-            }
-
-            if (c == '\n' || c == '\r') {
-                handleNewlineAndIndentation(c);
-                continue;
-            }
-
-            if (c == '"') {
-                buffer.advance();
-                String lexeme = buffer.getTokenWindowLexeme();
-                String raw = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
-
-                // YAML 1.2 double-quoted folding:
-                // - newline + spaces -> single space
-                // - multiple newlines -> single newline
-
-                int rawLength = raw.length();
-                int newlines = 0;
-                boolean isLineBlank = true;
-                boolean isFirstLine = true;
-
-                int lineEndPos = -1;
-                int lastNonWhitespacePos = -1;
-                int pos;
-                for (pos = 0; pos < rawLength && raw.charAt(pos) != '\n'; pos++) {
-                    char potentialWhitespace = raw.charAt(pos);
-                    if (potentialWhitespace != ' ' && potentialWhitespace != '\t') {
-                        lastNonWhitespacePos = pos;
-                    }
-                }
-                if (pos < rawLength && raw.charAt(pos) == '\n') {
-                    lineEndPos = pos;
-                }
-                if (lastNonWhitespacePos > -1) {
-                    debugString(raw, "lastNonWhitespacePos", lastNonWhitespacePos);
-                }
-                if (lineEndPos > -1) {
-                    debugString(raw, "lineEndPos", lineEndPos);
-                }
-
-                StringBuilder folded = new StringBuilder();
-                for (int i = 0; i < rawLength;) {
-                    char ch = raw.charAt(i);
-
-                    if (ch == '\n') {
-                        newlines++;
-                        isLineBlank = true;
-                        isFirstLine = false;
-                        lineEndPos = -1;
-                        lastNonWhitespacePos = -1;
-                        if (i + 1 < rawLength) {
-                            for (pos = i + 1; pos < rawLength && raw.charAt(pos) != '\n'; pos++) {
-                                char potentialWhitespace = raw.charAt(pos);
-                                if (potentialWhitespace != ' ' && potentialWhitespace != '\t') {
-                                    lastNonWhitespacePos = pos;
-                                }
-                            }
-                            if (pos < rawLength && raw.charAt(pos) == '\n') {
-                                lineEndPos = pos;
-                            }
-                            if (lastNonWhitespacePos > -1) {
-                                debugString(raw, "lastNonWhitespacePos", lastNonWhitespacePos);
-                            }
-                            if (lineEndPos > -1) {
-                                debugString(raw, "lineEndPos", lineEndPos);
-                            }
-                        }
-
-                    } else {
-                        // https://yaml.org/spec/1.2.2/#63-line-prefixes
-                        if (isLineBlank && (ch == ' ' || ch == '\t')) {
-                            // Leading whitespace is ignored beyond the first line
-                            if (isFirstLine) {
-                                folded.append(ch);
-                            }
-                        } else {
-
-                            if (newlines == 1) {
-                                folded.append(' ');
-                                newlines = 0;
-                            } else if (newlines > 1) {
-                                folded.append('\n');
-                                newlines = 0;
-                            }
-                            folded.append(ch);
-                            isLineBlank = false;
-
-                            // Skip trailing whitespace
-                            if (i == lastNonWhitespacePos && i < rawLength - 1) {
-                                if (lineEndPos == -1) {
-                                    // TODO: This will only happen if the string ends in a newline
-                                    // or perhaps if there is a newline in the trailing whitespace?
-
-                                    // Append all whitespace and break
-                                    for (i++; i < rawLength; i++) {
-                                        folded.append(raw.charAt(i));
-                                    }
-                                } else {
-                                    // Skip to the newline
-                                    i = lineEndPos;
-                                    continue;
-                                }
-                            }
-                        }
-                    }
-                    i++;
-                }
-
-                if (newlines == 1) {
-                    folded.append(' ');
-                } else if (newlines > 1) {
-                    folded.append('\n');
-                }
-
-                String content = folded.toString();
-
-                addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, content, ScalarStyle.DOUBLE_QUOTED));
-                inQuotedScalar = false;
-                return;
-            }
-
-            buffer.advance();
-        }
-
-        if (buffer.isAtEnd()) {
-            addToken(YamlTokenType.ERROR);
-        }
-
-        inQuotedScalar = false;
-    }
-
-    /// Scans a quoted scalar, handling escape sequences for double quotes.
-    private void scanSingleQuotedScalar() {
-        // https://yaml.org/spec/1.2.2/#732-single-quoted-style
-        trace("scanSingleQuotedScalar");
-        inQuotedScalar = true;
-
-        // 1. Capture the starting coordinates using the buffer state
-        int startLine = buffer.line();
-        int startColumn = buffer.column() - 1;
-        int startOffset = buffer.offset();
-
-        while (!buffer.isAtEnd()) {
-            char c = buffer.peek();
-
-            if (c == '\n' || c == '\r') {
-                handleNewlineAndIndentation(c);
-                continue;
-            }
-
-            if (c == '\'' && buffer.peekAhead(1) == '\'') {
-                buffer.advance(); // consume first '
-                buffer.advance(); // consume second '
-                continue;
-            }
-
-            if (c == '\'') {
-                // TODO: https://yaml.org/spec/1.2.2/#63-line-prefixes
-                buffer.advance();
-                String lexeme = buffer.getTokenWindowLexeme();
-                String content = lexeme.length() >= 2 ? lexeme.substring(1, lexeme.length() - 1) : "";
-                addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, content, ScalarStyle.SINGLE_QUOTED));
-                inQuotedScalar = false;
-                return;
-            }
-
-            buffer.advance();
-        }
-
-        if (buffer.isAtEnd()) {
-            addToken(YamlTokenType.ERROR);
-        }
-    }
-
-    private void scanPlainScalar(char firstChar) {
-        // https://yaml.org/spec/1.2.2/#733-plain-style
-        trace("scanPlainScalar");
-
-        char prevChar = '\0';
-        boolean isFirstChar = true;
-
-        do {
-            char c = buffer.peek();
-
-            // 1. Stop at Newlines
-            if (c == '\n' || c == '\r') break;
-
-            // 2. Stop at Comments (Space + #)
-            // A '#' is only a comment if it is preceded by whitespace, or if it's the very first char
-            if (c == '#') {
-                if (!isFirstChar && !isWhitespace(prevChar)) {
-                    // It's part of the scalar value literal, keep consuming
+                } else if (next == '+') {
+                    chompingStyle = ChompingStyle.KEEP;
+                    buffer.advance();
+                } else if (next >= '1' && next <= '9') {
+                    // TODO: Can this be >9 ?
+                    explicitIndent = next - '0';
+                    buffer.advance();
                 } else {
                     break;
                 }
             }
-
-            if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c) && flowDepth > 0) {
-                break;
+            while (!buffer.isAtEnd() && buffer.peek() != '\n') {
+                // TODO: inline comments
+                buffer.advance();
             }
-
-            // 4. The Colon Rule: Stop ONLY if it's a value indicator
-            char next = buffer.peekNext();
-
-            if (c == ':' && (isWhitespace(next) || buffer.isAtEnd())) {
-                break;
-            }
-
-            // 4b. The Explicit Key Rule: Stop if this is a block key indicator
-            if (c == '?' && (isWhitespace(next) || buffer.isAtEnd())) {
-                break;
-            }
-
-            prevChar = buffer.advance();
-            isFirstChar = false;
-        } while (!buffer.isAtEnd());
-
-        // Get the accumulated text inside our window
-        String rawLexeme = buffer.getTokenWindowLexeme();
-
-        if (rawLexeme.isEmpty()) {
-             addToken(YamlTokenType.ERROR);
-             return;
+            buffer.advance(); // consume the newline
+            lexeme.append(buffer.getTokenWindowLexeme());
+            isBlock = true;
         }
 
-        // 5. Trim trailing whitespace
-        String trimmedLexeme = rawLexeme.stripTrailing();
+        // Amount of indentation spaces
+        int blockIndent = explicitIndent == -1 ? -1 : explicitIndent + currentMargin;
 
-        // 6. Backup the pointer for every character trimmed
-        int trimmedLength = rawLexeme.length() - trimmedLexeme.length();
-        for (int i = 0; i < trimmedLength; i++) {
-            buffer.backup();
+        int lineNum = 0;
+        String currLine = "";
+        String currLineTrimmed = "";
+        String currLineLexeme = "";
+
+        int charOffset = 0;
+        int trimmedCharOffset = 0;
+        int currFirstContentOffset = -1;
+        int prevNonWhitespaceOffset = -1;
+
+        ScalarAction action = ScalarAction.CONTINUE;
+        List<String> trailingBlankLines = new ArrayList<>();
+
+        boolean currHasExtraIndent = false;
+        boolean prevHasExtraIndent = false;
+        boolean alreadyHadContent = false;
+        boolean prevEolWasEscaped = false;
+
+        // 2. Scan the scalar
+
+        while (!buffer.isAtEnd() && action == ScalarAction.CONTINUE) {
+            prevNonWhitespaceOffset = -1;
+            currFirstContentOffset = -1;
+
+            currLine = peekLine();
+            debug("LINE: " + StringUtils.debugString(currLine));
+
+            if (currLine.startsWith("...")) {
+                action = ScalarAction.STOP_BLOCKINDENT;
+                break;
+            }
+
+            // Find final non-whitespace character
+            int finalNonWhitespaceOffset = currLine.length() - 1;
+            while (finalNonWhitespaceOffset > 0 && isWhitespace(currLine.charAt(finalNonWhitespaceOffset))) {
+                finalNonWhitespaceOffset--;
+            }
+
+            // 2a. Line scanning
+
+            for (charOffset = 0; charOffset < currLine.length(); charOffset++) {
+                debugString(currLine, charOffset);
+
+                action = scalarAction(currLine, charOffset, scalarStyle);
+                if (action != ScalarAction.CONTINUE) {
+                    break;
+                }
+
+                char c = currLine.charAt(charOffset);
+
+                if (c != ' ' && c != '\r' && c!= '\n') {
+                    if (!isQuoted || lineNum > 0) {
+                        if (blockIndent == -1) {
+                            // blockIndent is the number of spaces, charOffset is 0-based.
+                            blockIndent = charOffset;
+                        } else if (isBlock && charOffset < blockIndent) {
+                            action = ScalarAction.STOP_BLOCKINDENT;
+                            break;
+                        }
+
+                        // Determine extra indent
+                        if (currFirstContentOffset == -1) {
+                            currFirstContentOffset = charOffset;
+                            if (charOffset > blockIndent) {
+                                currHasExtraIndent = true;
+                            } else {
+                                currHasExtraIndent = false;
+                            }
+                        }
+                    }
+                    prevNonWhitespaceOffset = charOffset;
+                }
+
+                // Plain scalar whitespace handling
+                if (scalarStyle == ScalarStyle.PLAIN) {
+                    if (charOffset == finalNonWhitespaceOffset) {
+                        break;
+                    }
+                }
+            }
+
+            // 2b. Line trimming
+
+            if (action == ScalarAction.STOP_EOF && currLine.endsWith("\0")) {
+                currLine = currLine.substring(0, currLine.length() - 1);
+            }
+
+            currLineLexeme = currLine;
+            trimmedCharOffset = charOffset;
+            currLineTrimmed = currLine;
+            if (currFirstContentOffset > 0) { // !!1
+                prevNonWhitespaceOffset -= currFirstContentOffset;
+            }
+            boolean isEmpty;
+            boolean isEolEscaped = false;
+
+            if (isBlock) {
+                isEmpty = currLine.isEmpty();
+                if (blockIndent > -1 && currLine.length() > blockIndent) {
+                    currLineTrimmed = currLineTrimmed.substring(blockIndent);
+                    trimmedCharOffset -= blockIndent;
+                } else {
+                    currLineTrimmed = currLineTrimmed.trim();
+                    trimmedCharOffset -= currFirstContentOffset;
+                }
+                if (currLineTrimmed.endsWith("\r\n")) { // !!3
+                    currLineTrimmed = currLineTrimmed.substring(0, currLineTrimmed.length() - 2);
+                } else if (currLineTrimmed.endsWith("\n")) {
+                    currLineTrimmed = currLineTrimmed.substring(0, currLineTrimmed.length() - 1);
+                }
+            } else {
+                if (!isQuoted || lineNum > 0) {
+                    isEmpty = currLineTrimmed.isBlank(); // !!2
+                    currLineTrimmed = currLineTrimmed.stripLeading();
+
+                    if (currLineTrimmed.length() < currLine.length()) {
+                        trimmedCharOffset -= (currLine.length() - currLineTrimmed.length());
+                    }
+
+                    currLineTrimmed = currLineTrimmed.trim();
+                } else {
+                    isEmpty = currLineTrimmed.isBlank(); // !!2
+                }
+
+                if (isQuoted && action == ScalarAction.CONTINUE) {
+                    // TODO: Do this for plain too?
+                    if (currLineTrimmed.endsWith("\r\n")) { // !!3
+                        currLineTrimmed = currLineTrimmed.substring(0, currLineTrimmed.length() - 2);
+                    } else if (currLineTrimmed.endsWith("\n")) {
+                        currLineTrimmed = currLineTrimmed.substring(0, currLineTrimmed.length() - 1);
+                    }
+                    if (currLineTrimmed.endsWith("\\")) {
+                        // TODO: Only if this is an odd number of backslashes
+                        isEolEscaped = true;
+                        currLineTrimmed = currLineTrimmed.substring(0, currLineTrimmed.length() - 1);
+                    }
+                }
+
+                if (isQuoted && action == ScalarAction.STOP_QUOTE) {
+                    currLineTrimmed = currLineTrimmed.substring(0, trimmedCharOffset);
+                    currLineLexeme = currLineLexeme.substring(0, trimmedCharOffset);
+                }
+            }
+
+            // 2c. Appending and foling
+
+            if (action == ScalarAction.CONTINUE || action == ScalarAction.STOP_QUOTE || action == ScalarAction.STOP_EOF) {
+                lexeme.append(currLineLexeme);
+                debug("CONTINUE: " + StringUtils.debugString(currLine));
+
+                if (prevEolWasEscaped) {
+                    debug("Debug LIne Num " + lineNum + " empty="+isEmpty);
+                }
+
+                if (currLineTrimmed.isEmpty() && action != ScalarAction.STOP_QUOTE) {
+                    if (!isEolEscaped) {
+                        trailingBlankLines.add(currLineTrimmed + "\n");
+                    }
+                } else {
+                    if (!trailingBlankLines.isEmpty()) {
+                        if (isQuoted && trailingBlankLines.size() == 1 && !alreadyHadContent) {
+                            content.append(' ');
+                        } else {
+                            for (int i = 0; i < trailingBlankLines.size(); i++) {
+                                content.append(trailingBlankLines.get(i));
+                            }
+                            if (scalarStyle == ScalarStyle.LITERAL && alreadyHadContent) {
+                                content.append('\n');
+                            }
+                        }
+                    } else if (!content.isEmpty()) {
+                        if (scalarStyle == ScalarStyle.LITERAL) {
+                            content.append('\n');
+                        } else if (scalarStyle == ScalarStyle.FOLDED) {
+                            // Handled later
+                        } else {
+                            if (!(scalarStyle == ScalarStyle.DOUBLE_QUOTED && prevEolWasEscaped)) {
+                                content.append(' ');
+                            }
+                        }
+                    }
+
+                    if (scalarStyle == ScalarStyle.FOLDED && alreadyHadContent) {
+                        if (currHasExtraIndent || prevHasExtraIndent) {
+                            content.append("\n");
+                        } else {
+                            if (trailingBlankLines.isEmpty() && !content.isEmpty()) {
+                                content.append(' ');
+                            }
+                        }
+                    }
+
+                    trailingBlankLines.clear();
+
+                    debug("TRIMMED: " + StringUtils.debugString(currLineTrimmed));
+                    content.append(currLineTrimmed);
+                    debug("CONTENT: " + StringUtils.debugString(content.toString()));
+                }
+                if (action != ScalarAction.STOP_QUOTE) {
+                    advanceBufferToNextLine();
+                }
+            }
+
+            prevHasExtraIndent = currHasExtraIndent;
+            alreadyHadContent |= (!currLineTrimmed.isEmpty());
+            prevEolWasEscaped = isEolEscaped;
+            lineNum++;
         }
 
-        addToken(YamlTokenType.SCALAR, trimmedLexeme);
+        debug("Final action: " + action);
+        debug("Content: " + StringUtils.debugString(content.toString()));
+
+        // 3. Last line and buffer positioning
+
+        if (action == ScalarAction.STOP_EOF) {
+            debug("EOF");
+            while (!buffer.isAtEnd()) {
+                buffer.advance();
+            }
+            currLineTrimmed = null;
+        } else if (currLineTrimmed.isEmpty()) {
+            trailingBlankLines.add(currLineTrimmed);
+            advanceBufferToNextLine();
+            currLineTrimmed = null;
+        } else if (action == ScalarAction.STOP_SEQ) {
+            // We exited due to a sequence indicator.
+            // Don't include this line.
+            debugString(debugSource, buffer.offset() - 1);
+            if (!content.isEmpty()) {
+                backupBufferToEOL();
+            }
+            currLineTrimmed = null;
+        } else if (action == ScalarAction.CONTINUE) {
+            // We exited due to reaching the end of the buffer.
+            // This line is already in the string builders.
+            currLineTrimmed = null;
+        } else if (action == ScalarAction.STOP_BLOCKINDENT) {
+            if (!content.isEmpty()) {
+                backupBufferToEOL();
+            }
+            currLineTrimmed = null;
+        } else if (action == ScalarAction.STOP_QUOTE) {
+            // charOffset is the last content character
+            debugString(debugSource, buffer.offset() - 1);
+            advanceBufferBy(charOffset + 1);
+            debugString(debugSource, buffer.offset() - 1);
+            currLineTrimmed = null;
+        } else if (action == ScalarAction.STOP_MAP_VALUE) {
+            if (!(content.isEmpty() && trailingBlankLines.isEmpty())) {
+                if (isBlock) {
+                    debug("Block");
+                }
+                // Go back to the end of the previous line
+                debugString(debugSource, buffer.offset() - 1);
+                backupBufferToEOL();
+                debugString(debugSource, buffer.offset() - 1);
+                currLineTrimmed = null;
+            } else {
+                // This is a key. Consume it but don't consume the colon
+                advanceBufferBy(currFirstContentOffset + prevNonWhitespaceOffset + 1);
+                currLineTrimmed = currLineTrimmed.substring(0, prevNonWhitespaceOffset + 1);
+                currLineLexeme = currLineLexeme.substring(0, currFirstContentOffset + prevNonWhitespaceOffset + 1);
+            }
+        } else if (action == ScalarAction.STOP_MAP_KEY) {
+
+            // This doesn't seem right, but it works
+            if (!content.isEmpty()) {
+                backupBufferToEOL();
+                currLineTrimmed = null;
+            } else {
+                advanceBufferBy(charOffset);
+                currLineTrimmed = currLineTrimmed.substring(0, trimmedCharOffset);
+            }
+
+        } else if (action == ScalarAction.STOP_FLOW) {
+            // For plain scalars only
+            // Consume currLine up until prevNonWhitespaceOffset
+            advanceBufferBy(charOffset);
+            if (prevNonWhitespaceOffset < 0) {
+                debug("Debug comment");
+                backupBufferToEOL();
+                currLineTrimmed = null;
+            } else {
+                debugString(currLineTrimmed, "flow", trimmedCharOffset);
+                currLineTrimmed = currLineTrimmed.substring(0, prevNonWhitespaceOffset + 1);
+                currLineLexeme = currLineLexeme.substring(0, currFirstContentOffset + prevNonWhitespaceOffset + 1);
+            }
+        } else if (action == ScalarAction.STOP_COMMENT) {
+            // For plain scalars only
+            // Consume currLine up until prevNonWhitespaceOffset
+            if (prevNonWhitespaceOffset < 0) {
+                debug("Debug comment");
+                backupBufferToEOL();
+                currLineTrimmed = null;
+            } else {
+                debugString(currLineTrimmed, "comment", trimmedCharOffset);
+                advanceBufferBy(currFirstContentOffset + prevNonWhitespaceOffset + 1);
+                currLineTrimmed = currLineTrimmed.substring(0, prevNonWhitespaceOffset + 1);
+                currLineLexeme = currLineLexeme.substring(0, currFirstContentOffset + prevNonWhitespaceOffset + 1);
+            }
+        }
+
+        if (currLineTrimmed != null) {
+            lexeme.append(currLineLexeme);
+            content.append(currLineTrimmed);
+        }
+
+        if (scalarStyle == ScalarStyle.SINGLE_QUOTED) lexeme.append('\'');
+        if (scalarStyle == ScalarStyle.DOUBLE_QUOTED) lexeme.append('"');
+
+        // 4. Trailing new lines
+
+        if (scalarStyle == ScalarStyle.FOLDED || scalarStyle == ScalarStyle.LITERAL) {
+            // Perform Chomping
+            // https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator
+            if (chompingStyle == ChompingStyle.KEEP) {
+                if (trailingBlankLines.isEmpty()) {
+                    content.append('\n');
+                } else {
+                    for (String blankLine : trailingBlankLines) {
+                        content.append(blankLine);
+                    }
+                }
+            }
+            else if (chompingStyle == ChompingStyle.STRIP) {
+                int contentLen = content.length();
+                if (contentLen > 0 && content.charAt(contentLen - 1) == '\n' ) {
+                    content.setLength(contentLen - 1);
+                }
+            }
+            else {
+                if (!content.isEmpty()) {
+                    content.append('\n');
+                }
+            }
+        }
+
+        debug(scalarStyle + " SCALAR: " + StringUtils.debugString(content.toString()));
+
+        // 5. Create the token
+
+        YamlToken token = new YamlToken(
+            startLine,
+            startColumn,
+            startOffset,
+            YamlTokenType.SCALAR,
+            lexeme.toString().stripTrailing(), // TODO: I don't think stripTrailing is right here
+            content.toString(),
+            scalarStyle
+        );
+        addToken(token);
+        debug("\n**************** END scanScalar **************** ");
     }
 
-    /**
-     * Scans a folded block scalar (>).
-     *
-     * YAML 1.2 rules:
-     *   - The first newline after '>' is NOT part of the content.
-     *   - Each indented line becomes its own SCALAR token.
-     *   - Blank lines produce NEWLINE tokens.
-     *   - Folding is done in the parser, not here.
-     */
-    public void scanBlockScalar(char headerChar) {
-        int startLine = buffer.line();
-        int startColumn = buffer.column() - 1;
-        int startOffset = buffer.offset();
+    private ScalarAction scalarAction(String line, int offset, ScalarStyle scalarStyle) {
+        char ch = line.charAt(offset);
+        char prev = offset > 0 ? line.charAt(offset - 1) : '\0';
+        char next = offset + 1 < line.length() ? line.charAt(offset + 1) : '\0';
 
-        ScalarStyle style = (headerChar == '|')
-            ? ScalarStyle.LITERAL
-            : ScalarStyle.FOLDED;
-
-        char chomping = 'C';
-        int explicitIndent = -1;
-
-        String headerString = buffer.getTokenWindowLexeme();
-
-        // Parse chomping and indent indicator
-        while (!buffer.isAtEnd()) {
-            char next = buffer.peek();
-            if (next == '-') {
-                chomping = 'S';
-                buffer.advance();
-            } else if (next == '+') {
-                chomping = 'K';
-                buffer.advance();
-            } else if (next >= '1' && next <= '9') {
-                explicitIndent = next - '0';
-                buffer.advance();
-            } else {
-                break;
-            }
+        if (ch == '\0') {
+            return ScalarAction.STOP_EOF;
         }
 
-        // Skip to end of header line
-        while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
+        if (scalarStyle == ScalarStyle.PLAIN) {
+            if (ch == '#' && (prev == '\0' || prev == ' ' || prev == '\t' || prev == '\r' || prev == '\n')) {
+                return ScalarAction.STOP_COMMENT;
+            }
+            if (ch == '?' && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
+                return ScalarAction.STOP_MAP_KEY;
+            }
+            if (ch == ':' && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
+                return ScalarAction.STOP_MAP_VALUE;
+            }
+            // TODO: && prev != '-'
+            if (ch == '-' && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
+                return ScalarAction.STOP_SEQ;
+            }
+            if (flowDepth > 0 && (ch == ',' || ch == '{' || ch == '}' || ch == '[' || ch == ']')) {
+                return ScalarAction.STOP_FLOW;
+            }
+        }
+        else if (scalarStyle == ScalarStyle.SINGLE_QUOTED) {
+            if (ch == '\'' && prev != '\'' && next != '\'') {
+                return ScalarAction.STOP_QUOTE;
+            }
+        }
+        else if (scalarStyle == ScalarStyle.DOUBLE_QUOTED) {
+            if (ch == '"' && prev != '\\') {
+                return ScalarAction.STOP_QUOTE;
+            }
+        } else  if (scalarStyle == ScalarStyle.FOLDED) {
+            if (ch == '?' && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
+                return ScalarAction.STOP_MAP_KEY;
+            }
+            if (ch == ':' && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
+                return ScalarAction.STOP_MAP_VALUE;
+            }
+            if (ch == '-' && prev != '-'  && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
+                return ScalarAction.STOP_SEQ;
+            }
+            if (flowDepth > 0 && (ch == ',' || ch == '{' || ch == '}' || ch == '[' || ch == ']')) {
+                return ScalarAction.STOP_FLOW;
+            }
+        } else  if (scalarStyle == ScalarStyle.LITERAL) {
+            if (ch == '?' && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
+                return ScalarAction.STOP_MAP_KEY;
+            }
+            if (ch == ':' && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
+                return ScalarAction.STOP_MAP_VALUE;
+            }
+            if (ch == '-' && prev != '-'  && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
+                return ScalarAction.STOP_SEQ;
+            }
+            if (flowDepth > 0 && (ch == ',' || ch == '{' || ch == '}' || ch == '[' || ch == ']')) {
+                return ScalarAction.STOP_FLOW;
+            }
+        }
+        return ScalarAction.CONTINUE;
+    }
+
+    private static enum ScalarAction {
+        CONTINUE,
+        STOP_BLOCKINDENT,
+        STOP_QUOTE,
+        STOP_MAP_KEY,
+        STOP_MAP_VALUE,
+        STOP_SEQ,
+        STOP_FLOW,
+        STOP_COMMENT,
+        STOP_EOF
+    }
+
+    private void advanceBufferToNextLine() {
+        while (!buffer.isAtEnd() && buffer.peek() != '\n') {
             buffer.advance();
         }
-
-        // Consume newline after header
-        if (!buffer.isAtEnd()) {
-            char next = buffer.advance();
-            if (next == '\r' && buffer.peek() == '\n') {
-                buffer.advance();
-            }
-        }
-
-
-        // TODO: ScalarStyle - YamlScalarStyle ?
-
-
-        int currentMargin = indentationLevels.peek();
-        int blockIndent = -1;
-
-        List<String> rawLines = new ArrayList<>();
-        List<Boolean> isLineDeeplyIndented = new ArrayList<>();
-
-        while (!buffer.isAtEnd()) {
-            int spaces = 0;
-            int lineStartOffset = buffer.offset();
-
-            // https://yaml.org/spec/1.2.2/#63-line-prefixes
-            // TODO: Tabs are part of whitespace here.
-
-            // Count leading spaces
-            while (!buffer.isAtEnd() && (buffer.peek() == ' ')) {
-                spaces++;
-                buffer.advance();
-            }
-
-            char next = buffer.peek();
-            boolean isEmptyLine = (next == '\n' || next == '\r' || buffer.isAtEnd());
-
-            // Determine block indent
-            if (!isEmptyLine) {
-                if (explicitIndent != -1) {
-                    if (blockIndent == -1) {
-                        // Heuristic that matches the given tests:
-                        // top-level style: strip explicitIndent
-                        // nested style: strip currentMargin + explicitIndent - 1
-                        if (currentMargin == explicitIndent) {
-                            blockIndent = explicitIndent;
-                        } else {
-                            blockIndent = currentMargin + explicitIndent - 1;
-                        }
-                    }
-                    if (spaces < blockIndent) {
-                        int rollback = buffer.offset() - lineStartOffset;
-                        for (int i = 0; i < rollback; i++) buffer.backup();
-                        break;
-                    }
-                } else {
-                    if (blockIndent == -1) {
-                        blockIndent = spaces;
-                    } else if (spaces < blockIndent) {
-                        int rollback = buffer.offset() - lineStartOffset;
-                        for (int i = 0; i < rollback; i++) buffer.backup();
-                        break;
-                    }
-                }
-            }
-
-            // Column should be one more than indent
-            startColumn = blockIndent + 1;
-
-            // Detect document terminator '...'
-            if (!isEmptyLine && spaces <= currentMargin) {
-                // Peek the raw text of this line
-                int off = buffer.offset();
-                StringBuilder sb = new StringBuilder();
-                while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
-                    sb.append(buffer.peek());
-                    buffer.advance();
-                }
-                String line = sb.toString();
-
-                if (line.equals("...")) {
-                    // Roll back to start of this line
-                    int rollback = buffer.offset() - off;
-                    for (int i = 0; i < rollback; i++) buffer.backup();
-                    break; // end of block scalar
-                }
-
-                // If not '...', roll back so normal processing continues
-                int rollback = buffer.offset() - off;
-                for (int i = 0; i < rollback; i++) buffer.backup();
-            }
-
-            // Build line content
-            StringBuilder lineContent = new StringBuilder();
-
-            boolean folded = (headerChar == '>');
-
-            // // if (rawLines.size() == 6) {
-            //     System.out.println("folded = " + folded);
-            //     System.out.println("spaces = " + spaces);
-            //     System.out.println("blockIndent = " + blockIndent);
-            //     System.out.println("currentMargin = " + currentMargin);
-            // // }
-
-            // Rule 1: Non-empty lines with indentation beyond block indent
-            // Rule 2: Literal-style empty lines with indentation beyond block indent
-            if ((!isEmptyLine && blockIndent > 0 && spaces > blockIndent) ||
-                (!folded && isEmptyLine && spaces > currentMargin && (spaces - blockIndent > 0))) {
-                lineContent.append(" ".repeat(spaces - blockIndent));
-            }
-
-
-            while (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
-                lineContent.append(buffer.advance());
-            }
-
-            rawLines.add(lineContent.toString());
-            isLineDeeplyIndented.add(headerChar == '>' && !isEmptyLine && blockIndent > 0 && spaces > blockIndent);
-
-            // Consume newline
-            if (!buffer.isAtEnd()) {
-                char ch = buffer.advance();
-                if (ch == '\r' && buffer.peek() == '\n') {
-                    buffer.advance();
-                }
-            }
-        } // End of gathering raw lines
-
-        // Build final result
-        StringBuilder result = new StringBuilder();
-        int totalLines = rawLines.size();
-        int trailingEmptyCount = 0;
-
-        for (int i = totalLines - 1; i >= 0; i--) {
-            if (rawLines.get(i).isEmpty()) trailingEmptyCount++;
-            else break;
-        }
-
-        int contentLines = totalLines - trailingEmptyCount;
-
-        for (int i = 0; i < contentLines; i++) {
-            String currentLine = rawLines.get(i);
-            result.append(currentLine);
-
-            if (headerChar == '|') {
-                result.append('\n');
-            } else {
-                if (i == contentLines - 1) {
-                    result.append('\n');
-                } else {
-                    String nextLine = rawLines.get(i + 1);
-                    boolean currentDeep = isLineDeeplyIndented.get(i);
-                    boolean nextDeep = isLineDeeplyIndented.get(i + 1);
-
-                    if (currentLine.isEmpty()) {
-                        result.append('\n');
-                        if (currentDeep || nextDeep) {
-                            result.append('\n');
-                        }
-                    }
-                    else if (currentDeep) {
-                        result.append('\n');
-                    }
-                    else if (nextLine.isEmpty()) {
-                        // no append; empty line will add newline itself
-                    }
-                    else {
-                        result.append(' ');
-                    }
-                }
-            }
-        }
-
-        if (chomping == 'K') {
-            result.append("\n".repeat(trailingEmptyCount));
-        } else if (chomping == 'S' && result.length() > 0 && result.charAt(result.length() - 1) == '\n') {
-            result.setLength(result.length() - 1);
-        }
-
-        String lexeme = headerString + "\n" + String.join("\n", rawLines);
-
-        addToken(new YamlToken(startLine, startColumn, startOffset, YamlTokenType.SCALAR, lexeme, result.toString(), style));
+        buffer.advance();
     }
 
+    private void backupBufferToEOL() {
+        while (buffer.offset() > 1 && buffer.peek() != '\n') {
+            buffer.backup();
+        }
+    }
+
+    private void advanceBufferBy(int n) {
+        for (int i = 0; i < n; i++) {
+            buffer.advance();
+        }
+    }
+
+    private String peekLine() {
+        int bufferOffset = buffer.offset();
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        char ch = '\0';
+
+        for (; buffer.peekAhead(i) != '\n' && bufferOffset + i < buffer.length(); i++) {
+            ch = buffer.peekAhead(i);
+            sb.append(ch);
+        }
+
+        ch = buffer.peekAhead(i);
+        if (ch == '\n') {
+            sb.append(ch);
+        }
+        return sb.toString();
+    }
 
     private void scanIdentifier(YamlTokenType type) {
-        while (!buffer.isAtEnd() && (isAlphaNumeric(buffer.peek()) || buffer.peek() == '!')) {
+        if (!isIdentifierStartChar(buffer.peek())) {
+            return;
+        }
+        buffer.advance();
+        for (char ch = buffer.peek(); !buffer.isAtEnd() && !(ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n'); ch = buffer.peek()) {
+            ch = buffer.peek();
+            char next = buffer.peekNext();
+            if ((ch == ':' && (next == ' ' || next == '\t' || next == '\r' || next == '\n')) ||
+                (ch == '-' && (next == ' ' || next == '\t' || next == '\r' || next == '\n')) ||
+                (flowDepth > 0 && (ch == ',' || ch == '{' || ch == '}' || ch == '[' || ch == ']'))) {
+                break;
+            }
             buffer.advance();
         }
         addToken(type);
     }
 
+    private boolean isIdentifierStartChar(char c) {
+        // ns-anchor-char: any non-space, non-flow-indicator, non-comment char
+        return !isWhitespace(c)
+            && c != ':'
+            && c != ','
+            && c != '['
+            && c != ']'
+            && c != '{'
+            && c != '}'
+            && c != '&'
+            && c != '*'
+            && c != '#'
+            && c != '?'
+            && c != '|'
+            && c != '-'
+            && c != '<'
+            && c != '>'
+            && c != '!';
+    }
 
     private void scanTag() {
+        // URI tag: !<...>
+        // if (buffer.peek() == '!' && buffer.peekAhead(1) == '<') {
+        if (buffer.peek()  == '<') {
+            buffer.advance(); // '!'
+            buffer.advance(); // '<'
+
+            while (!buffer.isAtEnd() && buffer.peek() != '>') {
+                buffer.advance();
+            }
+
+            if (!buffer.isAtEnd()) {
+                buffer.advance(); // consume '>'
+            }
+
+            addToken(YamlTokenType.TAG);
+            return;
+        }
+
+        // Non‑URI tag: !foo, !!str, !e!tag%21, etc.
         while (!buffer.isAtEnd() &&
-                (isAlphaNumeric(buffer.peek()) ||
-                 buffer.peek() == '!' ||
-                 buffer.peek() == '%'))
+               (isAlphaNumeric(buffer.peek()) ||
+                buffer.peek() == '!' ||
+                buffer.peek() == '%' ||
+                buffer.peek() == '-' ||
+                buffer.peek() == '_' ||
+                buffer.peek() == ':' ||
+                buffer.peek() == '/'))
         {
             buffer.advance();
         }
+
         addToken(YamlTokenType.TAG);
     }
 
     private void handleNewlineAndIndentation(char c) {
+
+        // TOOO: This method is not meant to be called from scan*leQuotedScalar
 
         if (inQuotedScalar) {
             // Consume the newline (CR or LF or CRLF)
@@ -914,12 +1033,16 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             return;
         }
 
+        if (c == '\t') {
+            error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
+        }
+
         // 1. First Newline
         String lexeme = (c == '\r' && buffer.peek() == '\n') ? "\r\n" : "\n";
         if (lexeme.length() == 2) buffer.advance();
 
         // Use column - lexeme.length() to point to the start of the newline
-        addStructuralToken(YamlTokenType.NEWLINE, buffer.column() - lexeme.length());
+        addStructuralToken(YamlTokenType.NEWLINE, buffer.column() - lexeme.length() + 1);
 
         // 2. Keep eating newlines and spaces as long as the line is "empty"
         while (!buffer.isAtEnd()) {
@@ -934,7 +1057,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 if (nl.length() == 2) buffer.advance();
 
                 if (flowDepth == 0) {
-                    addStructuralToken(YamlTokenType.NEWLINE, buffer.column() - nl.length());
+                    addStructuralToken(YamlTokenType.NEWLINE, buffer.column() - nl.length() + 1);
                 }
             } else {
                 // We hit actual content (or a comment)
@@ -942,37 +1065,27 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
         }
 
+        if (buffer.peek() == '\t') {
+            error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
+        }
+
         int currentColumn = buffer.column();
         int expectedIndent = indentationLevels.peek();
-
-
-
-
 
         // 3. Indentation Logic
         if (currentColumn > expectedIndent) {
             indentationLevels.push(currentColumn);
             if (flowDepth == 0) {
-                addStructuralToken(YamlTokenType.INDENT, currentColumn - 1);
+                // debug("handleNewlineAndIndentation INDENT");
+                addStructuralToken(YamlTokenType.INDENT, currentColumn);
             }
         }
-
-        // boolean suppressIndent = lastSignificantTokenType == YamlTokenType.SEQUENCE_ENTRY_INDICATOR &&
-        // flowDepth == 0;
-
-        // if (currentColumn > expectedIndent) {
-        //     indentationLevels.push(currentColumn);
-        //     if (!suppressIndent) {
-        //         addStructuralToken(YamlTokenType.INDENT, currentColumn);
-        //     }
-        //     return;
-        // }
 
         else if (currentColumn < expectedIndent) {
             while (indentationLevels.size() > 1 && indentationLevels.peek() > currentColumn) {
                 indentationLevels.pop();
                 if (flowDepth == 0) {
-                    // Restored the proper structural token generation helper pointing to the exact column index
+                    // debug("handleNewlineAndIndentation DEDENT");
                     addStructuralToken(YamlTokenType.DEDENT, currentColumn);
                 }
             }
@@ -999,7 +1112,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         this.flowDepth = 0;
         this.indentationLevels.clear();
-        this.indentationLevels.push(0);
+        this.indentationLevels.push(1);
 
         pendingTokens.clear();
 
@@ -1020,7 +1133,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     // TODO: Why do we have both queueToken (above) and addToken (below) ?
     private YamlToken addToken(YamlToken token) {
-        trace("addToken");
+        debug("addToken: " + token.getType());
         if (token != null) {
             pendingTokens.add(token); // Queue it up so nextToken() can yield it!
         }
@@ -1039,7 +1152,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     }
 
     private void addStructuralToken(YamlTokenType type, int tokenColumn) {
-        trace("addStructuralToken");
         addToken(new YamlToken(buffer.windowStartLine(), tokenColumn, buffer.windowStartOffset(), type));
     }
 
@@ -1073,7 +1185,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         // 4. Check for the value indicator
-        return buffer.peekAhead(steps) == ':';
+        boolean willBeMappingKey = buffer.peekAhead(steps) == ':';
+        return willBeMappingKey;
     }
 
     private boolean isWhitespace(char c) {
@@ -1118,6 +1231,29 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         char c = buffer.peek();
         reporter.trace("S=%03d C=%03d '%s' %03d:%03d %s: %s",
             buffer.offset(), buffer.offset(), StringUtils.visibleChar(c), buffer.line(), buffer.column(), method, info);
+    }
+
+    private void debug(String message, Object... details) {
+        if (reporter == null ||
+            reporter.isSilent() ||
+            !reporter.getLevel().includes(Level.DEBUG)) return;
+        reporter.debug(message, details);
+    }
+
+    private void debugString(String string) {
+        if (reporter == null ||
+            reporter.isSilent() ||
+            !reporter.getLevel().includes(Level.DEBUG)) return;
+
+        reporter.debug(StringUtils.debugString(string));
+    }
+
+    private void debugString(String string, int pos) {
+        if (reporter == null ||
+            reporter.isSilent() ||
+            !reporter.getLevel().includes(Level.DEBUG)) return;
+
+        reporter.debug(StringUtils.debugString(string, pos));
     }
 
     private void debugString(String string, String name, int pos) {

@@ -44,8 +44,6 @@ import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
-import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
@@ -86,15 +84,24 @@ public class TokenizerTests {
 
     /// Helper to print tokens in a readable format when a test fails.
     private void dumpTokens(List<YamlToken> tokens) {
-        for (int i = 0; i < tokens.size(); i++) {
-            YamlToken t = tokens.get(i);
-            System.out.printf("[%2d] %-20s | L:%-3d C:%-3d | Lexeme: '%s'%n",
-                i, t.getType(), t.getStartLine(), t.getStartColumn(),
-                t.getLexeme() == null
-                ? "null"
-                : t.getLexeme().replace("\n", "\\n").replace("\r", "\\r"));
-        }
-        System.out.println("-----------------------------\n");
+        TestUtils.dumpTokens(tokens);
+        // for (int i = 0; i < tokens.size(); i++) {
+        //     YamlToken t = tokens.get(i);
+        //     YamlTokenType type = t.getType();
+        //     switch (type) {
+        //         case SCALAR, ALIAS, ANCHOR, COMMENT, TAG:
+        //             System.out.printf("[%2d] %-20s | L:%-3d C:%-3d | Lexeme: '%s'%n",
+        //                 i, t.getType(), t.getStartLine(), t.getStartColumn(),
+        //                 t.getLexeme() == null
+        //                     ? "null"
+        //                     : t.getLexeme().replace("\n", "\\n").replace("\r", "\\r"));
+        //             break;
+        //         default:
+        //             System.out.printf("[%2d] %-20s | L:%-3d C:%-3d%n",
+        //                 i, t.getType(), t.getStartLine(), t.getStartColumn());
+        //     }
+        // }
+        // System.out.println("-----------------------------\n");
     }
 
     YamlTokenizer tokenizer;
@@ -107,6 +114,70 @@ public class TokenizerTests {
     //
     //
     //
+
+    @Test
+    void testSimpleMap() {
+        String yaml = """
+                a: x
+                b: y
+                """;
+
+        tokenizer.setReporter(
+            new StandardReporter()
+                .setLevel(Level.TRACE)
+                .setAnsiColoringEnabled(true)
+        );
+
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+
+        assertTokensMatch(tokens,
+            YamlTokenType.STREAM_START,
+
+            YamlTokenType.SCALAR,
+            YamlTokenType.VALUE_INDICATOR,
+            YamlTokenType.SCALAR,
+            YamlTokenType.NEWLINE,
+
+            YamlTokenType.SCALAR,
+            YamlTokenType.VALUE_INDICATOR,
+            YamlTokenType.SCALAR,
+            // YamlTokenType.NEWLINE,
+
+            YamlTokenType.EOF,
+            YamlTokenType.STREAM_END
+        );
+    }
+
+    @Test
+    void testSimpleSequence() {
+        String yaml = """
+                - a
+                - b
+                """;
+
+        tokenizer.setReporter(
+            new StandardReporter()
+                .setLevel(Level.TRACE)
+                .setAnsiColoringEnabled(true)
+        );
+
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+
+        assertTokensMatch(tokens,
+            YamlTokenType.STREAM_START,
+
+            YamlTokenType.SEQUENCE_ENTRY_INDICATOR,
+            YamlTokenType.SCALAR,
+            YamlTokenType.NEWLINE,
+
+            YamlTokenType.SEQUENCE_ENTRY_INDICATOR,
+            YamlTokenType.SCALAR,
+            // YamlTokenType.NEWLINE,
+
+            YamlTokenType.EOF,
+            YamlTokenType.STREAM_END
+        );
+    }
 
     @Test
     void testContentRegistryIndentation() {
@@ -145,7 +216,7 @@ public class TokenizerTests {
         // because the spaces trigger one INDENT and the '-' triggers another.
         String yaml = """
                 key:
-                - item
+                  - item
                 """;
         List<YamlToken> tokens = tokenizer.tokenize(yaml);
 
@@ -171,6 +242,9 @@ public class TokenizerTests {
                   - item
                 compact: - item
                 """;
+
+        tokenizer.setReporter(new StandardReporter().setLevel(Level.TRACE));
+
         List<YamlToken> tokens = tokenizer.tokenize(yaml);
 
         // Filter to see the structural 'skeleton'

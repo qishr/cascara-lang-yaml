@@ -46,9 +46,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -82,7 +80,7 @@ public class YamlPullParserTest {
             """;
 
         YamlOptions options = new YamlOptions().setIncludeComments(false);
-        Reporter reporter = new StandardReporter().setLevel(Level.TRACE);
+        Reporter reporter = new StandardReporter().setLevel(Level.TRACE).setAnsiColoringEnabled(true);
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = new YamlPullParser(inputStream)) {

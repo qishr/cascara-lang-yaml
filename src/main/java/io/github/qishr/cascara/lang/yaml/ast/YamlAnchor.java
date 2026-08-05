@@ -37,43 +37,34 @@ package io.github.qishr.cascara.lang.yaml.ast;
 
 import java.util.List;
 
-import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+public class YamlAnchor extends YamlNode {
+    private final String anchorName;
 
-public class YamlAliasNode extends YamlNode {
+    // TODO: Should this be called innerNode or wrappedNode, or something else?
+    private final YamlNode innerNode;
 
-    // TODO: Should this be `alias` or `name`?
-    private final String alias;
-
-    private YamlNode resolvedNode; // This is what the parser needs
-
-    public YamlAliasNode(YamlToken token, String alias) {
-        super(token);
-        this.alias = alias;
+    public YamlAnchor(int line, int column, String name, YamlNode node) {
+        super(line, column, null);
+        this.anchorName = name;
+        this.innerNode = node;
+        this.setAnchor(name);
+        // Also ensure the inner node knows it's anchored
+        if (node != null) {
+            node.setAnchor(name);
+        }
     }
 
-    public String getAlias() { return alias; }
-
-    /// Put this back to fix the Parser
-    public void setResolvedNode(YamlNode node) {
-        this.resolvedNode = node;
-    }
-
-    public YamlNode getResolvedNode() {
-        return resolvedNode;
-    }
+    public String getAnchorName() { return anchorName; }
+    public YamlNode getInnerNode() { return innerNode; }
 
     /// {@inheritDoc}
     @Override
-    public List<YamlNode> getChildren() {
-        return resolvedNode != null ? List.of(resolvedNode) : List.of();
-    }
+    public List<YamlNode> getChildren() { return List.of(innerNode); }
 
     /// {@inheritDoc}
     @Override
-    public String getAnchor() {
-        // In the context of an alias node, the 'anchor' it's interested in
-        // is the string name it points to.
-        return getAlias();
+    public String asString() {
+        return innerNode == null ? "" : innerNode.toString();
     }
 
     @Override
