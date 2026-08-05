@@ -12,8 +12,12 @@ import io.github.qishr.cascara.common.diagnostic.LocalizableIOException;
 import io.github.qishr.cascara.common.diagnostic.LocalizableRuntimeException;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.lang.agnostic.AgnosticMapNode;
+import io.github.qishr.cascara.common.lang.agnostic.AgnosticNode;
+import io.github.qishr.cascara.common.lang.agnostic.AgnosticSequenceNode;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
+import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
@@ -2092,6 +2096,89 @@ public class SpecTests {
 
         YamlMap map7 = seq.getMap(7);
         TestUtils.assertEquals("value", map7.getString("key?"));
+
+    }
+
+    @Test
+    public void testLE5A() {
+        String yaml = """
+            - !!str "a"
+            - 'b'
+            - &anchor "c"
+            - *anchor
+            - !!str
+            """;
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+        parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        AgnosticNode agnostic = new YamlConverter().toPlainAst(body);
+        AgnosticSequenceNode seq = (AgnosticSequenceNode)agnostic;
+        // YamlSequence seq = (YamlSequence) body;
+        assertEquals(5, seq.size());
+
+        TestUtils.assertEquals("a", seq.getScalar(0).asString());
+        TestUtils.assertEquals("b", seq.getScalar(1).asString());
+        TestUtils.assertEquals("c", seq.getScalar(2).asString());
+        TestUtils.assertEquals("c", seq.getScalar(3).asString());
+        TestUtils.assertEquals("", seq.getScalar(4).asString());
+
+    }
+
+    @Test
+    public void testM6YH() {
+        String yaml = """
+            - |
+             x
+            -
+             foo: bar
+            -
+             - 42
+            """;
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+        parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        AgnosticNode agnostic = new YamlConverter().toPlainAst(body);
+
+        AgnosticSequenceNode seq = (AgnosticSequenceNode)agnostic;
+        assertEquals(3, seq.size());
+
+        TestUtils.assertEquals("x\n", seq.getScalar(0).asString());
+
+        AgnosticMapNode map1 = seq.getMap(1);
+        TestUtils.assertEquals("bar", map1.getScalar("foo").asString());
+
+        AgnosticSequenceNode seq2 = seq.getSequence(2);
+        assertEquals(42, seq2.getScalar(0).asInteger());
 
     }
 }
