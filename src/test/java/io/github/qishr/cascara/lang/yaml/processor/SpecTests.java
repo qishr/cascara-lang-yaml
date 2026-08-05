@@ -2036,6 +2036,62 @@ public class SpecTests {
         TestUtils.assertEquals("# text1", map.getString("strip"));
         TestUtils.assertEquals("# text2\n", map.getString("clip"));
         TestUtils.assertEquals("# text3\n\n", map.getString("keep"));
+    }
+
+    @Test
+    public void testJR7V() {
+        String yaml = """
+            - a?string
+            - another ? string
+            - key: value?
+            - [a?string]
+            - [another ? string]
+            - {key: value? }
+            - {key: value?}
+            - {key?: value }
+            """;
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+        parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlSequence seq = (YamlSequence) body;
+        assertEquals(8, seq.size());
+
+        TestUtils.assertEquals("a?string", seq.getScalar(0).asString());
+        TestUtils.assertEquals("another ? string", seq.getScalar(1).asString());
+
+        YamlMap map2 = seq.getMap(2);
+        TestUtils.assertEquals("value?", map2.getString("key"));
+
+        YamlSequence seq3 = seq.getSequence(3);
+        TestUtils.assertEquals("a?string", seq3.getScalar(0).asString());
+
+        YamlSequence seq4 = seq.getSequence(4);
+        TestUtils.assertEquals("another ? string", seq4.getScalar(0).asString());
+
+        YamlMap map5 = seq.getMap(5);
+        TestUtils.assertEquals("value?", map5.getString("key"));
+
+        YamlMap map6 = seq.getMap(6);
+        TestUtils.assertEquals("value?", map6.getString("key"));
+
+        YamlMap map7 = seq.getMap(7);
+        TestUtils.assertEquals("value", map7.getString("key?"));
 
     }
 }

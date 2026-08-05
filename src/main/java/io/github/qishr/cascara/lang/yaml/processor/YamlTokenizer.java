@@ -811,25 +811,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             // Perform Chomping
             // https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator
             if (chompingStyle == ChompingStyle.KEEP) {
-
-
-                // if (trailingBlankLines.isEmpty()) {
-                //     content.append('\n');
-                // } else {
-                //     for (String blankLine : trailingBlankLines) {
-                //         content.append(blankLine);
-                //     }
-                // }
-
                 if (!content.isEmpty()) {
                     content.append('\n');
                 }
                 for (String blankLine : trailingBlankLines) {
                     content.append(blankLine);
                 }
-
-
-
             }
             else if (chompingStyle == ChompingStyle.STRIP) {
                 int contentLen = content.length();
@@ -874,13 +861,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             if (ch == '#' && (prev == '\0' || prev == ' ' || prev == '\t' || prev == '\r' || prev == '\n')) {
                 return ScalarAction.STOP_COMMENT;
             }
-            if (ch == '?' && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
+            if (ch == '?' && !lineHasContent && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
                 return ScalarAction.STOP_MAP_KEY;
             }
             if (ch == ':' && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
                 return ScalarAction.STOP_MAP_VALUE;
             }
-            // TODO: && prev != '-'
             if (ch == '-' && !lineHasContent && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
                 return ScalarAction.STOP_SEQ;
             }
