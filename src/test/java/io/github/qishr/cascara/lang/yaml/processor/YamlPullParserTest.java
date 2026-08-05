@@ -80,7 +80,7 @@ public class YamlPullParserTest {
             """;
 
         YamlOptions options = new YamlOptions().setIncludeComments(false);
-        Reporter reporter = new StandardReporter().setLevel(Level.TRACE);
+        Reporter reporter = new StandardReporter().setLevel(Level.TRACE).setAnsiColoringEnabled(true);
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = new YamlPullParser(inputStream)) {

@@ -66,13 +66,20 @@ class YamlTests {
                             "  - value2\n" +
                             "";
 
+        YamlTokenizer tokenizer = new YamlTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(Level.TRACE)
+                .setAnsiColoringEnabled(true)
+        );
+        TestUtils.dumpTokens(tokenizer.tokenize(yamlString));
+
         // TODO: diagnostic level in one place for all tests?
         // YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(LEVEL));
         YamlAstParser parser = new YamlAstParser();
         parser.setReporter(new StandardReporter().setLevel(LEVEL));
 
         YamlMap yaml = (YamlMap)parser.parse(yamlString);
-        TestUtils.dumpTokens(parser.getTokens());
+        // TestUtils.dumpTokens(parser.getTokens());
 
         List<YamlNode> array = yaml.getSequence("array").getChildren();
         assertEquals(2, array.size());
@@ -163,6 +170,11 @@ class YamlTests {
         YamlAstParser parser = new YamlAstParser()
                 .setReporter(new StandardReporter().setLevel(LEVEL));
 
+        parser.getTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(Level.DEBUG)
+                .setAnsiColoringEnabled(true)
+        );
         YamlSequence seq = (YamlSequence)parser.parse(yamlString);
         TestUtils.dumpTokens(parser.getTokens());
 

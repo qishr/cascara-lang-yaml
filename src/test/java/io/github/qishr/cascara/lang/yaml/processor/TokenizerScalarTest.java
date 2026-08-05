@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.util.SourceStringBuffer;
+import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 public class TokenizerScalarTest {
@@ -60,13 +61,16 @@ public class TokenizerScalarTest {
         tokenizer.setReporter(new StandardReporter().setLevel(Level.TRACE));
 
         char header = source.charAt(0);
-        String string = source.substring(1);
+        ScalarStyle style = header == '>'
+            ? ScalarStyle.FOLDED
+            : ScalarStyle.LITERAL;
+        // String string = source.substring(1);
 
-        SourceStringBuffer buffer = new SourceStringBuffer(string);
+        SourceStringBuffer buffer = new SourceStringBuffer(source);
 
         tokenizer.indentationLevels.push(indent);
         tokenizer.buffer = buffer;
-        tokenizer.scanBlockScalar(header);
+        tokenizer.scanScalar(style);
 
         assertEquals(1, tokenizer.pendingTokens.size());
         YamlToken token = tokenizer.pendingTokens.peek();

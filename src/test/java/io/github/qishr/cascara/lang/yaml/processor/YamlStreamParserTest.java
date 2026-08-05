@@ -91,6 +91,13 @@ class YamlStreamParserTest {
             "payload: true\n" +
             "# File Footer Comment";
 
+        parser.getTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(Level.DEBUG)
+                .setAnsiColoringEnabled(true)
+        );
+        TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
+
         YamlStream stream = (YamlStream) parser.parse(yaml);
 
         assertNotNull(stream);

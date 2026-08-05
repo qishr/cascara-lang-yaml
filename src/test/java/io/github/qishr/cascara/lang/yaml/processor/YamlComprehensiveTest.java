@@ -170,7 +170,13 @@ class YamlComprehensiveTest {
     void testRoundTripPreservesStructure() throws Exception {
         String original = "records:\n  -\n    id: \"1\"\n    tags:\n      -\n        a";
 
-        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE));
+        parser.getTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(Level.TRACE)
+                .setAnsiColoringEnabled(true)
+        );
+
+        TestUtils.dumpTokens(parser.getTokenizer().tokenize(original));
 
         parser.setReporter(new StandardReporter()
             .setLevel(Level.DEBUG)
@@ -179,7 +185,7 @@ class YamlComprehensiveTest {
         // 1. Parse
         YamlMap originalMap = (YamlMap)parser.parse(original);
 
-        TestUtils.dumpTokens(parser.getTokens());
+        // TestUtils.dumpTokens(parser.getTokens());
 
 
         YamlOptions options = new YamlOptions().setExpandedStyle(true);
