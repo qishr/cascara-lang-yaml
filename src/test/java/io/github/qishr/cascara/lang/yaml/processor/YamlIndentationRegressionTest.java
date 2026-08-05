@@ -37,7 +37,6 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 

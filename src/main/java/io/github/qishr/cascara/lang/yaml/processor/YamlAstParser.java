@@ -48,25 +48,25 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
-import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.common.lang.annotation.Experimental;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
+import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
-import io.github.qishr.cascara.lang.yaml.ast.YamlAliasNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlAnchorNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlCommentNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlDirectiveNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlDocumentNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
+import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
+import io.github.qishr.cascara.lang.yaml.ast.YamlComment;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDirective;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlStreamNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
+import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
@@ -88,6 +88,8 @@ import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implements AstParser<YamlNode, YamlToken, YamlTokenizer> {
 
+    private static final int MAX_DEBUG_STRING_LENGTH = 20;
+
     private YamlTokenizer tokenizer;
 
     /// The list of all tokens received from the tokenizer.
@@ -99,7 +101,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     private int depth = 0;
 
     /// Buffer to hold comments until a data node is created to claim them.
-    private final List<YamlCommentNode> pendingComments = new ArrayList<>();
+    private final List<YamlComment> pendingComments = new ArrayList<>();
     private final Map<String, YamlNode> anchorRegistry = new HashMap<>();
 
     private int lastNewlineOrComment;
@@ -146,22 +148,22 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
     /// Type-safe method specifically for multi-document scenarios.
     @Experimental
-    public YamlStreamNode parseMulti(String text) {
+    public YamlStream parseMulti(String text) {
         YamlOptions originalOptions = this.options;
         try {
             this.options = originalOptions.duplicate().setMultiDocument(true);
-            return (YamlStreamNode) parse(text);
+            return (YamlStream) parse(text);
         } finally {
             this.options = originalOptions; // Safely restore original state
         }
     }
 
     @Experimental
-    public YamlStreamNode parseMulti(byte[] data) {
+    public YamlStream parseMulti(byte[] data) {
         YamlOptions originalOptions = this.options;
         try {
             this.options = originalOptions.duplicate().setMultiDocument(true);
-            return (YamlStreamNode) parse(new String(data));
+            return (YamlStream) parse(new String(data));
         } finally {
             this.options = originalOptions; // Safely restore original state
         }
@@ -169,11 +171,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
     /// Type-safe method specifically for multi-document scenarios.
     @Experimental
-    public YamlStreamNode parseMulti(InputStream is) {
+    public YamlStream parseMulti(InputStream is) {
         YamlOptions originalOptions = this.options;
         try {
             this.options = originalOptions.duplicate().setMultiDocument(true);
-            return (YamlStreamNode) parse(is);
+            return (YamlStream) parse(is);
         } finally {
             this.options = originalOptions; // Safely restore original state
         }
@@ -228,7 +230,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
     /// Helper to execute internal parsing logic and unpack based on options.
     private YamlNode parseAndUnpack() {
-        YamlStreamNode stream = parseInternal();
+        YamlStream stream = parseInternal();
 
         // If the developer wants the full multi-document structure, hand over the stream node
         if (options.isMultiDocument()) {
@@ -237,7 +239,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
         // Otherwise, stay backward-compatible and return the naked first document body
         return stream.getDocuments().isEmpty()
-            ? new YamlMapNode()
+            ? new YamlMap()
             : stream.getDocuments().get(0).getBody();
     }
 
@@ -285,14 +287,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         }
     }
 
-    private YamlStreamNode parseInternal() {
+    private YamlStream parseInternal() {
         if (this.tokenBuffer.isEmpty()) {
-            return new YamlStreamNode();
+            return new YamlStream();
         }
 
         consume(YamlTokenType.STREAM_START, LangDiagnosticCode.EXPECTED_STREAM_START);
 
-        YamlStreamNode streamNode = new YamlStreamNode(peek());
+        YamlStream streamNode = new YamlStream(peek());
 
         // Multi-Document Processing Loop
         while (!isAtEnd() && !check(YamlTokenType.STREAM_END) && !check(YamlTokenType.EOF)) {
@@ -368,12 +370,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     /// Parses a single document context, safely handling layout tokens near explicit boundaries
-    private YamlDocumentNode parseDocument() {
+    private YamlDocument parseDocument() {
         debug(">parseDocument");
         depth++;
         try {
             YamlToken startToken = peek();
-            YamlDocumentNode document = new YamlDocumentNode(startToken);
+            YamlDocument document = new YamlDocument(startToken);
 
             if (lookAheadToExplicitMarker()) {
                 while (!isAtEnd() && check(YamlTokenType.NEWLINE)) {
@@ -384,7 +386,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             while (check(YamlTokenType.DIRECTIVE)) {
                 YamlToken dirToken = advance();
                 if (isKnownDirective(dirToken)) {
-                    document.addDirective(new YamlDirectiveNode(dirToken, dirToken.getContent()));
+                    document.addDirective(new YamlDirective(dirToken, dirToken.getContent()));
                 } else {
                     warn(
                         dirToken,
@@ -419,10 +421,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || isAtEnd()) {
                 document.setBody(
-                    new YamlScalarNode("", ScalarStyle.PLAIN, options)
+                    new YamlScalar("", ScalarStyle.PLAIN, options)
                 );
             } else {
-                YamlNode body = parseValue(0);
+                YamlNode body = parseValue(0, false);
                 document.setBody(body);
                 document.setTag(body.getTag());   // if any
             }
@@ -443,7 +445,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     /// 1. Handling anchors (`&`) and aliases (`*`).
     /// 2. Managing block indentation tokens (`INDENT`/`DEDENT`).
     /// 3. Determining the structural type (Map, Sequence, or Scalar) via lookahead.
-    private YamlNode parseValue(int parentIndent) {
+    private YamlNode parseValue(int parentIndent, boolean isComplexKey) {
         debug(">parseValue");
         depth++;
         if (depth > DEPTH_LIMIT) {
@@ -461,317 +463,170 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             debug("PV-after-skipTrivia");
 
-            if (check(YamlTokenType.DEDENT) || check(YamlTokenType.EOF)) {
-                return new YamlScalarNode(
-                    peek(),
-                    PrimitiveType.NULL,
-                    options
-                );
-            }
-
-            YamlNode result;
-
-            // 1. Capture anchor if present
+            YamlNode result = null;
             String pendingAnchor = null;
-
-            YamlToken startToken = peek();
 
             if (check(YamlTokenType.ANCHOR)) {
                 debug("PV-in-if-anchor1");
 
                 if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-                    result = parseMap();
+                    // Let parseMap handle the anchor
+                    result = parseMap(isComplexKey);
                     attachComments(result);
+                    debug("PV-after-parseMap-1");
                     return result;
                 } else {
-
+                    // Consume the anchor and set it as pending
                     YamlToken anchorTok = advance();
                     debug("PV-in-if-anchor2");
 
                     String raw = anchorTok.getContent();
                     pendingAnchor = raw.startsWith("&") ? raw.substring(1) : raw;
-
-                    if (check(YamlTokenType.VALUE_INDICATOR)) {
-                        YamlNode innerMap = parseMap();
-                        // Normalizer will unwrap this later
-                        return new YamlAnchorNode(
-                            innerMap.getStartLine(),
-                            innerMap.getStartColumn(),
-                            pendingAnchor,
-                            innerMap
-                        );
-                    }
-
-                    // Fast-path: &anchor scalar
-                    else if (check(YamlTokenType.SCALAR)) {
-                        debug("PV-in-if-scalar1");
-                        YamlNode scalar = parseScalar();
-                        debug("PV-in-if-scalar2");
-
-                        anchorRegistry.put(pendingAnchor, scalar);
-
-                        YamlAnchorNode anchorNode = new YamlAnchorNode(
-                            scalar.getStartLine(),
-                            scalar.getStartColumn(),
-                            pendingAnchor,
-                            scalar
-                        );
-
-                        return attachComments(anchorNode);
-                    }
-                }
-
-                skipTrivia();
-                startToken = peek();
-            }
-            debug("PV-after-if-anchor");
-
-            // 1. Collect tags (node-level, including !!str on the document body)
-            String pendingTag = null;
-            while (check(YamlTokenType.TAG)) {
-                debug("PV-TAG");
-                YamlToken tagTok = advance();
-                pendingTag = tagTok.getContent(); // or getLexeme() - *assuming the lexeme has no quotes at this point*
-                skipTrivia();
-            }
-
-            // 2. Structural dispatch
-
-            if (check(YamlTokenType.INDENT)) {
-                debug("PV-in-if-indent1");
-                advance();
-                debug("PV-in-if-indent2");
-                skipTrivia();
-                debug("PV-in-if-indent3");
-
-                if (check(YamlTokenType.ANCHOR)) {
-                    YamlToken anchorTok = advance();
-                    String raw = anchorTok.getContent();
-                    String pendingAnchor2 = raw.startsWith("&") ? raw.substring(1) : raw;
+                    int ahead = 0;
+                    YamlToken candidate = null;
 
                     skipTrivia();
 
-                    // If this is a key (SCALAR + ":"), parse a map
-                    if ((check(YamlTokenType.SCALAR) || check(YamlTokenType.ALIAS)) &&
-                        lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-
-                        YamlNode innerMap = parseMap();
-
-                        // Normalizer will unwrap this later
-                        return new YamlAnchorNode(
-                            innerMap.getStartLine(),
-                            innerMap.getStartColumn(),
-                            pendingAnchor2,
-                            innerMap
-                        );
+                    candidate = peek(ahead);
+                    while (candidate.getType() == YamlTokenType.NEWLINE ||
+                           candidate.getType() == YamlTokenType.COMMENT) {
+                        ahead++;
+                        candidate = peek(ahead);
+                        System.out.println(candidate.getType());
                     }
 
-                    // Otherwise fall through to normal structural parsing
-                }
-
-                if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
-                    YamlSequenceNode seq = parseSequence();
-                    result = seq;
-                    // FIX: move pending comments from key to the first item
-                    if (!seq.isEmpty()) {
-                        YamlNode inner = seq.get(0);
-                        inner.addComments(0, seq.getComments());
-                        seq.getComments().clear();
-                    }
-                }
-                else if (check(YamlTokenType.KEY_INDICATOR)) {
-                    result = parseMap();
-                }
-                else if ((check(YamlTokenType.SCALAR) ||
-                            check(YamlTokenType.ALIAS) ||
-                            check(YamlTokenType.ANCHOR))
-                        && lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-                    result = parseMap();
-                }
-                else {
-                    if (check(YamlTokenType.SCALAR)) {
-                        YamlScalarNode first = (YamlScalarNode) parseScalar();
-
-                        StringBuilder sb = new StringBuilder(first.asString());
-                        int column = first.getStartColumn();
-
-                        // TODO: Is this still needed?
-                        if (check(YamlTokenType.NEWLINE)) {
-                            while (check(YamlTokenType.NEWLINE)) {
-                                advance(); // newline
-
-                                if (check(YamlTokenType.SCALAR)) {
-                                    // stop if this scalar is a mapping key
-                                    if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-                                        break;
-                                    }
-
-                                    YamlScalarNode next = (YamlScalarNode) parseScalar();
-
-                                    if (next.getStartColumn() != column) {
-                                        break;
-                                    }
-
-                                    sb.append(" ").append(next.asString());
-                                } else if (check(YamlTokenType.INDENT)) {
-                                    advance(); // INDENT
-
-                                    StringBuilder line = new StringBuilder();
-                                    while (!check(YamlTokenType.NEWLINE) && !check(YamlTokenType.EOF)) {
-                                        // If this is a comment, STOP — do not consume it here
-                                        if (check(YamlTokenType.COMMENT)) {
-                                            break;
-                                        }
-
-                                        YamlToken tok = advance();
-
-                                        if (tok.getType() == YamlTokenType.VALUE_INDICATOR) {
-                                            // hit real mapping, stop folding
-                                            result = new YamlScalarNode(
-                                                sb.toString(),
-                                                ScalarStyle.PLAIN, // TODO: Surely this isn't always PLAIN
-                                                first.getOptions()
-                                            );
-                                            return attachComments(result);
-                                        }
-
-                                        if (line.length() > 0) {
-                                            line.append(' ');
-                                        }
-                                        line.append(tok.getContent());
-                                    }
-
-                                    if (line.length() == 0) {
-                                        break;
-                                    }
-
-                                    sb.append(" ").append(line.toString());
-                                } else {
-                                    break;
-                                }
-                            }
-
-                            result = new YamlScalarNode(
-                                sb.toString(),
-                                first.getScalarStyle(),
-                                first.getOptions()
-                            );
-                        } else {
-                            result = first;
-                        }
-
-                        result.addComments(0, first.getComments());
+                    if (candidate.getStartColumn() > parentIndent) {
+                        skipTrivia();
                     } else {
-                        // Token is not
-                        // - anchor (only one is allowed and it's already parsed)
-                        // - scalar (part of this if-else)
-                        // - map key (part of this if-else)
-                        // - sequence indicator (part of this if-else)
-
-                        // Could be:
-                        // - alias
-                        // - flow map
-                        // - flow sequence
-                        // - tag?
-
-                        result = parseValue(parentIndent);
+                        result = new YamlScalar(
+                            peek(),
+                            PrimitiveType.NULL,
+                            options
+                        );
+                        YamlAnchor anchorNode = new YamlAnchor(
+                            result.getStartLine(),
+                            result.getStartColumn(),
+                            pendingAnchor,
+                            result
+                        );
+                        anchorRegistry.put(pendingAnchor, anchorNode);
+                        return attachComments(anchorNode);
                     }
                 }
+            }
+            debug("PV-after-if-anchor");
 
-                debug("PV-in-if-indent4");
+            if (check(YamlTokenType.NEWLINE)) {
+                advance();
                 skipTrivia();
-                debug("PV-in-if-indent5");
-
-                if (options.isStrict()) {
-                    consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT_BLOCK_COMMENT);
-                } else if (check(YamlTokenType.DEDENT)) {
-                    advance();
-                }
             }
 
-            else if (check(YamlTokenType.KEY_INDICATOR)) {
-                result = parseMap();
+            // Collect tags (node-level, including !!str on the document body)
+            String pendingTag = null;
+            while (check(YamlTokenType.TAG)) {
+                debug("PV-TAG start");
+                YamlToken tagTok = advance();
+                pendingTag = tagTok.getContent();
+                skipTrivia();
+                debug("PV-TAG end");
             }
 
-            else if (check(YamlTokenType.ALIAS)) {
+            boolean pendingDedent = false;
+            if (check(YamlTokenType.INDENT)) {
+                advance();
+                skipTrivia();
+                pendingDedent = true;
+                debug("Setting pending dedent");
+            }
+
+            if (check(YamlTokenType.KEY_INDICATOR)) {
+                debug("PV-key-indicator");
+                result = parseMap(isComplexKey);
+            }
+
+            else if (check(YamlTokenType.ANCHOR)) {
+                result = parseValue(peek().getStartColumn(), isComplexKey);
+            } else if (check(YamlTokenType.ALIAS)) {
                 debug("PV-in-if-alias1");
-                YamlToken tok = advance();
-                debug("PV-in-if-alias2");
-
-                String name = tok.getContent().substring(1);
-                YamlAliasNode alias = new YamlAliasNode(
-                    tok,
-                    name
-                );
-
-                if (anchorRegistry.containsKey(name)) {
-                    alias.setResolvedNode(anchorRegistry.get(name));
+                if (peek(1).getType() == YamlTokenType.VALUE_INDICATOR) {
+                    result = parseMap(isComplexKey);
+                } else {
+                    YamlToken tok = advance();
+                    debug("PV-in-if-alias2");
+                    String name = tok.getContent().substring(1);
+                    YamlAlias alias = new YamlAlias(
+                        tok,
+                        name
+                    );
+                    if (anchorRegistry.containsKey(name)) {
+                        alias.setResolvedNode(anchorRegistry.get(name));
+                    }
+                    result = alias;
                 }
-
-                result = alias;
             }
 
+            // Flow map
             else if (check(YamlTokenType.MAP_START)) {
                 result = parseFlowMap();
             }
 
+            // Flow sequence
             else if (check(YamlTokenType.SEQUENCE_START)) {
                 result = parseFlowSequence();
             }
 
+            // Block sequence
             else if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
                 result = parseSequence();
             }
 
-            // else if (check(YamlTokenType.SCALAR)) {
-            else if (check(YamlTokenType.SCALAR) && startToken.getStartColumn() != parentIndent) {
-                if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
-                    result = parseMap();
+            else if (check(YamlTokenType.SCALAR)) {
+                if (peek(1).getType() == YamlTokenType.VALUE_INDICATOR) {
+                    result = parseMap(isComplexKey);
                 } else {
                     result = parseScalar();
+                    debug("PV-after-parseScalar");
+                    if (check(YamlTokenType.NEWLINE)) {
+                        advance();
+                    }
                 }
             }
 
             else {
-
-                if (check(YamlTokenType.SCALAR) && startToken.getStartColumn() == parentIndent) {
-                    // The above else-if wasn't true because either:
-                    // - startToken is not a scalar
-                    // - startToken is a scalar but its indent level is the same as the
-                    //   parent meaning it's not part of what we should be parsing here
-                    //
-                    // TODO: Is it okay to assume startToken is not what we should be
-                    //       parsing and that we have a null at this point?
-                }
-
-                result = new YamlScalarNode(
+                result = new YamlScalar(
                     peek(),
                     PrimitiveType.NULL,
                     options
                 );
             }
 
-            // 3. Apply anchor to the produced node
-            if (pendingAnchor != null && result != null) {
+            // TODO: pending comments should probably be attached to the result before this skipTrivia.
+            skipTrivia();
 
-                result.setAnchor(pendingAnchor);
-
-                YamlAnchorNode anchorNode = new YamlAnchorNode(
-                    result.getStartLine(),
-                    result.getStartColumn(),
-                    pendingAnchor,
-                    result
-                );
-
-                anchorRegistry.put(pendingAnchor, result);
-
-                result = anchorNode;
+            if (pendingDedent) {
+                if (check(YamlTokenType.DEDENT)) {
+                    debug("Consuming pending dedent");
+                    advance();
+                }
             }
 
             // 3. Attach tags
             if (pendingTag != null && result != null) {
                 debug("PV-setTag");
                 result.setTag(pendingTag);
+            }
+
+            // 3. Apply anchor to the produced node
+            if (pendingAnchor != null && result != null) {
+                result.setAnchor(pendingAnchor);
+                YamlAnchor anchorNode = new YamlAnchor(
+                    result.getStartLine(),
+                    result.getStartColumn(),
+                    pendingAnchor,
+                    result
+                );
+                anchorRegistry.put(pendingAnchor, result);
+                result = anchorNode;
             }
 
             return attachComments(result);
@@ -785,75 +640,53 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     /// Parses a block-level mapping and enforces strict key indentation.
     /// This method captures the column of the first key encountered and ensures
     /// all subsequent sibling keys in this map align perfectly.
-    private YamlNode parseMap() {
+    private YamlNode parseMap(boolean isComplexKey) {
         debug(">parseMap");
         depth++;
         try {
             YamlToken startToken = peek();
-            YamlMapNode map = new YamlMapNode(startToken, options);
+            YamlMap map = new YamlMap(startToken, options);
             map.setStyle(NodeStyle.BLOCK);
 
             Set<Object> seenKeys = new HashSet<>();
             int mapColumn = -1;
+            boolean expectComplexKeyDedent = false;
 
             while (!isAtEnd()) {
+                debug("PM-loop");
                 skipTrivia();
 
-                // TODO: Determine which of these INDENTs/DEDENTs comply with spec.
+                if (check(YamlTokenType.DEDENT)) {
+                    break;
+                }
 
                 if (check(YamlTokenType.INDENT)) {
-                    if (lookAheadIgnoringComments(YamlTokenType.NEWLINE)) {
-                        // debug("--------------- MARKER 1"); // TODO: Resolve this problem
-                        advance(); // Consume INDENT
-                        skipTrivia(); // Consume NEWLINE
-                        if (check(YamlTokenType.DEDENT)) {
-                            advance(); // Consume the DEDENT matching the empty line
-                        }
-                        continue;
+                    debug("PM-complex-key-indent");
+                    if (isComplexKey) {
+                        advance();
+                        skipTrivia();
+                        expectComplexKeyDedent = true;
+                    } else {
+                        error(peek(), YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                     }
-                }
-                if (check(YamlTokenType.DEDENT)) {
-                    // Only break if this dedent closes the current map
-                    if (!isIndentedDeeperThan(mapColumn)) {
-                        break;
-                    }
-                    // debug("--------------- MARKER 2"); // TODO: Resolve this problem
-                    // Otherwise consume the dedent and continue
-                    advance();
-                    skipTrivia();
-                    continue;
-                }
-                // TODO: This next block should not be here or should signal an error ?
-                // TODO: Block we were supposed to remove but breaks tests if it's removed:
-                if (check(YamlTokenType.INDENT)) {
-                    // debug("--------------- MARKER 3"); // TODO: Resolve this problem
-                    advance();
-                    skipTrivia();
                 }
 
                 // Peek at the token that will tell us if an entry is actually here
                 debug("at markerToken");
                 YamlToken markerToken = peek();
 
-                if (markerToken.getStartColumn() != map.getStartColumn()) {
-                    // TODO: Why are these values different?
-                    debug("--------------- MARKER 4");
-                }
-
-                boolean isExplicitKey = check(YamlTokenType.KEY_INDICATOR);
+                boolean hasExplicitKey = check(YamlTokenType.KEY_INDICATOR);
                 boolean isScalarKeyStart =
                     check(YamlTokenType.SCALAR) ||
                     check(YamlTokenType.ALIAS) ||
                     check(YamlTokenType.ANCHOR);
 
                 // A map entry must start with '?', SCALAR, ALIAS, or ANCHOR
-                if (!isExplicitKey && !isScalarKeyStart) {
-
+                if (!hasExplicitKey && !isScalarKeyStart) {
                     if (peek().getStartColumn() > map.getStartColumn()) {
                         error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                     }
-
-                    debug("at break");
+                    debug("Break because " + markerToken.getType() + " does not start a map entry");
                     break;
                 }
 
@@ -862,58 +695,21 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 if (mapColumn == -1) {
                     mapColumn = markerColumn;
                 } else {
-                    boolean isAliasKey = check(YamlTokenType.ALIAS);
-                    boolean isAnchorKey = check(YamlTokenType.ANCHOR);
-
-                    if (markerColumn == mapColumn) {
-                        // sibling -> OK
-                    }
-                    else if (markerColumn > mapColumn && (isAliasKey || isAnchorKey)) {
-                        // nested alias/anchor -> OK
-                    }
-                    else {
-                        // invalid indentation
+                    if (markerColumn < mapColumn) {
                         error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
-                    }
-                }
-
-                // 1. Harvest any block comments sitting directly above this key before it parses
-                List<YamlCommentNode> leadingBlockComments = null;
-                while (check(YamlTokenType.COMMENT)) {
-                    if (leadingBlockComments == null) {
-                        leadingBlockComments = new ArrayList<>();
-                    }
-                    leadingBlockComments.add((YamlCommentNode) parseComment());
-                    if (check(YamlTokenType.NEWLINE)) {
-                        advance();
                     }
                 }
 
                 YamlNode key;
 
-                if (isExplicitKey) {
+                if (hasExplicitKey) {
                     advance(); // Consume '?'
                     skipTrivia();
-
-                    // Multi-line nested block keys drop down via INDENT or start on a fresh NEWLINE
-                    if (check(YamlTokenType.INDENT) || check(YamlTokenType.NEWLINE)) {
-                        key = parseValue(markerColumn);
-                    } else {
-                        // Inline key evaluation: check if a colon belongs to the same line context
-                        if (hasInlineValueIndicator()) {
-                            key = parseValue(markerColumn); // Parse inline nested map/sequence
-                        } else {
-                            key = parseScalar(); // Parse inline simple scalar key
-                        }
-                    }
+                    // Explicit keys are always parsed via parseValue in case they are complex
+                    key = parseValue(markerColumn, true);
                 } else {
                     // Standard implicit key
                     key = parseKeyNode(markerColumn);
-                }
-
-                // 2. Prepend the harvested block comments so they don't get lost
-                if (key != null && leadingBlockComments != null && !leadingBlockComments.isEmpty()) {
-                    key.addComments(0, leadingBlockComments);
                 }
 
                 attachComments(key);
@@ -922,10 +718,9 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     // For scalars, track the underlying unescaped string value.
                     // YamlScalarNode.asString() uses Primitive.asString() - Primitive is immutable and aggressively caches things.
                     // For complex structural nodes, track the node identity/structural equivalence.
-                    Object keyTrackingToken = (key instanceof YamlScalarNode scalarKey) ? scalarKey.asString() : key;
-
+                    Object keyTrackingToken = (key instanceof YamlScalar scalarKey) ? scalarKey.asString() : key;
                     if (!seenKeys.add(keyTrackingToken)) {
-                        String duplicateKeyRepresentation = (key instanceof YamlScalarNode scalarKey)
+                        String duplicateKeyRepresentation = (key instanceof YamlScalar scalarKey)
                             ? scalarKey.asString()
                             : "[Complex Key at Line " + key.getStartLine() + "]";
 
@@ -933,35 +728,42 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     }
                 }
 
-                int keyColumn = key.getStartColumn();
-
                 skipTrivia();
-
-                // TODO: Block we were supposed to remove but breaks tests if it's removed:
-                // Clear any leftover indentation noise caused by the complex key block structure
-                // There should be no "noise"
-                while (check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
-                    advance();
-                    skipTrivia();
-                }
                 consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_MAP_KEY);
                 parseInlineComment(key);
 
                 debug("before parseValue");
                 YamlNode value;
-                if (check(YamlTokenType.NEWLINE) && !isIndentedDeeperThan(keyColumn)) {
-                    value = new YamlScalarNode(
-                        peek(), PrimitiveType.NULL, options
-                    );
-                } else {
-                    value = parseValue(mapColumn);
+                if (check(YamlTokenType.NEWLINE) && !hasIndentedValueAfterNewline()) {
+                    value = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                }
+                else {
+                    skipTrivia();
+                    boolean isValueIndented = false;
+                    if (check(YamlTokenType.INDENT)) {
+                        debug("PM-value-indent");
+                        isValueIndented = true;
+                        advance();
+                    }
+
+                    value = parseValue(mapColumn, false);
+
+                    skipTrivia();
+                    if (isValueIndented) {
+                        debug("PM-value-dedent");
+                        consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
+                    }
                 }
                 debug("after parseValue");
-
-                map.put(new YamlMapEntryNode(key, value));
-
+                map.put(new YamlMapEntry(key, value));
                 skipTrivia();
             }
+
+            if (expectComplexKeyDedent) {
+                debug("PM-complex-key-dedent");
+                consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
+            }
+
             return map;
         } finally {
             depth--;
@@ -975,10 +777,25 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         debug(">parseKeyNode");
         depth++;
         try {
+
+            if (tok.getType() == YamlTokenType.MAP_START ||
+                tok.getType() == YamlTokenType.SEQUENCE_START ||
+                tok.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR ||
+                tok.getType() == YamlTokenType.INDENT) {
+
+                // NOTE: at the moment parseKeyNode is only called for simple keys.
+                // If we call it for complex keys, this parseValue call should
+                // specify if it's a complex key.
+                return parseValue(parentIndent, false);
+            }
+
             switch (tok.getType()) {
 
                 case SCALAR:
-                    return parseScalar();
+                    YamlScalar scalar = parseScalar();
+                    // skipTrivia();
+                    skipEOL();
+                    return scalar;
 
                 case ALIAS: {
                     advance(); // consume alias token
@@ -986,7 +803,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     String raw = tok.getContent();
                     String name = raw.startsWith("*") ? raw.substring(1) : raw;
 
-                    YamlAliasNode alias = new YamlAliasNode(tok, name);
+                    YamlAlias alias = new YamlAlias(tok, name);
 
                     // Mirror parseValue alias resolution
                     if (anchorRegistry.containsKey(name)) {
@@ -997,21 +814,22 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
 
                 case ANCHOR: {
+                    // TODO: This seems pointless now since parseValue handles anchors.
                     advance(); // consume &anchor
                     String raw = tok.getContent();
                     String name = raw.startsWith("&") ? raw.substring(1) : raw;
 
-                    // Consume the ':' that belongs to the anchored key
-                    consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_MAP_KEY);
-
                     // Parse the scalar key that follows
-                    YamlNode key = parseScalar();
+                    // NOTE: at the moment parseKeyNode is only called for simple keys.
+                    // If we call it for complex keys, this parseValue call should
+                    // specify if it's a complex key.
+                    YamlNode key = parseValue(parentIndent, false);
 
                     // Register the anchor for later alias resolution
                     anchorRegistry.put(name, key);
 
                     // Wrap in YamlAnchorNode (same as parseValue)
-                    YamlAnchorNode anchorNode = new YamlAnchorNode(
+                    YamlAnchor anchorNode = new YamlAnchor(
                         key.getStartLine(),
                         key.getStartColumn(),
                         name,
@@ -1025,12 +843,15 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     debug("parseKeyNode: KEY_INDICATOR");
                     advance(); // consume '?'
                     skipTrivia();
-                    return parseValue(parentIndent);
+                    // NOTE: at the moment parseKeyNode is only called for simple keys.
+                    // If we call it for complex keys, this parseValue call should
+                    // specify if it's a complex key.
+                    return parseValue(parentIndent, false);
 
                 default:
                     debug("parseKeyNode: UNEXPECTED " + tok.getType());
                     error(tok, GenericDiagnosticCode.ERROR, "Unexpected token in key position: " + tok.getType());
-                    return new YamlScalarNode(tok, PrimitiveType.ANY, options);
+                    return new YamlScalar(tok, PrimitiveType.ANY, options);
             }
         } finally {
             depth--;
@@ -1039,14 +860,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     /// Parses a block sequence (list) indicated by leading dashes.
-    private YamlSequenceNode parseSequence() {
+    private YamlSequence parseSequence() {
         debug(">parseSequence");
         depth++;
         try {
             YamlToken startToken = peek();
             int indicatorColumn = startToken.getStartColumn();
 
-            YamlSequenceNode sequence = new YamlSequenceNode(startToken);
+            YamlSequence sequence = new YamlSequence(startToken);
             sequence.setStyle(NodeStyle.BLOCK);
             attachComments(sequence);
 
@@ -1076,7 +897,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 advance(); // Consume the '-'
 
                 // parseValue handles the content, including potential nested blocks
-                YamlNode item = parseValue(indicatorColumn);
+                YamlNode item = parseValue(indicatorColumn, false);
                 sequence.add(item);
 
                 skipTrivia();
@@ -1090,17 +911,17 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     /// Parses a flow sequence like [item1, item2].
-    private YamlSequenceNode parseFlowSequence() {
+    private YamlSequence parseFlowSequence() {
         debug(">parseFlowSequence");
         depth++;
         try {
             YamlToken startToken = consume(YamlTokenType.SEQUENCE_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACKET);
-            YamlSequenceNode sequence = new YamlSequenceNode(startToken);
+            YamlSequence sequence = new YamlSequence(startToken);
             sequence.setStyle(NodeStyle.FLOW);
 
             while (!check(YamlTokenType.SEQUENCE_END) && !isAtEnd()) {
                 skipTrivia();
-                sequence.add(parseValue(startToken.getStartColumn()));
+                sequence.add(parseValue(startToken.getStartColumn(), false));
 
                 skipTrivia();
 
@@ -1125,7 +946,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         depth++;
         try {
             YamlToken startToken = consume(YamlTokenType.MAP_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACE_FLOW_MAP);
-            YamlMapNode map = new YamlMapNode(startToken, options);
+            YamlMap map = new YamlMap(startToken, options);
             map.setStyle(NodeStyle.FLOW);
 
             // Clear any whitespace/newlines before checking for an empty map exit
@@ -1140,16 +961,16 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 skipTrivia();
 
                 // 1. Parse Key
-                YamlScalarNode key = parseScalar();
+                YamlScalar key = parseScalar();
 
                 // 2. Consume Value Indicator
                 consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP);
 
                 // 3. Parse Value
-                YamlNode value = parseValue(key.getStartColumn());
+                YamlNode value = parseValue(key.getStartColumn(), false);
 
                 // 4. Store Entry
-                map.put(new YamlMapEntryNode(key, value));
+                map.put(new YamlMapEntry(key, value));
 
                 skipTrivia();
 
@@ -1175,7 +996,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     // TODO: Tidy this up
-    private YamlScalarNode parseScalar() {
+    private YamlScalar parseScalar() {
         debug(">parseScalar");
         depth++;
         try {
@@ -1185,17 +1006,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             if (style == ScalarStyle.LITERAL) {
                 debug("LITERAL_BLOCK");
-                YamlScalarNode scalar = new YamlScalarNode(
+                YamlScalar scalar = new YamlScalar(
                     token,
                     token.getContent(),
                     PrimitiveType.STRING,
                     ScalarStyle.LITERAL,
                     options
                 );
-
-                scalar.setMultiLine(true);
-                // TODO: Use ScalarStyle or remove it.
-                // scalar.setScalarStyle(ScalarStyle.)
 
                 if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
                     scalar.addComment(parseComment());
@@ -1207,31 +1024,25 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             if (style == ScalarStyle.FOLDED) {
                 debug("FOLDED");
 
-                YamlToken contentToken = null;
+                // YamlToken contentToken = null;
                 String content;
 
-                if (check(YamlTokenType.SCALAR)) {
-                    contentToken = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
-                    content = contentToken.getContent();
-                } else {
+                // if (check(YamlTokenType.SCALAR)) {
+                //     contentToken = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
+                //     content = contentToken.getContent();
+                // } else {
                     content = token.getContent();
-                }
+                // }
 
                 // If the tokenizer already produced multi-line content,
                 // DO NOT re-fold it. Just return it as-is.
-                YamlScalarNode scalar = new YamlScalarNode(
-                    contentToken != null ? contentToken : token,
+                YamlScalar scalar = new YamlScalar(
+                    token, //contentToken != null ? contentToken : token,
                     content,
                     PrimitiveType.STRING,
                     ScalarStyle.FOLDED,
                     options
                 );
-
-                scalar.setMultiLine(true);
-
-                if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
-                    scalar.addComment(parseComment());
-                }
                 parseInlineComment(scalar);
                 return scalar;
             }
@@ -1239,30 +1050,22 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             if (style == ScalarStyle.PLAIN) {
                 debug("PLAIN");
                 // just return the scalar as-is
-                YamlScalarNode scalar = new YamlScalarNode(
+                YamlScalar scalar = new YamlScalar(
                     token,
                     PrimitiveType.ANY,
                     options
                 );
-
-                scalar.setMultiLine(scalar.getContent().contains("\n"));
-
-                if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
-                    scalar.addComment(parseComment());
-                }
                 parseInlineComment(scalar);
                 return scalar;
             }
 
             debug("DEFAULT");
 
-            YamlScalarNode scalar = new YamlScalarNode(
+            YamlScalar scalar = new YamlScalar(
                 token,
                 PrimitiveType.ANY,
                 options
             );
-
-            scalar.setMultiLine(scalar.getContent().contains("\n"));
 
             if (check(YamlTokenType.COMMENT) && peek().getStartLine() == token.getStartLine()) {
                 scalar.addComment(parseComment());
@@ -1276,7 +1079,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         }
     }
 
-    private YamlCommentNode parseComment() {
+    private YamlComment parseComment() {
         YamlToken token = advance();
         String text = token.getContent() != null ? token.getContent().toString() : "";
 
@@ -1285,7 +1088,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             text = text.substring(1);
         }
 
-        return new YamlCommentNode(
+        return new YamlComment(
             token,
             text,
             false
@@ -1299,10 +1102,25 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         }
     }
 
+    private void skipEOL() {
+        YamlToken token = peek();
+        YamlTokenType type = token.getType();
+        if (type == YamlTokenType.NEWLINE) {
+            advance();
+        }
+    }
+
     /// Collects comments and skips newlines, storing comments in the buffer.
     private void skipTrivia() {
+        debug("skipTrivia");
+        int extraIndent = 0;
+
+        // If this gets set, we must continue until indentation is back at the level it specified.
+        int skipUntilIndentLevel = -1;
+
         while (current < tokenBuffer.size()) {
-            YamlTokenType type = peek().getType();
+            YamlToken token = peek();
+            YamlTokenType type = token.getType();
             if (type == YamlTokenType.EOF || type == YamlTokenType.STREAM_END) {
                 break;
             }
@@ -1311,6 +1129,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 continue;
             }
             if (type == YamlTokenType.COMMENT) {
+                // TODO: This is rubbish. Document level comments don't have to be at column 1.
                 // If it's a root-level comment at the end of the file, leave it for the stream
                 if (peek().getStartColumn() == 1 && isTrailingStreamComment(current)) {
                     break;
@@ -1318,8 +1137,77 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 pendingComments.add(parseComment());
                 continue;
             }
+
+            // Comments can be indented
+            if (type == YamlTokenType.INDENT) {
+                // Find the matching DEDENT.
+                // If there is nothing but comments and whitespace in between,
+                // consume up to and including the DEDENT.
+                if (skipUntilIndentLevel > -1) {
+                    // debug("can skip indented region");
+                    extraIndent++;
+                    advance();
+                    continue;
+                }
+                else if (skipUntilIndentLevel == -1 && lookAheadToMatchingIndentTriviaOnly()) {
+                    skipUntilIndentLevel = extraIndent;
+                    extraIndent++;
+                    advance();
+                    continue;
+                }
+                break;
+            }
+            if (skipUntilIndentLevel > -1 && type == YamlTokenType.DEDENT) {
+                extraIndent--;
+                if (extraIndent == 0) {
+                    // debug("finished indented region");
+                    skipUntilIndentLevel = -1;
+                }
+                advance();
+                continue;
+            }
             break;
         }
+    }
+
+    private boolean lookAheadToMatchingIndentTriviaOnly() {
+        // debug("lookAheadToMatchingIndentTriviaOnly");
+        int indentLevel = 0;
+        int ahead = 0;
+        while (current + ahead < tokenBuffer.size()) {
+            YamlToken token = peek(ahead);
+            YamlTokenType type = token.getType();
+            if (type == YamlTokenType.EOF || type == YamlTokenType.STREAM_END) {
+                // debug("lookAheadToMatchingIndentTriviaOnly - end - " + ahead);
+                break;
+            }
+            if (type == YamlTokenType.NEWLINE || type == YamlTokenType.COMMENT) {
+                // debug("lookAheadToMatchingIndentTriviaOnly - trivia - " + ahead);
+                ahead++;
+                continue;
+            }
+            if (type == YamlTokenType.INDENT) {
+                // debug("lookAheadToMatchingIndentTriviaOnly - indent - " + ahead);
+                indentLevel++;
+                ahead++;
+                continue;
+            }
+            if (type == YamlTokenType.DEDENT) {
+                // debug("lookAheadToMatchingIndentTriviaOnly - dedent - " + ahead);
+                indentLevel--;
+                if (indentLevel == 0) {
+                    // debug("lookAheadToMatchingIndentTriviaOnly - true - " + ahead);
+                    return true;
+                }
+                // debug("lookAheadToMatchingIndentTriviaOnly - continue - " + ahead);
+                ahead++;
+                continue;
+            }
+            // debug("lookAheadToMatchingIndentTriviaOnly - false 1 - " + ahead);
+            return false;
+        }
+        // debug("lookAheadToMatchingIndentTriviaOnly - false 2 - " + ahead);
+        return false;
     }
 
     //
@@ -1362,6 +1250,38 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         return false;
     }
 
+    private boolean hasIndentedValueAfterNewline() {
+        int i = 1;
+        boolean sawIndent = false;
+
+        while (true) {
+            int targetIndex = current + i;
+            if (targetIndex >= tokenBuffer.size()) return false;
+
+            YamlToken t = tokenBuffer.get(targetIndex);
+            YamlTokenType tt = t.getType();
+
+            if (tt == YamlTokenType.NEWLINE || tt == YamlTokenType.COMMENT) {
+                i++;
+                continue;
+            }
+
+            if (tt == YamlTokenType.INDENT) {
+                sawIndent = true;
+                i++;
+                continue;
+            }
+
+            // First non‑trivia, non‑INDENT token
+            // First non‑trivia token
+            if (tt == YamlTokenType.SEQUENCE_ENTRY_INDICATOR) {
+                return true; // sequence value
+            }
+
+            return sawIndent; // fallback for indented block values
+        }
+    }
+
     private boolean isIndentedDeeperThan(int parentColumn) {
         int i = 1;
         while (true) {
@@ -1376,6 +1296,25 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 return false;
             }
             i++;
+        }
+    }
+
+    private boolean nextNodeIndentedDeeperThan(int parentColumn) {
+        int i = 1;
+        while (true) {
+            int targetIndex = current + i;
+            if (targetIndex >= tokenBuffer.size()) return false;
+
+            YamlToken t = tokenBuffer.get(targetIndex);
+            YamlTokenType tt = t.getType();
+
+            if (tt == YamlTokenType.NEWLINE || tt == YamlTokenType.COMMENT) {
+                i++;
+                continue;
+            }
+
+            // Any structural node starting at a greater column is "deeper"
+            return t.getStartColumn() > parentColumn;
         }
     }
 
@@ -1458,7 +1397,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
     /// Clears the [pendingComments] buffer by attaching them to the given node.
     private <T extends YamlNode> T attachComments(T node) {
-        for (YamlCommentNode comment : pendingComments) {
+        for (YamlComment comment : pendingComments) {
             node.addComment(comment);
         }
         pendingComments.clear();
@@ -1509,7 +1448,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     /// Log the current method name and upcoming tokens
-    private void debug(String methodName) {
+    private void debug(String methodName, Object... details) {
         if (reporter == null ||
             reporter.isSilent() ||
             !reporter.getLevel().includes(Level.DEBUG)) return;
@@ -1521,14 +1460,35 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         // Create indentation based on recursion depth
         String indent = "  ".repeat(Math.max(0, depth));
 
+        char first = methodName.charAt(0);
+        String message;
+
+        if (first == '>' || first == '<') {
+            message = first + ANSI_YELLOW + methodName.substring(1) + ANSI_RESET;
+        } else {
+            message = methodName;
+        }
+
         reporter.debug("L%3d C%3d I%3d %s%s: %s",
-                tokenBuffer.get(current).getStartLine(),
-                tokenBuffer.get(current).getStartColumn(),
-                current,
-                indent,
-                methodName,
-                upcomingTokens());
+            tokenBuffer.get(current).getStartLine(),
+            tokenBuffer.get(current).getStartColumn(),
+            current,
+            indent,
+            message,
+            upcomingTokens());
     }
+
+    private static final String ANSI_RESET = "\u001B[0m";
+
+    private static final String ANSI_RED = "\u001B[31m";
+
+    private static final String ANSI_GREEN = "\u001B[32m";
+
+    private static final String ANSI_BLUE = "\u001B[34m";
+
+    private static final String ANSI_YELLOW = "\u001B[33m";
+
+    private static final String ANSI_WHITE = "\u001B[37m";
 
     // Get next 4 tokens as a string.
     private String upcomingTokens() {
@@ -1539,15 +1499,35 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
         int distance = Math.min(tokenBuffer.size() - current, 4);
         for (int i = 0; i < distance; i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
             YamlToken token = tokenBuffer.get(current + i);
+            sb.append(ANSI_BLUE);
             sb.append(token.getType());
-            sb.append("(");
-            sb.append(
-                token.getLexeme() == null
-                ? "null"
-                :token.getLexeme().replace("\n", "\\n").replace("\r", "\\r")
-            );
-            sb.append(") ");
+            sb.append(ANSI_RESET);
+            if (token.getType() == YamlTokenType.SCALAR ||
+                token.getType() == YamlTokenType.ANCHOR ||
+                token.getType() == YamlTokenType.ALIAS ||
+                token.getType() == YamlTokenType.TAG ||
+                token.getType() == YamlTokenType.DIRECTIVE
+            ){
+                String lexeme = StringUtils.debugString(token.getContent());
+                sb.append("(");
+                sb.append(ANSI_WHITE);
+                if (lexeme.length() <= MAX_DEBUG_STRING_LENGTH) {
+                    sb.append(lexeme);
+                } else {
+                    sb.append(lexeme.substring(0, MAX_DEBUG_STRING_LENGTH - 1));
+                    sb.append(StringUtils.ELLIPSIS);
+                }
+                sb.append(ANSI_RESET);
+                sb.append(")");
+            }
+        }
+        if (tokenBuffer.size() - current > distance) {
+            sb.append(", ");
+            sb.append(StringUtils.ELLIPSIS);
         }
         return sb.toString();
     }

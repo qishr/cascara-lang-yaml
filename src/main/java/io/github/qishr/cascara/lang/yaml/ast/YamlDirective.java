@@ -39,10 +39,10 @@ import java.util.List;
 
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
-public class YamlDirectiveNode extends YamlNode {
+public class YamlDirective extends YamlNode {
     private final String content;
 
-    public YamlDirectiveNode(YamlToken token, String content) {
+    public YamlDirective(YamlToken token, String content) {
         super(token);
         this.content = content;
     }

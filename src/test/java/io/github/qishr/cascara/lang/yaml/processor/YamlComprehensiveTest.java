@@ -118,10 +118,10 @@ class YamlComprehensiveTest {
 
         parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
 
-        YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
+        YamlMap doc = (YamlMap)parser.parse(yaml);
         YamlNode val = doc.get("empty_key");
-        assertTrue(val instanceof YamlScalarNode);
-        assertNull(((YamlScalarNode)val).asString(), "Value-less key should result in null scalar");
+        assertTrue(val instanceof YamlScalar);
+        assertNull(((YamlScalar)val).asString(), "Value-less key should result in null scalar");
     }
 
     @Test
@@ -130,19 +130,19 @@ class YamlComprehensiveTest {
 
         parser.setReporter(new StandardReporter().setLevel((Level.TRACE)));
 
-        YamlMapNode rootMap = (YamlMapNode)parser.parse(yaml);
+        YamlMap rootMap = (YamlMap)parser.parse(yaml);
 
         // 2. Get the value for "matrix"
         YamlNode matrixNode = rootMap.get("matrix");
-        assertTrue(matrixNode instanceof YamlSequenceNode);
+        assertTrue(matrixNode instanceof YamlSequence);
 
         // 3. Now we are at the outer sequence: [[1, 2], [3, 4]]
-        YamlSequenceNode outer = (YamlSequenceNode) matrixNode;
+        YamlSequence outer = (YamlSequence) matrixNode;
         assertEquals(2, outer.size());
 
         // 4. Get the first inner sequence: [1, 2]
-        assertTrue(outer.get(0) instanceof YamlSequenceNode);
-        YamlSequenceNode inner = (YamlSequenceNode) outer.get(0);
+        assertTrue(outer.get(0) instanceof YamlSequence);
+        YamlSequence inner = (YamlSequence) outer.get(0);
         assertEquals(2, inner.size());
 
         // 5. Verify a leaf value
@@ -155,13 +155,13 @@ class YamlComprehensiveTest {
                 default: &def "base"
                 custom: *def
                 """;
-        YamlMapNode doc = (YamlMapNode)parser.parse(yaml);
+        YamlMap doc = (YamlMap)parser.parse(yaml);
 
         // Use the common MapAstNode 'get' to find the alias node
         YamlNode customVal = doc.get("custom");
 
-        assertTrue(customVal instanceof YamlAliasNode);
-        assertEquals("def", ((YamlAliasNode)customVal).getAnchor());
+        assertTrue(customVal instanceof YamlAlias);
+        assertEquals("def", ((YamlAlias)customVal).getAnchor());
     }
 
     // --- THE "ROUND-TRIP" STABILITY TEST ---
@@ -170,16 +170,22 @@ class YamlComprehensiveTest {
     void testRoundTripPreservesStructure() throws Exception {
         String original = "records:\n  -\n    id: \"1\"\n    tags:\n      -\n        a";
 
-        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE));
+        parser.getTokenizer().setReporter(
+            new StandardReporter()
+                .setLevel(Level.TRACE)
+                .setAnsiColoringEnabled(true)
+        );
+
+        TestUtils.dumpTokens(parser.getTokenizer().tokenize(original));
 
         parser.setReporter(new StandardReporter()
             .setLevel(Level.DEBUG)
             .setAnsiColoringEnabled(true));
 
         // 1. Parse
-        YamlMapNode originalMap = (YamlMapNode)parser.parse(original);
+        YamlMap originalMap = (YamlMap)parser.parse(original);
 
-        TestUtil.dumpTokens(parser.getTokens());
+        // TestUtils.dumpTokens(parser.getTokens());
 
 
         YamlOptions options = new YamlOptions().setExpandedStyle(true);
@@ -196,21 +202,21 @@ class YamlComprehensiveTest {
         YamlTokenizer tokenizer = new YamlTokenizer()
             .setReporter(new StandardReporter().setLevel(Level.INFO));
         List<YamlToken> tokens = tokenizer.tokenize(emitted);
-        TestUtil.dumpTokens(tokens);
+        TestUtils.dumpTokens(tokens);
 
 
         // 3. Re-Parse
-        YamlMapNode reParsedMap = (YamlMapNode)parser.parse(emitted);
+        YamlMap reParsedMap = (YamlMap)parser.parse(emitted);
 
         // 4. Verify logical equality
         assertEquals(originalMap.getEntries().size(), reParsedMap.getEntries().size());
 
         // Compare the first record's ID:
         // root (map) -> records (seq) -> [0] (map) -> id (scalar)
-        YamlSequenceNode seq = (YamlSequenceNode) reParsedMap.get("records");
-        YamlMapNode record = (YamlMapNode) seq.get(0);
+        YamlSequence seq = (YamlSequence) reParsedMap.get("records");
+        YamlMap record = (YamlMap) seq.get(0);
 
-        // Use getString helper from MapAstNode/YamlMapNode
+        // Use getString helper from MapAstNode/YamlMap
         assertEquals("1", record.getString("id"));
     }
 

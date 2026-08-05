@@ -48,7 +48,7 @@ import java.util.stream.Stream;
 
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
@@ -107,7 +107,7 @@ class YamlDirectoryTestSuite {
 
         // reporter.setLevel(Level.TRACE);
 
-        YamlMapNode doc = (YamlMapNode)parser.parse(content);
+        YamlMap doc = (YamlMap)parser.parse(content);
 
         // 1. Setup ONE emitter with desired options
         YamlOptions testOptions = new YamlOptions();
@@ -122,7 +122,7 @@ class YamlDirectoryTestSuite {
         System.out.println(emitted);
 
         // 3. Re-parse
-        YamlMapNode reParsedDoc = (YamlMapNode)parser.parse(emitted);
+        YamlMap reParsedDoc = (YamlMap)parser.parse(emitted);
 
         // 4. Second Emit (using the SAME emitter instance)
         String secondEmit = emitter.emit(reParsedDoc);
@@ -132,7 +132,7 @@ class YamlDirectoryTestSuite {
             System.out.println(emitted);
 
             System.out.println("=== SECOND EMIT ===");
-            reParsedDoc = (YamlMapNode)parser.parse(emitted);
+            reParsedDoc = (YamlMap)parser.parse(emitted);
             System.out.println(secondEmit);
         }
 
@@ -172,7 +172,7 @@ class YamlDirectoryTestSuite {
         YamlAstParser parser = new YamlAstParser()
             .setReporter(new StandardReporter().setLevel(Level.TRACE));
 
-        YamlMapNode doc = (YamlMapNode) parser.parse(yaml);
+        YamlMap doc = (YamlMap) parser.parse(yaml);
 
         YamlOptions opts = new YamlOptions().setExpandedStyle(true);
         YamlEmitter emitter = new YamlEmitter();
@@ -182,7 +182,7 @@ class YamlDirectoryTestSuite {
         System.out.println("=== FIRST EMIT ===");
         System.out.println(emitted);
 
-        YamlMapNode reparsed = (YamlMapNode) parser.parse(emitted);
+        YamlMap reparsed = (YamlMap) parser.parse(emitted);
         String secondEmit = emitter.emit(reparsed);
 
         System.out.println("=== SECOND EMIT ===");
@@ -211,7 +211,7 @@ class YamlDirectoryTestSuite {
             - {}
           """;
 
-        YamlMapNode doc = (YamlMapNode)parser.parse(content);
+        YamlMap doc = (YamlMap)parser.parse(content);
 
         // 1. Setup ONE emitter with desired options
         YamlOptions testOptions = new YamlOptions();
@@ -224,7 +224,7 @@ class YamlDirectoryTestSuite {
         String emitted = emitter.emit(doc);
 
         // 3. Re-parse
-        YamlMapNode reParsedDoc = (YamlMapNode)parser.parse(emitted);
+        YamlMap reParsedDoc = (YamlMap)parser.parse(emitted);
 
         // 4. Second Emit (using the SAME emitter instance)
         String secondEmit = emitter.emit(reParsedDoc);
@@ -233,7 +233,7 @@ class YamlDirectoryTestSuite {
             System.out.println(emitted);
             System.out.println("=== SECOND EMIT ===");
 
-            reParsedDoc = (YamlMapNode)parser.parse(emitted);
+            reParsedDoc = (YamlMap)parser.parse(emitted);
             System.out.println(secondEmit);
 
         if (!emitted.equals(secondEmit)) {

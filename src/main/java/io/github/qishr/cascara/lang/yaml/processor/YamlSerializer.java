@@ -49,15 +49,16 @@ import io.github.qishr.cascara.common.lang.processor.AbstractSerializer;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
 import io.github.qishr.cascara.common.lang.type.TypeReference;
 import io.github.qishr.cascara.common.util.ContentType;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntryNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlScalarNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlSequenceNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlNodeFactory;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 /// Standard implementation for YAML serialization.
-public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,YamlScalarNode,YamlSequenceNode,YamlMapNode,YamlMapEntryNode,YamlNode> {
+public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,YamlScalar,YamlSequence,YamlMap,YamlMapEntry,YamlNode> {
 
     private YamlAstParser parser;
     private YamlOptions options = new YamlOptions();

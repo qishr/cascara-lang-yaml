@@ -15,7 +15,7 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
@@ -56,6 +56,22 @@ public class YamlRoundTripTests {
         validate("12-content-type-records.yaml");
     }
 
+    @Test
+    void valid_16_keys_explicit() {
+        validate("16-keys-explicit.yaml");
+    }
+
+    @Test
+    void valid_02_flow_styles() {
+        validate("02-flow-styles.yaml");
+    }
+
+
+
+    //
+    // Utils
+    //
+
     private void validate(String filename) {
         Path path = Paths.get(VALID_PATH, filename);
         String fileContent = null;
@@ -67,8 +83,16 @@ public class YamlRoundTripTests {
 
         YamlEmitter emitter = new YamlEmitter().setOptions(options);
 
-        YamlMapNode firstAst = (YamlMapNode) parser.parse(fileContent);
-        TestUtil.dumpTokens(parser.getTokens());
+
+        YamlTokenizer tz = new YamlTokenizer()
+            .setReporter(new StandardReporter()
+                .setLevel(Level.DEBUG)
+                .setAnsiColoringEnabled(true)
+        );
+        TestUtils.dumpTokens(tz.tokenize(fileContent));
+
+        YamlMap firstAst = (YamlMap) parser.parse(fileContent);
+        TestUtils.dumpTokens(parser.getTokens());
 
         String firstYaml = emitter.emit(firstAst);
 
@@ -79,13 +103,11 @@ public class YamlRoundTripTests {
 
         YamlTokenizer tokenizer = new YamlTokenizer();
         List<YamlToken> tokens = tokenizer.tokenize(firstYaml);
-        TestUtil.dumpTokens(tokens);
+        TestUtils.dumpTokens(tokens);
 
-        YamlMapNode secondAst = (YamlMapNode) parser.parse(firstYaml);
+        YamlMap secondAst = (YamlMap) parser.parse(firstYaml);
 
         String secondYaml = emitter.emit(secondAst);
-
-        boolean contentMatches = firstYaml.equals(secondYaml);
 
         System.out.println("File content: " + StringUtils.debugString(fileContent));
         System.out.println("First YAML  : " + StringUtils.debugString(firstYaml));
@@ -109,26 +131,26 @@ public class YamlRoundTripTests {
         reporter = new StandardReporter().setLevel(Level.TRACE);
         YamlAstParser parser = new YamlAstParser().setOptions(options).setReporter(reporter);
         parser.parse(content);
-        TestUtil.dumpTokens(parser.getTokens());
+        TestUtils.dumpTokens(parser.getTokens());
     }
 
     private void validateError(String filename, String fileContent, YamlNode firstAst, YamlNode secondAst, String firstYaml, String secondYaml) {
         System.out.println("\nFile content:");
-        System.out.println(TestUtil.debugString(fileContent));
+        System.out.println(StringUtils.debugString(fileContent));
 
         traceParser(fileContent, "File Content");
         traceParser(firstYaml, "Emitted Content");
 
         System.out.println("\n=== First AST ===");
-        TestUtil.dumpYamlAst(firstAst, "");
+        TestUtils.dumpYamlAst(firstAst, "");
         System.out.println("\n=== Second AST ===");
-        TestUtil.dumpYamlAst(secondAst, "");
+        TestUtils.dumpYamlAst(secondAst, "");
 
         // System.err.println("\n" + generateDiffMessage(filename, firstYaml, secondYaml) + "\n");
 
         System.out.println("\n=== FIRST EMIT ===");
-        System.out.println(TestUtil.debugString(firstYaml));
+        System.out.println(StringUtils.debugString(firstYaml));
         System.out.println("\n=== SECOND EMIT ===");
-        System.out.println(TestUtil.debugString(secondYaml));
+        System.out.println(StringUtils.debugString(secondYaml));
     }
 }
