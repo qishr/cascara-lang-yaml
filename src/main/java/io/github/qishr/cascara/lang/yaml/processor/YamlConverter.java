@@ -42,11 +42,12 @@ import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
+import io.github.qishr.cascara.common.lang.agnostic.AgnosticMapNode;
+import io.github.qishr.cascara.common.lang.agnostic.AgnosticNode;
+import io.github.qishr.cascara.common.lang.agnostic.AgnosticScalarNode;
+import io.github.qishr.cascara.common.lang.agnostic.AgnosticSequenceNode;
 import io.github.qishr.cascara.common.lang.processor.AstConverter;
-import io.github.qishr.cascara.common.lang.reference.ReferenceMapNode;
-import io.github.qishr.cascara.common.lang.reference.ReferenceNode;
-import io.github.qishr.cascara.common.lang.reference.ReferenceScalarNode;
-import io.github.qishr.cascara.common.lang.reference.ReferenceSequenceNode;
+import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
@@ -107,21 +108,21 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
     }
 
     @Nullable
-    public ReferenceNode toPlainAst(YamlNode yaml) {
+    public AgnosticNode toPlainAst(YamlNode yaml) {
         if (yaml == null) return null;
 
         if (yaml instanceof YamlMap map) {
-            ReferenceMapNode out = new ReferenceMapNode();
+            AgnosticMapNode out = new AgnosticMapNode();
             for (YamlMapEntry e : map.getEntries()) {
-                ReferenceNode key = toPlainAst(e.getKey());
-                ReferenceNode val = toPlainAst(e.getValue());
+                AgnosticNode key = toPlainAst(e.getKey());
+                AgnosticNode val = toPlainAst(e.getValue());
                 out.put(key, val);
             }
             return out;
         }
 
         if (yaml instanceof YamlSequence seq) {
-            ReferenceSequenceNode out = new ReferenceSequenceNode();
+            AgnosticSequenceNode out = new AgnosticSequenceNode();
             for (YamlNode child : seq.getChildren()) {
                 out.add(toPlainAst(child));
             }
@@ -164,7 +165,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
     // }
 
     @Nullable
-    private ReferenceScalarNode convertScalar(YamlScalar scalar) {
+    private AgnosticScalarNode convertScalar(YamlScalar scalar) {
         if (scalar == null) return null;
 
         String tag = scalar.getTag();
@@ -172,49 +173,28 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         if (tag == null) {
             // Untagged: if double-quoted, treat as string
             if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
-                return new ReferenceScalarNode(normalizeDoubleQuotedString(scalar));
+                return new AgnosticScalarNode(normalizeString(scalar));
             }
-            return new ReferenceScalarNode(scalar.getPrimitive());
+            return new AgnosticScalarNode(scalar.getPrimitive());
         }
 
         Object value = switch (tag) {
-            case "!!str" -> normalizeDoubleQuotedString(scalar);
+            case "!!str" -> normalizeString(scalar);
             case "!!float" -> scalar.asDouble();
             case "!!int"   -> scalar.asInteger();
             case "!!bool"  -> scalar.asBoolean();
             case "!!null"  -> null;
-            default -> normalizeDoubleQuotedString(scalar);
+            default -> normalizeString(scalar);
         };
 
-        return new ReferenceScalarNode(value);
+        return new AgnosticScalarNode(value);
     }
 
-    // System.out.println("---=== BEGIN YAML STRING ===---");
-    // debugString(s);
-    // System.out.println("---=== END YAML STRING ===---");
-
-    // Newlines become spaces
-    // Actual tab characters become spaces, unless there is a backslash in front of them.
-    // Tab characters with a backslash in front of them become tab characters
-    // Multiple spaces become one space
-
-    // // 14:20 - The correct conversion method (final, minimal, passes all RLN tests)
-    // private String normalizeDoubleQuotedString(YamlScalarNode scalar) {
-    //     String s = scalar.asString();
-    //     if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
-
-    //         // 1. Fold newline + indentation (spaces or tabs) → single space
-    //         s = s.replaceAll("\n[ \t]+", " ");
-
-    //         // 2. ONLY unescape backslash + REAL TAB (RLN_01)
-    //         //    Do NOT unescape backslash + 't' (RLN_00)
-    //         s = s.replaceAll("\\\\\t", "\t");
-    //     }
-    //     return s;
-    // }
-
     // 14:26 - The correct conversion method (final)
-    private String normalizeDoubleQuotedString(YamlScalar scalar) {
+    private String normalizeString(YamlScalar scalar) {
+        if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
+            return "";
+        }
         String s = scalar.asString();
         if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
 
