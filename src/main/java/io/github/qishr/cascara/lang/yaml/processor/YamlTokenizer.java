@@ -715,25 +715,34 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 buffer.advance();
             }
             currLineTrimmed = null;
+
+
+
+        } else if (action == ScalarAction.STOP_SEQ) {
+            // We exited due to a sequence indicator.
+            // Don't include this line.
+            debugString(debugSource, "seq", buffer.offset());
+            if (!content.isEmpty()) {
+                backupBufferToEOL();
+                debugString(debugSource, "nl", buffer.offset());
+            }
+            currLineTrimmed = null;
         } else if (currLineTrimmed.isEmpty()) {
             trailingBlankLines.add(currLineTrimmed);
             advanceBufferToNextLine();
             currLineTrimmed = null;
-        } else if (action == ScalarAction.STOP_SEQ) {
-            // We exited due to a sequence indicator.
-            // Don't include this line.
-            debugString(debugSource, buffer.offset() - 1);
-            if (!content.isEmpty()) {
-                backupBufferToEOL();
-            }
-            currLineTrimmed = null;
+
+
+
         } else if (action == ScalarAction.CONTINUE) {
             // We exited due to reaching the end of the buffer.
             // This line is already in the string builders.
             currLineTrimmed = null;
         } else if (action == ScalarAction.STOP_BLOCKINDENT) {
             if (!content.isEmpty()) {
+                debugString(debugSource, buffer.offset() - 1);
                 backupBufferToEOL();
+                debugString(debugSource, buffer.offset() - 1);
             }
             currLineTrimmed = null;
         } else if (action == ScalarAction.STOP_QUOTE) {
