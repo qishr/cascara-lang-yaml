@@ -9,6 +9,7 @@ import org.junit.jupiter.api.AssertionFailureBuilder;
 
 import io.github.qishr.cascara.common.data.TextualTable;
 import io.github.qishr.cascara.common.util.StringUtils;
+import io.github.qishr.cascara.common.util.TermUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
@@ -53,6 +54,7 @@ public class TestUtils {
         TextualTable table = new TextualTable()
             .setStyle(TextualTable.Style.ROUNDED)
             .setMaxColumnWidth(maxColumnWidth)
+            .setBorderColor(TermUtils.ANSI_WHITE)
             .addColumn("#")
             .addColumn("Token")
             .addColumn("Location")
