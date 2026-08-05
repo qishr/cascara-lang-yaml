@@ -69,7 +69,7 @@ class YamlStandardComplianceTest {
     @BeforeEach
     void init() {
         diagnostics = new ArrayList<>();
-        reporter = new StandardReporter().setProblemCollector(this::collect);
+        reporter = new StandardReporter().setProblemConsumer(this::collect);
         options = new YamlOptions().setStrict(true);
         parser = new YamlAstParser()
             .setOptions(options)
