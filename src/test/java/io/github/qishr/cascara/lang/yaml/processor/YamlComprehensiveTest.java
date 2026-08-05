@@ -85,7 +85,7 @@ class YamlComprehensiveTest {
     @BeforeEach
     void init() {
         diagnostics = new ArrayList<>();
-        reporter = new StandardReporter().setDiagnosticCollector(this::collect);
+        reporter = new StandardReporter().setDiagnosticConsumer(this::collect);
         options = new YamlOptions().setStrict(true);
         tokenizer = new YamlTokenizer().setReporter(reporter);
         parser = new YamlAstParser()

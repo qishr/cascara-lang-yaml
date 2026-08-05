@@ -5,12 +5,16 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
+import io.github.qishr.cascara.common.diagnostic.LocalizableException;
 import io.github.qishr.cascara.common.diagnostic.LocalizableIOException;
+import io.github.qishr.cascara.common.diagnostic.LocalizableRuntimeException;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
+import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
@@ -25,6 +29,7 @@ import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -273,7 +278,7 @@ public class SpecTests {
         StandardReporter reporter = new StandardReporter()
             // .setLevel(LEVEL)
             .setAnsiColoringEnabled(true)
-            .setDiagnosticCollector(d -> {
+            .setDiagnosticConsumer(d -> {
                 diagnostics.add(d);
             });
 
@@ -966,7 +971,7 @@ public class SpecTests {
     }
 
     @Test
-    public void test36F6() {
+    public void test36F6() throws IOException {
         String yaml = """
             ---
             plain: a
@@ -975,19 +980,23 @@ public class SpecTests {
              c
             """;;
 
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(TOKENIZER_LEVEL)
-                .setAnsiColoringEnabled(true)
-        );
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
 
-        parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
+        parser.getTokenizer().setReporter(reporter);
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (true|dumpTokens) {
-            TestUtils.dumpTokens(parser.getTokens());
-        }
+        reporter.getWriter(Level.INFO).write("Sample info\n");
+        reporter.getWriter(Level.WARN).write("Sample warning\n");
+
+        // reporter.error(new LocalizableRuntimeException(
+        //     new Exception("Sample error"), GenericDiagnosticCode.ERROR, "Sample error")
+        // );
+
+        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
 
         // The stream must contain exactly one document
         assertEquals(1, stream.getDocuments().size());
@@ -1797,48 +1806,6 @@ public class SpecTests {
     }
 
     @Test
-    public void testK858() {
-        String yaml = """
-            strip: >-
-
-            clip: >
-
-            keep: |+
-
-            """;
-
-        Reporter reporter =  new StandardReporter()
-            .setLevel(TOKENIZER_LEVEL)
-            .setAnsiColoringEnabled(true);
-
-        parser.getTokenizer().setReporter(reporter);
-        // parser.setReporter(reporter);
-
-        // if (true|dumpTokens) {
-        //     TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
-        //     // TestUtils.dumpTokens(reporter, parser.getTokens());
-        // }
-
-        YamlStream stream = parser.parseMulti(yaml);
-
-        if (true|dumpTokens) {
-            TestUtils.dumpTokens(parser.getTokens());
-            // TestUtils.dumpTokens(reporter, parser.getTokens());
-        }
-
-        assertEquals(1, stream.getDocuments().size());
-        YamlDocument doc = stream.getDocuments().getFirst();
-
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
-
-        YamlMap map = (YamlMap)body;
-
-        TestUtils.assertEquals("", map.getScalar("strip").asString());
-        TestUtils.assertEquals("", map.getScalar("clip").asString());
-        TestUtils.assertEquals("\n", map.getScalar("keep").asString());
-    }
-
-    @Test
     public void testF6MC() {
         String yaml = """
             ---
@@ -1889,5 +1856,186 @@ public class SpecTests {
 
         TestUtils.assertEquals(expected1, map.getScalar("a").asString());
         TestUtils.assertEquals(expected2, map.getScalar("b").asString());
+    }
+
+    @Test
+    public void testP76L() {
+        String yaml = """
+            %TAG !! tag:example.com,2000:app/
+            ---
+            !!int 1 - 3 # Interval, not integer
+            """;;
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlScalar scalar = (YamlScalar) body;
+        TestUtils.assertEquals("1 - 3", scalar.asString());
+    }
+
+    @Test
+    public void testSM9W_00() {
+        String yaml = "-";
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlSequence seq = (YamlSequence) body;
+        assertEquals(1, seq.size());
+        YamlScalar scalar = seq.getScalar(0);
+        assertEquals(PrimitiveType.NULL, scalar.getPrimitiveType());
+    }
+
+    @Test
+    public void testSM9W_01() {
+        String yaml = ":";
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+        parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+        assertEquals(1, map.size());
+        YamlMapEntry entry = map.getEntry(0);
+
+        YamlScalar value = (YamlScalar)entry.getValue();
+
+        TestUtils.assertEquals("", entry.getKeyString());
+        TestUtils.assertEquals(null, value.asString());
+    }
+
+    @Test
+    public void testK858() {
+        String yaml = """
+            strip: >-
+
+            clip: >
+
+            keep: |+
+
+            """;
+
+        Reporter reporter =  new StandardReporter()
+            .setLevel(TOKENIZER_LEVEL)
+            .setAnsiColoringEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+        // parser.setReporter(reporter);
+
+        // if (true|dumpTokens) {
+        //     TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
+        //     // TestUtils.dumpTokens(reporter, parser.getTokens());
+        // }
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (true|dumpTokens) {
+            TestUtils.dumpTokens(parser.getTokens());
+            // TestUtils.dumpTokens(reporter, parser.getTokens());
+        }
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap)body;
+
+        TestUtils.assertEquals("", map.getScalar("strip").asString());
+        TestUtils.assertEquals("", map.getScalar("clip").asString());
+        TestUtils.assertEquals("\n", map.getScalar("keep").asString());
+    }
+
+    @Test
+    public void testF8F9() {
+        String yaml = """
+           # Strip
+            # Comments:
+          strip: |-
+            # text1
+
+           # Clip
+            # comments:
+
+          clip: |
+            # text2
+
+           # Keep
+            # comments:
+
+          keep: |+
+            # text3
+
+           # Trail
+            # comments.
+          """;
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+        parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+        assertEquals(3, map.size());
+
+        TestUtils.assertEquals("# text1", map.getString("strip"));
+        TestUtils.assertEquals("# text2\n", map.getString("clip"));
+        TestUtils.assertEquals("# text3\n\n", map.getString("keep"));
+
     }
 }

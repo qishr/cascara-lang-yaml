@@ -580,6 +580,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 result = parseSequence();
             }
 
+            else if (check(YamlTokenType.VALUE_INDICATOR)) {
+                // Map entry with null key
+                result = parseMap(isComplexKey);
+            }
+
             else if (check(YamlTokenType.SCALAR)) {
                 if (peek(1).getType() == YamlTokenType.VALUE_INDICATOR) {
                     result = parseMap(isComplexKey);
@@ -679,14 +684,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 boolean isScalarKeyStart =
                     check(YamlTokenType.SCALAR) ||
                     check(YamlTokenType.ALIAS) ||
-                    check(YamlTokenType.ANCHOR);
+                    check(YamlTokenType.ANCHOR) ||
+                    check(YamlTokenType.VALUE_INDICATOR);
 
                 // A map entry must start with '?', SCALAR, ALIAS, or ANCHOR
                 if (!hasExplicitKey && !isScalarKeyStart) {
                     if (peek().getStartColumn() > map.getStartColumn()) {
                         error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                     }
-                    debug("Break because " + markerToken.getType() + " does not start a map entry");
                     break;
                 }
 
@@ -777,6 +782,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         debug(">parseKeyNode");
         depth++;
         try {
+
+            if (check(YamlTokenType.VALUE_INDICATOR)) {
+                // Empty key
+                // return new YamlScalar(peek(), PrimitiveType.NULL, options);
+                return new YamlScalar(peek(), "", PrimitiveType.STRING, ScalarStyle.PLAIN, options);
+            }
 
             if (tok.getType() == YamlTokenType.MAP_START ||
                 tok.getType() == YamlTokenType.SEQUENCE_START ||

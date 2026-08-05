@@ -1,5 +1,6 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.List;
@@ -42,7 +43,12 @@ public class TestUtils {
     }
 
     public static void dumpTokens(Writer writer, List<YamlToken> tokens, int maxColumnWidth) {
-        System.out.println();
+        try {
+			writer.write("\n");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
         // System.out.println("------------TOKENS-----------");
         TextualTable table = new TextualTable()
             .setStyle(TextualTable.Style.ROUNDED)
