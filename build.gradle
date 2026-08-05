@@ -41,3 +41,9 @@ tasks.withType(Test).configureEach {
     // jvmArgs '-XX:StartFlightRecording=duration=20s,filename=yaml_profile.jfr'
 }
 
+
+test {
+    testLogging {
+        events "started"
+    }
+}

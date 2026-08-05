@@ -61,6 +61,11 @@ public class YamlRoundTripTests {
         validate("16-keys-explicit.yaml");
     }
 
+    @Test
+    void valid_02_flow_styles() {
+        validate("02-flow-styles.yaml");
+    }
+
 
 
     //
@@ -77,6 +82,14 @@ public class YamlRoundTripTests {
         }
 
         YamlEmitter emitter = new YamlEmitter().setOptions(options);
+
+
+        YamlTokenizer tz = new YamlTokenizer()
+            .setReporter(new StandardReporter()
+                .setLevel(Level.DEBUG)
+                .setAnsiColoringEnabled(true)
+        );
+        TestUtils.dumpTokens(tz.tokenize(fileContent));
 
         YamlMap firstAst = (YamlMap) parser.parse(fileContent);
         TestUtils.dumpTokens(parser.getTokens());

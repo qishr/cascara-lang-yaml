@@ -220,7 +220,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                 for (int i = 0; i < lexemeLines.length; i++) {
                     if (i > 0) {
                         sb.append("\n");
-                        sb.append(" ".repeat(scalar.getStartColumn() - 1));
+                        // sb.append(" ".repeat(scalar.getStartColumn() - 1));
                     }
                     sb.append(lexemeLines[i]);
                 }
