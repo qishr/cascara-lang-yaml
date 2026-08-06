@@ -598,12 +598,35 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             // Flow map
             else if (check(YamlTokenType.MAP_START)) {
-                result = parseFlowMap();
+
+
+
+                // result = parseFlowMap();
+                if (lookAheadFlowMapIsFollowedByColon()) {
+                    debug("PV-flow-map-as-key");
+                    return parseMap(isComplexKey);
+                } else {
+                    result = parseFlowMap();
+                }
+
+
+
             }
 
             // Flow sequence
             else if (check(YamlTokenType.SEQUENCE_START)) {
-                result = parseFlowSequence();
+
+
+
+                // result = parseFlowSequence();
+                if (lookAheadFlowSequenceIsFollowedByColon()) {
+                    return parseMap(isComplexKey);
+                } else {
+                    result = parseFlowSequence();
+                }
+
+
+
             }
 
             // Block sequence
@@ -673,6 +696,125 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         }
     }
 
+    private boolean lookAheadFlowMapIsFollowedByColon() {
+        int i = 0;
+
+        // Must start with '{'
+        if (!peek(i).getType().equals(YamlTokenType.MAP_START)) {
+            return false;
+        }
+
+        i++; // move past '{'
+        int depth = 1;
+
+        // Scan until the matching '}'
+        while (i < tokenBuffer.size() && depth > 0) {
+            YamlToken t = peek(i);
+
+            switch (t.getType()) {
+                case MAP_START:
+                    depth++;
+                    break;
+
+                case MAP_END:
+                    depth--;
+                    break;
+
+                case NEWLINE:
+                case COMMENT:
+                    // ignore trivia
+                    break;
+
+                default:
+                    // normal token, just skip
+                    break;
+            }
+
+            i++;
+        }
+
+        if (depth != 0) {
+            // malformed flow map; let normal parsing handle the error
+            return false;
+        }
+
+        // Now skip trivia after the closing '}'
+        while (i < tokenBuffer.size()) {
+            YamlToken t = peek(i);
+            if (t.getType() == YamlTokenType.NEWLINE ||
+                t.getType() == YamlTokenType.COMMENT) {
+                i++;
+                continue;
+            }
+            break;
+        }
+
+        // The next non-trivia token must be ':'
+        return i < tokenBuffer.size() &&
+               peek(i).getType() == YamlTokenType.VALUE_INDICATOR;
+    }
+
+    private boolean lookAheadFlowSequenceIsFollowedByColon() {
+        int i = 0;
+
+        // Must start with '['
+        if (!peek(i).getType().equals(YamlTokenType.SEQUENCE_START)) {
+            return false;
+        }
+
+        i++; // move past '['
+        int depth = 1;
+
+        // Scan until the matching ']'
+        while (i < tokenBuffer.size() && depth > 0) {
+            YamlToken t = peek(i);
+
+            switch (t.getType()) {
+                case SEQUENCE_START:
+                    depth++;
+                    break;
+
+                case SEQUENCE_END:
+                    depth--;
+                    break;
+
+                case NEWLINE:
+                case COMMENT:
+                    // ignore trivia
+                    break;
+
+                default:
+                    // normal token, just skip
+                    break;
+            }
+
+            i++;
+        }
+
+        if (depth != 0) {
+            // malformed flow sequence; let normal parsing handle the error
+            return false;
+        }
+
+        // Now skip trivia after the closing ']'
+        while (i < tokenBuffer.size()) {
+            YamlToken t = peek(i);
+            if (t.getType() == YamlTokenType.NEWLINE ||
+                t.getType() == YamlTokenType.COMMENT) {
+                i++;
+                continue;
+            }
+            break;
+        }
+
+        // The next non-trivia token must be ':'
+        return i < tokenBuffer.size() &&
+               peek(i).getType() == YamlTokenType.VALUE_INDICATOR;
+    }
+
+
+
+
     /// Parses a block-level mapping and enforces strict key indentation.
     /// This method captures the column of the first key encountered and ensures
     /// all subsequent sibling keys in this map align perfectly.
@@ -717,7 +859,15 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     check(YamlTokenType.ALIAS) ||
                     check(YamlTokenType.ANCHOR) ||
                     check(YamlTokenType.TAG) ||
-                    check(YamlTokenType.VALUE_INDICATOR);
+                    check(YamlTokenType.VALUE_INDICATOR) ||
+
+
+
+                    check(YamlTokenType.MAP_START) ||
+                    check(YamlTokenType.SEQUENCE_START)
+                    ;
+
+
 
                 if (!hasExplicitKey && !isScalarKeyStart) {
                     if (peek().getStartColumn() > map.getStartColumn()) {
@@ -744,6 +894,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     // Explicit keys are always parsed via parseValue in case they are complex
                     key = parseValue(markerColumn, true);
                 } else {
+                    if (check(YamlTokenType.MAP_START) ||
+                        check(YamlTokenType.SEQUENCE_START)) {
+                        debug("map debug");
+                    }
                     // Standard implicit key
                     key = parseKeyNode(markerColumn);
                 }
@@ -838,8 +992,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 return new YamlScalar(peek(), "", PrimitiveType.STRING, ScalarStyle.PLAIN, options);
             }
 
-            if (tok.getType() == YamlTokenType.MAP_START ||
-                tok.getType() == YamlTokenType.SEQUENCE_START ||
+            if (//tok.getType() == YamlTokenType.MAP_START ||
+                //tok.getType() == YamlTokenType.SEQUENCE_START ||
                 tok.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR ||
                 tok.getType() == YamlTokenType.INDENT) {
 
@@ -850,6 +1004,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
 
             switch (tok.getType()) {
+                case MAP_START: {
+                    return parseFlowMap();
+                }
+
+                case SEQUENCE_START: {
+                    return parseFlowSequence();
+                }
 
                 case SCALAR:
                     YamlScalar scalar = parseScalar();
