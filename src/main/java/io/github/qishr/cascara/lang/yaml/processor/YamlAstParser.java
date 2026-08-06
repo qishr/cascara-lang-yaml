@@ -986,6 +986,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         depth++;
         try {
 
+            // TODO: Should this allow more than one newline?
+            if (check(YamlTokenType.NEWLINE)) {
+                advance();
+            }
+
             if (check(YamlTokenType.VALUE_INDICATOR)) {
                 // Empty key
                 // return new YamlScalar(peek(), PrimitiveType.NULL, options);
