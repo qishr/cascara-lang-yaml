@@ -476,9 +476,19 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     debug("PV-after-parseMap-1");
                     return result;
                 } else {
+                    if (peek(1).getType() == YamlTokenType.SCALAR &&
+                        peek(2).getType() == YamlTokenType.VALUE_INDICATOR
+                    ){
+                        debug("PV-after-parseMap-2");
+                        result = parseMap(isComplexKey);
+                        attachComments(result);
+                        return result;
+                    }
+
+
                     // Consume the anchor and set it as pending
                     YamlToken anchorTok = advance();
-                    debug("PV-in-if-anchor2");
+                    debug("PV-in-if-anchor3");
 
                     String raw = anchorTok.getContent();
                     pendingAnchor = raw.startsWith("&") ? raw.substring(1) : raw;
@@ -521,8 +531,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 skipTrivia();
             }
 
+
+
             // Collect tags (node-level, including !!str on the document body)
             String pendingTag = null;
+            // TODO:
+            // https://yaml.org/spec/1.2.2/#682-tag-directives
+            // It is an error to specify more than one “TAG” directive for the same handle
+            // in the same document, even if both occurrences give the same prefix.
             while (check(YamlTokenType.TAG)) {
                 debug("PV-TAG start");
                 YamlToken tagTok = advance();
@@ -530,6 +546,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 skipTrivia();
                 debug("PV-TAG end");
             }
+
+
 
             boolean pendingDedent = false;
             if (check(YamlTokenType.INDENT)) {
@@ -834,16 +852,20 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
 
                 case ANCHOR: {
-                    // TODO: This seems pointless now since parseValue handles anchors.
+                    // Anchors on scalars that start a map are not handled in parseValue.
                     advance(); // consume &anchor
                     String raw = tok.getContent();
                     String name = raw.startsWith("&") ? raw.substring(1) : raw;
 
+                    if (peek().getType() != YamlTokenType.SCALAR) {
+                        error(peek(), GenericDiagnosticCode.ERROR,"bug: expected scalar in parseKeyNode but got " + peek().getType());
+                    }
                     // Parse the scalar key that follows
                     // NOTE: at the moment parseKeyNode is only called for simple keys.
                     // If we call it for complex keys, this parseValue call should
                     // specify if it's a complex key.
-                    YamlNode key = parseValue(parentIndent, false);
+                    // YamlNode key = parseValue(parentIndent, false);
+                    YamlScalar key = parseScalar();
 
                     // Register the anchor for later alias resolution
                     anchorRegistry.put(name, key);
@@ -1369,20 +1391,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         return false;
     }
 
-    private boolean hasInlineValueIndicator() {
-        int offset = 0;
-        while (true) {
-            YamlTokenType type = peek(offset).getType();
-            if (type == YamlTokenType.NEWLINE || type == YamlTokenType.EOF || type == YamlTokenType.STREAM_END) {
-                return false;
-            }
-            if (type == YamlTokenType.VALUE_INDICATOR) {
-                return true;
-            }
-            offset++;
-        }
-    }
-
     private boolean isAtEnd() {
         if (current >= tokenBuffer.size()) return true;
         YamlTokenType type = tokenBuffer.get(current).getType();
@@ -1410,8 +1418,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         return tokenBuffer.get(current);
     }
 
-    private YamlToken peek(int offset) {
-        int targetIndex = current + offset;
+    private YamlToken peek(int ahead) {
+        int targetIndex = current + ahead;
         if (targetIndex >= tokenBuffer.size()) {
             return tokenBuffer.isEmpty() ? null : tokenBuffer.get(tokenBuffer.size() - 1);
         }

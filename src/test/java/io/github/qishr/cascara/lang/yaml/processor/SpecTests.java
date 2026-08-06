@@ -2355,4 +2355,53 @@ public class SpecTests {
         parser.setReporter(reporter);
         parser.parseMulti(yaml);
     }
+
+    @Test
+    public void test6M2F() {
+        String yaml = "&a a: &b b\n: *a\n";
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        YamlTokenizer tokenizer = new YamlTokenizer()
+            .setReporter(reporter);
+
+        TestUtils.dumpTokens(
+            reporter.getWriter(Level.DEBUG),
+            tokenizer.tokenize(yaml)
+        );
+
+        parser.setReporter(reporter);
+        parser.parseMulti(yaml);
+    }
+
+    @Test
+    public void test74H7() {
+        String yaml = """
+            !!str a: b
+            c: !!int 42
+            e: !!str f
+            g: h
+            !!str 23: !!bool false
+            """;
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        YamlTokenizer tokenizer = new YamlTokenizer()
+            .setReporter(reporter);
+
+        TestUtils.dumpTokens(
+            reporter.getWriter(Level.DEBUG),
+            tokenizer.tokenize(yaml)
+        );
+
+        parser.setReporter(reporter);
+        parser.parseMulti(yaml);
+    }
+
 }
