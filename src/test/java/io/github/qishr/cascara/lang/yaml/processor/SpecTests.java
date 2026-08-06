@@ -2429,4 +2429,29 @@ public class SpecTests {
         parser.parseMulti(yaml);
     }
 
+    @Test
+    public void test9MMW() {
+        String yaml = """
+            - [ YAML : separate ]
+            - [ "JSON like":adjacent ]
+            - [ {JSON: like}:adjacent ]
+            """;
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        YamlTokenizer tokenizer = new YamlTokenizer()
+            .setReporter(reporter);
+
+        TestUtils.dumpTokens(
+            reporter.getWriter(Level.DEBUG),
+            tokenizer.tokenize(yaml)
+        );
+
+        parser.setReporter(reporter);
+        parser.parseMulti(yaml);
+    }
+
 }

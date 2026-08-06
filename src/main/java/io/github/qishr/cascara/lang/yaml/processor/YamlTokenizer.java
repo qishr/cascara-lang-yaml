@@ -383,12 +383,27 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 addToken(YamlTokenType.VALUE_INDICATOR);
                 return;
             }
+
+
+
             if (isWhitespace(buffer.peekNext())) {
                 buffer.advance();
                 trace(method, "colon");
                 addStructuralToken(YamlTokenType.VALUE_INDICATOR, tokenStartColumn);
                 return;
             }
+
+            // buffer.advance();
+            // // TODO: Should probably consume all whitespace here
+            // if (isWhitespace(buffer.peekNext())) {
+            //     buffer.advance();
+            // }
+            // trace(method, "colon");
+            // addStructuralToken(YamlTokenType.VALUE_INDICATOR, tokenStartColumn);
+            // return;
+
+
+
         }
 
         if (c == '\'') {
