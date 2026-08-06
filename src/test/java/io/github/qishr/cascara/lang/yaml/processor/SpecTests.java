@@ -203,16 +203,6 @@ public class SpecTests {
 
         YamlMap map = (YamlMap) root;
 
-
-
-        // PrintWriter pw = new PrintWriter(System.err);
-        // Tree<AstTreeData,AstNode> tree = new Tree<>();
-        // tree.setRoot(new AstTreeData(root));
-        // tree.render(pw);
-        // pw.flush();
-
-
-
         // 1. Collect only ROOT keys
         List<String> rootKeys = map.getEntries().stream()
             .map(e -> {
