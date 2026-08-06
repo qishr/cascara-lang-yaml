@@ -385,14 +385,20 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
 
 
+            // TODO: This space is only optional if it's inside a flow ?
+            // This still breaks testDBG4
 
-            if (isWhitespace(buffer.peekNext())) {
+            if (isWhitespace(buffer.peekNext()) || (buffer.peekNext() != ':' && flowDepth > 0)) {
                 buffer.advance();
                 trace(method, "colon");
                 addStructuralToken(YamlTokenType.VALUE_INDICATOR, tokenStartColumn);
                 return;
             }
 
+            // //  test2EBW and test9MMW and now testDBG4
+
+            // // TODO: If there is another colon after the next token,
+            // // do not treat this as a value indicator
             // buffer.advance();
             // // TODO: Should probably consume all whitespace here
             // if (isWhitespace(buffer.peekNext())) {
