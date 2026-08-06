@@ -2181,4 +2181,157 @@ public class SpecTests {
         assertEquals(42, seq2.getScalar(0).asInteger());
 
     }
+
+    @Disabled("Come back to this")
+    @Test
+    public void testMJS9() {
+        String yaml = ">\n  foo \n \n  \t bar\n\n  baz\n";
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+        parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+
+        // The stream must contain exactly one document
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlScalar scalar = (YamlScalar)body;
+
+        TestUtils.assertEquals("foo \n\n\t bar\n\nbaz\n", scalar.asString());
+
+    }
+
+    @Test
+    public void test4aBK() {
+        String yaml = """
+            {
+            unquoted : "separate",
+            http://foo.com,
+            omitted value:,
+            }
+            """;
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+        parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlMap map = (YamlMap)body;
+
+
+
+        TestUtils.assertEquals(null, map.getString("Mark McGwire"));
+        TestUtils.assertEquals(null, map.getString("Sammy Sosa"));
+        TestUtils.assertEquals(null, map.getString("Ken Griff"));
+
+    }
+
+    @Test
+    public void test2XXW() {
+        String yaml = """
+            # Sets are represented as a
+            # Mapping where each key is
+            # associated with a null value
+            --- !!set
+            ? Mark McGwire
+            ? Sammy Sosa
+            ? Ken Griff
+            """;;
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+        parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlMap map = (YamlMap)body;
+
+
+
+        TestUtils.assertEquals(null, map.getString("Mark McGwire"));
+        TestUtils.assertEquals(null, map.getString("Sammy Sosa"));
+        TestUtils.assertEquals(null, map.getString("Ken Griff"));
+
+    }
+
+    @Disabled("come back to this")
+    @Test
+    public void test4FJ6() {
+        String yaml = """
+            ---
+            [
+              [ a, [ [[b,c]]: d, e]]: 23
+            ]
+            """;
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        YamlTokenizer tokenizer = new YamlTokenizer()
+            .setReporter(reporter);
+
+        TestUtils.dumpTokens(
+            reporter.getWriter(Level.DEBUG),
+            tokenizer.tokenize(yaml)
+        );
+
+        parser.setReporter(reporter);
+        parser.parseMulti(yaml);
+    }
+
+    @Test
+    public void test4MUZ_00() {
+        String yaml = """
+            {"foo"
+            : "bar"}
+            """;
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        YamlTokenizer tokenizer = new YamlTokenizer()
+            .setReporter(reporter);
+
+        TestUtils.dumpTokens(
+            reporter.getWriter(Level.DEBUG),
+            tokenizer.tokenize(yaml)
+        );
+
+        parser.setReporter(reporter);
+        parser.parseMulti(yaml);
+    }
 }
