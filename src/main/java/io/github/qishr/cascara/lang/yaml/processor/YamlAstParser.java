@@ -734,32 +734,41 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
 
                 skipTrivia();
-                consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_MAP_KEY);
-                parseInlineComment(key);
 
-                debug("before parseValue");
                 YamlNode value;
-                if (check(YamlTokenType.NEWLINE) && !hasIndentedValueAfterNewline()) {
+
+                if (check(YamlTokenType.VALUE_INDICATOR)) {
+                    consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_MAP_KEY);
+                    parseInlineComment(key);
+
+                    debug("before parseValue");
+                    if (check(YamlTokenType.NEWLINE) && !hasIndentedValueAfterNewline()) {
+                        value = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                    }
+                    else {
+                        skipTrivia();
+                        boolean isValueIndented = false;
+                        if (check(YamlTokenType.INDENT)) {
+                            debug("PM-value-indent");
+                            isValueIndented = true;
+                            advance();
+                        }
+
+                        value = parseValue(mapColumn, false);
+
+                        skipTrivia();
+                        if (isValueIndented) {
+                            debug("PM-value-dedent");
+                            consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
+                        }
+                    }
+                    debug("after parseValue");
+
+                } else {
+                    // No value indicator means value is null
                     value = new YamlScalar(peek(), PrimitiveType.NULL, options);
                 }
-                else {
-                    skipTrivia();
-                    boolean isValueIndented = false;
-                    if (check(YamlTokenType.INDENT)) {
-                        debug("PM-value-indent");
-                        isValueIndented = true;
-                        advance();
-                    }
 
-                    value = parseValue(mapColumn, false);
-
-                    skipTrivia();
-                    if (isValueIndented) {
-                        debug("PM-value-dedent");
-                        consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
-                    }
-                }
-                debug("after parseValue");
                 map.put(new YamlMapEntry(key, value));
                 skipTrivia();
             }
@@ -973,12 +982,18 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                 // 1. Parse Key
                 YamlScalar key = parseScalar();
+                skipTrivia();
 
-                // 2. Consume Value Indicator
-                consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP);
+                YamlNode value;
+                if (check(YamlTokenType.VALUE_INDICATOR)) {
+                    // 2. Consume Value Indicator
+                    consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP);
 
-                // 3. Parse Value
-                YamlNode value = parseValue(key.getStartColumn(), false);
+                    // 3. Parse Value
+                    value = parseValue(key.getStartColumn(), false);
+                } else {
+                    value = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                }
 
                 // 4. Store Entry
                 map.put(new YamlMapEntry(key, value));
@@ -988,12 +1003,17 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 // 5. Check for continuation or end
                 if (match(YamlTokenType.COMMA)) {
                     // Allow trailing commas by checking for end after comma
-                    if (check(YamlTokenType.MAP_END)) {
-                        advance();
+                    if (lookAheadIgnoringComments(YamlTokenType.MAP_END)) {
+                        skipTrivia();
+                    }
+                    if (match(YamlTokenType.MAP_END)) {
                         break;
                     }
                     continue;
                 } else if (match(YamlTokenType.MAP_END)) {
+                    break;
+                } else if (lookAheadIgnoringComments(YamlTokenType.MAP_END)) {
+                    skipTrivia();
                     break;
                 } else {
                     error(peek(), YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP);
