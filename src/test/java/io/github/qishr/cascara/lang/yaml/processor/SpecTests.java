@@ -2404,4 +2404,29 @@ public class SpecTests {
         parser.parseMulti(yaml);
     }
 
+    @Test
+    public void test87E4() {
+        String yaml = """
+            'implicit block key' : [
+                'implicit flow key' : value,
+               ]
+            """;
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        YamlTokenizer tokenizer = new YamlTokenizer()
+            .setReporter(reporter);
+
+        TestUtils.dumpTokens(
+            reporter.getWriter(Level.DEBUG),
+            tokenizer.tokenize(yaml)
+        );
+
+        parser.setReporter(reporter);
+        parser.parseMulti(yaml);
+    }
+
 }

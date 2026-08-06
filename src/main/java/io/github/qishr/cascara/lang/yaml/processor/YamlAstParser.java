@@ -802,6 +802,15 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                 map.put(new YamlMapEntry(key, value));
                 skipTrivia();
+
+                // If a map value is followed by these tokens, the map is finished.
+                if (check(YamlTokenType.COMMA) ||
+                    check(YamlTokenType.SEQUENCE_END) ||
+                    check(YamlTokenType.MAP_END)
+                ){
+                    debug("PM-structural-end");
+                    break;
+                }
             }
 
             if (expectComplexKeyDedent) {
@@ -987,11 +996,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             while (!check(YamlTokenType.SEQUENCE_END) && !isAtEnd()) {
                 skipTrivia();
-                sequence.add(parseValue(startToken.getStartColumn(), false));
 
+                sequence.add(parseValue(startToken.getStartColumn(), false));
                 skipTrivia();
 
                 if (!match(YamlTokenType.COMMA)) break;
+                skipTrivia();
             }
 
             consume(YamlTokenType.SEQUENCE_END, YamlDiagnosticCode.EXPECTED_CLOSE_BRACKET);
