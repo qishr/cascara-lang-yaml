@@ -92,6 +92,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     private List<YamlToken> tokens = new ArrayList<>();
     private boolean isLegacyMode = false;
     private boolean inQuotedScalar = false;
+    private boolean lineHasTabs = false;
 
     final Deque<YamlToken> pendingTokens = new ArrayDeque<>();
     private boolean streamStarted = false;
@@ -337,6 +338,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (c == '-') {
+            if (lineHasTabs) {
+                error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
+            }
             if (buffer.offset() + 1 >= buffer.length()) {
                 buffer.advance();
                 addToken(YamlTokenType.SEQUENCE_ENTRY_INDICATOR);
@@ -371,6 +375,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (c == ':') {
+            if (lineHasTabs) {
+                error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
+            }
             if (buffer.offset() + 1 >= buffer.length()) {
                 buffer.advance();
                 addToken(YamlTokenType.VALUE_INDICATOR);
@@ -1064,8 +1071,16 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             return;
         }
 
-        if (c == '\t') {
-            error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
+        // if (c == '\t') {
+        //     error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
+        // }
+        if (buffer.peek() == '\t') {
+            while (buffer.peek() == '\t' || buffer.peek() == ' ') {
+                buffer.advance();
+            }
+            buffer.startTokenWindow();
+            lineHasTabs = true;
+            return;
         }
 
         // 1. First Newline
@@ -1074,6 +1089,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         // Use column - lexeme.length() to point to the start of the newline
         addStructuralToken(YamlTokenType.NEWLINE, buffer.column() - lexeme.length() + 1);
+        lineHasTabs = false;
 
         // 2. Keep eating newlines and spaces as long as the line is "empty"
         while (!buffer.isAtEnd()) {
@@ -1096,9 +1112,21 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
         }
 
+
+
+        // if (buffer.peek() == '\t') {
+        //     error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
+        // }
         if (buffer.peek() == '\t') {
-            error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
+            while (buffer.peek() == '\t' || buffer.peek() == ' ') {
+                buffer.advance();
+            }
+            buffer.startTokenWindow();
+            lineHasTabs = true;
+            return;
         }
+
+
 
         int currentColumn = buffer.column();
         int expectedIndent = indentationLevels.peek();
