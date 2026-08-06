@@ -2334,4 +2334,25 @@ public class SpecTests {
         parser.setReporter(reporter);
         parser.parseMulti(yaml);
     }
+
+    @Test
+    public void test6CA3() {
+        String yaml = "\t[\n\t]";
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        YamlTokenizer tokenizer = new YamlTokenizer()
+            .setReporter(reporter);
+
+        TestUtils.dumpTokens(
+            reporter.getWriter(Level.DEBUG),
+            tokenizer.tokenize(yaml)
+        );
+
+        parser.setReporter(reporter);
+        parser.parseMulti(yaml);
+    }
 }

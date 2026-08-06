@@ -224,11 +224,22 @@ class YamlComprehensiveTest {
     void testTabIndentationFails() {
         // YAML spec forbids tabs for indentation
         String yaml = "key:\n\t- item";
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        YamlTokenizer tokenizer = new YamlTokenizer()
+            .setReporter(reporter);
+
+        TestUtils.dumpTokens(
+            reporter.getWriter(Level.DEBUG),
+            tokenizer.tokenize(yaml)
+        );
+
         parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
-        // Assuming YamlAstParserException extends ParserException
         assertThrows(ParserException.class, () -> parser.parse(yaml));
-        // parser.parse(yaml);
-        // assertFalse(diagnostics.isEmpty());
     }
 
     @Test
