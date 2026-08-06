@@ -476,6 +476,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     debug("PV-after-parseMap-1");
                     return result;
                 } else {
+                    // Scalar map keys are handled in parseKeyNode vua parseMap
                     if (peek(1).getType() == YamlTokenType.SCALAR &&
                         peek(2).getType() == YamlTokenType.VALUE_INDICATOR
                     ){
@@ -541,8 +542,20 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             // in the same document, even if both occurrences give the same prefix.
             while (check(YamlTokenType.TAG)) {
                 debug("PV-TAG start");
+
+                // Scalar map keys are handled in parseKeyNode vua parseMap
+                if (peek(1).getType() == YamlTokenType.SCALAR &&
+                    peek(2).getType() == YamlTokenType.VALUE_INDICATOR
+                ){
+                    debug("PV-TAG mid");
+                    result = parseMap(isComplexKey);
+                    attachComments(result);
+                    return result;
+                }
+
                 YamlToken tagTok = advance();
                 pendingTag = tagTok.getContent();
+
                 skipTrivia();
                 debug("PV-TAG end");
             }
@@ -703,9 +716,9 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     check(YamlTokenType.SCALAR) ||
                     check(YamlTokenType.ALIAS) ||
                     check(YamlTokenType.ANCHOR) ||
+                    check(YamlTokenType.TAG) ||
                     check(YamlTokenType.VALUE_INDICATOR);
 
-                // A map entry must start with '?', SCALAR, ALIAS, or ANCHOR
                 if (!hasExplicitKey && !isScalarKeyStart) {
                     if (peek().getStartColumn() > map.getStartColumn()) {
                         error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
@@ -851,6 +864,18 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     return alias;
                 }
 
+                case TAG: {
+                    YamlToken tagTok = advance();
+                    if (peek().getType() != YamlTokenType.SCALAR) {
+                        error(peek(), GenericDiagnosticCode.ERROR,"bug: expected scalar in parseKeyNode but got " + peek().getType());
+                    }
+                    String tag = tagTok.getContent();
+                    YamlScalar key = parseScalar();
+                    key.setTag(tag);
+                    return key;
+
+                }
+
                 case ANCHOR: {
                     // Anchors on scalars that start a map are not handled in parseValue.
                     advance(); // consume &anchor
@@ -877,7 +902,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         name,
                         key
                     );
-
                     return anchorNode;
                 }
 
