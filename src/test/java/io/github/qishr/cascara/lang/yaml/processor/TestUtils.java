@@ -16,6 +16,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
 public class TestUtils {
 
@@ -61,6 +62,8 @@ public class TestUtils {
             .addColumn("Lexeme")
             .addColumn("Content");
 
+        int tokenIdent = 0;
+
         for (int i = 0; i < tokens.size(); i++) {
             YamlToken t = tokens.get(i);
             switch(t.getType()) {
@@ -76,18 +79,24 @@ public class TestUtils {
                 case SCALAR, ALIAS, ANCHOR, TAG, COMMENT:
                     table.addRow(
                         String.format("%2d", i),
-                        t.getType().toString(),
+                        "  ".repeat(tokenIdent) + t.getType().toString(),
                         String.format("L:%-3d C:%-3d", t.getStartLine(), t.getStartColumn()),
                         StringUtils.debugString(t.getLexeme()),
                         StringUtils.debugString(t.getContent())
                     );
                     break;
                 default:
+                    if (t.getType() == YamlTokenType.DEDENT && tokenIdent > 0) {
+                        tokenIdent--;
+                    }
                     table.addRow(
                         String.format("%2d", i),
-                        t.getType().toString(),
+                        "  ".repeat(tokenIdent) + t.getType().toString(),
                         String.format("L:%-3d C:%-3d", t.getStartLine(), t.getStartColumn()), "", ""
                     );
+                    if (t.getType() == YamlTokenType.INDENT) {
+                        tokenIdent++;
+                    }
             }
         }
 
