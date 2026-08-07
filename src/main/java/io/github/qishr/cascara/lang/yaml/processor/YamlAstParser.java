@@ -533,6 +533,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 skipTrivia();
             }
 
+            boolean expectAnchorDedent = false;
+            if (check(YamlTokenType.INDENT)) {
+                advance();
+                debug("Setting expectAnchorDedent");
+                skipTrivia();
+                expectAnchorDedent = true;
+            }
 
 
             // Collect tags (node-level, including !!str on the document body)
@@ -555,17 +562,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
 
                 if (peek(1).getType() == YamlTokenType.VALUE_INDICATOR) {
-                    debug("PV-TAG null key");
+                    debug("PV-TAG value indicator");
                     result = parseMap(isComplexKey);
-                    // YamlToken tagTok = advance();
-                    // result = new YamlScalar(
-                    //     peek(),
-                    //     PrimitiveType.NULL,
-                    //     options
-                    // );
-                    // result.setTag(tagTok.getContent());
-                    // attachComments(result);
-                    // // TODO: Apply anchor?
+                    attachComments(result);
+                    // TODO: Apply anchor, or did parseMap handle it?
                     return result;
                 }
 
@@ -578,13 +578,18 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
 
 
-            boolean pendingDedent = false;
+
+            // TODO: Is the problem that this indent belongs with the tag?
+            boolean expectTagDedent = false;
             if (check(YamlTokenType.INDENT)) {
                 advance();
+                debug("Setting expectTagDedent");
                 skipTrivia();
-                pendingDedent = true;
-                debug("Setting pending dedent");
+                expectTagDedent = true;
             }
+
+
+
 
             if (check(YamlTokenType.KEY_INDICATOR)) {
                 debug("PV-key-indicator");
@@ -667,10 +672,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             // TODO: pending comments should probably be attached to the result before this skipTrivia.
             skipTrivia();
 
-            if (pendingDedent) {
+            if (expectTagDedent) {
                 if (check(YamlTokenType.DEDENT)) {
-                    debug("Consuming pending dedent");
+                    debug("Consuming expectTagDedent");
                     advance();
+                } else {
+                    debug("expectTagDedent not found");
+                    // error(peek(), YamlDiagnosticCode.EXPECTED_DEDENT);
                 }
             }
 
@@ -678,6 +686,16 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             if (pendingTag != null && result != null) {
                 debug("PV-setTag");
                 result.setTag(pendingTag);
+            }
+
+            if (expectAnchorDedent) {
+                if (check(YamlTokenType.DEDENT)) {
+                    debug("Consuming expectAnchorDedent");
+                    advance();
+                } else {
+                    debug("expectAnchorDedent not found");
+                    error(peek(), YamlDiagnosticCode.EXPECTED_DEDENT);
+                }
             }
 
             // 3. Apply anchor to the produced node
@@ -699,64 +717,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             depth--;
             debug("<parseValue");
         }
-    }
-
-    private boolean lookAheadFlowMapIsFollowedByColon() {
-        int i = 0;
-
-        // Must start with '{'
-        if (!peek(i).getType().equals(YamlTokenType.MAP_START)) {
-            return false;
-        }
-
-        i++; // move past '{'
-        int depth = 1;
-
-        // Scan until the matching '}'
-        while (i < tokenBuffer.size() && depth > 0) {
-            YamlToken t = peek(i);
-
-            switch (t.getType()) {
-                case MAP_START:
-                    depth++;
-                    break;
-
-                case MAP_END:
-                    depth--;
-                    break;
-
-                case NEWLINE:
-                case COMMENT:
-                    // ignore trivia
-                    break;
-
-                default:
-                    // normal token, just skip
-                    break;
-            }
-
-            i++;
-        }
-
-        if (depth != 0) {
-            // malformed flow map; let normal parsing handle the error
-            return false;
-        }
-
-        // Now skip trivia after the closing '}'
-        while (i < tokenBuffer.size()) {
-            YamlToken t = peek(i);
-            if (t.getType() == YamlTokenType.NEWLINE ||
-                t.getType() == YamlTokenType.COMMENT) {
-                i++;
-                continue;
-            }
-            break;
-        }
-
-        // The next non-trivia token must be ':'
-        return i < tokenBuffer.size() &&
-               peek(i).getType() == YamlTokenType.VALUE_INDICATOR;
     }
 
     /// Parses a block-level mapping and enforces strict key indentation.
@@ -832,7 +792,19 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     check(YamlTokenType.SCALAR) ||
                     check(YamlTokenType.ALIAS) ||
                     check(YamlTokenType.ANCHOR) ||
+
+
+
+
                     check(YamlTokenType.TAG) ||
+
+                    // (check(YamlTokenType.TAG) && (
+                    //     peek(1).getType() == YamlTokenType.SCALAR ||
+                    //     peek(1).getType() == YamlTokenType.VALUE_INDICATOR
+                    // )) ||
+
+
+
                     check(YamlTokenType.VALUE_INDICATOR) ||
                     check(YamlTokenType.MAP_START) ||
                     check(YamlTokenType.SEQUENCE_START);
@@ -1029,23 +1001,36 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
 
                 case TAG: {
+
+                    // return parseValue(parentIndent, false);
+
+                    YamlScalar key;
                     YamlToken tagTok = advance();
+                    boolean expectTagDedent = false;
                     if (peek().getType() == YamlTokenType.NEWLINE) {
                         skipTrivia();
                     }
+                    // if (peek().getType() == YamlTokenType.INDENT) {
+                    //     advance();
+                    //     expectTagDedent = true;
+                    // }
                     if (peek().getType() == YamlTokenType.VALUE_INDICATOR) {
                         String tag = tagTok.getContent();
-                        YamlScalar key = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                        key = new YamlScalar(peek(), PrimitiveType.NULL, options);
                         key.setTag(tag);
                         return key;
                     }
-                    if (peek().getType() == YamlTokenType.SCALAR) {
+                    else if (peek().getType() == YamlTokenType.SCALAR) {
                         String tag = tagTok.getContent();
-                        YamlScalar key = parseScalar();
+                        key = parseScalar();
                         key.setTag(tag);
                         return key;
+                    } else {
+                        error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, peek().getType());
                     }
-                    error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, peek().getType());
+                    // if (expectTagDedent) {
+                    //     consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
+                    // }
                 }
 
                 case ANCHOR: {
@@ -1423,6 +1408,64 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
             break;
         }
+    }
+
+    private boolean lookAheadFlowMapIsFollowedByColon() {
+        int i = 0;
+
+        // Must start with '{'
+        if (!peek(i).getType().equals(YamlTokenType.MAP_START)) {
+            return false;
+        }
+
+        i++; // move past '{'
+        int depth = 1;
+
+        // Scan until the matching '}'
+        while (i < tokenBuffer.size() && depth > 0) {
+            YamlToken t = peek(i);
+
+            switch (t.getType()) {
+                case MAP_START:
+                    depth++;
+                    break;
+
+                case MAP_END:
+                    depth--;
+                    break;
+
+                case NEWLINE:
+                case COMMENT:
+                    // ignore trivia
+                    break;
+
+                default:
+                    // normal token, just skip
+                    break;
+            }
+
+            i++;
+        }
+
+        if (depth != 0) {
+            // malformed flow map; let normal parsing handle the error
+            return false;
+        }
+
+        // Now skip trivia after the closing '}'
+        while (i < tokenBuffer.size()) {
+            YamlToken t = peek(i);
+            if (t.getType() == YamlTokenType.NEWLINE ||
+                t.getType() == YamlTokenType.COMMENT) {
+                i++;
+                continue;
+            }
+            break;
+        }
+
+        // The next non-trivia token must be ':'
+        return i < tokenBuffer.size() &&
+               peek(i).getType() == YamlTokenType.VALUE_INDICATOR;
     }
 
     private boolean lookAheadToMatchingIndentTriviaOnly() {
