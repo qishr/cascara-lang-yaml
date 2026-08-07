@@ -48,8 +48,8 @@ public class YamlNodeFactory implements AstNodeFactory<YamlNode,YamlScalar,YamlS
     }
 
     @Override
-    public YamlScalar createScalarNode(Object key, QuoteStyle quoteStyle) {
-        return new YamlScalar(key, scalarStyle(quoteStyle));
+    public YamlScalar createScalarNode(Object jvmValue, QuoteStyle quoteStyle) {
+        return new YamlScalar(jvmValue, scalarStyle(quoteStyle));
     }
 
 	@Override
