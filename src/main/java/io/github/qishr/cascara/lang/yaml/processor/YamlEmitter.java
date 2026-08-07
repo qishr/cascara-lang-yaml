@@ -41,7 +41,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
+import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
+import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.common.lang.processor.Emitter;
 import io.github.qishr.cascara.lang.yaml.ast.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
@@ -50,6 +52,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlComment;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
@@ -351,7 +354,12 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         var entries = map.getEntries();
         if (options.sortKeys()) {
             entries = new ArrayList<>(entries);
-            entries.sort(Comparator.comparing(e -> e.getKey().asString()));
+            entries.sort(
+                Comparator.comparing(
+                    MapEntryAstNode::getKeyString,
+                    Comparator.nullsLast(String::compareTo)
+                )
+            );
         }
         for (int i = 0; i < entries.size(); i++) {
             var entry = entries.get(i);
