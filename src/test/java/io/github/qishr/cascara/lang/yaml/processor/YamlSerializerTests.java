@@ -48,10 +48,12 @@ import io.github.qishr.cascara.common.lang.type.UriTypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.util.ColorDefinition;
 import io.github.qishr.cascara.lang.yaml.util.LongObject;
+import io.github.qishr.cascara.lang.yaml.util.ObjectWithEnumField;
 import io.github.qishr.cascara.lang.yaml.util.SettingsTestClass;
 import io.github.qishr.cascara.lang.yaml.util.Stringy;
 import io.github.qishr.cascara.lang.yaml.util.TestState;
 import io.github.qishr.cascara.lang.yaml.util.UriTestClass;
+import io.github.qishr.cascara.lang.yaml.util.ObjectWithEnumField.TestEnum;
 
 
 class YamlSerializerTests {
@@ -164,5 +166,26 @@ class YamlSerializerTests {
         assertNotNull(t);
         assertNull(t.security, "The security object should be null in the Java state");
     }
+
+    @Test
+    void test_objectWithEnumField() throws SerializerException {
+
+        ObjectWithEnumField owef = new ObjectWithEnumField();
+        owef.testEnum = ObjectWithEnumField.TestEnum.TWO;
+
+        YamlSerializer yamlSerializer = new YamlSerializer();
+
+        String yaml = yamlSerializer.toText(owef);
+
+
+        // This is where it currently fails:
+        // The parser returns a null scalar, but the mapper
+        // expects to see tokens for a NestedConfig object.
+        ObjectWithEnumField deserialized = yamlSerializer.fromText(yaml, ObjectWithEnumField.class);
+
+        assertNotNull(deserialized);
+        assertEquals(TestEnum.TWO, deserialized.testEnum);
+    }
+
 }
 
