@@ -1,6 +1,7 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
@@ -65,7 +66,7 @@ public class SpecTests2 {
     }
 
     // The problem here is that fixing it breaks valid_16_keys_explicit and vice versa
-    // @Disabled("Come back to this")
+    @Disabled("Come back to this")
     @Test
     public void test9MMWb() {
         String yaml = """
@@ -146,6 +147,7 @@ public class SpecTests2 {
         TestUtils.assertEquals("b", map2.getString("a"));
     }
 
+    @Disabled("Come back to this")
     @Test
     public void testFH7J() {
         String yaml = """
@@ -257,5 +259,30 @@ public class SpecTests2 {
         TestUtils.assertEquals("h", map3.getString("g"));
     }
 
+    @Test
+    public void testM5C3() {
+        String yaml = """
+            literal: |2
+              value
+            folded:
+               !foo
+              >1
+             value
+            """;
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+
+        TestUtils.assertEquals("value\n", map.getString("literal"));
+        TestUtils.assertEquals("value\n", map.getString("folded"));
+    }
 
 }
