@@ -539,6 +539,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             ? true
             : startLine > previousNonWhitespaceToken.getStartLine();
 
+        // spaces that were consumed already but were part of the
+        // line that is about to be scanned.
         int addedLeadingWhitespace = 0;
 
         // 2. Scan the scalar
@@ -864,6 +866,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         } else if (action == ScalarAction.CONTINUE) {
             // We exited due to reaching the end of the buffer.
             // This line is already in the string builders.
+            if (scalarStyle == ScalarStyle.SINGLE_QUOTED) {
+                error(YamlDiagnosticCode.EXPECTED_CLOSE_SINGLE_QUOTE);
+                return;
+            } else if (scalarStyle == ScalarStyle.DOUBLE_QUOTED) {
+                error(YamlDiagnosticCode.EXPECTED_CLOSE_DOUBLE_QUOTE);
+                return;
+            }
             currLineTrimmed = null;
         } else if (action == ScalarAction.STOP_BLOCKINDENT) {
             if (!content.isEmpty()) {
@@ -1346,11 +1355,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         String text = buffer.getTokenWindowLexeme();
         // TODO: Is this meant to be PLAIN?
         return addToken(new YamlToken(buffer.windowStartLine(), buffer.windowStartColumn(), buffer.windowStartOffset(), type, text, text, ScalarStyle.PLAIN));
-    }
-
-    private YamlToken addToken(YamlTokenType type, String lexeme) {
-        // TODO: Is this meant to be PLAIN?
-        return addToken(new YamlToken(buffer.windowStartLine(), buffer.windowStartColumn(), buffer.windowStartOffset(), type, lexeme, lexeme, ScalarStyle.PLAIN));
     }
 
     private void addStructuralToken(YamlTokenType type, int tokenColumn) {

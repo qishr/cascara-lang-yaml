@@ -50,21 +50,6 @@ public class YamlNormalizer {
 
     public static YamlNode normalize(YamlNode node) {
 
-        // reporter.debug("normalize %s", node.getClass().getSimpleName());
-
-        // // If the document's body is a !!str scalar, fold its sibling scalars
-        // if (node instanceof YamlDocumentNode doc) {
-
-        //     YamlNode body = doc.getBody();
-
-        //     if (body instanceof YamlScalarNode scalar &&
-        //         "!!str".equals(scalar.getTag())) {
-
-        //         // Fold all top-level plain scalars in the document
-        //         return foldPlainScalars(doc.getTopLevelScalars());
-        //     }
-        // }
-
         // unwrap anchors
         if (node instanceof YamlAnchor anchor) {
             return normalize(anchor.getInnerNode());

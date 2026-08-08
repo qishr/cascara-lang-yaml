@@ -70,4 +70,15 @@ public class ExpectedFailureTests {
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
+
+    @Test
+    public void testCQ3W() {
+        String yaml = """
+            ---
+            key: "missing closing quote
+            """;
+
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
 }
