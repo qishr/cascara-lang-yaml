@@ -1003,14 +1003,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 case TAG: {
                     YamlScalar key;
                     YamlToken tagTok = advance();
-                    if (peek().getType() == YamlTokenType.NEWLINE) {
+                    if (check(YamlTokenType.NEWLINE)) {
                         skipTrivia();
                     }
-                    if (peek().getType() == YamlTokenType.ANCHOR) {
+                    if (check(YamlTokenType.ANCHOR)) {
                         YamlToken anchorTok = advance();   // consume &a1
                         skipTrivia();
 
-                        if (peek().getType() == YamlTokenType.SCALAR) {
+                        if (check(YamlTokenType.SCALAR)) {
                             key = parseScalar();   // "foo"
                             key.setTag(tagTok.getContent());  // !!str
                             key.setAnchor(anchorTok.getContent()); // a1
@@ -1023,12 +1023,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         key.setAnchor(anchorTok.getContent());
                         return key;
                     }
-                    if (peek().getType() == YamlTokenType.VALUE_INDICATOR) {
+                    if (check(YamlTokenType.VALUE_INDICATOR)) {
                         String tag = tagTok.getContent();
                         key = new YamlScalar(peek(), PrimitiveType.NULL, options);
                         key.setTag(tag);
                     }
-                    else if (peek().getType() == YamlTokenType.SCALAR) {
+                    else if (check(YamlTokenType.SCALAR)) {
                         String tag = tagTok.getContent();
                         key = parseScalar();
                         key.setTag(tag);
@@ -1042,36 +1042,42 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 case ANCHOR: {
                     // Anchors on scalars that start a map are not handled in parseValue.
                     advance(); // consume &anchor
-                    if (peek().getType() == YamlTokenType.NEWLINE) {
+                    if (check(YamlTokenType.NEWLINE)) {
                         skipTrivia();
                     }
 
+                    YamlNode key;
                     String raw = tok.getContent();
                     String name = raw.startsWith("&") ? raw.substring(1) : raw;
 
-                    // TODO: SEQUENCE_START, MAP_START
-
-                    if (peek().getType() == YamlTokenType.SCALAR) {
+                    if (check(YamlTokenType.MAP_START)) {
+                        key = parseFlowMap();
+                    }
+                    else if (check(YamlTokenType.SEQUENCE_START)) {
+                        key = parseFlowSequence();
+                    }
+                    else if (check(YamlTokenType.SCALAR)) {
                         // Parse the scalar key that follows
                         // NOTE: at the moment parseKeyNode is only called for simple keys.
                         // If we call it for complex keys, this parseValue call should
                         // specify if it's a complex key.
-                        // YamlNode key = parseValue(parentIndent, false);
-                        YamlScalar key = parseScalar();
-
-                        // Register the anchor for later alias resolution
-                        anchorRegistry.put(name, key);
-
-                        // Wrap in YamlAnchorNode (same as parseValue)
-                        YamlAnchor anchorNode = new YamlAnchor(
-                            key.getStartLine(),
-                            key.getStartColumn(),
-                            name,
-                            key
-                        );
-                        return anchorNode;
+                        key = parseScalar();
                     }
-                    error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, peek().getType());
+                    else {
+                        key = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                        error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, peek().getType());
+                    }
+                    // Register the anchor for later alias resolution
+                    anchorRegistry.put(name, key);
+
+                    // Wrap in YamlAnchorNode (same as parseValue)
+                    YamlAnchor anchorNode = new YamlAnchor(
+                        key.getStartLine(),
+                        key.getStartColumn(),
+                        name,
+                        key
+                    );
+                    return anchorNode;
                 }
 
                 case KEY_INDICATOR:

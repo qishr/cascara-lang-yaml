@@ -310,4 +310,23 @@ public class SpecTests2 {
         TestUtils.assertEquals("value", map1.getString("multi line"));
     }
 
+    @Test
+    public void testX38W() {
+        String yaml = "{ &a [a, &b b]: *b, *a : [c, *b, d]}";
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        // YamlSequence seq = (YamlSequence) body;
+        // YamlMap map0 = seq.getMap(0);
+        // YamlMap map1 = seq.getMap(1);
+
+        // TestUtils.assertEquals("value", map0.getString("single line"));
+        // TestUtils.assertEquals("value", map1.getString("multi line"));
+    }
 }
