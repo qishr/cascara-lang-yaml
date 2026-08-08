@@ -892,8 +892,17 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                 debugString(debugSource, buffer.offset());
 
+                if (currFirstContentOffset == -1) {
+                    currFirstContentOffset = 0;
+                }
+
                 advanceBufferBy(currFirstContentOffset + prevNonWhitespaceOffset + 1 - addedLeadingWhitespace);
                 currLineTrimmed = currLineTrimmed.substring(0, prevNonWhitespaceOffset + 1);
+
+                // System.out.println("currFirstContentOffset  = " + currFirstContentOffset);
+                // System.out.println("prevNonWhitespaceOffset = " + prevNonWhitespaceOffset);
+                // System.out.println("addedLeadingWhitespace  = " + addedLeadingWhitespace);
+
                 currLineLexeme = currLineLexeme.substring(0, currFirstContentOffset + prevNonWhitespaceOffset + 1 - addedLeadingWhitespace);
 
                 debugString(debugSource, buffer.offset());
