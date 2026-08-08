@@ -52,6 +52,7 @@ import io.github.qishr.cascara.common.lang.annotation.Experimental;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
 import io.github.qishr.cascara.common.lang.processor.Tokenizer;
+import io.github.qishr.cascara.common.lang.token.TokenCategory;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.NodeStyle;
@@ -1065,7 +1066,9 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     }
                     else {
                         key = new YamlScalar(peek(), PrimitiveType.NULL, options);
-                        error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, peek().getType());
+                        if (peek().getType().getCategory() != TokenCategory.PUNCTUATION) {
+                            error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, peek().getType());
+                        }
                     }
                     // Register the anchor for later alias resolution
                     anchorRegistry.put(name, key);
