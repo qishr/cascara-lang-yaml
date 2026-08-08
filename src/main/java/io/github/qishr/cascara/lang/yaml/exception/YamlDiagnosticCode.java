@@ -39,10 +39,11 @@ import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 
 public enum YamlDiagnosticCode implements DiagnosticCode {
 
-    TAB_NOT_ALLOWED("YAML-101", "Tab characters are not allowed for indentation in YAML"),
+    ERROR("YAML-101", "{0}"),
+    TAB_NOT_ALLOWED("YAML-102", "Tab characters are not allowed for indentation in YAML"),
 
     // Expected Tokens
-    EXPECTED_COMMA_OR_CLOSE_BRACE("YAML-102", "Expected \",\" or \"}\" in flow map"),
+    EXPECTED_COMMA_OR_CLOSE_BRACE("YAML-103", "Expected \",\" or \"}\" in flow map"),
     EXPECTED_SCALAR("YAML-104", "Expected scalar but got \"{0}\""),
     EXPECTED_MAP_KEY("YAML-105", "Expected map key"),
     EXPECTED_OPEN_BRACE_FLOW_MAP("YAML-206", "Expected \"{\" to start flow map"),

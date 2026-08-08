@@ -844,9 +844,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 buffer.advance();
             }
             currLineTrimmed = null;
-
-
-
         } else if (action == ScalarAction.STOP_SEQ) {
             // We exited due to a sequence indicator.
             // Don't include this line.
@@ -860,9 +857,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             trailingBlankLines.add(currLineTrimmed);
             advanceBufferToNextLine();
             currLineTrimmed = null;
-
-
-
         } else if (action == ScalarAction.CONTINUE) {
             // We exited due to reaching the end of the buffer.
             // This line is already in the string builders.
@@ -885,18 +879,29 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             // charOffset is the last content character
             debugString(debugSource, buffer.offset() - 1);
 
-
-            // advanceBufferBy(charOffset + 1);
             advanceBufferBy(charOffset + 1 - addedLeadingWhitespace);
-
 
             debugString(debugSource, buffer.offset() - 1);
             currLineTrimmed = null;
         } else if (action == ScalarAction.STOP_MAP_VALUE) {
-            if (!(content.isEmpty() && trailingBlankLines.isEmpty())) {
-                if (isBlock) {
-                    debug("Block");
+            if (flowDepth > 0) {
+
+                // TODO: This feels is a bit hacky.
+                // It works for multi-line plain scalar keys inside flow structures
+                // but doesn't cover the same keys not inside flow structures.
+
+                debugString(debugSource, buffer.offset());
+
+                advanceBufferBy(currFirstContentOffset + prevNonWhitespaceOffset + 1 - addedLeadingWhitespace);
+                currLineTrimmed = currLineTrimmed.substring(0, prevNonWhitespaceOffset + 1);
+                currLineLexeme = currLineLexeme.substring(0, currFirstContentOffset + prevNonWhitespaceOffset + 1 - addedLeadingWhitespace);
+
+                debugString(debugSource, buffer.offset());
+                if (!content.isEmpty()) {
+                    currLineTrimmed = " " + currLineTrimmed;
                 }
+
+            } else if (!(content.isEmpty() && trailingBlankLines.isEmpty())) {
                 // Go back to the end of the previous line
                 debugString(debugSource, buffer.offset() - 1);
                 backupBufferToEOL();
@@ -905,14 +910,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             } else {
                 // This is a key. Consume it but don't consume the colon
                 debugString(debugSource, buffer.offset());
-                char ch = buffer.peek();
-                debug(StringUtils.debugString(""+ch));
-
-
-                // advanceBufferBy(currFirstContentOffset + prevNonWhitespaceOffset + 1);
                 advanceBufferBy(currFirstContentOffset + prevNonWhitespaceOffset + 1 - addedLeadingWhitespace);
-
-
                 currLineTrimmed = currLineTrimmed.substring(0, prevNonWhitespaceOffset + 1);
                 currLineLexeme = currLineLexeme.substring(0, currFirstContentOffset + prevNonWhitespaceOffset + 1 - addedLeadingWhitespace);
                 debugString(debugSource, buffer.offset());
@@ -924,23 +922,14 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 backupBufferToEOL();
                 currLineTrimmed = null;
             } else {
-
-
-                // advanceBufferBy(charOffset);
                 advanceBufferBy(charOffset - addedLeadingWhitespace);
-
-
                 currLineTrimmed = currLineTrimmed.substring(0, trimmedCharOffset);
             }
 
         } else if (action == ScalarAction.STOP_FLOW) {
             // For plain scalars only
             // Consume currLine up until prevNonWhitespaceOffset
-
-
-            // advanceBufferBy(charOffset);
             advanceBufferBy(charOffset - addedLeadingWhitespace);
-
 
             if (prevNonWhitespaceOffset < 0) {
                 debug("Debug comment");
@@ -960,12 +949,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 currLineTrimmed = null;
             } else {
                 debugString(currLineTrimmed, "comment", trimmedCharOffset);
-
-
-                // advanceBufferBy(currFirstContentOffset + prevNonWhitespaceOffset + 1);
                 advanceBufferBy(currFirstContentOffset + prevNonWhitespaceOffset + 1 - addedLeadingWhitespace);
-
-
                 currLineTrimmed = currLineTrimmed.substring(0, prevNonWhitespaceOffset + 1);
                 currLineLexeme = currLineLexeme.substring(0, currFirstContentOffset + prevNonWhitespaceOffset + 1 - addedLeadingWhitespace);
             }
