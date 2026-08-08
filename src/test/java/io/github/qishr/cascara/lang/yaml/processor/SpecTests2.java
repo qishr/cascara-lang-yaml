@@ -54,6 +54,56 @@ public class SpecTests2 {
     }
 
     @Test
+    public void testColon() {
+        String yaml = """
+            a: {k: ::v}
+            b: [::v,:v]
+            c: ["k":v]
+            d: { "k"
+             :v }
+            e: [ {k: v}:v ]
+            :f: :v
+            ::g: v
+            """;
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+        assertEquals(7, map.size());
+
+        YamlMap map0 = map.getMap("a");
+        TestUtils.assertEquals("::v", map0.getString("k"));
+
+        YamlSequence seq1 = map.getSequence("b");
+        TestUtils.assertEquals("::v", seq1.getScalar(0).asString());
+        TestUtils.assertEquals(":v", seq1.getScalar(1).asString());
+
+        YamlSequence seq2 = map.getSequence("c");
+        YamlMap map2 = seq2.getMap(0);
+        TestUtils.assertEquals("v", map2.getString("k"));
+
+        YamlMap map3 = map.getMap("d");
+        TestUtils.assertEquals("v", map3.getString("k"));
+
+        YamlSequence seq4 = map.getSequence("e");
+        YamlMap mapkv = seq4.getMap(0);
+        YamlMapEntry e = mapkv.getEntry(0);
+        TestUtils.assertEquals("v", e.getValue().asString());
+        // TODO: Better way of getting entry value as string/scalar/map etc
+
+        YamlMap keymap = (YamlMap)e.getKey();
+        TestUtils.assertEquals("v", keymap.getString("k"));
+
+        TestUtils.assertEquals(":v", map.getString(":f"));
+        TestUtils.assertEquals("v", map.getString("::g"));
+    }
+
+    @Test
     public void test9MMWa() {
         String yaml = """
             - [ YAML : separate ]
@@ -465,4 +515,120 @@ public class SpecTests2 {
 
         TestUtils.assertEquals("two", map3.getString("one"));
     }
+
+    @Test
+    public void test58MP() {
+        String yaml = "{x: :x}";
+
+        // tokenizer.getReporter().setLevel(Level.TRACE);
+        tokenize(yaml);
+        // tokenizer.getReporter().setLevel(Level.DEBUG);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlMap map = (YamlMap) body;
+        TestUtils.assertEquals(":x", map.getString("x"));
+    }
+
+    @Test
+    public void test5MUD() {
+        String yaml = "{ \"foo\"\n  :bar }";
+
+        // tokenizer.getReporter().setLevel(Level.TRACE);
+        tokenize(yaml);
+        // tokenizer.getReporter().setLevel(Level.DEBUG);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+        TestUtils.assertEquals("bar", map.getString("foo"));
+    }
+
+    @Test
+    public void test5T43() {
+        String yaml = """
+            - { "key":value }
+            - { "key"::value }
+            """;
+
+        // tokenizer.getReporter().setLevel(Level.TRACE);
+        tokenize(yaml);
+        // tokenizer.getReporter().setLevel(Level.DEBUG);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlSequence seq = (YamlSequence) body;
+        assertEquals(2, seq.size());
+
+        YamlMap map0 = seq.getMap(0);
+        YamlMap map1 = seq.getMap(1);
+
+        TestUtils.assertEquals("value", map0.getString("key"));
+        TestUtils.assertEquals(":value", map1.getString("key"));
+    }
+
+    @Test
+    public void test8KB6() {
+        String yaml = """
+            ---
+            - { single line, a: b}
+            - { multi
+              line, a: b}
+            """;
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlSequence seq = (YamlSequence) body;
+        assertEquals(2, seq.size());
+
+        YamlMap map0 = seq.getMap(0);
+
+        TestUtils.assertEquals("b", map0.getString("a"));
+        TestUtils.assertEquals(null, map0.getString("single line"));
+
+        YamlMap map1 = seq.getMap(1);
+
+        TestUtils.assertEquals("b", map1.getString("a"));
+        TestUtils.assertEquals(null, map1.getString("multi line"));
+    }
+
+    @Test
+    public void testCT4Q() {
+        String yaml = """
+            [
+            ? foo
+             bar : baz
+            ]
+            """;
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlSequence seq = (YamlSequence) body;
+        assertEquals(1, seq.size());
+
+        YamlMap map0 = seq.getMap(0);
+        YamlMapEntry entry = map0.getEntry(0);
+
+        TestUtils.assertEquals("baz", map0.getString("foo bar"));
+    }
+
 }
