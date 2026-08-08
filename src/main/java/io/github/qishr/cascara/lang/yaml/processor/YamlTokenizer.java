@@ -837,7 +837,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 currLineLexeme = currLineLexeme.substring(0, currFirstContentOffset + prevNonWhitespaceOffset + 1 - addedLeadingWhitespace);
 
                 debugString(debugSource, buffer.offset());
-                if (!content.isEmpty()) {
+                if (!content.isEmpty() && !currLineTrimmed.isEmpty()) {
                     currLineTrimmed = " " + currLineTrimmed;
                 }
 

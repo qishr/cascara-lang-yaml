@@ -411,4 +411,58 @@ public class SpecTests2 {
         // TestUtils.assertEquals("value", map0.getString("single line"));
         // TestUtils.assertEquals("value", map1.getString("multi line"));
     }
+
+    @Test
+    public void test4MUZ_02() {
+        String yaml = """
+            {foo
+            : bar}
+            """;
+
+        // tokenizer.getReporter().setLevel(Level.TRACE);
+        tokenize(yaml);
+        // tokenizer.getReporter().setLevel(Level.DEBUG);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlMap map = (YamlMap) body;
+        TestUtils.assertEquals("bar", map.getString("foo"));
+    }
+
+    @Test
+    public void testW42U() {
+        String yaml = """
+            - # Empty
+            - |
+             block node
+            - - one # Compact
+              - two # sequence
+            - one: two # Compact mapping
+            """;
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlSequence seq = (YamlSequence) body;
+        assertEquals(4, seq.size());
+
+        TestUtils.assertEquals(null, seq.getScalar(0).asString());
+        TestUtils.assertEquals("block node\n", seq.getScalar(1).asString());
+
+        YamlSequence seq2 = seq.getSequence(2);
+        YamlMap map3 = seq.getMap(3);
+
+        assertEquals(2, seq2.size());
+        assertEquals(1, map3.size());
+
+        TestUtils.assertEquals("two", map3.getString("one"));
+    }
 }
