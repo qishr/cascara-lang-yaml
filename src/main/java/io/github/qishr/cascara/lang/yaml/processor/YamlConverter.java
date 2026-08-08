@@ -139,31 +139,6 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         );
     }
 
-    // @Nullable
-    // private ReferenceScalarNode convertScalar(YamlScalarNode scalar) {
-    //     if (scalar == null) return null;
-    //     String tag = scalar.getTag();
-    //     if (tag == null) {
-    //         return new ReferenceScalarNode(scalar.getPrimitive());
-    //     }
-    //     Object value;
-    //     value = switch(tag) {
-    //         // case "!!str" -> scalar.asString();
-    //         case "!!float" -> scalar.asDouble();
-    //         case "!!int" -> scalar.asInteger();
-    //         case "!!bool" -> scalar.asBoolean();
-    //         case "!!null" -> null;
-    //         default -> {
-    //             String s = scalar.asString();
-    //             if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
-    //                 s = s.replaceAll("\n +", " \t");
-    //             }
-    //             yield s;
-    //         }
-    //     };
-    //     return new ReferenceScalarNode(value);
-    // }
-
     @Nullable
     private AgnosticScalarNode convertScalar(YamlScalar scalar) {
         if (scalar == null) return null;

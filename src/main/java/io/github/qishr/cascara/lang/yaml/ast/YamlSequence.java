@@ -129,6 +129,8 @@ public class YamlSequence extends YamlNode implements SequenceAstNode<YamlNode> 
         return null;
     }
 
+    // TODO: getString, getInteger, etc
+
     /// {@inheritDoc}
     @Override
     public List<YamlNode> getElements() {
