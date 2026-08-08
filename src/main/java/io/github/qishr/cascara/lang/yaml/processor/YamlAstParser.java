@@ -464,13 +464,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 skipTrivia();
             }
 
-
-            if (peek().getStartLine() == 5) {
-                debug("Debug testCN3R");
-            }
-
-
-
             debug("PV-after-skipTrivia");
 
             YamlNode result = null;
@@ -482,9 +475,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 // lookAheadIgnoringComments rather than peek as it may be on the next line
                 YamlToken colon = lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR);
                 if (colon != null) {
-                    // if (!colon.hasPreceedingWhitespace()) {
-                    //     debug("colon might be part of anchor");
-                    // }
                     // Let parseMap handle the anchor
                     result = parseMap(isComplexKey);
                     attachComments(result);
@@ -878,7 +868,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                     debug("before parseValue");
                     if (check(YamlTokenType.NEWLINE) && !hasIndentedValueAfterNewline()) {
-                        value = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                        value = createNullScalar();
                     }
                     else {
                         skipTrivia();
@@ -907,7 +897,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                 } else {
                     // If there is no value indicator and the key was explicit, the value is null
-                    value = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                    value = createNullScalar();
                     if (!hasExplicitKey) {
                         error(peek(), YamlDiagnosticCode.EXPECTED_COLON_MAP_KEY);
                     }
@@ -952,7 +942,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             if (check(YamlTokenType.VALUE_INDICATOR)) {
                 // Empty key
-                // return new YamlScalar(peek(), PrimitiveType.NULL, options);
+                // return createNullScalar();
                 return new YamlScalar(peek(), "", PrimitiveType.STRING, ScalarStyle.PLAIN, options);
             }
 
@@ -1016,14 +1006,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         }
 
                         // If anchor is not followed by scalar, treat as null key with tag+anchor
-                        key = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                        key = createNullScalar();
                         key.setTag(tagTok.getContent());
                         key.setAnchor(anchorTok.getContent());
                         return key;
                     }
                     if (check(YamlTokenType.VALUE_INDICATOR)) {
                         String tag = tagTok.getContent();
-                        key = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                        key = createNullScalar();
                         key.setTag(tag);
                     }
                     else if (check(YamlTokenType.SCALAR)) {
@@ -1031,7 +1021,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         key = parseScalar();
                         key.setTag(tag);
                     } else {
-                        key = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                        key = createNullScalar();
                         error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, peek().getType());
                     }
                     return key;
@@ -1062,7 +1052,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         key = parseScalar();
                     }
                     else {
-                        key = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                        key = createNullScalar();
                         if (peek().getType().getCategory() != TokenCategory.PUNCTUATION) {
                             error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, peek().getType());
                         }
@@ -1139,11 +1129,17 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     error(peek(), YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                 }
 
+                YamlToken nextTokenIsIndicator = lookAheadIgnoringComments(YamlTokenType.SEQUENCE_ENTRY_INDICATOR);
+
                 advance(); // Consume the '-'
 
-                // parseValue handles the content, including potential nested blocks
-                YamlNode item = parseValue(indicatorColumn, false);
-                sequence.add(item);
+                if (nextTokenIsIndicator != null && nextTokenIsIndicator.getStartColumn() == indicatorColumn) {
+                    sequence.add(createNullScalar());
+                } else {
+                    // parseValue handles the content, including potential nested blocks
+                    YamlNode item = parseValue(indicatorColumn, false);
+                    sequence.add(item);
+                }
 
                 skipTrivia();
             }
@@ -1219,7 +1215,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     // 3. Parse Value
                     value = parseValue(key.getStartColumn(), false);
                 } else {
-                    value = new YamlScalar(peek(), PrimitiveType.NULL, options);
+                    value = createNullScalar();
                 }
 
                 // 4. Store Entry
@@ -1411,6 +1407,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
             break;
         }
+    }
+
+    private YamlScalar createNullScalar() {
+        return new YamlScalar(peek(), PrimitiveType.NULL, options);
     }
 
     private void skipEOL() {

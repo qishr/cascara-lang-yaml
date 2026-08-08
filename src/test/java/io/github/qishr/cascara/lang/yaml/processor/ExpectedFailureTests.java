@@ -5,15 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
-import io.github.qishr.cascara.lang.yaml.processor.TestUtils;
-import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
-import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 public class ExpectedFailureTests {
@@ -76,6 +74,19 @@ public class ExpectedFailureTests {
         String yaml = """
             ---
             key: "missing closing quote
+            """;
+
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
+
+    @Disabled("come back to this")
+    @Test
+    public void test2CMS() {
+        String yaml = """
+            this
+             is
+              invalid: x
             """;
 
         tokenize(yaml);
