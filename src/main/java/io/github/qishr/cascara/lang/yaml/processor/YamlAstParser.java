@@ -480,7 +480,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 debug("PV-in-if-anchor1");
 
                 // lookAheadIgnoringComments rather than peek as it may be on the next line
-                if (lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR)) {
+                YamlToken colon = lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR);
+                if (colon != null) {
+                    // if (!colon.hasPreceedingWhitespace()) {
+                    //     debug("colon might be part of anchor");
+                    // }
                     // Let parseMap handle the anchor
                     result = parseMap(isComplexKey);
                     attachComments(result);
@@ -496,7 +500,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         attachComments(result);
                         return result;
                     }
-
 
                     // Consume the anchor and set it as pending
                     YamlToken anchorTok = advance();
@@ -631,12 +634,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 skipTrivia();
                 expectTagDedent = true;
             }
-
-
-            if (peek().getStartLine() == 5) {
-                debug("Debug testCN3R");
-            }
-
 
             if (check(YamlTokenType.KEY_INDICATOR)) {
                 debug("PV-key-indicator");
@@ -835,7 +832,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 if (mapColumn == -1) {
                     mapColumn = markerColumn;
                 } else {
-                    if (markerColumn < mapColumn) {
+                    if (markerColumn < mapColumn && !isComplexKey) {
                         error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                     }
                 }
@@ -1233,7 +1230,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 // 5. Check for continuation or end
                 if (match(YamlTokenType.COMMA)) {
                     // Allow trailing commas by checking for end after comma
-                    if (lookAheadIgnoringComments(YamlTokenType.MAP_END)) {
+                    if (null != lookAheadIgnoringComments(YamlTokenType.MAP_END)) {
                         skipTrivia();
                     }
                     if (match(YamlTokenType.MAP_END)) {
@@ -1242,7 +1239,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     continue;
                 } else if (match(YamlTokenType.MAP_END)) {
                     break;
-                } else if (lookAheadIgnoringComments(YamlTokenType.MAP_END)) {
+                } else if (null != lookAheadIgnoringComments(YamlTokenType.MAP_END)) {
                     skipTrivia();
                     break;
                 } else {
@@ -1681,21 +1678,23 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     /// Searches forward from `current` until it reaches a token matching `targetType`.
-    /// If it finds `targetType` it returns true.
+    /// If it finds `targetType` it returns the token.
     /// If it finds NEWLINE or COMMENT it continues.
-    /// If if finds anything else it returns false.
-    private boolean lookAheadIgnoringComments(YamlTokenType targetType) {
+    /// If if finds anything else it returns null.
+    @Nullable
+    private YamlToken lookAheadIgnoringComments(YamlTokenType targetType) {
         int lookahead = current + 1;
         while (lookahead < tokenBuffer.size()) {
-            YamlTokenType type = tokenBuffer.get(lookahead).getType();
-            if (type == targetType) return true;
+            YamlToken token = tokenBuffer.get(lookahead);
+            YamlTokenType type = token.getType();
+            if (type == targetType) return token;
             if (type == YamlTokenType.NEWLINE || type == YamlTokenType.COMMENT) {
                 lookahead++;
                 continue;
             }
             break;
         }
-        return false;
+        return null;
     }
 
     private boolean lookAheadFlowSequenceIsFollowedByColon() {

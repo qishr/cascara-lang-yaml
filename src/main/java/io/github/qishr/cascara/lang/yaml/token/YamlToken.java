@@ -46,6 +46,7 @@ public class YamlToken implements Token {
     private String lexeme;
     private String content;
     private final ScalarStyle scalarStyle;
+    // private boolean hasPreceedingWhitespace;
 
     /// Structural Token
     public YamlToken(
@@ -115,6 +116,15 @@ public class YamlToken implements Token {
     public ScalarStyle getScalarStyle() {
         return scalarStyle;
     }
+
+    // public boolean hasPreceedingWhitespace() {
+    //     return hasPreceedingWhitespace;
+    // }
+
+    // public YamlToken setHasPreceedingWhitespace(boolean b) {
+    //     hasPreceedingWhitespace = b;
+    //     return this;
+    // }
 
     public void setType(YamlTokenType type) { this.type = type; }
 
