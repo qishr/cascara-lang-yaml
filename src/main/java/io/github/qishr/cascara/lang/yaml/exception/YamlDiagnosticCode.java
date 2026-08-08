@@ -50,6 +50,8 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     EXPECTED_OPEN_BRACKET("YAML-108", "Expected \"[\""),
     EXPECTED_COLON_MAP_KEY("YAML-109", "Expected \":\" after key"),
     EXPECTED_COLON_FLOW_MAP("YAML-110", "Expected \":\" after key in flow map"),
+    EXPECTED_CLOSE_SINGLE_QUOTE("YAML-111", "Expected closing single quote"),
+    EXPECTED_CLOSE_DOUBLE_QUOTE("YAML-112", "Expected closing double quote"),
 
     // Unexpected Tokens
     UNEXPECTED_TOKEN("YAML-111", "Unexpected {0}"),
