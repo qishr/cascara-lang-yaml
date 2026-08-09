@@ -792,4 +792,95 @@ public class SpecTests2 {
 
         TestUtils.assertEquals("\n", map.getString("e"));
     }
+
+    @Test
+    public void testSKE5() {
+        String yaml = """
+            ---
+            seq:
+             &anchor
+            - a
+            - b
+            """;
+
+        tokenize(yaml);
+
+        parser.getReporter().setLevel(Level.TRACE);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+        YamlSequence seq = map.getSequence("seq");
+
+        TestUtils.assertEquals("a", seq.getString(0));
+        TestUtils.assertEquals("b", seq.getString(1));
+    }
+
+    @Test
+    public void testUGM3() {
+        String yaml = """
+            --- !<tag:clarkevans.com,2002:invoice>
+            invoice: 34843
+            date   : 2001-01-23
+            bill-to: &id001
+                given  : Chris
+                family : Dumars
+                address:
+                    lines: |
+                        458 Walkman Dr.
+                        Suite #292
+                    city    : Royal Oak
+                    state   : MI
+                    postal  : 48046
+            ship-to: *id001
+            product:
+                - sku         : BL394D
+                  quantity    : 4
+                  description : Basketball
+                  price       : 450.00
+                - sku         : BL4438H
+                  quantity    : 1
+                  description : Super Hoop
+                  price       : 2392.00
+            tax  : 251.42
+            total: 4443.52
+            comments:
+                Late afternoon is best.
+                Backup contact is Nancy
+                Billsmer @ 338-4338.
+            """;
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+        assertEquals(8, map.size());
+
+        assertEquals(34843, map.getInteger("invoice"));
+        assertEquals("2001-01-23", map.getString("date"));
+
+        YamlSequence product = map.getSequence("product");
+
+        YamlMap product0 = product.getMap(0);
+        assertEquals("BL394D", product0.getString("sku"));
+        assertEquals(4, product0.getInteger("quantity"));
+        assertEquals("Basketball", product0.getString("description"));
+        assertEquals(450.00, product0.getDouble("price"));
+
+        YamlMap product1 = product.getMap(1);
+        assertEquals("BL4438H", product1.getString("sku"));
+        assertEquals(1, product1.getInteger("quantity"));
+        assertEquals("Super Hoop", product1.getString("description"));
+        assertEquals(2392.00, product1.getDouble("price"));
+
+        assertEquals(251.42, map.getDouble("tax"));
+        assertEquals(4443.52, map.getDouble("total"));
+    }
 }
