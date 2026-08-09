@@ -7,8 +7,11 @@ import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.lang.agnostic.AgnosticNode;
+import io.github.qishr.cascara.common.lang.agnostic.AgnosticSequenceNode;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
+import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
@@ -817,6 +820,91 @@ public class SpecTests2 {
 
         TestUtils.assertEquals("a", seq.getString(0));
         TestUtils.assertEquals("b", seq.getString(1));
+    }
+
+    @Test
+    public void testP76L() {
+        String yaml = """
+            %TAG !! tag:example.com,2000:app/
+            ---
+            !!int 1 - 3 # Interval, not integer
+            """;;
+
+        Reporter reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setStackTraceEnabled(true);
+
+        parser.getTokenizer().setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        AstNode node = new YamlConverter().toPlainAst(body);
+
+
+        // TODO: Rename Agnostic -> Plain (or Intermediate)
+
+
+
+        YamlScalar scalar = (YamlScalar) body;
+        TestUtils.assertEquals("1 - 3", scalar.asString());
+
+        ScalarAstNode<?> plainScalar = (ScalarAstNode<?>) node;
+        TestUtils.assertEquals("1 - 3", plainScalar.asString());
+    }
+
+    //
+    // Tests below still have compliance errors.
+    // Most likely due to JSON conversion.
+    //
+
+    @Test
+    public void testLE5A() {
+        String yaml = """
+            - !!str "a"
+            - 'b'
+            - &anchor "c"
+            - *anchor
+            - !!str
+            """;
+
+        // Reporter reporter = new StandardReporter()
+        //     .setLevel(Level.DEBUG)
+        //     .setAnsiColoringEnabled(true)
+        //     .setStackTraceEnabled(true);
+
+        // parser.getTokenizer().setReporter(reporter);
+        // parser.setReporter(reporter);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        if (DEBUG) {
+            TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        }
+
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        AgnosticNode agnostic = new YamlConverter().toPlainAst(body);
+        AgnosticSequenceNode seq = (AgnosticSequenceNode)agnostic;
+
+        assertEquals(5, seq.size());
+
+        TestUtils.assertEquals("a", seq.getScalar(0).asString());
+        TestUtils.assertEquals("b", seq.getScalar(1).asString());
+        TestUtils.assertEquals("c", seq.getScalar(2).asString());
+        TestUtils.assertEquals("c", seq.getScalar(3).asString());
+        TestUtils.assertEquals("", seq.getScalar(4).asString());
+
     }
 
     @Test

@@ -153,14 +153,20 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             return new AgnosticScalarNode(scalar.getPrimitive());
         }
 
-        Object value = switch (tag) {
-            case "!!str" -> normalizeString(scalar);
-            case "!!float" -> scalar.asDouble();
-            case "!!int"   -> scalar.asInteger();
-            case "!!bool"  -> scalar.asBoolean();
-            case "!!null"  -> null;
-            default -> normalizeString(scalar);
-        };
+
+
+
+        // Object value = switch (tag) {
+        //     case "!!str" -> normalizeString(scalar);
+        //     case "!!float" -> scalar.asDouble();
+        //     case "!!int"   -> scalar.asInteger();
+        //     case "!!bool"  -> scalar.asBoolean();
+        //     case "!!null"  -> null;
+        //     default -> normalizeString(scalar);
+        // };
+        Object value = scalar.getPrimitive();
+
+
 
         return new AgnosticScalarNode(value);
     }
