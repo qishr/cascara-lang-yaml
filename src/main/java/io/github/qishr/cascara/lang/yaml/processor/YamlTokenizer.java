@@ -710,16 +710,38 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
             if (action == ScalarAction.CONTINUE || action == ScalarAction.STOP_QUOTE || action == ScalarAction.STOP_EOF) {
                 lexeme.append(currLineLexeme);
-                debug("CONTINUE: " + StringUtils.debugString(currLine));
+                debug("currLine: " + StringUtils.debugString(currLine));
+                debug("content0: " + StringUtils.debugString(content.toString()));
 
                 if (currLineTrimmed.isEmpty() && action != ScalarAction.STOP_QUOTE) {
                     if (!isEolEscaped) {
                         trailingBlankLines.add(currLineTrimmed + "\n");
                     }
                 } else {
+
+
+                    // THIS SECTION ----------------=======================
+                    if (currLineTrimmed.isEmpty() && action == ScalarAction.STOP_QUOTE) {
+                        if (content.isEmpty() && lineNum > 0) {
+                            // if (trailingBlankLines.isEmpty()) {
+                                System.out.println("Debug1");
+                                content.append(' ');
+                            // }
+                        }
+                    }
+
+
                     if (!trailingBlankLines.isEmpty()) {
                         if (isQuoted && trailingBlankLines.size() == 1 && !alreadyHadContent) {
-                            content.append(' ');
+                        // if (isQuoted && !alreadyHadContent && lineNum > 0) {
+
+
+                            // THIS LINE ----------------=======================
+                            if (!currLineTrimmed.isEmpty()) {
+                                content.append(' ');
+                            }
+
+
                         } else {
                             for (int i = 0; i < trailingBlankLines.size(); i++) {
                                 content.append(trailingBlankLines.get(i));
@@ -735,9 +757,15 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                             // Handled later
                         } else {
                             if (!(scalarStyle == ScalarStyle.DOUBLE_QUOTED && prevEolWasEscaped)) {
-                                content.append(' ');
+                                if (alreadyHadContent) {
+                                    content.append(' ');
+                                }
                             }
                         }
+                    }
+                    else if (isQuoted && lineNum == 0 && lineHasContent) {
+                        // content.append(' ');
+                        System.out.println("Debug2");
                     }
 
                     if (scalarStyle == ScalarStyle.FOLDED && alreadyHadContent) {
@@ -749,16 +777,20 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                             }
                         }
                     }
-
                     trailingBlankLines.clear();
 
-                    debug("TRIMMED: " + StringUtils.debugString(currLineTrimmed));
+                    if (isQuoted && !lineHasContent) {
+                        currLineTrimmed = currLineTrimmed.trim();
+                    }
+
+                    debug("currLineTrimmed: " + StringUtils.debugString(currLineTrimmed));
                     content.append(currLineTrimmed);
-                    debug("CONTENT: " + StringUtils.debugString(content.toString()));
+                    // debug("CONTENT: " + StringUtils.debugString(content.toString()));
                 }
                 if (action != ScalarAction.STOP_QUOTE) {
                     advanceBufferToNextLine();
                 }
+                debug("content1: " + StringUtils.debugString(content.toString()));
             }
 
             prevHasExtraIndent = currHasExtraIndent;

@@ -302,7 +302,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         while (!isAtEnd() && !check(YamlTokenType.STREAM_END) && !check(YamlTokenType.EOF)) {
             int previousPosition = current;
 
-            debug("PI-while");
+            trace("PI-while");
 
             if (check(YamlTokenType.NEWLINE) ||
                 (check(YamlTokenType.INDENT) && !checkNext(YamlTokenType.DIRECTIVE)) ||
@@ -403,13 +403,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 skipTrivia();
             }
 
-            debug("PD-1");
+            trace("PD-1");
             // After directives, before deciding body, strip layout so skipTrivia can see comments
             while (check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
                 advance();
             }
             skipTrivia(); // this will now see COMMENT(#d) and buffer it
-            debug("PD-2");
+            trace("PD-2");
 
             // Clean layout indentation wrapping the explicit document boundaries
             if (check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
@@ -419,11 +419,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
             }
 
-            debug("PD-3");
+            trace("PD-3");
             if (match(YamlTokenType.DOCUMENT_START)) {
                 skipTrivia();
             }
-            debug("PD-4");
+            trace("PD-4");
 
             if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || isAtEnd()) {
                 document.setBody(createNullScalar());
@@ -456,7 +456,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             error(peek(), YamlDiagnosticCode.DEPTH_LIMIT);
         }
         try {
-            debug("isComplexKey="+isComplexKey);
+            trace("isComplexKey="+isComplexKey);
             if (check(YamlTokenType.ERROR)) {
                 error(peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, peek().getType());
             }
@@ -466,13 +466,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 skipTrivia();
             }
 
-            debug("PV-after-skipTrivia");
+            trace("PV-after-skipTrivia");
 
             YamlNode result = null;
             String pendingAnchor = null;
 
             if (check(YamlTokenType.ANCHOR)) {
-                debug("PV-in-if-anchor1");
+                trace("PV-in-if-anchor1");
 
                 // lookAheadIgnoringComments rather than peek as it may be on the next line
                 YamlToken colon = lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR);
@@ -480,14 +480,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     // Let parseMap handle the anchor
                     result = parseMap(isComplexKey);
                     attachComments(result);
-                    debug("PV-after-parseMap-1");
+                    trace("PV-after-parseMap-1");
                     return result;
                 } else {
                     // Scalar map keys are handled in parseKeyNode vua parseMap
                     if (peek(1).getType() == YamlTokenType.SCALAR &&
                         peek(2).getType() == YamlTokenType.VALUE_INDICATOR
                     ){
-                        debug("PV-after-parseMap-2");
+                        trace("PV-after-parseMap-2");
                         result = parseMap(isComplexKey);
                         attachComments(result);
                         return result;
@@ -495,7 +495,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                     // Consume the anchor and set it as pending
                     YamlToken anchorTok = advance();
-                    debug("PV-in-if-anchor3");
+                    trace("PV-in-if-anchor3");
 
                     String raw = anchorTok.getContent();
                     pendingAnchor = raw.startsWith("&") ? raw.substring(1) : raw;
@@ -537,7 +537,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     }
                 }
             }
-            debug("PV-after-if-anchor");
+            trace("PV-after-if-anchor");
 
             if (check(YamlTokenType.NEWLINE)) {
                 advance();
@@ -549,7 +549,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             boolean hasIndentedTag = false;
             if (checkIndented(YamlTokenType.TAG)) {
-                debug("PV-indented-tag start");
+                trace("PV-indented-tag start");
                 hasIndentedTag = true;
                 advance();
             }
@@ -557,7 +557,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             boolean expectAnchorDedent = false;
             if (check(YamlTokenType.INDENT)) {
                 advance();
-                debug("Setting expectAnchorDedent");
+                trace("Setting expectAnchorDedent");
                 skipTrivia();
                 expectAnchorDedent = true;
             }
@@ -569,14 +569,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             // It is an error to specify more than one “TAG” directive for the same handle
             // in the same document, even if both occurrences give the same prefix.
             while (check(YamlTokenType.TAG)) {
-                debug("PV-TAG start");
+                trace("PV-TAG start");
 
                 // Scalar map keys are handled in parseKeyNode via parseMap
                 if (peek(1).getType() == YamlTokenType.ANCHOR &&
                     peek(2).getType() == YamlTokenType.SCALAR &&
                     peek(3).getType() == YamlTokenType.VALUE_INDICATOR
                 ) {
-                    debug("PV-TAG anchor-scalar-valueIndicator");
+                    trace("PV-TAG anchor-scalar-valueIndicator");
                     result = parseMap(isComplexKey);
                     attachComments(result);
                     return result;
@@ -586,14 +586,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 if (peek(1).getType() == YamlTokenType.SCALAR &&
                     peek(2).getType() == YamlTokenType.VALUE_INDICATOR
                 ) {
-                    debug("PV-TAG scalar-valueIndicator");
+                    trace("PV-TAG scalar-valueIndicator");
                     result = parseMap(isComplexKey);
                     attachComments(result);
                     return result;
                 }
 
                 if (peek(1).getType() == YamlTokenType.VALUE_INDICATOR) {
-                    debug("PV-TAG valueIndicator");
+                    trace("PV-TAG valueIndicator");
                     result = parseMap(isComplexKey);
                     attachComments(result);
                     // TODO: Apply anchor, or did parseMap handle it?
@@ -604,11 +604,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 pendingTag = tagTok.getContent();
 
                 skipTrivia();
-                debug("PV-TAG end");
+                trace("PV-TAG end");
             }
 
             if (hasIndentedTag) {
-                debug("PV-indented-tag end");
+                trace("PV-indented-tag end");
                 while (check(YamlTokenType.NEWLINE)) {
                     advance();
                 }
@@ -622,13 +622,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             boolean expectTagDedent = false;
             if (check(YamlTokenType.INDENT)) {
                 advance();
-                debug("Setting expectTagDedent");
+                trace("Setting expectTagDedent");
                 skipTrivia();
                 expectTagDedent = true;
             }
 
             if (check(YamlTokenType.KEY_INDICATOR)) {
-                debug("PV-key-indicator");
+                trace("PV-key-indicator");
                 // result = parseMap(isComplexKey);
                 result = parseMap(false);
             }
@@ -636,12 +636,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 result = parseValue(peek().getStartColumn(), isComplexKey);
             }
             else if (check(YamlTokenType.ALIAS)) {
-                debug("PV-in-if-alias1");
+                trace("PV-in-if-alias1");
                 if (peek(1).getType() == YamlTokenType.VALUE_INDICATOR) {
                     result = parseMap(isComplexKey);
                 } else {
                     YamlToken tok = advance();
-                    debug("PV-in-if-alias2");
+                    trace("PV-in-if-alias2");
                     String name = tok.getContent().substring(1);
                     YamlAlias alias = new YamlAlias(
                         tok,
@@ -656,7 +656,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             // Flow map
             else if (check(YamlTokenType.MAP_START)) {
                 if (lookAheadFlowMapIsFollowedByColon()) {
-                    debug("PV-flow-map-as-key");
+                    trace("PV-flow-map-as-key");
                     return parseMap(isComplexKey);
                 } else {
                     result = parseFlowMap();
@@ -683,7 +683,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     result = parseMap(isComplexKey);
                 } else {
                     result = parseScalar();
-                    debug("PV-after-parseScalar");
+                    trace("PV-after-parseScalar");
                     if (check(YamlTokenType.NEWLINE)) {
                         advance();
                     }
@@ -702,10 +702,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             if (expectTagDedent) {
                 if (check(YamlTokenType.DEDENT)) {
-                    debug("Consuming expectTagDedent");
+                    trace("Consuming expectTagDedent");
                     advance();
                 } else {
-                    debug("expectTagDedent not found");
+                    trace("expectTagDedent not found");
                     // TODO: We should really report this error, but it breaks
                     // the valid_12_content_type_records test
 
@@ -715,16 +715,16 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             // 3. Attach tags
             if (pendingTag != null && result != null) {
-                debug("PV-setTag");
+                trace("PV-setTag");
                 result.setTag(pendingTag);
             }
 
             if (expectAnchorDedent) {
                 if (check(YamlTokenType.DEDENT)) {
-                    debug("Consuming expectAnchorDedent");
+                    trace("Consuming expectAnchorDedent");
                     advance();
                 } else {
-                    debug("expectAnchorDedent not found");
+                    trace("expectAnchorDedent not found");
                     // TODO: We should really report this error, but it breaks
                     // the valid_12_content_type_records test
 
@@ -760,7 +760,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         debug(">parseMap");
         depth++;
         try {
-            debug("isComplexKey="+isComplexKey);
+            trace("isComplexKey="+isComplexKey);
             YamlToken startToken = peek();
             YamlMap map = new YamlMap(startToken, options);
             map.setStyle(NodeStyle.BLOCK);
@@ -770,19 +770,19 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             boolean expectComplexKeyDedent = false;
 
             while (!isAtEnd()) {
-                debug("PM-loop");
+                trace("PM-loop");
                 skipTrivia();
 
                 if (check(YamlTokenType.DEDENT)) {
-                    debug("DEDENT break");
+                    trace("DEDENT break");
                     break;
                 }
 
                 // TODO: This causes problems with test9MMWb but is needed by valid_16_keys_explicit
                 if (check(YamlTokenType.INDENT)) {
-                    debug("PM-complex-key-indent");
+                    trace("PM-complex-key-indent");
                     if (isComplexKey) {
-                        debug("isComplexKey, so accepting the indent");
+                        trace("isComplexKey, so accepting the indent");
                         advance();
                         skipTrivia();
                         expectComplexKeyDedent = true;
@@ -792,7 +792,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
 
                 // Peek at the token that will tell us if an entry is actually here
-                debug("at markerToken");
+                trace("at markerToken");
                 YamlToken markerToken = peek();
 
                 boolean hasExplicitKey = check(YamlTokenType.KEY_INDICATOR);
@@ -815,7 +815,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     if (peek().getStartColumn() > map.getStartColumn()) {
                         error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                     }
-                    debug("Not-a-key break");
+                    trace("Not-a-key break");
                     break;
                 }
 
@@ -839,7 +839,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 } else {
                     if (check(YamlTokenType.MAP_START) ||
                         check(YamlTokenType.SEQUENCE_START)) {
-                        debug("map debug");
+                        trace("map debug");
                     }
                     // Standard implicit key
                     key = parseKeyNode(markerColumn);
@@ -868,7 +868,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_MAP_KEY);
                     parseInlineComment(key);
 
-                    debug("before parseValue");
+                    trace("before parseValue");
                     if (check(YamlTokenType.NEWLINE) && !hasIndentedValueAfterNewline()) {
                         value = createNullScalar();
                     }
@@ -882,7 +882,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                             hasIndentedTag = true;
                         }
                         else if (check(YamlTokenType.INDENT)) {
-                            debug("PM-value-indent");
+                            trace("PM-value-indent");
                             isValueIndented = true;
                             advance();
                         }
@@ -891,11 +891,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                         skipTrivia();
                         if (isValueIndented) {
-                            debug("PM-value-dedent");
+                            trace("PM-value-dedent");
                             consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
                         }
                     }
-                    debug("after parseValue");
+                    trace("after parseValue");
 
                 } else {
                     // If there is no value indicator and the key was explicit, the value is null
@@ -913,13 +913,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     check(YamlTokenType.SEQUENCE_END) ||
                     check(YamlTokenType.MAP_END)
                 ){
-                    debug("PM-structural-end");
+                    trace("PM-structural-end");
                     break;
                 }
             }
 
             if (expectComplexKeyDedent) {
-                debug("PM-complex-key-dedent");
+                trace("PM-complex-key-dedent");
                 consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
             }
 
@@ -1074,7 +1074,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
 
                 case KEY_INDICATOR:
-                    debug("parseKeyNode: KEY_INDICATOR");
+                    trace("parseKeyNode: KEY_INDICATOR");
                     advance(); // consume '?'
                     skipTrivia();
                     // NOTE: at the moment parseKeyNode is only called for simple keys.
@@ -1083,7 +1083,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     return parseValue(parentIndent, false);
 
                 default:
-                    debug("parseKeyNode: UNEXPECTED " + tok.getType());
+                    trace("parseKeyNode: UNEXPECTED " + tok.getType());
                     error(tok, GenericDiagnosticCode.ERROR, "Unexpected token in key position: " + tok.getType());
                     return new YamlScalar(tok, PrimitiveType.ANY, options);
             }
@@ -1107,12 +1107,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             while (!isAtEnd()) {
                 skipTrivia();
-                debug("PS-while");
+                trace("PS-while");
 
                 // STOP: Hand control back to the dispatcher
                 // If we see a DEDENT but the next token is still a '-', this is misaligned indentation
                 if (check(YamlTokenType.DEDENT)) {
-                    debug("PS-while-dedent");
+                    trace("PS-while-dedent");
                     // Regardless of the DEDENT being valid or not, we exit because it's
                     // not part of this sequence and is up to the caller to deal with.
                     break;
@@ -1123,7 +1123,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
 
                 if (!check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
-                    debug("PS-while-not-seq-indicator");
+                    trace("PS-while-not-seq-indicator");
                     break;
                 }
 
@@ -1262,7 +1262,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             ScalarStyle style = token.getScalarStyle();
 
             if (style == ScalarStyle.LITERAL) {
-                debug("LITERAL_BLOCK");
+                trace("LITERAL_BLOCK");
                 YamlScalar scalar = new YamlScalar(
                     token,
                     token.getContent(),
@@ -1279,7 +1279,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
 
             if (style == ScalarStyle.FOLDED) {
-                debug("FOLDED");
+                trace("FOLDED");
 
                 // YamlToken contentToken = null;
                 String content;
@@ -1305,7 +1305,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
 
             if (style == ScalarStyle.PLAIN) {
-                debug("PLAIN");
+                trace("PLAIN");
                 // just return the scalar as-is
                 YamlScalar scalar = new YamlScalar(
                     token,
@@ -1316,7 +1316,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 return scalar;
             }
 
-            debug("DEFAULT");
+            trace("DEFAULT");
 
             YamlScalar scalar = new YamlScalar(
                 token,
@@ -1354,7 +1354,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
     /// Collects comments and skips newlines, storing comments in the buffer.
     private void skipTrivia() {
-        debug("skipTrivia");
+        trace("skipTrivia");
         int extraIndent = 0;
 
         // If this gets set, we must continue until indentation is back at the level it specified.
@@ -1450,7 +1450,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     private YamlToken advance() {
-        debug("advance");
+        trace("advance");
         if (!isAtEnd()) current++;
         return previous();
     }
@@ -1512,7 +1512,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     private boolean checkIndented(YamlTokenType type) {
-        debug("checkIndented");
+        trace("checkIndented");
         if (isAtEnd()) return false;
         if (check(YamlTokenType.INDENT)) {
             if (peek(1).getType() == type) {
@@ -1794,11 +1794,22 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     /// Log the current method name and upcoming tokens
-    private void debug(String methodName, Object... details) {
+    private void trace(String message, Object... details) {
+        if (reporter == null ||
+            reporter.isSilent() ||
+            !reporter.getLevel().includes(Level.TRACE)) return;
+        report(message, details);
+    }
+
+    /// Log the current method name and upcoming tokens
+    private void debug(String message, Object... details) {
         if (reporter == null ||
             reporter.isSilent() ||
             !reporter.getLevel().includes(Level.DEBUG)) return;
+        report(message, details);
+    }
 
+    private void report(String message, Object... details) {
         // Ensure at least the current token is loaded to grab safe coordinates
         ensureBuffered(0);
         if (current >= tokenBuffer.size()) return;
@@ -1806,13 +1817,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         // Create indentation based on recursion depth
         String indent = "  ".repeat(Math.max(0, depth));
 
-        char first = methodName.charAt(0);
-        String message;
+        char first = message.charAt(0);
+        String output;
 
         if (first == '>' || first == '<') {
-            message = first + ANSI_YELLOW + methodName.substring(1) + ANSI_RESET;
+            output = first + ANSI_YELLOW + message.substring(1) + ANSI_RESET;
         } else {
-            message = methodName;
+            output = message;
         }
 
         reporter.debug("L%3d C%3d I%3d %s%s: %s",
@@ -1820,7 +1831,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             tokenBuffer.get(current).getStartColumn(),
             current,
             indent,
-            message,
+            output,
             upcomingTokens());
     }
 

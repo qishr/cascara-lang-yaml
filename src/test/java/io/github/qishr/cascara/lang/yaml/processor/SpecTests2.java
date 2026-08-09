@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.lang.ast.AstNode;
+import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
@@ -714,5 +716,80 @@ public class SpecTests2 {
         }
 
         TestUtils.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testNAT4() {
+        String yaml = "---\na: '\n  '\nb: '  \n  '\nc: \"  \n  \"\nd: \"\n  \"\ne: '\n\n  '\nf: \"\n\n  \"\ng: '\n\n\n  '\nh: \"\n\n\n  \"";
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+        assertEquals(8, map.size());
+
+        TestUtils.assertEquals(" ", map.getString("a"));
+        TestUtils.assertEquals(" ", map.getString("b"));
+        TestUtils.assertEquals(" ", map.getString("c"));
+        TestUtils.assertEquals(" ", map.getString("d"));
+        TestUtils.assertEquals("\n", map.getString("e"));
+        TestUtils.assertEquals("\n", map.getString("f"));
+        TestUtils.assertEquals("\n\n", map.getString("g"));
+        TestUtils.assertEquals("\n\n", map.getString("h"));
+
+        MapAstNode<?,?,?> plain = (MapAstNode<?,?,?>) new YamlConverter().toPlainAst(body);
+        assertEquals(8, plain.size());
+    }
+
+    @Test
+    public void testNAT4a() {
+        String yaml = "a: '\n  '";
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+
+        TestUtils.assertEquals(" ", map.getString("a"));
+    }
+
+    @Test
+    public void testNAT4b() {
+        String yaml = "b: '  \n  '";
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+
+        TestUtils.assertEquals(" ", map.getString("b"));
+    }
+
+    @Test
+    public void testNAT4e() {
+        String yaml = "e: '\n\n  '";
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+
+        TestUtils.assertEquals("\n", map.getString("e"));
     }
 }
