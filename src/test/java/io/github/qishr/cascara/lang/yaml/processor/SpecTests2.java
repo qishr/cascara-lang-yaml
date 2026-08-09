@@ -12,6 +12,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
@@ -65,6 +66,8 @@ public class SpecTests2 {
             :f: :v
             ::g: v
             """;
+            // TODO: :h :v
+            // should parse as {":h :v"}
 
         tokenize(yaml);
 
@@ -606,6 +609,14 @@ public class SpecTests2 {
         TestUtils.assertEquals(null, map1.getString("multi line"));
     }
 
+    // There are some assumptions going around online:
+    // "YAML 1.2 does not allow the use of a question mark inside flow collections"
+    // "YAML 1.2 does not allow ? inside flow collections"
+
+    // The YAML 1.2 spec contains this exact YAML as an example:
+    // https://yaml.org/spec/1.2.2/#example-single-pair-explicit-entry
+
+    @Disabled("come back to this. it is valid, but online normalizers and validators disagree.")
     @Test
     public void testCT4Q() {
         String yaml = """
@@ -629,6 +640,36 @@ public class SpecTests2 {
         YamlMapEntry entry = map0.getEntry(0);
 
         TestUtils.assertEquals("baz", map0.getString("foo bar"));
+    }
+
+    @Test
+    public void testA2M4() {
+        String yaml = """
+            ? a
+            : -	b
+              -  -	c
+                 - d
+            """;
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+        assertEquals(1, map.size());
+
+        YamlSequence seq = map.getSequence("a");
+        assertEquals(2, seq.size());
+
+        YamlScalar b = seq.getScalar(0);
+        TestUtils.assertEquals("b", b.asString());
+
+        YamlSequence inner = seq.getSequence(1);
+        TestUtils.assertEquals("c", inner.getString(0));
+        TestUtils.assertEquals("d", inner.getString(1));
     }
 
 }
