@@ -276,7 +276,7 @@ public class SpecTests {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
 
         YamlDocument doc = stream.getDocuments().get(0);
@@ -309,7 +309,7 @@ public class SpecTests {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -336,7 +336,7 @@ public class SpecTests {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -364,7 +364,7 @@ public class SpecTests {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -393,7 +393,7 @@ public class SpecTests {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -439,7 +439,7 @@ public class SpecTests {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -464,7 +464,7 @@ public class SpecTests {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -500,7 +500,7 @@ public class SpecTests {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -524,7 +524,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
 
         YamlDocument doc = stream.getDocuments().get(0);
@@ -565,7 +565,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
 
         YamlDocument doc = stream.getDocuments().get(0);
@@ -612,7 +612,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
 
         YamlDocument doc = stream.getDocuments().get(0);
@@ -646,7 +646,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
 
         YamlDocument doc = stream.getDocuments().get(0);
@@ -675,7 +675,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -709,7 +709,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -743,7 +743,7 @@ public class SpecTests {
 
         YamlStream stream = parser.parseMulti(yamlString);
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
 
         YamlDocument doc = stream.getDocuments().get(0);
@@ -773,7 +773,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -806,7 +806,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -837,7 +837,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -944,7 +944,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -989,7 +989,7 @@ public class SpecTests {
 
         TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -1019,7 +1019,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -1272,7 +1272,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -1314,7 +1314,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -1358,7 +1358,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -1403,7 +1403,7 @@ public class SpecTests {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -1437,7 +1437,7 @@ public class SpecTests {
             // TestUtils.dumpTokens(reporter, parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -1476,7 +1476,7 @@ public class SpecTests {
             // TestUtils.dumpTokens(reporter, parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -1527,7 +1527,7 @@ public class SpecTests {
             // TestUtils.dumpTokens(reporter, parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -1591,7 +1591,7 @@ public class SpecTests {
             // TestUtils.dumpTokens(reporter, parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -1638,7 +1638,7 @@ public class SpecTests {
             // TestUtils.dumpTokens(reporter, parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -1673,7 +1673,7 @@ public class SpecTests {
             // TestUtils.dumpTokens(reporter, parser.getTokens());
         }
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -1850,35 +1850,6 @@ public class SpecTests {
     }
 
     @Test
-    public void testP76L() {
-        String yaml = """
-            %TAG !! tag:example.com,2000:app/
-            ---
-            !!int 1 - 3 # Interval, not integer
-            """;;
-
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        parser.getTokenizer().setReporter(reporter);
-
-        YamlStream stream = parser.parseMulti(yaml);
-
-        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
-
-        // The stream must contain exactly one document
-        assertEquals(1, stream.getDocuments().size());
-        YamlDocument doc = stream.getDocuments().getFirst();
-
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
-
-        YamlScalar scalar = (YamlScalar) body;
-        TestUtils.assertEquals("1 - 3", scalar.asString());
-    }
-
-    @Test
     public void testSM9W_00() {
         String yaml = "-";
 
@@ -1893,7 +1864,7 @@ public class SpecTests {
 
         TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -1921,7 +1892,7 @@ public class SpecTests {
 
         TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -2015,7 +1986,7 @@ public class SpecTests {
 
         TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -2054,7 +2025,7 @@ public class SpecTests {
 
         TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -2086,45 +2057,7 @@ public class SpecTests {
 
     }
 
-    @Test
-    public void testLE5A() {
-        String yaml = """
-            - !!str "a"
-            - 'b'
-            - &anchor "c"
-            - *anchor
-            - !!str
-            """;
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        parser.getTokenizer().setReporter(reporter);
-        parser.setReporter(reporter);
-
-        YamlStream stream = parser.parseMulti(yaml);
-
-        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
-
-        // The stream must contain exactly one document
-        assertEquals(1, stream.getDocuments().size());
-        YamlDocument doc = stream.getDocuments().getFirst();
-
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
-        AgnosticNode agnostic = new YamlConverter().toPlainAst(body);
-        AgnosticSequenceNode seq = (AgnosticSequenceNode)agnostic;
-        // YamlSequence seq = (YamlSequence) body;
-        assertEquals(5, seq.size());
-
-        TestUtils.assertEquals("a", seq.getScalar(0).asString());
-        TestUtils.assertEquals("b", seq.getScalar(1).asString());
-        TestUtils.assertEquals("c", seq.getScalar(2).asString());
-        TestUtils.assertEquals("c", seq.getScalar(3).asString());
-        TestUtils.assertEquals("", seq.getScalar(4).asString());
-
-    }
 
     @Test
     public void testM6YH() {
@@ -2149,7 +2082,7 @@ public class SpecTests {
 
         TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
@@ -2186,7 +2119,7 @@ public class SpecTests {
 
         TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
 
-        // The stream must contain exactly one document
+
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 

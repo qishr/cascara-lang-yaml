@@ -818,6 +818,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             // 3. Attach tags
             if (pendingTag != null && result != null) {
                 trace("PV-setTag");
+                if (result instanceof YamlScalar scalar) {
+                    if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
+                        result = new YamlScalar("", ScalarStyle.PLAIN, options);
+                    }
+                }
                 result.setTag(pendingTag);
             }
 
