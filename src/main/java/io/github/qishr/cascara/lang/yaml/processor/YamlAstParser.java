@@ -426,9 +426,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             debug("PD-4");
 
             if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || isAtEnd()) {
-                document.setBody(
-                    new YamlScalar("", ScalarStyle.PLAIN, options)
-                );
+                document.setBody(createNullScalar());
             } else {
                 YamlNode body = parseValue(0, false);
                 document.setBody(body);
