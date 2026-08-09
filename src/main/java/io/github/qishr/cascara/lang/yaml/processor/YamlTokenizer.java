@@ -392,13 +392,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 (previousNonWhitespaceToken.getType() == YamlTokenType.MAP_END ||
                 previousNonWhitespaceToken.getType() == YamlTokenType.SEQUENCE_END));
 
-            if (buffer.offset() >= 61) {
-                debug("colon");
-            }
-
-
-            // TODO
-
             boolean cannotBeScalar = isAtEnd || nextCharIsWhitespace ||
                     ((prevTokenWasScalar || prevTokenWasFlowEnd) && flowDepth > 0);
 
@@ -1303,7 +1296,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         if (cat != TokenCategory.WHITESPACE &&
             cat != TokenCategory.INDENTATION &&
             cat != TokenCategory.INTERNAL &&
-            cat != TokenCategory.NEWLINE
+            cat != TokenCategory.NEWLINE &&
+            cat != TokenCategory.COMMENT
         ) {
             previousNonWhitespaceToken = token;
         }

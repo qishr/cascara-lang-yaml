@@ -334,10 +334,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
 
             // This is the correct way to do it:
-            streamNode.addDocument(parseDocument());
-            if (!check(YamlTokenType.DIRECTIVE) &&
-                !check(YamlTokenType.DOCUMENT_START)) {
-                break;
+            if (check(YamlTokenType.DOCUMENT_END)) {
+                advance();
+            } else {
+                streamNode.addDocument(parseDocument());
+                if (!check(YamlTokenType.DIRECTIVE) &&
+                    !check(YamlTokenType.DOCUMENT_START)) {
+                    break;
+                }
             }
 
             if (current == previousPosition) {
@@ -996,19 +1000,20 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     }
                     if (check(YamlTokenType.ANCHOR)) {
                         YamlToken anchorTok = advance();   // consume &a1
+                        String raw = anchorTok.getContent();
+                        String name = raw.startsWith("&") ? raw.substring(1) : raw;
                         skipTrivia();
-
                         if (check(YamlTokenType.SCALAR)) {
                             key = parseScalar();   // "foo"
                             key.setTag(tagTok.getContent());  // !!str
                             key.setAnchor(anchorTok.getContent()); // a1
-                            return key;
+                        } else {
+                            // If anchor is not followed by scalar, treat as null key with tag+anchor
+                            key = createNullScalar();
+                            key.setTag(tagTok.getContent());
+                            key.setAnchor(anchorTok.getContent());
                         }
-
-                        // If anchor is not followed by scalar, treat as null key with tag+anchor
-                        key = createNullScalar();
-                        key.setTag(tagTok.getContent());
-                        key.setAnchor(anchorTok.getContent());
+                        anchorRegistry.put(name, key);
                         return key;
                     }
                     if (check(YamlTokenType.VALUE_INDICATOR)) {
