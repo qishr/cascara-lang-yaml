@@ -616,7 +616,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                         debug("Block indent = " + blockIndent + " and charOffset = " + charOffset);
                     }
 
-                    if (!isQuoted || startsOnNewLine || lineNum > 0) {
+                    if (c != '\t' && (!isQuoted || startsOnNewLine || lineNum > 0)) {
                         // Determine extra indent
                         if (currFirstContentOffset == -1) {
                             currFirstContentOffset = charOffset;
@@ -825,15 +825,11 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
             if (flowDepth > 0) {
 
-                // TODO: This feels is a bit hacky.
+                // This feels is a bit hacky.
                 // It works for multi-line plain scalar keys inside flow structures
                 // but doesn't cover the same keys not inside flow structures.
 
                 debugString(debugSource, buffer.offset());
-
-                // if (currFirstContentOffset == -1) {
-                //     currFirstContentOffset = 0;
-                // }
 
                 advanceBufferBy(currFirstContentOffset + prevNonWhitespaceOffset + 1 - addedLeadingWhitespace);
                 currLineTrimmed = currLineTrimmed.substring(0, prevNonWhitespaceOffset + 1);
@@ -869,7 +865,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 debugString(debugSource, buffer.offset());
             }
         } else if (action == ScalarAction.STOP_MAP_KEY) {
-
             // This doesn't seem right, but it works
             if (!content.isEmpty()) {
                 backupBufferToEOL();
@@ -878,9 +873,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 advanceBufferBy(charOffset - addedLeadingWhitespace);
                 currLineTrimmed = currLineTrimmed.substring(0, trimmedCharOffset);
             }
-
         } else if (action == ScalarAction.STOP_FLOW) {
-            // For plain scalars only
             // Consume currLine up until prevNonWhitespaceOffset
             advanceBufferBy(charOffset - addedLeadingWhitespace);
 
@@ -899,7 +892,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
 
         } else if (action == ScalarAction.STOP_COMMENT) {
-            // For plain scalars only
             // Consume currLine up until prevNonWhitespaceOffset
             if (prevNonWhitespaceOffset < 0) {
                 debug("Debug comment");
@@ -956,7 +948,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             startColumn,
             startOffset,
             YamlTokenType.SCALAR,
-            lexeme.toString().stripTrailing(), // TODO: I don't think stripTrailing is right here
+            lexeme.toString().stripTrailing(),
             content.toString(),
             scalarStyle
         );
@@ -974,17 +966,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (scalarStyle == ScalarStyle.PLAIN) {
-
-
-
-            // TODO:
-
             if (isFirstChar && ch == ':') {
                 return ScalarAction.CONTINUE;
             }
-
-
-
             if (ch == '#' && (prev == '\0' || prev == ' ' || prev == '\t' || prev == '\r' || prev == '\n')) {
                 return ScalarAction.STOP_COMMENT;
             }
@@ -1164,10 +1148,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     }
 
     private void handleNewlineAndIndentation(char c) {
-
-        // if (c == '\t') {
-        //     error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
-        // }
         if (buffer.peek() == '\t') {
             while (buffer.peek() == '\t' || buffer.peek() == ' ') {
                 advance();
@@ -1206,11 +1186,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
         }
 
-
-
-        // if (buffer.peek() == '\t') {
-        //     error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
-        // }
         if (buffer.peek() == '\t') {
             while (buffer.peek() == '\t' || buffer.peek() == ' ') {
                 advance();
@@ -1220,8 +1195,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             return;
         }
 
-
-
         int currentColumn = buffer.column();
         int expectedIndent = indentationLevels.peek();
 
@@ -1229,7 +1202,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         if (currentColumn > expectedIndent) {
             if (flowDepth == 0) {
                 indentationLevels.push(currentColumn);
-                // debug("handleNewlineAndIndentation INDENT");
                 addStructuralToken(YamlTokenType.INDENT, currentColumn);
             }
         }
@@ -1238,15 +1210,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             while (indentationLevels.size() > 1 && indentationLevels.peek() > currentColumn) {
                 if (flowDepth == 0) {
                     indentationLevels.pop();
-
-
-                    // TODO: Only emit this DEDENT if it had a correspondimg INDENT.
-                    // Instead of (or as well as) checking flowDepth ==0, we should
-                    // be checking the flowDepth of the INDENT.
-
-
-
-                    // debug("handleNewlineAndIndentation DEDENT");
                     addStructuralToken(YamlTokenType.DEDENT, currentColumn);
                 }
             }

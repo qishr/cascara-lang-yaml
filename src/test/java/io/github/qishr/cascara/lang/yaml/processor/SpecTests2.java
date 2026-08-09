@@ -7,8 +7,7 @@ import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.common.lang.agnostic.AgnosticNode;
-import io.github.qishr.cascara.common.lang.ast.AstNode;
+import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
@@ -691,5 +690,29 @@ public class SpecTests2 {
         assertEquals(1, map.size());
 
         TestUtils.assertEquals("bar", map.getString("foo"));
+    }
+
+    @Test
+    public void testMJS9() {
+        String yaml = ">\n  foo \n \n  \t bar\n\n  baz";
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlScalar scalar = (YamlScalar) body;
+
+        String actual = scalar.asString();
+        String expected = "foo \n\n\t bar\n\nbaz\n";
+
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(actual));
+        }
+
+        TestUtils.assertEquals(expected, actual);
     }
 }
