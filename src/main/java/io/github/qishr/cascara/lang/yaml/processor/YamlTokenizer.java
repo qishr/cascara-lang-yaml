@@ -720,30 +720,44 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 } else {
 
 
+                    // TODO: This feels hacky
                     // THIS SECTION ----------------=======================
                     if (currLineTrimmed.isEmpty() && action == ScalarAction.STOP_QUOTE) {
                         if (content.isEmpty() && lineNum > 0) {
-                            // if (trailingBlankLines.isEmpty()) {
-                                System.out.println("Debug1");
+                            if (trailingBlankLines.size() < 2) {
                                 content.append(' ');
-                            // }
+                            }
                         }
                     }
 
 
                     if (!trailingBlankLines.isEmpty()) {
                         if (isQuoted && trailingBlankLines.size() == 1 && !alreadyHadContent) {
-                        // if (isQuoted && !alreadyHadContent && lineNum > 0) {
-
 
                             // THIS LINE ----------------=======================
                             if (!currLineTrimmed.isEmpty()) {
                                 content.append(' ');
                             }
 
-
                         } else {
-                            for (int i = 0; i < trailingBlankLines.size(); i++) {
+                            int i = 0;
+
+
+
+                            // TODO: This feels hacky
+                            // Without this block, NAT4 fails but 7A4E passes
+                            if (isQuoted &&
+                                !(currHasExtraIndent||prevHasExtraIndent) &&
+
+                                // Without this line, 7A4E fails.
+                                !(alreadyHadContent || startsOnNewLine)
+                            ) {
+                                i++;
+                            }
+
+
+
+                            for (; i < trailingBlankLines.size(); i++) {
                                 content.append(trailingBlankLines.get(i));
                             }
                             if (scalarStyle == ScalarStyle.LITERAL && alreadyHadContent) {
@@ -762,10 +776,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                                 }
                             }
                         }
-                    }
-                    else if (isQuoted && lineNum == 0 && lineHasContent) {
-                        // content.append(' ');
-                        System.out.println("Debug2");
                     }
 
                     if (scalarStyle == ScalarStyle.FOLDED && alreadyHadContent) {
