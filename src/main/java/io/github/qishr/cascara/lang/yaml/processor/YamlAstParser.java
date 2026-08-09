@@ -820,7 +820,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 trace("PV-setTag");
                 if (result instanceof YamlScalar scalar) {
                     if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
-                        result = new YamlScalar("", ScalarStyle.PLAIN, options);
+                        scalar = new YamlScalar("", ScalarStyle.PLAIN, options);
+                        result = scalar;
+                        // String s = scalar.getContent();
+                        // debug("Debug");
                     }
                 }
                 result.setTag(pendingTag);
@@ -1203,12 +1206,25 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     }
                     if (check(YamlTokenType.VALUE_INDICATOR)) {
                         String tag = tagTok.getContent();
-                        key = createNullScalar();
+                        // key = createNullScalar();
+                        key = new YamlScalar("", ScalarStyle.PLAIN, options);
                         key.setTag(tag);
                     }
                     else if (check(YamlTokenType.SCALAR)) {
                         String tag = tagTok.getContent();
                         key = parseScalar();
+
+
+                        if (key instanceof YamlScalar scalarKey) {
+                            if (scalarKey.getPrimitiveType() == PrimitiveType.NULL) {
+                                key = new YamlScalar("", ScalarStyle.PLAIN, options);
+
+                                // String s = key.getContent();
+                                // debug("Debug");
+                            }
+                        }
+
+
                         key.setTag(tag);
                     } else {
                         key = createNullScalar();

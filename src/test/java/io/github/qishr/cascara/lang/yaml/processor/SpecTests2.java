@@ -808,7 +808,7 @@ public class SpecTests2 {
 
         tokenize(yaml);
 
-        parser.getReporter().setLevel(Level.TRACE);
+        // parser.getReporter().setLevel(Level.TRACE);
 
         YamlStream stream = parser.parseMulti(yaml);
         assertEquals(1, stream.getDocuments().size());
@@ -830,16 +830,9 @@ public class SpecTests2 {
             !!int 1 - 3 # Interval, not integer
             """;;
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        parser.getTokenizer().setReporter(reporter);
+        tokenize(yaml);
 
         YamlStream stream = parser.parseMulti(yaml);
-
-        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
 
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
@@ -864,6 +857,58 @@ public class SpecTests2 {
     // Tests below still have compliance errors.
     // Most likely due to JSON conversion.
     //
+
+    @Test
+    public void testWZ62() {
+        String yaml = """
+            {
+                foo : !!str,
+                !!str : bar,
+            }
+            """;
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+
+        // TODO: Rename Agnostic -> Plain (or Intermediate)
+
+
+
+        YamlMap map = (YamlMap) body;
+        TestUtils.assertEquals("", map.getString("foo"));
+        TestUtils.assertEquals("bar", map.getString(""));
+    }
+
+    @Test
+    public void testS4JQ() {
+        String yaml = """
+            # Assuming conventional resolution:
+            - "12"
+            - 12
+            - ! 12
+            """;
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        YamlSequence seq = (YamlSequence) body;
+        assertEquals("12", seq.getString(0));
+        assertEquals(12, seq.getInteger(1));
+        assertEquals("12", seq.getString(2));
+    }
 
     @Test
     public void testLE5A() {
