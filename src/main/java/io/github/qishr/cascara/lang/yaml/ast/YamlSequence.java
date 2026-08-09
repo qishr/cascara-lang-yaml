@@ -138,6 +138,13 @@ public class YamlSequence extends YamlNode implements SequenceAstNode<YamlNode> 
         return null;
     }
 
+    public int getInteger(int i) {
+        if (getScalar(i) instanceof YamlScalar scalar) {
+            return scalar.asInteger();
+        }
+        return 0;
+    }
+
     /// {@inheritDoc}
     @Override
     public List<YamlNode> getElements() {
