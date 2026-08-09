@@ -772,7 +772,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             alreadyHadContent |= (!currLineTrimmed.isEmpty());
             prevEolWasEscaped = isEolEscaped;
             lineNum++;
-
+            isFirstChar = false;
         }
 
         debug("Final action: " + action);

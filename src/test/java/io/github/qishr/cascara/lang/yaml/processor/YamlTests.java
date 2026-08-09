@@ -299,29 +299,30 @@ class YamlTests {
         //     """;
 
 
-    @Test
-    void test_16_KE() {
-        String yamlString = """
-              ? X: -10
-                Y: -10
-              : 2
-              """;
+        @Test
+        void test_16_KE_a() {
+            String yamlString = """
+                  ? X: -10
+                    Y: -10
+                  : 2
+                  """;
 
-        YamlTokenizer tokenizer = new YamlTokenizer();
+            YamlTokenizer tokenizer = new YamlTokenizer();
 
-        tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG));
-        List<YamlToken> tokens = tokenizer.tokenize(yamlString);
-        TestUtils.dumpTokens(tokens);
+            tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG));
+            List<YamlToken> tokens = tokenizer.tokenize(yamlString);
+            TestUtils.dumpTokens(tokens);
 
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(
-                new StandardReporter()
-                    .setLevel(LEVEL)
-                    .setAnsiColoringEnabled(true)
-            );
+            YamlAstParser parser = new YamlAstParser()
+                .setReporter(
+                    new StandardReporter()
+                        .setLevel(LEVEL)
+                        .setAnsiColoringEnabled(true)
+                );
 
-        assertDoesNotThrow(() -> parser.parse(yamlString));
-    }
+            assertDoesNotThrow(() -> parser.parse(yamlString));
+        }
+
 
     @Test
     void test_11_ELWS() {

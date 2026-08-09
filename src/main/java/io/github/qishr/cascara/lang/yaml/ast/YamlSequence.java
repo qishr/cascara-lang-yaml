@@ -131,6 +131,13 @@ public class YamlSequence extends YamlNode implements SequenceAstNode<YamlNode> 
 
     // TODO: getString, getInteger, etc
 
+    public String getString(int i) {
+        if (getScalar(i) instanceof YamlScalar scalar) {
+            return scalar.asString();
+        }
+        return null;
+    }
+
     /// {@inheritDoc}
     @Override
     public List<YamlNode> getElements() {
