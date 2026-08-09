@@ -471,6 +471,36 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             YamlNode result = null;
             String pendingAnchor = null;
 
+
+
+
+            YamlToken pendingAnchorToken = null;
+            boolean hasIndentedAnchor = false;
+            if (checkIndented(YamlTokenType.ANCHOR)) {
+                trace("PM-hasIndentedAnchor1");
+                advance(); // consume INDENT
+                // // consume(YamlTokenType.INDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
+                // skipTrivia();
+
+                hasIndentedAnchor = true;
+                // advance();
+            }
+            // if (check(YamlTokenType.ANCHOR)) {
+            //     pendingAnchorToken = advance();
+            //     if (check(YamlTokenType.NEWLINE)) {
+            //         skipTrivia();
+            //     }
+            //     trace("PM-anchor");
+            //     if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
+            //         advance();
+            //         hasIndentedAnchor = false;
+            //         trace("PM-hasIndentedAnchor-dedent");
+            //     }
+            // }
+
+
+
+
             if (check(YamlTokenType.ANCHOR)) {
                 trace("PV-in-if-anchor1");
 
@@ -481,6 +511,17 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     result = parseMap(isComplexKey);
                     attachComments(result);
                     trace("PV-after-parseMap-1");
+
+
+
+                    // TODO: This must be moved to happen directly after anchor is parsed
+                    if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
+                        advance();
+                        hasIndentedAnchor = false;
+                    }
+
+
+
                     return result;
                 } else {
                     // Scalar map keys are handled in parseKeyNode vua parseMap
@@ -490,14 +531,41 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         trace("PV-after-parseMap-2");
                         result = parseMap(isComplexKey);
                         attachComments(result);
+
+
+
+                        // TODO: This must be moved to happen directly after anchor is parsed
+                        if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
+                            advance();
+                            hasIndentedAnchor = false;
+                        }
+
+
+
                         return result;
                     }
 
                     // Consume the anchor and set it as pending
-                    YamlToken anchorTok = advance();
+                    pendingAnchorToken = advance();
                     trace("PV-in-if-anchor3");
 
-                    String raw = anchorTok.getContent();
+
+
+
+                    // if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
+                    if (hasIndentedAnchor) {
+                        // skipTrivia();
+                        if (check(YamlTokenType.NEWLINE)) {
+                            advance();
+                        }
+                        consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
+                        hasIndentedAnchor = false;
+                    }
+
+
+
+
+                    String raw = pendingAnchorToken.getContent();
                     pendingAnchor = raw.startsWith("&") ? raw.substring(1) : raw;
                     int ahead = 0;
                     YamlToken candidate = null;
@@ -517,7 +585,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                     if (candidate.getStartColumn() > parentIndent ||
                         candidate.getType() == YamlTokenType.MAP_START ||
-                        candidate.getType() == YamlTokenType.SEQUENCE_START
+                        candidate.getType() == YamlTokenType.SEQUENCE_START ||
+
+
+
+                        candidate.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR
+
+
+
                     ) {
                         skipTrivia();
                     } else {
@@ -533,8 +608,35 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                             result
                         );
                         anchorRegistry.put(pendingAnchor, anchorNode);
+
+
+
+                        // if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
+                        //     advance();
+                        //     hasIndentedAnchor = false;
+                        // }
+
+
+
                         return attachComments(anchorNode);
                     }
+
+
+
+
+                    if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
+                        trace("PV-hasIndentedAnchor-dedent");
+                        advance();
+                        if (check(YamlTokenType.NEWLINE)) {
+                            advance();
+                            skipTrivia();
+                        }
+                        hasIndentedAnchor = false;
+                    }
+
+
+
+
                 }
             }
             trace("PV-after-if-anchor");
@@ -732,18 +834,41 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 }
             }
 
-            // 3. Apply anchor to the produced node
-            if (pendingAnchor != null && result != null) {
-                result.setAnchor(pendingAnchor);
+
+
+
+            if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
+                advance();
+                hasIndentedAnchor = false;
+            }
+
+
+            if (pendingAnchorToken != null) {
+                String raw = pendingAnchorToken.getContent();
+                String anchorName = raw.startsWith("&") ? raw.substring(1) : raw;
+                result.setAnchor(anchorName);
                 YamlAnchor anchorNode = new YamlAnchor(
                     result.getStartLine(),
                     result.getStartColumn(),
-                    pendingAnchor,
+                    anchorName,
                     result
                 );
-                anchorRegistry.put(pendingAnchor, result);
+                anchorRegistry.put(anchorName, result);
                 result = anchorNode;
             }
+
+            // // 3. Apply anchor to the produced node
+            // if (pendingAnchor != null && result != null) {
+            //     result.setAnchor(pendingAnchor);
+            //     YamlAnchor anchorNode = new YamlAnchor(
+            //         result.getStartLine(),
+            //         result.getStartColumn(),
+            //         pendingAnchor,
+            //         result
+            //     );
+            //     anchorRegistry.put(pendingAnchor, result);
+            //     result = anchorNode;
+            // }
 
             return attachComments(result);
 
@@ -878,8 +1003,38 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         boolean hasIndentedTag = false;
                         boolean isValueIndented = false;
 
+
+
+
+                        // INDENT, ANCHOR(&anchor), NEWLINE, DEDENT
+                        YamlToken pendingAnchor = null;
+                        boolean hasIndentedAnchor = false;
+                        // if (checkIndented(YamlTokenType.ANCHOR)) {
+                        //     trace("PM-hasIndentedAnchor1");
+                        //     hasIndentedAnchor = true;
+                        //     advance();
+                        // }
+                        // if (check(YamlTokenType.ANCHOR)) {
+                        //     pendingAnchor = advance();
+                        //     if (check(YamlTokenType.NEWLINE)) {
+                        //         skipTrivia();
+                        //     }
+                        //     trace("PM-anchor");
+                        //     if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
+                        //         advance();
+                        //         hasIndentedAnchor = false;
+                        //         trace("PM-hasIndentedAnchor-dedent");
+                        //     }
+                        // }
+
+
+
+
                         if (checkIndented(YamlTokenType.TAG)) {
                             hasIndentedTag = true;
+                        }
+                        else if (checkIndented(YamlTokenType.ANCHOR)) {
+                            // Let parseValue handle it
                         }
                         else if (check(YamlTokenType.INDENT)) {
                             trace("PM-value-indent");
@@ -894,6 +1049,33 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                             trace("PM-value-dedent");
                             consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
                         }
+
+
+
+
+                        if (hasIndentedAnchor) {
+                            trace("PM-hasIndentedAnchor-dedent");
+                            consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
+                        }
+                        if (pendingAnchor != null) {
+                            String raw = pendingAnchor.getContent();
+                            String name = raw.startsWith("&") ? raw.substring(1) : raw;
+
+                            anchorRegistry.put(name, value);
+
+                            // Wrap in YamlAnchorNode (same as parseValue)
+                            YamlAnchor anchorNode = new YamlAnchor(
+                                value.getStartLine(),
+                                value.getStartColumn(),
+                                name,
+                                value
+                            );
+                            value = anchorNode;
+                        }
+
+
+
+
                     }
                     trace("after parseValue");
 
@@ -1094,10 +1276,37 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     /// Parses a block sequence (list) indicated by leading dashes.
-    private YamlSequence parseSequence() {
+    private YamlNode parseSequence() {
         debug(">parseSequence");
         depth++;
         try {
+
+
+
+
+            boolean hasIndentedAnchor = false;
+            if (checkIndented(YamlTokenType.ANCHOR)) {
+                debug("PA-hasIndentedAnchor1");
+                hasIndentedAnchor = true;
+                advance();
+            }
+
+            YamlToken pendingAnchor = null;
+            if (check(YamlTokenType.ANCHOR)) {
+                pendingAnchor = advance();
+                if (check(YamlTokenType.NEWLINE)) {
+                    skipTrivia();
+                }
+                debug("PA-hasIndentedAnchor2");
+                if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
+                    advance();
+                    hasIndentedAnchor = false;
+                }
+            }
+
+
+
+
             YamlToken startToken = peek();
             int indicatorColumn = startToken.getStartColumn();
 
@@ -1146,6 +1355,28 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                 skipTrivia();
             }
+
+
+
+
+            if (pendingAnchor != null) {
+                String raw = pendingAnchor.getContent();
+                String name = raw.startsWith("&") ? raw.substring(1) : raw;
+
+                anchorRegistry.put(name, sequence);
+
+                // Wrap in YamlAnchorNode (same as parseValue)
+                YamlAnchor anchorNode = new YamlAnchor(
+                    sequence.getStartLine(),
+                    sequence.getStartColumn(),
+                    name,
+                    sequence
+                );
+                return anchorNode;
+            }
+
+
+
 
             return sequence;
         } finally {

@@ -702,6 +702,7 @@ public class SpecTests {
                 .setLevel(TOKENIZER_LEVEL)
                 .setAnsiColoringEnabled(true));
 
+        parser.getReporter().setLevel(Level.TRACE);
         YamlStream stream = parser.parseMulti(yaml);
 
         if (true|dumpTokens) {
