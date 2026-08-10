@@ -152,39 +152,15 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             }
             return new AgnosticScalarNode(scalar.getPrimitive());
         }
-
-
-
-
-        // Object value = switch (tag) {
-        //     case "!!str" -> normalizeString(scalar);
-        //     case "!!float" -> scalar.asDouble();
-        //     case "!!int"   -> scalar.asInteger();
-        //     case "!!bool"  -> scalar.asBoolean();
-        //     case "!!null"  -> null;
-        //     default -> normalizeString(scalar);
-        // };
         Object value = scalar.getPrimitive();
-
-
-
         return new AgnosticScalarNode(value);
     }
 
-    // 14:26 - The correct conversion method (final)
     private String normalizeString(YamlScalar scalar) {
         if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
             return "";
         }
         String s = scalar.asString();
-        // if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
-
-        //     // 1. Fold newline + indentation (spaces or tabs) → single space
-        //     // s = s.replaceAll("\n[ \t]+", " ");
-
-        //     // 2. ONLY unescape backslash + REAL TAB (RLN_01)
-        //     s = s.replaceAll("\\\\+(?!t)\t", "\t");
-        // }
         return s;
     }
 }
