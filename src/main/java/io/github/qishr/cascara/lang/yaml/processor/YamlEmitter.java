@@ -103,24 +103,9 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             var documents = stream.getDocuments();
             for (int i = 0; i < documents.size(); i++) {
                 YamlDocument doc = documents.get(i);
-
-                // Write explicit document markers if there are multiple documents,
-                // or if the document explicitly contains directives.
-                // if (documents.size() > 1 || !doc.getDirectives().isEmpty()) {
-                //     sb.append("---").append(NL);
-                // }
-                if (options.isExplicitStart() || documents.size() > 1 || !doc.getDirectives().isEmpty()) {
-                    sb.append("---").append(NL);
-                }
+                emitDocument(doc, i, documents.size());
 
 
-                // Process the body of this specific document
-                emitNode(doc.getBody(), 0, false, false);
-
-                // Append a newline between documents if we aren't at the very end
-                if (i < documents.size() - 1 && sb.length() > 0 && sb.charAt(sb.length() - 1) != '\n') {
-                    sb.append(NL);
-                }
             }
         } else {
             // Fallback for direct single-node emission
@@ -129,6 +114,24 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         debugOutput(sb.toString());
         return sb.toString();
+    }
+
+    private void emitDocument(YamlDocument doc, int docNum, int numDocs) {
+        // Write explicit document markers if there are multiple documents,
+        // or if the document explicitly contains directives.
+        if (options.isExplicitStart() || numDocs > 1 || !doc.getDirectives().isEmpty()) {
+            sb.append("---").append(NL);
+        }
+
+        // TODO: Directives
+
+        // Process the body of this specific document
+        emitNode(doc.getBody(), 0, false, false);
+
+        // Append a newline between documents if we aren't at the very end
+        if (docNum < numDocs - 1 && sb.length() > 0 && sb.charAt(sb.length() - 1) != '\n') {
+            sb.append(NL);
+        }
     }
 
     /// Recursive dispatcher for AST nodes.
@@ -140,6 +143,11 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     private void emitNode(YamlNode node, int indent, boolean isSequenceItem, boolean isFlow) {
         if (node == null) return;
 
+        if (node instanceof YamlDocument document) {
+            emitDocument(document, 0, 1);
+            return;
+        }
+
         // 1. Extract the actual target data node if wrapped in an Anchor decorator
         YamlNode targetNode = node;
         while (targetNode instanceof YamlAnchor wrapper) {
@@ -148,7 +156,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         // 2. ALIAS CHECK
         if (targetNode instanceof YamlAlias alias) {
-            sb.append("*").append(alias.getAlias());
+            sb.append("*").append(alias.getName());
             return;
         }
 

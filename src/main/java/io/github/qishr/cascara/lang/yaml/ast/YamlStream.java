@@ -52,6 +52,17 @@ public class YamlStream extends YamlNode {
         super(token);
     }
 
+    public YamlStream(YamlToken token, List<YamlDocument> documents) {
+        super(token);
+        this.documents.addAll(documents);
+    }
+
+    public YamlStream(YamlToken token, List<YamlDocument> documents, List<YamlComment> comments) {
+        super(token);
+        this.documents.addAll(documents);
+        this.comments.addAll(comments);
+    }
+
     public void addDocument(YamlDocument document) {
         if (document != null) {
             this.documents.add(document);
@@ -60,6 +71,12 @@ public class YamlStream extends YamlNode {
 
     public List<YamlDocument> getDocuments() {
         return documents;
+    }
+
+    // TODO: Iterator of documents
+
+    public YamlDocument getDocument(int i) {
+        return documents.get(i);
     }
 
     public List<YamlComment> getComments() {

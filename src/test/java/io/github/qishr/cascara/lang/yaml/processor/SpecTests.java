@@ -9,9 +9,9 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.LocalizableIOException;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.common.lang.agnostic.AgnosticMapNode;
-import io.github.qishr.cascara.common.lang.agnostic.AgnosticNode;
-import io.github.qishr.cascara.common.lang.agnostic.AgnosticSequenceNode;
+import io.github.qishr.cascara.common.lang.plain.PlainMapNode;
+import io.github.qishr.cascara.common.lang.plain.PlainNode;
+import io.github.qishr.cascara.common.lang.plain.PlainSequenceNode;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
@@ -222,7 +222,7 @@ public class SpecTests {
             .map(e -> {
                 YamlNode k = e.getKey();
                 if (k instanceof YamlScalar s) return s.asString();
-                if (k instanceof YamlAlias a) return "*" + a.getAlias();
+                if (k instanceof YamlAlias a) return "*" + a.getName();
                 return "<complex>";
             })
             .toList();
@@ -254,7 +254,7 @@ public class SpecTests {
             for (YamlMapEntry e : map.getEntries()) {
                 YamlNode k = e.getKey();
                 if (k instanceof YamlAlias a) {
-                    out.add("*" + a.getAlias());
+                    out.add("*" + a.getName());
                 }
                 collectAliasKeys(e.getValue(), out);
             }
@@ -2112,17 +2112,17 @@ public class SpecTests {
         YamlDocument doc = stream.getDocuments().getFirst();
 
         YamlNode body = YamlNormalizer.normalize(doc.getBody());
-        AgnosticNode agnostic = new YamlConverter().toPlainAst(body);
+        PlainNode agnostic = new YamlConverter().toPlainAst(body);
 
-        AgnosticSequenceNode seq = (AgnosticSequenceNode)agnostic;
+        PlainSequenceNode seq = (PlainSequenceNode)agnostic;
         assertEquals(3, seq.size());
 
         TestUtils.assertEquals("x\n", seq.getScalar(0).asString());
 
-        AgnosticMapNode map1 = seq.getMap(1);
+        PlainMapNode map1 = seq.getMap(1);
         TestUtils.assertEquals("bar", map1.getScalar("foo").asString());
 
-        AgnosticSequenceNode seq2 = seq.getSequence(2);
+        PlainSequenceNode seq2 = seq.getSequence(2);
         assertEquals(42, seq2.getScalar(0).asInteger());
 
     }

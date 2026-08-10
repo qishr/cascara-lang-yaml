@@ -37,15 +37,17 @@ package io.github.qishr.cascara.lang.yaml.ast;
 
 import java.util.List;
 
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+
 public class YamlAnchor extends YamlNode {
-    private final String anchorName;
+    private final String name;
 
     // TODO: Should this be called innerNode or wrappedNode, or something else?
     private final YamlNode innerNode;
 
     public YamlAnchor(int line, int column, String name, YamlNode node) {
         super(line, column, null);
-        this.anchorName = name;
+        this.name = name;
         this.innerNode = node;
         this.setAnchor(name);
         // Also ensure the inner node knows it's anchored
@@ -54,7 +56,18 @@ public class YamlAnchor extends YamlNode {
         }
     }
 
-    public String getAnchorName() { return anchorName; }
+    public YamlAnchor(YamlToken token, String name, YamlNode node) {
+        super(token, null);
+        this.name = name;
+        this.innerNode = node;
+        this.setAnchor(name);
+        // Also ensure the inner node knows it's anchored
+        if (node != null) {
+            node.setAnchor(name);
+        }
+    }
+
+    public String getName() { return name; }
     public YamlNode getInnerNode() { return innerNode; }
 
     /// {@inheritDoc}

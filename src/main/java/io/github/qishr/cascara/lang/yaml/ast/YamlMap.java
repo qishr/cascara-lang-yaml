@@ -75,14 +75,56 @@ public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, 
 
     /// {@inheritDoc}
     @Override
-    public boolean containsKey(YamlNode key) {
-        return getEntry(key) != null;
+    public boolean containsKey(Object key) {
+        if (key instanceof YamlNode node) {
+            return getEntry(node) != null;
+        } else if (key instanceof String string) {
+            return containsKeyString(string);
+        } else {
+            return false;
+        }
     }
+
+    // public boolean containsKey(YamlNode key) {
+    //     return getEntry(key) != null;
+    // }
+
+    private boolean containsKeyString(String key) {
+        for (YamlNode keyNode : entriesByKey.keySet()) {
+            if (key == null) {
+                if (keyNode == null) {
+                    return true;
+                }
+            } else if (keyNode instanceof YamlScalar scalar && key.equals(scalar.asString())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     /// {@inheritDoc}
     @Override
     @Nullable
-    public YamlNode get(YamlNode key) {
+    public YamlNode get(Object key) {
+        if (key instanceof String string) {
+            for (Map.Entry<YamlNode,YamlMapEntry> entry : entriesByKey.entrySet()) {
+                YamlMapEntry entryNode = entry.getValue();
+
+                YamlNode kNode = entryNode.getKey();
+                String entryKey = null;
+                if (kNode instanceof YamlScalar scalar) {
+                    entryKey = scalar.asString();
+                } else {
+                    entryKey = kNode.toString();
+                }
+
+                if (string.equals(entryKey)) {
+                    YamlNode val = entryNode.getValue();
+                    return (val instanceof YamlAnchor a) ? a.getInnerNode() : val;
+                }
+            }
+        }
         YamlMapEntry value = getEntry(key);
         return value == null ? null : value.getValue();
     }
@@ -96,7 +138,7 @@ public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, 
     /// {@inheritDoc}
     @Override
     @Nullable
-    public YamlMapEntry getEntry(YamlNode key) {
+    public YamlMapEntry getEntry(Object key) {
         return entriesByKey.get(key);
     }
 
@@ -167,46 +209,35 @@ public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, 
     // Convenience Methods
     //
 
-    /// {@inheritDoc}
-    @Override
-    public boolean containsKey(String key) {
-        for (YamlNode keyNode : entriesByKey.keySet()) {
-            if (keyNode instanceof YamlScalar scalar && key.equals(scalar.asString())) {
-                return true;
-            }
-        }
-        return false;
-    }
+    // /// {@inheritDoc}
+    // @Override
+    // @Nullable
+    // public YamlNode get(String key) {
+    //     if (key == null) return null;
+
+    //     for (Map.Entry<YamlNode,YamlMapEntry> entry : entriesByKey.entrySet()) {
+    //         YamlMapEntry entryNode = entry.getValue();
+
+    //         YamlNode kNode = entryNode.getKey();
+    //         String entryKey = null;
+    //         if (kNode instanceof YamlScalar scalar) {
+    //             entryKey = scalar.asString();
+    //         } else {
+    //             entryKey = kNode.toString();
+    //         }
+
+    //         if (key.equals(entryKey)) {
+    //             YamlNode val = entryNode.getValue();
+    //             return (val instanceof YamlAnchor a) ? a.getInnerNode() : val;
+    //         }
+    //     }
+    //     return null;
+    // }
 
     /// {@inheritDoc}
     @Override
     @Nullable
-    public YamlNode get(String key) {
-        if (key == null) return null;
-
-        for (Map.Entry<YamlNode,YamlMapEntry> entry : entriesByKey.entrySet()) {
-            YamlMapEntry entryNode = entry.getValue();
-
-            YamlNode kNode = entryNode.getKey();
-            String entryKey = null;
-            if (kNode instanceof YamlScalar scalar) {
-                entryKey = scalar.asString();
-            } else {
-                entryKey = kNode.toString();
-            }
-
-            if (key.equals(entryKey)) {
-                YamlNode val = entryNode.getValue();
-                return (val instanceof YamlAnchor a) ? a.getInnerNode() : val;
-            }
-        }
-        return null;
-    }
-
-    /// {@inheritDoc}
-    @Override
-    @Nullable
-    public YamlMap getMap(String key) {
+    public YamlMap getMap(Object key) {
         if (get(key) instanceof YamlMap map) {
             return map;
         }
@@ -216,7 +247,7 @@ public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, 
     /// {@inheritDoc}
     @Override
     @Nullable
-    public YamlSequence getSequence(String key) {
+    public YamlSequence getSequence(Object key) {
         if (get(key) instanceof YamlSequence seq) {
             return seq;
         }
@@ -225,7 +256,7 @@ public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, 
 
     @Override
     @Nullable
-    public YamlScalar getScalar(String key) {
+    public YamlScalar getScalar(Object key) {
         if (get(key) instanceof YamlScalar scalar) {
             return scalar;
         }
