@@ -252,7 +252,7 @@ public class SpecTests2 {
         YamlNode originalKey = originalEntry.getKey();
         YamlNode originalVal = originalEntry.getValue();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = YamlNormalizer.normalize(YamlAliasResolver.resolve(doc.getBody()));
 
         YamlMap normalizedMap = (YamlMap) body;
         YamlMapEntry normalizedEntry = normalizedMap.getEntry(1);
@@ -928,7 +928,9 @@ public class SpecTests2 {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = YamlNormalizer.normalize(
+            YamlAliasResolver.resolve(doc.getBody())
+        );
         PlainNode agnostic = new YamlConverter().toPlainAst(body);
         PlainSequenceNode seq = (PlainSequenceNode)agnostic;
 
