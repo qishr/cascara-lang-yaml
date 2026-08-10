@@ -227,7 +227,16 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
         if (!isStringValueCached) {
             if (primitiveType != PrimitiveType.NULL) {
                 if (token == null) {
-                    stringValue = (jvmValue == null) ? null : String.valueOf(jvmValue);
+                    if (primitiveType == PrimitiveType.NUMBER) {
+                        Number number = (Number) jvmValue;
+                        if (number.intValue() == number.doubleValue()) {
+                            stringValue = String.valueOf(number.intValue());
+                        } else {
+                            stringValue = String.valueOf(number.doubleValue());
+                        }
+                    } else {
+                        stringValue = (jvmValue == null) ? null : String.valueOf(jvmValue);
+                    }
                 } else {
                     stringValue = unescape(originalContent, scalarStyle);
                 }
