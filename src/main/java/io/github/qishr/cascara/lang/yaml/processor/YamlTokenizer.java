@@ -564,19 +564,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     char c = currLine.charAt(i);
                     if (c == '\\') {
                         c = currLine.charAt(i + 1);
-                        // if (c != '\r' && c != '\n' && c != '"' && c != '\\' &&
-                        //     c != 'b' && c != 'x' && c != 'r' && c != 'n' && c != 'u') {
-                        //     doNotTrimLeading = true;
-                        //     currLine = currLine.substring(i + 1);
-                        //     break;
-                        // }
                         if (c == ' ' || c == '\t') {
                             doNotTrimLeading = true;
                             currLine = currLine.substring(i + 1);
                             break;
                         }
                     } else if (c != ' ' && c != '\t') {
-                        // TODO: Check if tabs are allowed before this backslash
                         break;
                     }
                 }
@@ -1087,8 +1080,15 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             if (ch == '?' && !lineHasContent && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
                 return ScalarAction.STOP_MAP_KEY;
             }
-            if (ch == ':' && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
-                return ScalarAction.STOP_MAP_VALUE;
+            if (ch == ':') {
+                if (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n') {
+                    return ScalarAction.STOP_MAP_VALUE;
+                }
+                if (flowDepth > 0) {
+                    if (next == ',' || next == '}' || next ==']') {
+                        return ScalarAction.STOP_MAP_VALUE;
+                    }
+                }
             }
             if (ch == '-' && !lineHasContent && (next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n')) {
                 return ScalarAction.STOP_SEQ;

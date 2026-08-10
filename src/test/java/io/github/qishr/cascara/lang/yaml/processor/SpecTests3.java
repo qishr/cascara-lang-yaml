@@ -93,4 +93,27 @@ public class SpecTests3 {
         TestUtils.assertEquals(null, entry2.getValue().asString());
 
     }
+
+    // @Test
+    // public void test4ABKa() {
+    //     String yaml = """
+    //         {
+    //         omitted value:,
+    //         }
+    //         """;
+
+    //     tokenize(yaml);
+
+    //     YamlStream stream = parser.parseMulti(yaml);
+    //     assertEquals(1, stream.getDocuments().size());
+    //     YamlDocument doc = stream.getDocuments().getFirst();
+    //     YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+    //     YamlMap map = (YamlMap) body;
+
+    //     YamlMapEntry entry2 = map.getEntry(0);
+    //     TestUtils.assertEquals("omitted value", entry2.getKeyString());
+    //     TestUtils.assertEquals(null, entry2.getValue().asString());
+
+    // }
 }
