@@ -540,6 +540,7 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
             switch (esc) {
                 case 'n':  out.append('\n'); i += 2; continue;
                 case 't':  out.append('\t'); i += 2; continue;
+                case '\t':  out.append('\t'); i += 2; continue;
                 case 'r':  out.append('\r'); i += 2; continue;
                 case 'b':  out.append('\b'); i += 2; continue;
                 // case 'f':  out.append('\f'); i += 2; continue;

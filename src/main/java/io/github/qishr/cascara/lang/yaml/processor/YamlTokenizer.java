@@ -538,6 +538,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         boolean alreadyHadContent = false;
         boolean prevEolWasEscaped = false;
         boolean prevLineWasBlank = false;
+        boolean doNotTrimLeading = false;
 
         boolean startsOnNewLine = previousNonWhitespaceToken == null
             ? true
@@ -556,11 +557,36 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             lineHasContent = false;
             currLine = peekLine();
 
+            // Test NP9H
+            // If there's a backslash before the content, remove it and the whitespace preceeding it.
+            if (scalarStyle == ScalarStyle.DOUBLE_QUOTED) {
+                for (int i = 0; i < currLine.length() - 1; i++) {
+                    char c = currLine.charAt(i);
+                    if (c == '\\') {
+                        c = currLine.charAt(i + 1);
+                        // if (c != '\r' && c != '\n' && c != '"' && c != '\\' &&
+                        //     c != 'b' && c != 'x' && c != 'r' && c != 'n' && c != 'u') {
+                        //     doNotTrimLeading = true;
+                        //     currLine = currLine.substring(i + 1);
+                        //     break;
+                        // }
+                        if (c == ' ' || c == '\t') {
+                            doNotTrimLeading = true;
+                            currLine = currLine.substring(i + 1);
+                            break;
+                        }
+                    } else if (c != ' ' && c != '\t') {
+                        // TODO: Check if tabs are allowed before this backslash
+                        break;
+                    }
+                }
+            }
+
             // TODO: We need to make sure the extra spaces don't go into the lexeme.
             // They are just to keep scanning less complicated (!!)
 
             // This isnn't entirely right -
-            // We don't want to add leading spacces if they a...??????
+            // We don't want to add leading spacces if they ...??????
             addedLeadingWhitespace = 0;
             if (lineNum == 0 && startsOnNewLine && scalarStyle == ScalarStyle.PLAIN) {
                 // If this is the first line of an unquoted string that
@@ -674,18 +700,41 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     currLineTrimmed = currLineTrimmed.substring(0, currLineTrimmed.length() - 1);
                 }
             } else {
-                if (!isQuoted || lineNum > 0) {
-                    isEmpty = currLineTrimmed.isBlank(); // !!2
-                    currLineTrimmed = currLineTrimmed.stripLeading();
 
-                    if (currLineTrimmed.length() < currLine.length()) {
-                        trimmedCharOffset -= (currLine.length() - currLineTrimmed.length());
+
+
+
+                // if (!isQuoted || lineNum > 0) {
+                //     isEmpty = currLineTrimmed.isBlank(); // !!2
+                //     if (!doNotTrimLeading) {
+                //         currLineTrimmed = currLineTrimmed.stripLeading();
+                //         if (currLineTrimmed.length() < currLine.length()) {
+                //             trimmedCharOffset -= (currLine.length() - currLineTrimmed.length());
+                //         }
+                //         currLineTrimmed = currLineTrimmed.trim(); // TODO: this should not be needed
+                //     }
+                //     currLineTrimmed = currLineTrimmed.stripTrailing();
+                // } else {
+                //     isEmpty = currLineTrimmed.isBlank(); // !!2
+                // }
+
+                    isEmpty = currLineTrimmed.isBlank(); // !!2
+                    if (!doNotTrimLeading && (!isQuoted || lineNum > 0)) {
+                        currLineTrimmed = currLineTrimmed.stripLeading();
+                        if (currLineTrimmed.length() < currLine.length()) {
+                            trimmedCharOffset -= (currLine.length() - currLineTrimmed.length());
+                        }
+                        currLineTrimmed = currLineTrimmed.trim(); // TODO: this should not be needed
                     }
+                    currLineTrimmed = currLineTrimmed.stripTrailing();
 
-                    currLineTrimmed = currLineTrimmed.trim();
-                } else {
-                    isEmpty = currLineTrimmed.isBlank(); // !!2
-                }
+
+
+
+
+
+
+
 
                 if (isQuoted && action == ScalarAction.CONTINUE) {
                     // TODO: Do this for plain too?
@@ -712,6 +761,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             if (action == ScalarAction.CONTINUE || action == ScalarAction.STOP_QUOTE || action == ScalarAction.STOP_EOF) {
                 lexeme.append(currLineLexeme);
                 debug("currLine: " + StringUtils.debugString(currLine));
+                debug("currLineTrimmed: " + StringUtils.debugString(currLineTrimmed));
                 debug("content0: " + StringUtils.debugString(content.toString()));
 
                 if (currLineTrimmed.isEmpty() && action != ScalarAction.STOP_QUOTE) {
@@ -804,7 +854,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     trailingBlankLines.clear();
 
                     if (isQuoted && !lineHasContent) {
-                        currLineTrimmed = currLineTrimmed.trim();
+                        if (doNotTrimLeading) {
+                            currLineTrimmed = currLineTrimmed.stripTrailing();
+                        } else {
+                            currLineTrimmed = currLineTrimmed.trim();
+                        }
+                        // currLineTrimmed = currLineTrimmed.trim();
                     }
 
                     debug("currLineTrimmed: " + StringUtils.debugString(currLineTrimmed));

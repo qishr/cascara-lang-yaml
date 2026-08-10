@@ -8,6 +8,7 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.agnostic.AgnosticNode;
+import io.github.qishr.cascara.common.lang.agnostic.AgnosticScalarNode;
 import io.github.qishr.cascara.common.lang.agnostic.AgnosticSequenceNode;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
@@ -961,6 +962,110 @@ public class SpecTests2 {
         TestUtils.assertEquals("\n\n# detected\n", seq.getScalar(1).asString());
         TestUtils.assertEquals(" explicit\n", seq.getScalar(2).asString());
         TestUtils.assertEquals("\t\ndetected\n", seq.getScalar(3).asString());
+    }
+
+    @Test
+    public void testNP9H() {
+        String yaml = "\"folded \nto a space,\t\n \nto a line feed, or \t\\\n \\ \tnon-content\"";
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlScalar scalar = (YamlScalar) body;
+
+        String actual = scalar.asString();
+        String expected = "folded to a space,\nto a line feed, or \t \tnon-content";
+
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(actual));
+        }
+
+        TestUtils.assertEquals(expected, scalar.asString());
+    }
+
+    @Test
+    public void testNP9Hb() {
+        String yaml = "\"folded \nto\"";
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlScalar scalar = (YamlScalar) body;
+
+        String actual = scalar.asString();
+        String expected = "folded to";
+
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(actual));
+        }
+
+        TestUtils.assertEquals(expected, scalar.asString());
+    }
+
+    @Test
+    public void testKH5V_00() {
+        String yaml = "\"2 inline\\ttab\"\n";
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        AgnosticNode agnostic = new YamlConverter().toPlainAst(body);
+        AgnosticScalarNode scalar = (AgnosticScalarNode)agnostic;
+
+        String actual = scalar.asString();
+        String expected = "2 inline\ttab";
+
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(actual));
+        }
+
+        TestUtils.assertEquals(expected, scalar.asString());
+    }
+
+    @Test
+    public void testKH5V_01() {
+        String yaml = "\"2 inline\\\ttab\"";
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+
+        AgnosticNode agnostic = new YamlConverter().toPlainAst(body);
+        AgnosticScalarNode scalar = (AgnosticScalarNode)agnostic;
+
+        String actual = scalar.asString();
+        String expected = "2 inline\ttab";
+
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(actual));
+        }
+
+        TestUtils.assertEquals(expected, scalar.asString());
     }
 
     @Test

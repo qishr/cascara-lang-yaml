@@ -40,18 +40,36 @@ public class SpecTests {
     private static final Level TOKENIZER_LEVEL = Level.DEBUG;
     private static final boolean dumpTokens = false;
 
+    private static final boolean DUMP_TOKENS = true;
+    private static final boolean DEBUG = true;
+
+    private YamlTokenizer tokenizer;
     private YamlAstParser parser;
     private Reporter reporter;
 
     @BeforeEach
     void setup() {
         reporter = new StandardReporter()
-            .setLevel(PARSER_LEVEL)
+            .setLevel(Level.DEBUG)
             .setAnsiColoringEnabled(true)
-            .setFlushEnabled(false);
+            .setFlushEnabled(false)
+            .setStackTraceEnabled(true);
 
         parser = new YamlAstParser()
             .setReporter(reporter);
+
+        tokenizer = new YamlTokenizer();
+        tokenizer.setReporter(reporter);
+    }
+
+    private void tokenize(String yaml) {
+        List<YamlToken> tokens = tokenizer.tokenize(yaml);
+        if (DUMP_TOKENS) {
+            TestUtils.dumpTokens(
+                reporter.getWriter(Level.DEBUG),
+                tokens
+            );
+        }
     }
 
     @Test
@@ -750,11 +768,27 @@ public class SpecTests {
 
         YamlNode body = YamlNormalizer.normalize(doc.getBody());
 
+
         YamlMap map = (YamlMap)body;
         assertEquals(2, map.size());
 
-        assertEquals(23, map.getScalar("foo\nbar:baz\tx \\$%^&*()x").asInteger());
-        assertEquals(24, map.getScalar("x\\ny:z\\tx $%^&*()x").asInteger());
+        YamlMapEntry entry0 = map.getEntry(0);
+        YamlMapEntry entry1 = map.getEntry(1);
+
+        String key0 = "foo\nbar:baz\tx \\$%^&*()x";
+        // String key0 = "foo\\nbar:baz\\tx \\\\$%^&*()x";
+        String key1 = "x\\ny:z\\tx $%^&*()x";
+        // String key1 = "x\\\\ny:z\\\\tx $%^&*()x";
+
+        if (DEBUG) {
+            System.out.println("Expected 1: " + StringUtils.debugString(key0));
+            System.out.println("Actual 1  : " + StringUtils.debugString(entry0.getKeyString()));
+            System.out.println("Expected 2: " + StringUtils.debugString(key1));
+            System.out.println("Actual 2  : " + StringUtils.debugString(entry1.getKeyString()));
+        }
+
+        assertEquals(23, map.getScalar(key0).asInteger());
+        assertEquals(24, map.getScalar(key1).asInteger());
     }
 
     @Test
@@ -1047,14 +1081,7 @@ public class SpecTests {
             key2: {}
             """;
 
-        YamlTokenizer tokenizer = new YamlTokenizer();
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
-        if (true|dumpTokens) {
-            TestUtils.dumpTokens(tokens);
-        }
-
-        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
-        reporter.setLevel(Level.DEBUG);
+        tokenize(yaml);
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -1114,16 +1141,7 @@ public class SpecTests {
              The binary value above is a tiny arrow encoded as a gif image.
             """;
 
-        YamlTokenizer tokenizer = new YamlTokenizer();
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
-
-        if (true|dumpTokens) {
-            TestUtils.dumpTokens(tokens, 40);
-        }
-
-        parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
-
-        parser.setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true)); // TODO: REMOVE THIS
+        tokenize(yaml);
 
         YamlStream stream = parser.parseMulti(yaml);
         assertEquals(1, stream.getDocuments().size());
@@ -1139,7 +1157,14 @@ public class SpecTests {
         YamlScalar generic = map.getScalar("generic");
         YamlScalar description = map.getScalar("description");
 
-        TestUtils.assertEquals("R0lGODlhDAAMAIQAAP//9/X17unp5WZmZgAAAOfn515eXvPz7Y6OjuDg4J+fn5OTk6enp56enmlpaWNjY6Ojo4SEhP/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++SH+Dk1hZGUgd2l0aCBHSU1QACwAAAAADAAMAAAFLCAgjoEwnuNAFOhpEMTRiggcz4BNJHrv/zCFcLiwMWYNG84BwwEeECcgggoBADs=", canonical.asString());
+        String expectedCanonical = "R0lGODlhDAAMAIQAAP//9/X17unp5WZmZgAAAOfn515eXvPz7Y6OjuDg4J+fn5OTk6enp56enmlpaWNjY6Ojo4SEhP/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++SH+Dk1hZGUgd2l0aCBHSU1QACwAAAAADAAMAAAFLCAgjoEwnuNAFOhpEMTRiggcz4BNJHrv/zCFcLiwMWYNG84BwwEeECcgggoBADs=";
+
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expectedCanonical));
+            System.out.println("Actual  : " + StringUtils.debugString(canonical.asString()));
+        }
+
+        TestUtils.assertEquals(expectedCanonical, canonical.asString());
         TestUtils.assertEquals("R0lGODlhDAAMAIQAAP//9/X17unp5WZmZgAAAOfn515eXvPz7Y6OjuDg4J+fn5\nOTk6enp56enmlpaWNjY6Ojo4SEhP/++f/++f/++f/++f/++f/++f/++f/++f/+\n+f/++f/++f/++f/++f/++SH+Dk1hZGUgd2l0aCBHSU1QACwAAAAADAAMAAAFLC\nAgjoEwnuNAFOhpEMTRiggcz4BNJHrv/zCFcLiwMWYNG84BwwEeECcgggoBADs=\n", generic.asString());
         TestUtils.assertEquals("The binary value above is a tiny arrow encoded as a gif image.", description.asString());
     }
