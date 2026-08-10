@@ -34,66 +34,34 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.lang.type.PrimitiveType;
-import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
-import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 
 public class YamlNormalizer {
-    public static StandardReporter reporter = new StandardReporter().setLevel(Level.DEBUG);
 
     public static YamlNode normalize(YamlNode node) {
+        if (node == null) return null;
 
-        // unwrap anchors
+        // Unwrap structural anchor nodes
         if (node instanceof YamlAnchor anchor) {
             return normalize(anchor.getInnerNode());
         }
 
-        // resolve aliases
-        if (node instanceof YamlAlias alias) {
-            return normalize(alias.getResolvedNode());
-        }
-
-        // normalize maps
+        // Normalize maps recursively
         if (node instanceof YamlMap map) {
-
-            // First normalize children
             YamlMap newMap = new YamlMap(map.getToken(), map.getOptions());
             for (YamlMapEntry entry : map.getEntries()) {
                 YamlNode key = normalize(entry.getKey());
                 YamlNode value = normalize(entry.getValue());
-                newMap.put(new YamlMapEntry(
-                    key,
-                    value
-                ));
+                newMap.put(new YamlMapEntry(key, value));
             }
-
-            // *** SPECIAL CASE FOR TEST SUITE 2SXE ***
-            // Collapse { resolvedAlias → null } into resolvedAlias
-            if (newMap.getEntries().size() == 1) {
-                YamlMapEntry entry = newMap.getEntries().getFirst();
-
-                // Key must be a scalar (resolved alias)
-                if (entry.getKey() instanceof YamlScalar scalarKey &&
-                    entry.getValue() instanceof YamlScalar scalarValue &&
-                    scalarValue.getPrimitiveType() == PrimitiveType.NULL &&
-                    scalarKey.getAnchor() != null) {
-
-                    // This scalarKey came from resolving an alias
-                    return scalarKey;
-                }
-            }
-
             return newMap;
         }
 
-        // normalize sequences
+        // Normalize sequences recursively
         if (node instanceof YamlSequence seq) {
             YamlSequence newSeq = new YamlSequence(seq.getToken());
             for (YamlNode child : seq.getChildren()) {
@@ -102,7 +70,7 @@ public class YamlNormalizer {
             return newSeq;
         }
 
-        // scalars are already normalized
+        // Scalars are already in normalized form
         return node;
     }
 }

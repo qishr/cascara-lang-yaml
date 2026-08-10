@@ -41,17 +41,16 @@ import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 public class YamlAlias extends YamlNode {
 
-    // TODO: Should this be `alias` or `name`?
-    private final String alias;
+    private final String name;
 
     private YamlNode resolvedNode; // This is what the parser needs
 
     public YamlAlias(YamlToken token, String alias) {
         super(token);
-        this.alias = alias;
+        this.name = alias;
     }
 
-    public String getAlias() { return alias; }
+    public String getName() { return name; }
 
     /// Put this back to fix the Parser
     public void setResolvedNode(YamlNode node) {
@@ -73,7 +72,7 @@ public class YamlAlias extends YamlNode {
     public String getAnchor() {
         // In the context of an alias node, the 'anchor' it's interested in
         // is the string name it points to.
-        return getAlias();
+        return getName();
     }
 
     @Override

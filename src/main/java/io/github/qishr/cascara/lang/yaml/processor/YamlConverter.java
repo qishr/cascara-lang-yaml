@@ -42,10 +42,10 @@ import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
-import io.github.qishr.cascara.common.lang.agnostic.AgnosticMapNode;
-import io.github.qishr.cascara.common.lang.agnostic.AgnosticNode;
-import io.github.qishr.cascara.common.lang.agnostic.AgnosticScalarNode;
-import io.github.qishr.cascara.common.lang.agnostic.AgnosticSequenceNode;
+import io.github.qishr.cascara.common.lang.plain.PlainMapNode;
+import io.github.qishr.cascara.common.lang.plain.PlainNode;
+import io.github.qishr.cascara.common.lang.plain.PlainScalarNode;
+import io.github.qishr.cascara.common.lang.plain.PlainSequenceNode;
 import io.github.qishr.cascara.common.lang.processor.AstConverter;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
@@ -108,21 +108,21 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
     }
 
     @Nullable
-    public AgnosticNode toPlainAst(YamlNode yaml) {
+    public PlainNode toPlainAst(YamlNode yaml) {
         if (yaml == null) return null;
 
         if (yaml instanceof YamlMap map) {
-            AgnosticMapNode out = new AgnosticMapNode();
+            PlainMapNode out = new PlainMapNode();
             for (YamlMapEntry e : map.getEntries()) {
-                AgnosticNode key = toPlainAst(e.getKey());
-                AgnosticNode val = toPlainAst(e.getValue());
+                PlainNode key = toPlainAst(e.getKey());
+                PlainNode val = toPlainAst(e.getValue());
                 out.put(key, val);
             }
             return out;
         }
 
         if (yaml instanceof YamlSequence seq) {
-            AgnosticSequenceNode out = new AgnosticSequenceNode();
+            PlainSequenceNode out = new PlainSequenceNode();
             for (YamlNode child : seq.getChildren()) {
                 out.add(toPlainAst(child));
             }
@@ -140,7 +140,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
     }
 
     @Nullable
-    private AgnosticScalarNode convertScalar(YamlScalar scalar) {
+    private PlainScalarNode convertScalar(YamlScalar scalar) {
         if (scalar == null) return null;
 
         String tag = scalar.getTag();
@@ -148,12 +148,12 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         if (tag == null) {
             // Untagged: if double-quoted, treat as string
             if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
-                return new AgnosticScalarNode(normalizeString(scalar));
+                return new PlainScalarNode(normalizeString(scalar));
             }
-            return new AgnosticScalarNode(scalar.getPrimitive());
+            return new PlainScalarNode(scalar.getPrimitive());
         }
         Object value = scalar.getPrimitive();
-        return new AgnosticScalarNode(value);
+        return new PlainScalarNode(value);
     }
 
     private String normalizeString(YamlScalar scalar) {

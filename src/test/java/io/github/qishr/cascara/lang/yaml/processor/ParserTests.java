@@ -77,7 +77,7 @@ public class ParserTests {
         // Check Alias
         YamlNode linkValue = map.get("link");
         assertTrue(linkValue instanceof YamlAlias);
-        assertEquals("val", ((YamlAlias)linkValue).getAlias());
+        assertEquals("val", ((YamlAlias)linkValue).getName());
     }
 
     @Test

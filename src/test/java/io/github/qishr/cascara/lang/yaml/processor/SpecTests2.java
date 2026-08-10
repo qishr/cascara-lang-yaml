@@ -7,9 +7,9 @@ import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.common.lang.agnostic.AgnosticNode;
-import io.github.qishr.cascara.common.lang.agnostic.AgnosticScalarNode;
-import io.github.qishr.cascara.common.lang.agnostic.AgnosticSequenceNode;
+import io.github.qishr.cascara.common.lang.plain.PlainNode;
+import io.github.qishr.cascara.common.lang.plain.PlainScalarNode;
+import io.github.qishr.cascara.common.lang.plain.PlainSequenceNode;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
@@ -225,8 +225,8 @@ public class SpecTests2 {
         YamlDocument doc = stream.getDocuments().getFirst();
 
         YamlNode body = YamlNormalizer.normalize(doc.getBody());
-        // AgnosticNode agnostic = new YamlConverter().toPlainAst(body);
-        // AgnosticSequenceNode seq = (AgnosticMapNode)agnostic;
+        // PlainNode agnostic = new YamlConverter().toPlainAst(body);
+        // PlainSequenceNode seq = (PlainMapNode)agnostic;
 
         YamlSequence seq = (YamlSequence) body;
         assertEquals(3, seq.size());
@@ -266,7 +266,7 @@ public class SpecTests2 {
             System.out.println("O-val-string: " + originalVal.asString());
             if (originalVal instanceof YamlAlias alias) {
                 System.out.println("O-val-alias-anchor: " + alias.getAnchor());
-                System.out.println("O-val-alias-alias: " + alias.getAlias());
+                System.out.println("O-val-alias-alias: " + alias.getName());
                 YamlNode resolved = alias.getResolvedNode();
                 System.out.println("O-val-resolved-type: " + (resolved == null ? "null" : resolved.getClass().getSimpleName()));
                 System.out.println("O-val-resolved-string " + (resolved == null ? "n/a" : resolved.asString()));
@@ -843,7 +843,7 @@ public class SpecTests2 {
         AstNode node = new YamlConverter().toPlainAst(body);
 
 
-        // TODO: Rename Agnostic -> Plain (or Intermediate)
+        // TODO: Rename Plain -> Plain (or Intermediate)
 
 
 
@@ -878,7 +878,7 @@ public class SpecTests2 {
         YamlNode body = YamlNormalizer.normalize(doc.getBody());
 
 
-        // TODO: Rename Agnostic -> Plain (or Intermediate)
+        // TODO: Rename Plain -> Plain (or Intermediate)
 
 
 
@@ -929,8 +929,8 @@ public class SpecTests2 {
         YamlDocument doc = stream.getDocuments().getFirst();
 
         YamlNode body = YamlNormalizer.normalize(doc.getBody());
-        AgnosticNode agnostic = new YamlConverter().toPlainAst(body);
-        AgnosticSequenceNode seq = (AgnosticSequenceNode)agnostic;
+        PlainNode agnostic = new YamlConverter().toPlainAst(body);
+        PlainSequenceNode seq = (PlainSequenceNode)agnostic;
 
         assertEquals(5, seq.size());
 
@@ -1027,8 +1027,8 @@ public class SpecTests2 {
 
         YamlNode body = YamlNormalizer.normalize(doc.getBody());
 
-        AgnosticNode agnostic = new YamlConverter().toPlainAst(body);
-        AgnosticScalarNode scalar = (AgnosticScalarNode)agnostic;
+        PlainNode agnostic = new YamlConverter().toPlainAst(body);
+        PlainScalarNode scalar = (PlainScalarNode)agnostic;
 
         String actual = scalar.asString();
         String expected = "2 inline\ttab";
@@ -1054,8 +1054,8 @@ public class SpecTests2 {
 
         YamlNode body = YamlNormalizer.normalize(doc.getBody());
 
-        AgnosticNode agnostic = new YamlConverter().toPlainAst(body);
-        AgnosticScalarNode scalar = (AgnosticScalarNode)agnostic;
+        PlainNode agnostic = new YamlConverter().toPlainAst(body);
+        PlainScalarNode scalar = (PlainScalarNode)agnostic;
 
         String actual = scalar.asString();
         String expected = "2 inline\ttab";

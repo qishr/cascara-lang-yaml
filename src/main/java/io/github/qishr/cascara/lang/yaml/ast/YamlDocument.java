@@ -48,6 +48,12 @@ public class YamlDocument extends YamlNode {
         super(token);
     }
 
+    public YamlDocument(YamlToken token, YamlNode body, List<YamlDirective> directives) {
+        super(token);
+        this.body = body;
+        this.directives.addAll(directives);
+    }
+
     public void addDirective(YamlDirective directive) {
         if (directive != null) {
             this.directives.add(directive);
