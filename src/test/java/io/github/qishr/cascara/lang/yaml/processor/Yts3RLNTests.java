@@ -82,8 +82,8 @@ public class Yts3RLNTests {
 
     @Test
     public void test3RLN_04() {
-        String yaml = "\"5 leading\n    \\ \t tab\"";
-        String expected = "5 leading \\ \t tab";
+        String yaml = "\"5 leading\n    \\\t  tab\"";
+        String expected = "5 leading \t  tab";
         String actual = convert(yaml);
         debug(yaml, expected, actual);
         assertEquals(expected, actual, error(expected, actual));
