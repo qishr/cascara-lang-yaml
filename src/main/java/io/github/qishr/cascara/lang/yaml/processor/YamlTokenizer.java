@@ -537,6 +537,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         boolean prevHasExtraIndent = false;
         boolean alreadyHadContent = false;
         boolean prevEolWasEscaped = false;
+        boolean prevLineWasBlank = false;
 
         boolean startsOnNewLine = previousNonWhitespaceToken == null
             ? true
@@ -783,7 +784,20 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                             content.append("\n");
                         } else {
                             if (trailingBlankLines.isEmpty() && !content.isEmpty()) {
-                                content.append(' ');
+
+
+
+                                // TODO: Is this only for isBlock? or only for FOLDED? or...?
+                                // if (prevLineWasBlank && isBlock) {
+                                if (prevLineWasBlank) {
+                                    content.append('\n');
+                                } else {
+                                    content.append(' ');
+                                }
+                                // content.append(' ');
+
+
+
                             }
                         }
                     }
@@ -803,6 +817,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 debug("content1: " + StringUtils.debugString(content.toString()));
             }
 
+            prevLineWasBlank = currLineTrimmed.isBlank();
             prevHasExtraIndent = currHasExtraIndent;
             alreadyHadContent |= (!currLineTrimmed.isEmpty());
             prevEolWasEscaped = isEolEscaped;

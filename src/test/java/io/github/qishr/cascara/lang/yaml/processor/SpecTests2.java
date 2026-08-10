@@ -920,20 +920,9 @@ public class SpecTests2 {
             - !!str
             """;
 
-        // Reporter reporter = new StandardReporter()
-        //     .setLevel(Level.DEBUG)
-        //     .setAnsiColoringEnabled(true)
-        //     .setStackTraceEnabled(true);
-
-        // parser.getTokenizer().setReporter(reporter);
-        // parser.setReporter(reporter);
+        tokenize(yaml);
 
         YamlStream stream = parser.parseMulti(yaml);
-
-        if (DEBUG) {
-            TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
-        }
-
 
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
@@ -950,6 +939,28 @@ public class SpecTests2 {
         TestUtils.assertEquals("c", seq.getScalar(3).asString());
         TestUtils.assertEquals("", seq.getScalar(4).asString());
 
+    }
+
+    @Test
+    public void testR4YG() {
+        String yaml = "- |\n detected\n- >\n \n  \n # detected\n- |1\n  explicit\n- >\n \t\n detected\n";
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlSequence seq = (YamlSequence) body;
+
+        assertEquals(4, seq.size());
+
+        TestUtils.assertEquals("detected\n", seq.getScalar(0).asString());
+        TestUtils.assertEquals("\n\n# detected\n", seq.getScalar(1).asString());
+        TestUtils.assertEquals(" explicit\n", seq.getScalar(2).asString());
+        TestUtils.assertEquals("\t\ndetected\n", seq.getScalar(3).asString());
     }
 
     @Test
