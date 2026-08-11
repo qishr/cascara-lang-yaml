@@ -98,7 +98,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     private boolean streamStarted = false;
     private boolean streamEnded = false;
     private YamlToken previousNonWhitespaceToken;
-    private char previousCharacter;
+    // private char previousCharacter;
 
     /// Default constructor for SPI
     public YamlTokenizer() {}
@@ -383,9 +383,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             char next = buffer.peekAhead(1);
             boolean isAtEnd = buffer.offset() + 1 == buffer.length();
             boolean prevTokenWasColon = (previousNonWhitespaceToken != null && previousNonWhitespaceToken.getType() == YamlTokenType.VALUE_INDICATOR);
-            boolean prevCharWasWhitespace = isWhitespace(previous());
+            // boolean prevCharWasWhitespace = isWhitespace(previous());
             boolean nextCharIsWhitespace = isWhitespace(next);
-            boolean nextCharIsColon = next==':';
+            // boolean nextCharIsColon = next==':';
             boolean prevTokenWasScalar = (previousNonWhitespaceToken != null &&
                 previousNonWhitespaceToken.getType() == YamlTokenType.SCALAR);
             boolean prevTokenWasFlowEnd = (previousNonWhitespaceToken != null &&
@@ -1307,13 +1307,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     //
 
     private char advance() {
-        previousCharacter = buffer.peek();
+        // previousCharacter = buffer.peek();
         return buffer.advance();
     }
 
-    private char previous() {
-        return previousCharacter;
-    }
+    // private char previous() {
+    //     return previousCharacter;
+    // }
 
     private void resetCommonState() {
         indentationLevels = new ArrayDeque<>();
@@ -1463,13 +1463,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         reporter.debug(message, details);
     }
 
-    private void debugString(String string) {
-        if (reporter == null ||
-            reporter.isSilent() ||
-            !reporter.getLevel().includes(Level.DEBUG)) return;
+    // private void debugString(String string) {
+    //     if (reporter == null ||
+    //         reporter.isSilent() ||
+    //         !reporter.getLevel().includes(Level.DEBUG)) return;
 
-        reporter.debug(StringUtils.debugString(string));
-    }
+    //     reporter.debug(StringUtils.debugString(string));
+    // }
 
     private void debugString(String string, int pos) {
         if (reporter == null ||

@@ -1,12 +1,9 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.lang.plain.PlainNode;
 import io.github.qishr.cascara.common.lang.plain.PlainScalarNode;
 import io.github.qishr.cascara.common.lang.plain.PlainSequenceNode;
@@ -14,7 +11,6 @@ import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.util.StringUtils;
-import io.github.qishr.cascara.lang.yaml.CascaraYaml;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
@@ -23,11 +19,8 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
-import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.List;
 
 public class SpecTests2 extends ParserTestBase {
 
@@ -351,7 +344,8 @@ public class SpecTests2 extends ParserTestBase {
 
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
-        YamlNode body = normalize(doc.getBody());
+
+        normalize(doc.getBody());
 
         // YamlSequence seq = (YamlSequence) body;
         // YamlMap map0 = seq.getMap(0);
@@ -384,7 +378,8 @@ public class SpecTests2 extends ParserTestBase {
 
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
-        YamlNode body = normalize(doc.getBody());
+
+        normalize(doc.getBody());
 
         // YamlSequence seq = (YamlSequence) body;
         // YamlMap map0 = seq.getMap(0);
@@ -408,7 +403,8 @@ public class SpecTests2 extends ParserTestBase {
 
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
-        YamlNode body = normalize(doc.getBody());
+
+        normalize(doc.getBody());
 
         // YamlSequence seq = (YamlSequence) body;
         // YamlMap map0 = seq.getMap(0);
@@ -433,7 +429,8 @@ public class SpecTests2 extends ParserTestBase {
 
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
-        YamlNode body = normalize(doc.getBody());
+
+        normalize(doc.getBody());
 
         // YamlSequence seq = (YamlSequence) body;
         // YamlMap map0 = seq.getMap(0);

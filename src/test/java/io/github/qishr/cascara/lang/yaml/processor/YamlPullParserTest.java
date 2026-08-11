@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class YamlPullParserTest {
     @Test
     public void testScalars() throws Exception {
-        String yaml = "a: b\nb: c\n";
+        String yaml = "a: b\nc: d\n";
 
         Reporter reporter = new StandardReporter()
             .setLevel(Level.TRACE)

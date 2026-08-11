@@ -35,19 +35,15 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.PullParser;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlParser;
 
 import java.io.InputStream;
 import java.util.NoSuchElementException;
 
-public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implements PullParser {
-    // private YamlStreamEngine engine = new YamlStreamEngine();
-    private YamlAstParser engine = new YamlAstParser();
+public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implements PullParser {
     private final InputStream input;
 
     /// Default constructor for SPI.
@@ -57,35 +53,15 @@ public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implem
 
     public YamlPullParser(InputStream input) {
         this.input = input;
-        engine.setQueueEvents(true);
-        engine.beginParserThread(input);
-        // engine.setStream(input);
+        queueEvents(input);
     }
 
     @Override protected YamlPullParser self() { return this; }
 
-    public YamlTokenizer getTokenizer() {
-        return engine.getTokenizer();
-    }
-
-    public YamlPullParser setOptions(YamlOptions options) {
-        super.setOptions(options);
-        engine.setOptions(options);
-        return this;
-    }
-
-    @Override
-    public YamlPullParser setReporter(Reporter reporter) {
-        super.setReporter(reporter);
-        engine.setReporter(reporter);
-        return this;
-    }
-
     @Override
     public boolean hasNext() {
         try {
-            // ensureEngine();
-            return engine.hasNextEvent();
+            return hasNextEvent();
         } catch (YamlParserException e) {
             throw new RuntimeException("Error scanning for next streaming event", e);
         }
@@ -96,7 +72,7 @@ public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implem
         if (!hasNext()) {
             throw new NoSuchElementException("No more YAML streaming events available.");
         }
-        return engine.nextEvent(); // Throws ParserException, which is a RuntimeException
+        return nextEvent(); // Throws ParserException, which is a RuntimeException
     }
 
     @Override

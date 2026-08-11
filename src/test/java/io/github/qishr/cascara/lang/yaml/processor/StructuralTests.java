@@ -19,10 +19,6 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
-import io.github.qishr.cascara.lang.yaml.processor.TestUtils;
-import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
-import io.github.qishr.cascara.lang.yaml.processor.YamlNormalizer;
-import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 public class StructuralTests {
@@ -61,9 +57,9 @@ public class StructuralTests {
         return CascaraYaml.normalize(root);
     }
 
-    private YamlNode resolveAliases(YamlNode root) {
-        return CascaraYaml.resolve(root);
-    }
+    // private YamlNode resolveAliases(YamlNode root) {
+    //     return CascaraYaml.resolve(root);
+    // }
 
     @Test
     public void testStartsOnNewLine_key_and_scalar_valid1() {
