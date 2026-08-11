@@ -34,6 +34,8 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
+import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
@@ -41,8 +43,18 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 
 public class YamlNormalizer {
+    private Reporter reporter = new NoOpReporter();
 
-    public static YamlNode normalize(YamlNode node) {
+    public YamlNormalizer() {
+
+    }
+
+    public YamlNormalizer setReporter(Reporter reporter) {
+        this.reporter = reporter;
+        return this;
+    }
+
+    public YamlNode normalize(YamlNode node) {
         if (node == null) return null;
 
         // Unwrap structural anchor nodes

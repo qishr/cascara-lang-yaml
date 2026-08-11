@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
-import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
@@ -549,7 +548,7 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
             switch (esc) {
                 case 'n':  out.append('\n'); i += 2; continue;
                 case 't':  out.append('\t'); i += 2; continue;
-                case '\t':  out.append('\t'); i += 2; continue;
+                // case '\t':  out.append('\t'); i += 2; continue;
                 case 'r':  out.append('\r'); i += 2; continue;
                 case 'b':  out.append('\b'); i += 2; continue;
                 // case 'f':  out.append('\f'); i += 2; continue;
@@ -585,8 +584,7 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
                 }
             }
 
-            // Fallback: keep the backslash literally
-            out.append('\\');
+            // In YAML, if the backslash didn't escape anything, we discard it.
             i++;
         }
         return out.toString();

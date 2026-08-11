@@ -40,6 +40,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
@@ -52,7 +53,6 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlComment;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
@@ -78,15 +78,19 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
     @Override protected YamlEmitter self() { return this; }
 
-    // TODO: emitTagIfPresent
-    @Override public void emitScalar(String value) { sb.append(value); }
+    // TODO:
+    // emitTagIfPresent
+    // Directives
+    // test26DV bug
+
+    @Override public void emitScalar(String value) { appendText(value); }
     @Override public void emitMapStart() {}
     @Override public void emitMapEnd() {}
     @Override public void emitSequenceStart() {}
     @Override public void emitSequenceEnd() {}
-    @Override public void emitPropertySeparator() { sb.append(": "); }
+    @Override public void emitPropertySeparator() { appendText(": "); }
     @Override public void emitItemSeparator() {}
-    @Override public void emitNewLine() { sb.append(NL); }
+    @Override public void emitNewLine() { appendText(NL); }
     @Override public void indent() {}
     @Override public void dedent() {}
     @Override public String getOutput() { return sb.toString(); }
@@ -120,7 +124,8 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         // Write explicit document markers if there are multiple documents,
         // or if the document explicitly contains directives.
         if (options.isExplicitStart() || numDocs > 1 || !doc.getDirectives().isEmpty()) {
-            sb.append("---").append(NL);
+            appendText("---");
+            appendText(NL);
         }
 
         // TODO: Directives
@@ -130,7 +135,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         // Append a newline between documents if we aren't at the very end
         if (docNum < numDocs - 1 && sb.length() > 0 && sb.charAt(sb.length() - 1) != '\n') {
-            sb.append(NL);
+            appendText(NL);
         }
     }
 
@@ -156,25 +161,29 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         // 2. ALIAS CHECK
         if (targetNode instanceof YamlAlias alias) {
-            sb.append("*").append(alias.getName());
+            appendText("*");
+            appendText(alias.getName());
             return;
         }
 
         // 3. ANCHOR CHECK (Using targetNode to fetch anchor metadata safely)
-        // String anchor = targetNode.getAnchor();
-        // if (anchor != null && !anchor.isEmpty()) {
-        //     sb.append("&").append(anchor);
-        //     if (targetNode instanceof YamlScalarNode) sb.append(" ");
-        // }
         if (!options.stripAnchors()) {
             String anchor = targetNode.getAnchor();
             if (anchor != null && !anchor.isEmpty()) {
-                sb.append("&").append(anchor);
-                if (targetNode instanceof YamlScalar) sb.append(" ");
+                appendText("&");
+                appendText(anchor);
+                if (targetNode instanceof YamlScalar) {
+                    appendText(" ");
+                }
+                if (targetNode instanceof YamlMap) {
+                    appendText("\n");
+                }
+                if (targetNode instanceof YamlSequence) {
+                    appendText("\n");
+                }
             }
         }
 
-        // if (!isFlow) emitBlockComments(targetNode, indent);
         if (!options.stripComments() && !isFlow) {
             emitBlockComments(targetNode, indent);
         }
@@ -188,14 +197,14 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         } else if (targetNode instanceof YamlMap map) {
             if (map.getStyle() == NodeStyle.FLOW) {
                 emitFlowMap(map);
-                if (!isFlow) sb.append(NL);
+                if (!isFlow) appendText(NL);
             } else {
                 emitMap(map, indent, isSequenceItem);
             }
         } else if (targetNode instanceof YamlSequence seq) {
             if (seq.getStyle() == NodeStyle.FLOW) {
                 emitFlowSequence(seq);
-                if (!isFlow) sb.append(NL);
+                if (!isFlow) appendText(NL);
             } else {
                 emitSequence(seq, indent, isSequenceItem);
             }
@@ -210,7 +219,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         // 1. Implicit Null
         if (stringValue == null) {
-            if (!isFlow) sb.append(" ".repeat(indent));
+            if (!isFlow) appendText(" ".repeat(indent));
             return;
         }
 
@@ -230,17 +239,17 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                 String[] lexemeLines = lexeme.split("\n");
                 for (int i = 0; i < lexemeLines.length; i++) {
                     if (i > 0) {
-                        sb.append("\n");
-                        // sb.append(" ".repeat(scalar.getStartColumn() - 1));
+                        appendText("\n");
+                        // appendText(" ".repeat(scalar.getStartColumn() - 1));
                     }
-                    sb.append(lexemeLines[i]);
+                    appendText(lexemeLines[i]);
                 }
                 if (isBlock) {
-                    sb.append(NL);
+                    appendText(NL);
                 }
             } else {
-                if (!isFlow) sb.append(" ".repeat(indent));
-                sb.append(lexeme);
+                if (!isFlow) appendText(" ".repeat(indent));
+                appendText(lexeme);
             }
 
             if (!isFlow) {
@@ -263,7 +272,8 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         // 2. Block Literal (|) and Folded (>)
         if ((style == ScalarStyle.LITERAL || style == ScalarStyle.FOLDED) && !isFlow) {
-            sb.append(style == ScalarStyle.LITERAL ? "|" : ">").append(NL);
+            appendText(style == ScalarStyle.LITERAL ? "|" : ">");
+            appendText(NL);
 
             int blockIndent = indent + options.getIndentSize();
             String indentation = " ".repeat(blockIndent);
@@ -277,22 +287,24 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             }
 
             for (int i = 0; i < limit; i++) {
-                sb.append(indentation).append(lines[i]).append(NL);
+                appendText(indentation);
+                appendText(lines[i]);
+                appendText(NL);
             }
             return;
         }
 
-        if (!isFlow) sb.append(" ".repeat(indent));
+        if (!isFlow) appendText(" ".repeat(indent));
 
         String content = formatAndIndentMultiline(stringValue, style, indent);
-        sb.append(content);
+        appendText(content);
 
         // IF NOT IS FLOW, this is a standalone root scalar or similar
         if (!isFlow) {
             if (!options.stripComments()) {
                 handleInlineComments(scalar);
             }
-            sb.append(NL);
+            appendText(NL);
         }
     }
 
@@ -373,14 +385,17 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             var entry = entries.get(i);
 
             if (i > 0 || !isSequenceItem) {
-                sb.append(" ".repeat(indent));
+                appendText(" ".repeat(indent));
             }
 
             YamlNode key = entry.getKey();
 
             for (CommentAstNode c : key.getComments()) {
                 if (c instanceof YamlComment ycn && ycn.getStartLine() < key.getStartLine()) {
-                    sb.append("#").append(ycn.asString()).append(NL).append(" ".repeat(indent));
+                    appendText("#");
+                    appendText(ycn.asString());
+                    appendText(NL);
+                    appendText(" ".repeat(indent));
                 }
             }
 
@@ -389,15 +404,20 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                                   (key instanceof YamlSequence s && s.getStyle() == NodeStyle.BLOCK);
 
             if (isComplexKey) {
-                sb.append("?").append(NL);
+                appendText("?");
+                appendText(NL);
                 // Emit the nested block key with deeper indentation
                 emitNode(key, indent + options.getIndentSize(), false, false);
                 // Align the property indicator back to the current map entry indentation level
-                sb.append(" ".repeat(indent)).append(":");
+                appendText(" ".repeat(indent));
+                appendText(":");
             } else {
                 // Keep standard flat emission for plain scalar labels
                 emitNode(key, 0, false, true);
-                sb.append(":");
+                if (key instanceof YamlAlias) {
+                    appendText(" ");
+                }
+                appendText(":");
             }
 
             YamlNode value = entry.getValue();
@@ -406,12 +426,11 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
             if (isBlock) {
                 if (!isComplexKey) {
-                    // handleInlineComments(key); // Comment for the key line
                     if (!options.stripComments()) {
                         handleInlineComments(key);
                     }
                 }
-                sb.append(NL);
+                appendText(NL);
                 emitNode(value, indent + options.getIndentSize(), false, false);
             }
             // Handle multiline string block scalars cleanly (only for plain/block targeted text)
@@ -421,23 +440,32 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                     && scalar.asString() != null
                     && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
                 if (!isComplexKey) {
-                    // handleInlineComments(key);
                     if (!options.stripComments()) {
                         handleInlineComments(key);
                     }
                 }
 
-                sb.append(" ");
+                appendText(" ");
                 emitScalarInternal(scalar, indent + options.getIndentSize(), false);
             }
             else {
-                if (!isImplicitNull(value)) sb.append(" ");
-                emitNode(value, 0, false, true); // Clean text
-                // handleInlineComments(value);    // Value's inline comment
+                if (!isImplicitNull(value)) appendText(" ");
+
+                // emitNode(value, 0, false, true);
+                emitNode(value, indent + options.getIndentSize(), false, true);
+
                 if (!options.stripComments()) {
                     handleInlineComments(value);
                 }
-                sb.append(NL);
+
+                YamlNode targetNode = value;
+                if (value instanceof YamlAnchor anchor) {
+                    targetNode = anchor.getInnerNode();
+                }
+
+                if (!(targetNode instanceof YamlMap)) {
+                    appendText(NL);
+                }
             }
         }
     }
@@ -462,28 +490,28 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
             // 1. ALWAYS write the indentation and the dash for every element
             if (!(i == 0 && isSequenceItem)) {
-                sb.append(" ".repeat(indent));
+                appendText(" ".repeat(indent));
             }
-            sb.append("-");
+            appendText("-");
 
             // 2. Now decide how to handle the VALUE after that dash
             if (options.isExpandedStyle()) {
                 if (isImplicitNull(item)) {
                     // It's a null value in expanded style.
                     // We just need the newline to finish this item's line.
-                    sb.append(NL);
+                    appendText(NL);
                 } else {
-                    sb.append(NL);
+                    appendText(NL);
                     // Handle flow vs block indentation
                     handleExpandedItem(item, indent);
                 }
             }
             else if (item instanceof YamlMap m && m.getStyle() == NodeStyle.BLOCK) {
-                sb.append(" ");
+                appendText(" ");
                 emitMap(m, indent + 2, true);
             }
             else if (item instanceof YamlSequence s && s.getStyle() == NodeStyle.BLOCK) {
-                sb.append(NL);
+                appendText(NL);
                 emitNode(item, indent + options.getIndentSize(), false, false);
             }
             else {
@@ -495,22 +523,21 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                         && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
                     // It's a multiline string scalar! It CANNOT be inline/flowed after a compact dash.
                     // It must trigger a newline and follow block formatting guidelines.
-                    sb.append(NL);
+                    appendText(NL);
                     emitScalarInternal(scalar, indent + options.getIndentSize(), false);
                 }
                 else {
                     // True compact inline scalars / flow collections
                     if (!isImplicitNull(item)) {
-                        sb.append(" ");
+                        appendText(" ");
                     }
 
                     // Force isFlow=true only for single lines / flow structures
                     emitNode(item, 0, true, true);
-                    // handleInlineComments(item);
                     if (!options.stripComments()) {
                         handleInlineComments(item);
                     }
-                    sb.append(NL);
+                    appendText(NL);
                 }
             }
         }
@@ -521,44 +548,40 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
     }
 
     private void handleExpandedItem(YamlNode item, int indent) {
-        // boolean itemIsFlow = (item instanceof YamlMap m && m.getStyle() == NodeStyle.FLOW) ||
-        //                      (item instanceof YamlSequenceNode s && s.getStyle() == NodeStyle.FLOW);
-
         boolean itemIsFlow = item.getNodeStyle() == NodeStyle.FLOW;
 
         if (itemIsFlow) {
-            sb.append(" ".repeat(indent + options.getIndentSize()));
+            appendText(" ".repeat(indent + options.getIndentSize()));
             emitNode(item, 0, false, true);
-            sb.append(NL);
+            appendText(NL);
         } else {
             emitNode(item, indent + options.getIndentSize(), false, false);
-            // sb.append(NL);
         }
     }
 
     private void emitFlowMap(YamlMap map) {
         if (map == null) return;
-        sb.append("{");
+        appendText("{");
         var entries = map.getEntries();
         for (int i = 0; i < entries.size(); i++) {
             var entry = entries.get(i);
-            if (entry.getKey() instanceof YamlScalar s) sb.append(s.asString());
-            sb.append(": ");
+            if (entry.getKey() instanceof YamlScalar s) appendText(s.asString());
+            appendText(": ");
             emitNode(entry.getValue(), 0, false, true);
-            if (i < entries.size() - 1) sb.append(", ");
+            if (i < entries.size() - 1) appendText(", ");
         }
-        sb.append("}");
+        appendText("}");
     }
 
     private void emitFlowSequence(YamlSequence seq) {
         if (seq == null) return;
-        sb.append("[");
+        appendText("[");
         var items = seq.getElements();
         for (int i = 0; i < items.size(); i++) {
             emitNode(items.get(i), 0, false, true);
-            if (i < items.size() - 1) sb.append(", ");
+            if (i < items.size() - 1) appendText(", ");
         }
-        sb.append("]");
+        appendText("]");
     }
 
     /// Emits comments that were identified by the parser as being on their own line.
@@ -566,7 +589,10 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         if (node == null) return;
         for (CommentAstNode comment : node.getComments()) {
             if (comment instanceof YamlComment ycn && ycn.getStartColumn() <= 1) {
-                sb.append(" ".repeat(indent)).append("#").append(ycn.asString()).append(NL);
+                appendText(" ".repeat(indent));
+                appendText("#");
+                appendText(ycn.asString());
+                appendText(NL);
             }
         }
     }
@@ -576,7 +602,8 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         if (node == null) return;
         for (CommentAstNode comment : node.getComments()) {
             if (comment instanceof YamlComment ycn && ycn.getStartColumn() > 1) {
-                sb.append(" #").append(ycn.asString());
+                appendText(" #");
+                appendText(ycn.asString());
                 break;
             }
         }
@@ -590,6 +617,38 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         if ("-?:,[]{}#&*!|>'\"%@` ".indexOf(first) != -1) return false;
         if (s.contains(": ") || s.contains(" #") || s.endsWith(":")) return false;
         return s.chars().allMatch(c -> c <= 127);
+    }
+
+    private void appendText(String text) {
+        sb.append(text);
+
+        boolean debug = reporter != null &&
+                        !reporter.isSilent() &&
+                        reporter.getLevel().includes(Level.DEBUG);
+        if (debug) {
+            reporter.debug("StringBuidler:\n" + debugStringBuilder(sb, 2));
+        }
+    }
+
+    private String debugStringBuilder(StringBuilder sb, int lines) {
+        StringBuilder output = new StringBuilder();
+        int length = sb.length();
+        if (length < 2) {
+            return StringUtils.debugString(sb.toString());
+        }
+        int line = 0;
+        int lineEnd = length - 1;
+        int preceedingNewline = -1;
+        while (line < lines && lineEnd > 0) {
+            preceedingNewline = sb.lastIndexOf("\n", lineEnd - 1);
+            output.insert(0, "\n");
+            int end = lineEnd < length ? lineEnd + 1 : lineEnd;
+            String b = sb.substring(preceedingNewline + 1, end);
+            output.insert(0, StringUtils.debugString(b));
+            lineEnd = preceedingNewline;
+            line++;
+        }
+        return output.toString();
     }
 
     private void debugOutput(String output) {

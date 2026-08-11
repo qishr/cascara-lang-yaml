@@ -1,65 +1,21 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.common.lang.plain.PlainNode;
-import io.github.qishr.cascara.common.lang.plain.PlainScalarNode;
-import io.github.qishr.cascara.common.lang.plain.PlainSequenceNode;
-import io.github.qishr.cascara.common.lang.ast.AstNode;
-import io.github.qishr.cascara.common.lang.ast.MapAstNode;
-import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
-import io.github.qishr.cascara.common.util.StringUtils;
+import io.github.qishr.cascara.common.util.JreUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
-import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
-import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.List;
-
-public class SpecTests3 {
-    private static final boolean DUMP_TOKENS = true;
-    private static final boolean DEBUG = true;
-
-    private YamlTokenizer tokenizer;
-    private YamlAstParser parser;
-    private Reporter reporter;
-
-    @BeforeEach
-    void setup() {
-        reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setFlushEnabled(false)
-            .setStackTraceEnabled(true);
-
-        parser = new YamlAstParser()
-            .setReporter(reporter);
-
-        tokenizer = new YamlTokenizer();
-        tokenizer.setReporter(reporter);
-    }
-
-    private void tokenize(String yaml) {
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
-        if (DUMP_TOKENS) {
-            TestUtils.dumpTokens(
-                reporter.getWriter(Level.DEBUG),
-                tokens
-            );
-        }
-    }
+public class SpecTests3 extends ParserTestBase {
 
     @Test
     public void test4ABK() {
@@ -76,7 +32,7 @@ public class SpecTests3 {
         YamlStream stream = parser.parseMulti(yaml);
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlMap map = (YamlMap) body;
 
@@ -94,26 +50,73 @@ public class SpecTests3 {
 
     }
 
-    // @Test
-    // public void test4ABKa() {
-    //     String yaml = """
-    //         {
-    //         omitted value:,
-    //         }
-    //         """;
+    // "-Declipse.application=org.eclipse.jdt.ls.core.id1"
+    // "-Declipse.product=org.eclipse.jdt.ls.core.product"
 
-    //     tokenize(yaml);
+    // "-Daether.dependencyCollector.impl=bf"
+    // "-DDetectVMInstallationsJob.disabled=true"
+    // "-Djava.import.generatesMetadataFilesAtProjectRoot=true"
 
-    //     YamlStream stream = parser.parseMulti(yaml);
-    //     assertEquals(1, stream.getDocuments().size());
-    //     YamlDocument doc = stream.getDocuments().getFirst();
-    //     YamlNode body = YamlNormalizer.normalize(doc.getBody());
+    @Test
+    public void test26DV() {
+        String yaml = """
+            "top1":
+                "key1": &alias1 scalar1
+            'top2':
+                'key2': &alias2 scalar2
+            top3: &node3
+                *alias1 : scalar3
+            top4:
+                *alias2 : scalar4
+            top5: scalar5
+            top6:
+                &anchor6 'key6': scalar6
+            """;
 
-    //     YamlMap map = (YamlMap) body;
+        System.out.println("Running via Eclipse: " + JreUtils.isRunningViaEclipse());
 
-    //     YamlMapEntry entry2 = map.getEntry(0);
-    //     TestUtils.assertEquals("omitted value", entry2.getKeyString());
-    //     TestUtils.assertEquals(null, entry2.getValue().asString());
+        tokenize(yaml);
 
-    // }
+        YamlStream stream0 = parser.parseMulti(yaml);
+
+        YamlEmitter emitter = new YamlEmitter()
+            .setOptions(YamlOptions.CANONICAL)
+            .setReporter(reporter);
+
+        String emittedYaml = emitter.emit(stream0);
+
+        YamlStream stream1;
+        try {
+            stream1 = parser.parseMulti(emittedYaml);
+        } catch (YamlParserException e) {
+
+            // System.out.println("Failed to parse emitted YAML: " + e.getMessage());
+            // System.out.println(emittedYaml);
+            reporter.debug("Emitted YAML:\n" + emittedYaml);
+
+            assertTrue(false);
+            return;
+        }
+
+        if (DEBUG) {
+            reporter.debug("Emitted YAML:\n" + emittedYaml);
+        }
+
+        assertEquals(1, stream1.getDocuments().size());
+
+        YamlDocument doc = stream1.getDocuments().getFirst();
+        YamlNode body = normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+        assertEquals(6, map.size());
+
+        YamlMap map3 = map.getMap("top3");
+        YamlMapEntry map3e = map3.getEntry(0);
+        YamlAlias map3k = (YamlAlias) map3e.getKey();
+        YamlScalar map3v = (YamlScalar) map3e.getValue();
+
+        TestUtils.assertEquals("alias1", map3k.getName());
+        TestUtils.assertEquals("scalar3", map3v.asString());
+
+    }
 }

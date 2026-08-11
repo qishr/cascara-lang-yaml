@@ -16,6 +16,7 @@ import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.util.StringUtils;
+import io.github.qishr.cascara.lang.yaml.CascaraYaml;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
@@ -35,42 +36,7 @@ import java.util.List;
 
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
-public class SpecTests {
-    private static final Level PARSER_LEVEL = Level.INFO;
-    private static final Level TOKENIZER_LEVEL = Level.DEBUG;
-    private static final boolean dumpTokens = false;
-
-    private static final boolean DUMP_TOKENS = true;
-    private static final boolean DEBUG = true;
-
-    private YamlTokenizer tokenizer;
-    private YamlAstParser parser;
-    private Reporter reporter;
-
-    @BeforeEach
-    void setup() {
-        reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setFlushEnabled(false)
-            .setStackTraceEnabled(true);
-
-        parser = new YamlAstParser()
-            .setReporter(reporter);
-
-        tokenizer = new YamlTokenizer();
-        tokenizer.setReporter(reporter);
-    }
-
-    private void tokenize(String yaml) {
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
-        if (DUMP_TOKENS) {
-            TestUtils.dumpTokens(
-                reporter.getWriter(Level.DEBUG),
-                tokens
-            );
-        }
-    }
+public class SpecTests extends ParserTestBase {
 
     @Test
     public void testLiteral0() {
@@ -87,7 +53,7 @@ public class SpecTests {
         }
 
         YamlNode root = parser.parse(yaml.getBytes());
-        YamlMap map = (YamlMap)YamlNormalizer.normalize(root);
+        YamlMap map = (YamlMap)normalize(root);
         YamlScalar scalar = map.getScalar("yaml");
 
         assertNotNull(root);
@@ -331,7 +297,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlMap.class, body);
         YamlMap map = (YamlMap) body;
@@ -358,7 +324,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
@@ -386,7 +352,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
@@ -415,7 +381,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlMap.class, body);
         YamlMap map = (YamlMap) body;
@@ -461,7 +427,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
@@ -487,7 +453,7 @@ public class SpecTests {
         YamlDocument doc = stream.getDocuments().getFirst();
 
         YamlConverter converter = new YamlConverter();
-        YamlNode normalized = YamlNormalizer.normalize(doc.getBody());
+        YamlNode normalized = normalize(doc.getBody());
         AstNode ast = converter.toPlainAst(normalized);
 
         assertInstanceOf(ScalarAstNode.class, ast);
@@ -522,7 +488,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
@@ -547,7 +513,7 @@ public class SpecTests {
 
         YamlDocument doc = stream.getDocuments().get(0);
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlSequence.class, body);
         YamlSequence seq = (YamlSequence) body;
@@ -588,7 +554,7 @@ public class SpecTests {
 
         YamlDocument doc = stream.getDocuments().get(0);
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlSequence.class, body);
         YamlSequence seq = (YamlSequence) body;
@@ -635,7 +601,7 @@ public class SpecTests {
 
         YamlDocument doc = stream.getDocuments().get(0);
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlMap map = (YamlMap)body;
 
@@ -669,7 +635,7 @@ public class SpecTests {
 
         YamlDocument doc = stream.getDocuments().get(0);
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlSequence.class, body);
         YamlSequence seq = (YamlSequence) body;
@@ -697,7 +663,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
@@ -731,7 +697,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(YamlAliasResolver.resolve(doc.getBody()));
+        YamlNode body = normalize(resolveAliases(doc.getBody()));
 
         YamlMap map = (YamlMap)body;
         assertEquals(2, map.size());
@@ -766,7 +732,7 @@ public class SpecTests {
 
         YamlDocument doc = stream.getDocuments().get(0);
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
 
         YamlMap map = (YamlMap)body;
@@ -811,7 +777,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
@@ -844,7 +810,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
@@ -875,7 +841,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
@@ -921,7 +887,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlMap map = (YamlMap) body;
 
@@ -982,7 +948,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
@@ -1027,7 +993,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
         YamlMap map = (YamlMap) body;
 
         YamlScalar scalar = map.getScalar("plain");
@@ -1057,7 +1023,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
@@ -1088,7 +1054,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlMap.class, body);
         YamlMap map = (YamlMap) body;
@@ -1147,7 +1113,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlMap map = (YamlMap) body;
 
@@ -1191,7 +1157,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlSequence.class, body);
         YamlSequence bodySeq = (YamlSequence) body;
@@ -1229,7 +1195,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
         YamlMap map = (YamlMap) body;
 
         TestUtils.assertEquals("baz", map.getString("foo"));
@@ -1260,7 +1226,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlSequence.class, body);
         YamlSequence seq = (YamlSequence) body;
@@ -1301,7 +1267,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
@@ -1343,7 +1309,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         assertInstanceOf(YamlSequence.class, body);
         YamlSequence seq = (YamlSequence)body;
@@ -1387,7 +1353,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlMap map = (YamlMap)body;
 
@@ -1432,7 +1398,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlScalar scalar = (YamlScalar)body;
 
@@ -1466,7 +1432,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlScalar scalar = (YamlScalar)body;
 
@@ -1505,7 +1471,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlSequence seq = (YamlSequence)body;
         YamlScalar scalar = seq.getScalar(0);
@@ -1556,8 +1522,8 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(
-            YamlAliasResolver.resolve(doc.getBody())
+        YamlNode body = normalize(
+            resolveAliases(doc.getBody())
         );
 
         YamlSequence seq = (YamlSequence)body;
@@ -1622,7 +1588,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlSequence seq = (YamlSequence)body;
 
@@ -1669,7 +1635,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlScalar scalar = (YamlScalar)body;
 
@@ -1704,7 +1670,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlScalar scalar = (YamlScalar)body;
 
@@ -1750,7 +1716,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlMap map = (YamlMap)body;
 
@@ -1783,7 +1749,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlScalar scalar = (YamlScalar)body;
 
@@ -1816,7 +1782,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlSequence seq = (YamlSequence)body;
 
@@ -1859,7 +1825,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlMap map = (YamlMap)body;
 
@@ -1895,7 +1861,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlSequence seq = (YamlSequence) body;
         assertEquals(1, seq.size());
@@ -1923,7 +1889,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlMap map = (YamlMap) body;
         assertEquals(1, map.size());
@@ -1968,7 +1934,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlMap map = (YamlMap)body;
 
@@ -2017,7 +1983,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlMap map = (YamlMap) body;
         assertEquals(3, map.size());
@@ -2056,7 +2022,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
 
         YamlSequence seq = (YamlSequence) body;
         assertEquals(8, seq.size());
@@ -2113,7 +2079,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
         PlainNode agnostic = new YamlConverter().toPlainAst(body);
 
         PlainSequenceNode seq = (PlainSequenceNode)agnostic;
@@ -2150,7 +2116,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
         YamlScalar scalar = (YamlScalar)body;
 
         TestUtils.assertEquals("foo \n\n\t bar\n\nbaz\n", scalar.asString());
@@ -2182,7 +2148,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
         YamlMap map = (YamlMap)body;
 
 
@@ -2220,7 +2186,7 @@ public class SpecTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlNode body = YamlNormalizer.normalize(doc.getBody());
+        YamlNode body = normalize(doc.getBody());
         YamlMap map = (YamlMap)body;
 
 

@@ -11,7 +11,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 
-public class Yts3RLNTests {
+public class Yts3RLNTests extends ParserTestBase {
     @Test
     public void test3RLN_00() {
 
@@ -117,7 +117,7 @@ public class Yts3RLNTests {
         YamlDocument doc = stream.getDocuments().getFirst();
 
         YamlConverter converter = new YamlConverter();
-        YamlNode normalized = YamlNormalizer.normalize(doc.getBody());
+        YamlNode normalized = normalize(doc.getBody());
         AstNode ast = converter.toPlainAst(normalized);
 
         assertInstanceOf(ScalarAstNode.class, ast);

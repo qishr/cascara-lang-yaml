@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.lang.yaml.CascaraYaml;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
@@ -54,6 +55,14 @@ public class StructuralTests {
                 tokens
             );
         }
+    }
+
+    private YamlNode normalize(YamlNode root) {
+        return CascaraYaml.normalize(root);
+    }
+
+    private YamlNode resolveAliases(YamlNode root) {
+        return CascaraYaml.resolve(root);
     }
 
     @Test
@@ -114,7 +123,7 @@ public class StructuralTests {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlScalar scalar = (YamlScalar) YamlNormalizer.normalize(doc.getBody());
+        YamlScalar scalar = (YamlScalar) normalize(doc.getBody());
 
         TestUtils.assertEquals("x b\n", scalar.asString());
     }

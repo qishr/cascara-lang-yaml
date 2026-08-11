@@ -46,12 +46,12 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         new YamlOptions()
             .setStripComments(true)
             .setStripTags(true)
-            .setStripAnchors(true)
+            .setStripAnchors(false) // YTS expects anchors to remain
             .setSortKeys(true)
             .setNormalizeIndent(true)
             .setNormalizeScalarFormatting(true)
             .setIndentSize(2)
-            .setExplicitStart(true)
+            .setExplicitStart(false) // YTS expects no --- if there doesn't need to be one
     );
 
     private int depthLimit = 500;

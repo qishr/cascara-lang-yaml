@@ -675,11 +675,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             if (currFirstContentOffset > 0) { // !!1
                 prevNonWhitespaceOffset -= currFirstContentOffset;
             }
-            boolean isEmpty;
             boolean isEolEscaped = false;
 
             if (isBlock) {
-                isEmpty = currLine.isEmpty();
                 if (blockIndent > -1 && currLine.length() > blockIndent) {
                     currLineTrimmed = currLineTrimmed.substring(blockIndent);
                     trimmedCharOffset -= blockIndent;
@@ -693,41 +691,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     currLineTrimmed = currLineTrimmed.substring(0, currLineTrimmed.length() - 1);
                 }
             } else {
-
-
-
-
-                // if (!isQuoted || lineNum > 0) {
-                //     isEmpty = currLineTrimmed.isBlank(); // !!2
-                //     if (!doNotTrimLeading) {
-                //         currLineTrimmed = currLineTrimmed.stripLeading();
-                //         if (currLineTrimmed.length() < currLine.length()) {
-                //             trimmedCharOffset -= (currLine.length() - currLineTrimmed.length());
-                //         }
-                //         currLineTrimmed = currLineTrimmed.trim(); // TODO: this should not be needed
-                //     }
-                //     currLineTrimmed = currLineTrimmed.stripTrailing();
-                // } else {
-                //     isEmpty = currLineTrimmed.isBlank(); // !!2
-                // }
-
-                    isEmpty = currLineTrimmed.isBlank(); // !!2
-                    if (!doNotTrimLeading && (!isQuoted || lineNum > 0)) {
-                        currLineTrimmed = currLineTrimmed.stripLeading();
-                        if (currLineTrimmed.length() < currLine.length()) {
-                            trimmedCharOffset -= (currLine.length() - currLineTrimmed.length());
-                        }
-                        currLineTrimmed = currLineTrimmed.trim(); // TODO: this should not be needed
+                if (!doNotTrimLeading && (!isQuoted || lineNum > 0)) {
+                    currLineTrimmed = currLineTrimmed.stripLeading();
+                    if (currLineTrimmed.length() < currLine.length()) {
+                        trimmedCharOffset -= (currLine.length() - currLineTrimmed.length());
                     }
-                    currLineTrimmed = currLineTrimmed.stripTrailing();
-
-
-
-
-
-
-
-
+                }
+                currLineTrimmed = currLineTrimmed.stripTrailing();
 
                 if (isQuoted && action == ScalarAction.CONTINUE) {
                     // TODO: Do this for plain too?
