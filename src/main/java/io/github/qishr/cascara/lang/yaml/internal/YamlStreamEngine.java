@@ -39,6 +39,7 @@ import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
+import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 import io.github.qishr.cascara.common.lang.token.Token;
 import io.github.qishr.cascara.common.util.StringUtils;
@@ -109,7 +110,7 @@ public class YamlStreamEngine {
         // 1. Stream start
         if (!streamOpened) {
             streamOpened = true;
-            return new YamlStreamingEvent(
+            return createEvent(
                 tokenizer.getLine(),
                 tokenizer.getColumn(),
                 StreamingEventType.START_STREAM,
@@ -121,7 +122,7 @@ public class YamlStreamEngine {
         if (!documentOpened) {
             documentOpened = true;
             documentClosed = false;
-            return new YamlStreamingEvent(
+            return createEvent(
                 tokenizer.getLine(),
                 tokenizer.getColumn(),
                 StreamingEventType.START_DOCUMENT,
@@ -138,7 +139,7 @@ public class YamlStreamEngine {
                 (closedContext == StreamingEventType.START_ARRAY)
                     ? StreamingEventType.END_ARRAY
                     : StreamingEventType.END_OBJECT;
-            return new YamlStreamingEvent(
+            return createEvent(
                 tokenizer.getLine(),
                 tokenizer.getColumn(),
                 endType,
@@ -160,7 +161,7 @@ public class YamlStreamEngine {
                 blockScalarBuffer.append("\n");
                 String finalContent = blockScalarBuffer.toString();
                 blockScalarBuffer.setLength(0);
-                return new YamlStreamingEvent(
+                return createEvent(
                     tokenizer.getLine(),
                     tokenizer.getColumn(),
                     StreamingEventType.VALUE_SCALAR,
@@ -177,7 +178,7 @@ public class YamlStreamEngine {
                         ? StreamingEventType.END_ARRAY
                         : StreamingEventType.END_OBJECT;
 
-                return new YamlStreamingEvent(
+                return createEvent(
                     tokenizer.getLine(),
                     tokenizer.getColumn(),
                     endType,
@@ -188,7 +189,7 @@ public class YamlStreamEngine {
             // Close document if open
             if (documentOpened && !documentClosed) {
                 documentClosed = true;
-                return new YamlStreamingEvent(
+                return createEvent(
                     tokenizer.getLine(),
                     tokenizer.getColumn(),
                     StreamingEventType.END_DOCUMENT,
@@ -200,7 +201,7 @@ public class YamlStreamEngine {
             if (!streamClosed) {
                 streamClosed = true;
                 isDocumentEnded = true;
-                return new YamlStreamingEvent(
+                return createEvent(
                     tokenizer.getLine(),
                     tokenizer.getColumn(),
                     StreamingEventType.END_STREAM,
@@ -211,7 +212,7 @@ public class YamlStreamEngine {
             // Fully done; no more events
             // 5. Done — but do NOT return null while hasNextEvent() is true
             isDocumentEnded = true;
-            return new YamlStreamingEvent(
+            return createEvent(
                 tokenizer.getLine(),
                 tokenizer.getColumn(),
                 StreamingEventType.END_STREAM,
@@ -224,7 +225,7 @@ public class YamlStreamEngine {
             // Close previous document if one was open
             if (documentOpened && !documentClosed) {
                 documentClosed = true;
-                return new YamlStreamingEvent(
+                return createEvent(
                     currentToken.getStartLine(),
                     currentToken.getStartColumn(),
                     StreamingEventType.END_DOCUMENT,
@@ -236,7 +237,7 @@ public class YamlStreamEngine {
             documentOpened = true;
             documentClosed = false;
             isDocumentEnded = false;
-            return new YamlStreamingEvent(
+            return createEvent(
                 currentToken.getStartLine(),
                 currentToken.getStartColumn(),
                 StreamingEventType.START_DOCUMENT,
@@ -262,7 +263,7 @@ public class YamlStreamEngine {
                 bufferedToken = currentToken;
                 currentToken = null;
 
-                return new YamlStreamingEvent(
+                return createEvent(
                     tokenizer.getLine(),
                     tokenizer.getColumn(),
                     StreamingEventType.START_OBJECT,
@@ -284,7 +285,7 @@ public class YamlStreamEngine {
             bufferedToken = currentToken;
             currentToken = null;
 
-            return new YamlStreamingEvent(
+            return createEvent(
                 tokenizer.getLine(),
                 tokenizer.getColumn(),
                 StreamingEventType.START_OBJECT,
@@ -304,7 +305,7 @@ public class YamlStreamEngine {
                 blockScalarBuffer.setLength(0);
 
                 bufferedToken = currentToken;
-                return new YamlStreamingEvent(
+                return createEvent(
                     currentToken.getStartLine(),
                     currentToken.getStartColumn(),
                     StreamingEventType.VALUE_SCALAR,
@@ -319,7 +320,7 @@ public class YamlStreamEngine {
                     (closedContext == StreamingEventType.START_ARRAY)
                         ? StreamingEventType.END_ARRAY
                         : StreamingEventType.END_OBJECT;
-                return new YamlStreamingEvent(
+                return createEvent(
                     currentToken.getStartLine(),
                     currentToken.getStartColumn(),
                     endType,
@@ -328,6 +329,12 @@ public class YamlStreamEngine {
             }
             return nextEvent();
         }
+
+
+
+
+
+        // This works for 229Q...
 
         // 9. INDENT: open nested object/array
         if (currentToken.getType() == YamlTokenType.INDENT) {
@@ -342,7 +349,7 @@ public class YamlStreamEngine {
 
                 if (isNextTokenSequenceIndicator()) {
                     pushContext(StreamingEventType.START_ARRAY);
-                    return new YamlStreamingEvent(
+                    return createEvent(
                         currentToken.getStartLine(),
                         currentToken.getStartColumn(),
                         StreamingEventType.START_ARRAY,
@@ -350,7 +357,7 @@ public class YamlStreamEngine {
                     );
                 } else {
                     pushContext(StreamingEventType.START_OBJECT);
-                    return new YamlStreamingEvent(
+                    return createEvent(
                         currentToken.getStartLine(),
                         currentToken.getStartColumn(),
                         StreamingEventType.START_OBJECT,
@@ -361,6 +368,10 @@ public class YamlStreamEngine {
             return nextEvent();
         }
 
+
+
+
+
         // ====================================================================
         // Flow style structural interceptors
         // ====================================================================
@@ -369,7 +380,7 @@ public class YamlStreamEngine {
         if (currentToken.getType() == YamlTokenType.SEQUENCE_START) {
             pushContext(StreamingEventType.START_ARRAY);
             pushIndent(-1);
-            return new YamlStreamingEvent(
+            return createEvent(
                 currentToken.getStartLine(),
                 currentToken.getStartColumn(),
                 StreamingEventType.START_ARRAY,
@@ -381,7 +392,7 @@ public class YamlStreamEngine {
             if (contextStack.peek() == StreamingEventType.START_ARRAY) {
                 popContext();
                 popIndent();
-                return new YamlStreamingEvent(
+                return createEvent(
                     currentToken.getStartLine(),
                     currentToken.getStartColumn(),
                     StreamingEventType.END_ARRAY,
@@ -395,7 +406,7 @@ public class YamlStreamEngine {
         if (currentToken.getType() == YamlTokenType.MAP_START) {
             pushContext(StreamingEventType.START_OBJECT);
             pushIndent(-1);
-            return new YamlStreamingEvent(
+            return createEvent(
                 currentToken.getStartLine(),
                 currentToken.getStartColumn(),
                 StreamingEventType.START_OBJECT,
@@ -407,7 +418,7 @@ public class YamlStreamEngine {
             if (contextStack.peek() == StreamingEventType.START_OBJECT) {
                 popContext();
                 popIndent();
-                return new YamlStreamingEvent(
+                return createEvent(
                     currentToken.getStartLine(),
                     currentToken.getStartColumn(),
                     StreamingEventType.END_OBJECT,
@@ -425,7 +436,7 @@ public class YamlStreamEngine {
         // Comments
         if (currentToken.getType() == YamlTokenType.COMMENT) {
             if (includeComments) {
-                return new YamlStreamingEvent(
+                return createEvent(
                     currentToken.getStartLine(),
                     currentToken.getStartColumn(),
                     StreamingEventType.COMMENT,
@@ -450,7 +461,7 @@ public class YamlStreamEngine {
             // Plain/quoted: unchanged
 
             if (isNextTokenValueIndicator()) {
-                return new YamlStreamingEvent(
+                return createEvent(
                     currentToken.getStartLine(),
                     currentToken.getStartColumn(),
                     StreamingEventType.FIELD_NAME,
@@ -458,7 +469,7 @@ public class YamlStreamEngine {
                 );
             }
 
-            return new YamlStreamingEvent(
+            return createEvent(
                 currentToken.getStartLine(),
                 currentToken.getStartColumn(),
                 StreamingEventType.VALUE_SCALAR,
@@ -467,14 +478,31 @@ public class YamlStreamEngine {
         }
 
 
-
-
         // Block sequence entry '-'
         if (currentToken.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR) {
+            int entryIndent = currentToken.getStartColumn() - 1;
+
+            // If we're inside a MAP at the same (or greater) indent, close the MAP context first
+            if (contextStack.peek() == StreamingEventType.START_OBJECT && entryIndent <= indentStack.peek()) {
+                popContext();
+                popIndent();
+
+                // Re-buffer currentToken so the outer loop processes '-' on the next pass
+                bufferedToken = currentToken;
+                currentToken = null;
+
+                return createEvent(
+                    tokenizer.getLine(),
+                    tokenizer.getColumn(),
+                    StreamingEventType.END_OBJECT,
+                    ""
+                );
+            }
+
             if (contextStack.peek() != StreamingEventType.START_ARRAY) {
                 pushContext(StreamingEventType.START_ARRAY);
-                pushIndent(currentToken.getStartColumn() - 1);
-                return new YamlStreamingEvent(
+                pushIndent(entryIndent);
+                return createEvent(
                     currentToken.getStartLine(),
                     currentToken.getStartColumn(),
                     StreamingEventType.START_ARRAY,
@@ -483,43 +511,6 @@ public class YamlStreamEngine {
             }
             return nextEvent();
         }
-
-        // if (currentToken.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR) {
-
-        //     int entryIndent = currentToken.getStartColumn() - 1;
-
-        //     // ⭐ FIX: If we are inside a MAP at the same indent, close the MAP
-        //     if (contextStack.peek() == StreamingEventType.START_OBJECT &&
-        //         entryIndent == indentStack.peek()) {
-
-        //         popContext();
-        //         popIndent();
-
-        //         return new YamlStreamingEvent(
-        //             currentToken.getStartLine(),
-        //             currentToken.getStartColumn(),
-        //             StreamingEventType.END_OBJECT,
-        //             ""
-        //         );
-        //     }
-
-        //     // Existing logic
-        //     if (contextStack.peek() != StreamingEventType.START_ARRAY) {
-        //         pushContext(StreamingEventType.START_ARRAY);
-        //         pushIndent(entryIndent);
-        //         return new YamlStreamingEvent(
-        //             currentToken.getStartLine(),
-        //             currentToken.getStartColumn(),
-        //             StreamingEventType.START_ARRAY,
-        //             ""
-        //         );
-        //     }
-
-        //     return nextEvent();
-        // }
-
-
-
 
         // Value indicator ':', newline, stream start: skip
         if (currentToken.getType() == YamlTokenType.VALUE_INDICATOR
@@ -530,7 +521,7 @@ public class YamlStreamEngine {
 
         // Anchors & aliases as scalar values
         if (currentToken.getType() == YamlTokenType.ANCHOR) {
-            return new YamlStreamingEvent(
+            return createEvent(
                 currentToken.getStartLine(),
                 currentToken.getStartColumn(),
                 StreamingEventType.VALUE_SCALAR,
@@ -539,7 +530,7 @@ public class YamlStreamEngine {
         }
 
         if (currentToken.getType() == YamlTokenType.ALIAS) {
-            return new YamlStreamingEvent(
+            return createEvent(
                 currentToken.getStartLine(),
                 currentToken.getStartColumn(),
                 StreamingEventType.VALUE_SCALAR,
@@ -568,11 +559,37 @@ public class YamlStreamEngine {
                bufferedToken.getType() == YamlTokenType.VALUE_INDICATOR;
     }
 
+    private boolean isNextTokenMappingStart() throws ParserException {
+        if (bufferedToken == null) {
+            bufferedToken = nextToken();
+        }
+
+        // Explicit key indicator '? key'
+        if (bufferedToken != null && bufferedToken.getType() == YamlTokenType.KEY_INDICATOR) {
+            return true;
+        }
+
+        // Standard key 'key:'
+        if (bufferedToken != null && bufferedToken.getType() == YamlTokenType.SCALAR) {
+            return isNextTokenValueIndicator();
+        }
+
+        return false;
+    }
+
     private boolean isNextTokenSequenceIndicator() throws ParserException {
         if (bufferedToken == null) {
             bufferedToken = nextToken();
         }
         return bufferedToken != null && bufferedToken.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR;
+    }
+
+    private YamlStreamingEvent createEvent(int lineNumber, int columnNumber, StreamingEventType type, String content) {
+        debug(ANSI_YELLOW + "createEvent : " + ANSI_RESET + type + " (" +lineNumber+":" +columnNumber+ ")");
+
+        return new YamlStreamingEvent(
+            lineNumber, columnNumber, type, content
+        );
     }
 
     private void advanceToken() throws ParserException {
@@ -639,31 +656,32 @@ public class YamlStreamEngine {
     private String debugToken(YamlToken token) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(ANSI_BLUE);
-        sb.append(token.getType());
-        sb.append(ANSI_RESET);
-        sb.append("(");
-        if (token.getType() == YamlTokenType.SCALAR ||
-            token.getType() == YamlTokenType.ANCHOR ||
-            token.getType() == YamlTokenType.ALIAS ||
-            token.getType() == YamlTokenType.TAG ||
-            token.getType() == YamlTokenType.DIRECTIVE
-        ){
-            sb.append("content=\"");
-            String content = StringUtils.debugString(token.getContent());
-            sb.append(ANSI_WHITE);
-            if (content.length() <= MAX_DEBUG_STRING_LENGTH) {
-                sb.append(content);
-            } else {
-                sb.append(content.substring(0, MAX_DEBUG_STRING_LENGTH - 1));
-                sb.append(StringUtils.ELLIPSIS);
-            }
+        if (token != null) {
+            sb.append(ANSI_BLUE);
+            sb.append(token.getType());
             sb.append(ANSI_RESET);
-            sb.append("\", ");
+            sb.append("(");
+            if (token.getType() == YamlTokenType.SCALAR ||
+                token.getType() == YamlTokenType.ANCHOR ||
+                token.getType() == YamlTokenType.ALIAS ||
+                token.getType() == YamlTokenType.TAG ||
+                token.getType() == YamlTokenType.DIRECTIVE
+            ){
+                sb.append("content=\"");
+                String content = StringUtils.debugString(token.getContent());
+                sb.append(ANSI_WHITE);
+                if (content.length() <= MAX_DEBUG_STRING_LENGTH) {
+                    sb.append(content);
+                } else {
+                    sb.append(content.substring(0, MAX_DEBUG_STRING_LENGTH - 1));
+                    sb.append(StringUtils.ELLIPSIS);
+                }
+                sb.append(ANSI_RESET);
+                sb.append("\", ");
+            }
+            sb.append("col=" + token.getStartColumn());
+            sb.append(")");
         }
-        sb.append("col=" + token.getStartColumn());
-        sb.append(")");
-
         return sb.toString();
     }
 }
