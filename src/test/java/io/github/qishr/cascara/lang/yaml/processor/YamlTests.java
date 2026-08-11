@@ -56,7 +56,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
-class YamlTests {
+class YamlTests extends ParserTestBase {
 
   private static final Level LEVEL = Level.DEBUG;
 

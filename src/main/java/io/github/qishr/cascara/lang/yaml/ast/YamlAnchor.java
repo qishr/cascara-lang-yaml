@@ -36,6 +36,7 @@
 package io.github.qishr.cascara.lang.yaml.ast;
 
 import java.util.List;
+import java.util.Objects;
 
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
@@ -83,5 +84,27 @@ public class YamlAnchor extends YamlNode {
     @Override
     public void accept(YamlVisitor visitor) {
         visitor.visit(this);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof YamlAnchor that)) return false;
+
+        return Objects.equals(this.asString(), that.asString()) &&
+               Objects.equals(this.getTag(), that.getTag()) &&
+               Objects.equals(this.name, that.name);
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public int hashCode() {
+        return Objects.hash(asString(), getTag(), name);
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public String toString() {
+        return asString();
     }
 }
