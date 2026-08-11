@@ -45,17 +45,24 @@ import java.io.InputStream;
 
 public class YamlPushParser extends AbstractYamlProcessor<YamlPushParser> implements PushParser {
 
+    private YamlStreamEngine engine = new YamlStreamEngine();
+
     public YamlPushParser() {}
 
     @Override protected YamlPushParser self() { return this; }
 
+    public YamlTokenizer getTokenizer() {
+        return engine.getTokenizer();
+    }
+
     @Override
     public void parse(InputStream input, StreamHandler handler) throws ParserException {
-        YamlStreamEngine executionEngine = new YamlStreamEngine(input, getReporter(), getOptions().isIncludeComments());
-        executionEngine.setReporter(reporter);
+        engine.setOptions(options);
+        engine.setReporter(reporter);
+        engine.setStream(input);
 
-        while (executionEngine.hasNextEvent()) {
-            StreamingEvent event = executionEngine.nextEvent();
+        while (engine.hasNextEvent()) {
+            StreamingEvent event = engine.nextEvent();
             if (event != null) {
                 handler.onEvent(event);
             }

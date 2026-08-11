@@ -9,6 +9,7 @@ import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public abstract class ParserTestBase {
     // Old things that need to be removed...
@@ -25,6 +26,7 @@ public abstract class ParserTestBase {
     protected YamlAstParser parser;
     protected YamlNormalizer normalizer;
     protected YamlAliasResolver resolver;
+    protected YamlEmitter emitter;
 
     protected Reporter reporter;
 
@@ -47,6 +49,10 @@ public abstract class ParserTestBase {
 
         resolver = new YamlAliasResolver()
             .setReporter(reporter);
+
+        emitter = new YamlEmitter()
+            .setReporter(reporter)
+            .setOptions(YamlOptions.CANONICAL);
     }
 
     protected void tokenize(String yaml) {

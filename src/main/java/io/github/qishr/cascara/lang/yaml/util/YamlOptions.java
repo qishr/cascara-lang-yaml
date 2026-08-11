@@ -47,11 +47,13 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
             .setStripComments(true)
             .setStripTags(true)
             .setStripAnchors(false) // YTS expects anchors to remain
-            .setSortKeys(true)
+            .setSortKeys(false) // YTS expects maps to be in their original order
             .setNormalizeIndent(true)
             .setNormalizeScalarFormatting(true)
             .setIndentSize(2)
             .setExplicitStart(false) // YTS expects no --- if there doesn't need to be one
+            .setForceExplicitNull(true)
+            .setForceBlockCollections(true)
     );
 
     private int depthLimit = 500;
@@ -70,6 +72,9 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     private boolean stripAnchors = false;
     private boolean normalizeIndent = false;
     private boolean normalizeScalarFormatting = false;
+
+    private boolean forceExplicitNull = false;
+    private boolean forceBlockCollections = false;
 
     public YamlOptions() {}
 
@@ -91,6 +96,9 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
 
         normalizeIndent = original.normalizeIndent;
         normalizeScalarFormatting = original.normalizeScalarFormatting;
+
+        forceExplicitNull = original.forceExplicitNull;
+        forceBlockCollections = original.forceBlockCollections;
     }
 
     public int getDepthLimit() {return depthLimit; }
@@ -107,6 +115,9 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     public boolean sortKeys() { return sortKeys; }
     public boolean normalizeIndent() { return normalizeIndent; }
     public boolean normalizeScalarFormatting() { return normalizeScalarFormatting; }
+
+    public boolean forceExplicitNull() { return forceExplicitNull; }
+    public boolean forceBlockCollections() { return forceBlockCollections; }
 
     public YamlOptions setDepthLimit(int val) {
         this.depthLimit = val;
@@ -175,6 +186,16 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         return this;
     }
 
+    public YamlOptions setForceExplicitNull(boolean b) {
+        forceExplicitNull = b;
+        return this;
+    }
+
+    public YamlOptions setForceBlockCollections(boolean b) {
+        forceBlockCollections = b;
+        return this;
+    }
+
     @Override
     public YamlOptions duplicate() {
         return new YamlOptions(this);
@@ -236,6 +257,14 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
 
         public YamlOptions setNormalizeScalarFormatting(boolean val) {
             throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setNormalizeScalarFormatting");
+        }
+
+        public YamlOptions setForceExplicitNull(boolean b) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setForceExplicitNull");
+        }
+
+        public YamlOptions setForceBlockCollections(boolean b) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setForceBlockCollections");
         }
     }
 }
