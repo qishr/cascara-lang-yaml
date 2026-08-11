@@ -43,6 +43,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
@@ -51,6 +54,7 @@ import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
 import io.github.qishr.cascara.common.lang.annotation.Experimental;
 import io.github.qishr.cascara.common.lang.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
+import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 import io.github.qishr.cascara.common.lang.token.TokenCategory;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.lang.yaml.ast.NodeStyle;
@@ -71,6 +75,7 @@ import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.internal.OnDemandTokenBuffer;
 import io.github.qishr.cascara.lang.yaml.internal.PreloadedTokenBuffer;
 import io.github.qishr.cascara.lang.yaml.internal.TokenBuffer;
+import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
 import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
@@ -112,12 +117,76 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     private final List<YamlComment> pendingComments = new ArrayList<>();
     private final Map<String, YamlNode> anchorRegistry = new HashMap<>();
 
-
     /// Default constructor for SPI.
     public YamlAstParser() {
     }
 
     @Override protected YamlAstParser self() { return this; }
+
+
+    //
+    //
+    //
+
+    boolean queueEvents = false;
+    Object syncObject;
+    BlockingDeque<YamlStreamingEvent> events;
+    Thread parserThread;
+    AtomicBoolean streamEnded = new AtomicBoolean();
+
+    public YamlAstParser setQueueEvents(boolean b) {
+        queueEvents = b;
+        events = new LinkedBlockingDeque<>(2);
+        streamEnded.set(true);
+        return this;
+    }
+
+    public boolean hasNextEvent() {
+        return !streamEnded.get() || !events.isEmpty();
+    }
+
+    public YamlStreamingEvent nextEvent() {
+        debug("nextEvent...");
+        if (!hasNextEvent()) {
+            debug("nextEvent - stream ended");
+        }
+        YamlStreamingEvent event;
+		try {
+			event = events.takeFirst();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+            return null;
+		}
+        debug("nextEvent: " + event.getType());
+        return event;
+    }
+
+    public void beginParserThread(InputStream input) {
+        debug("beginParserThread");
+        preParseStateInit();
+
+        // TODO: Remove this once OnDemandTokenBuffer is implemented
+        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
+        tokenBuffer = preloaded;
+        //----------------------------------------------------------
+
+        tokenBuffer.open(input);
+        debug("BEGIN");
+        streamEnded.set(false);
+        parserThread = new Thread(() -> {
+            YamlNode node = parseInternal();
+            streamEnded.set(true);
+            debug("END");
+        });
+        parserThread.start();
+    }
+
+
+    //
+    //
+    //
+
 
     @Override
     public YamlTokenizer getTokenizer() {
@@ -148,10 +217,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     public YamlNode parse(String text) {
         preParseStateInit();
 
-        // TODO: Remove this once OnDemandTokenBuffer is implemented
-        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
-        tokenBuffer = preloaded;
-        //----------------------------------------------------------
+        // // TODO: Remove this once OnDemandTokenBuffer is implemented
+        // PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
+        // tokenBuffer = preloaded;
+        // //----------------------------------------------------------
 
         tokenBuffer.open(text);
         return parseAndUnpack();
@@ -159,6 +228,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
     public YamlNode parse(byte[] data) {
         preParseStateInit();
+
+        // TODO: Remove this once OnDemandTokenBuffer is implemented
+        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
+        tokenBuffer = preloaded;
+        //----------------------------------------------------------
+
         tokenBuffer.open(data);
         return parseAndUnpack();
     }
@@ -166,6 +241,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     @Override
     public YamlNode parse(Reader reader) {
         preParseStateInit();
+
+        // TODO: Remove this once OnDemandTokenBuffer is implemented
+        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
+        tokenBuffer = preloaded;
+        //----------------------------------------------------------
+
         tokenBuffer.open(reader);
         return parseAndUnpack();
     }
@@ -174,6 +255,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     @Override
     public YamlNode parse(InputStream is) {
         preParseStateInit();
+
+        // TODO: Remove this once OnDemandTokenBuffer is implemented
+        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
+        tokenBuffer = preloaded;
+        //----------------------------------------------------------
+
         tokenBuffer.open(is);
         return parseAndUnpack();
     }
@@ -187,6 +274,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     public YamlStream parseMulti(String text) {
         preParseStateInit();
         isMultiDocumentParsing = true;
+
+        // TODO: Remove this once OnDemandTokenBuffer is implemented
+        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
+        tokenBuffer = preloaded;
+        //----------------------------------------------------------
+
         tokenBuffer.open(text);
         return (YamlStream)parseAndUnpack();
     }
@@ -195,6 +288,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     public YamlStream parseMulti(byte[] data) {
         preParseStateInit();
         isMultiDocumentParsing = true;
+
+        // TODO: Remove this once OnDemandTokenBuffer is implemented
+        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
+        tokenBuffer = preloaded;
+        //----------------------------------------------------------
+
         tokenBuffer.open(data);
         return (YamlStream)parseAndUnpack();
     }
@@ -204,6 +303,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     public YamlStream parseMulti(InputStream is) {
         preParseStateInit();
         isMultiDocumentParsing = true;
+
+        // TODO: Remove this once OnDemandTokenBuffer is implemented
+        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
+        tokenBuffer = preloaded;
+        //----------------------------------------------------------
+
         tokenBuffer.open(is);
         return (YamlStream)parseAndUnpack();
     }
@@ -293,6 +398,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             }
 
             // This is the correct way to do it:
+            YamlToken t = tokenBuffer.peek();
             if (check(YamlTokenType.DOCUMENT_END)) {
                 tokenBuffer.advance();
             } else {
@@ -1327,10 +1433,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             YamlToken token = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
 
             ScalarStyle style = token.getScalarStyle();
+            YamlScalar scalar;
 
             if (style == ScalarStyle.LITERAL) {
                 trace("LITERAL_BLOCK");
-                YamlScalar scalar = new YamlScalar(
+                scalar = new YamlScalar(
                     token,
                     token.getContent(),
                     PrimitiveType.STRING,
@@ -1342,10 +1449,10 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     scalar.addComment(parseComment());
                 }
                 parseInlineComment(scalar);
-                return scalar;
+                // return scalar;
             }
 
-            if (style == ScalarStyle.FOLDED) {
+            else  if (style == ScalarStyle.FOLDED) {
                 trace("FOLDED");
 
                 String content;
@@ -1354,7 +1461,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
                 // If the tokenizer already produced multi-line content,
                 // DO NOT re-fold it. Just return it as-is.
-                YamlScalar scalar = new YamlScalar(
+                scalar = new YamlScalar(
                     token, //contentToken != null ? contentToken : token,
                     content,
                     PrimitiveType.STRING,
@@ -1362,34 +1469,62 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     options
                 );
                 parseInlineComment(scalar);
-                return scalar;
+                // return scalar;
             }
 
-            if (style == ScalarStyle.PLAIN) {
+            else if (style == ScalarStyle.PLAIN) {
                 trace("PLAIN");
                 // just return the scalar as-is
-                YamlScalar scalar = new YamlScalar(
+                scalar = new YamlScalar(
                     token,
                     PrimitiveType.ANY,
                     options
                 );
                 parseInlineComment(scalar);
-                return scalar;
+                // return scalar;
+            }
+            else {
+
+                trace("DEFAULT");
+
+                scalar = new YamlScalar(
+                    token,
+                    PrimitiveType.ANY,
+                    options
+                );
+
+                if (check(YamlTokenType.COMMENT) && tokenBuffer.peek().getStartLine() == token.getStartLine()) {
+                    scalar.addComment(parseComment());
+                }
+
+                parseInlineComment(scalar);
             }
 
-            trace("DEFAULT");
 
-            YamlScalar scalar = new YamlScalar(
-                token,
-                PrimitiveType.ANY,
-                options
-            );
+            debug("PS-before-queueing-event");
+            if (queueEvents) {
+                // synchronized(syncObject) {
+                //     try {
+                //         syncObject.wait();
+                //     } catch (InterruptedException e) {
 
-            if (check(YamlTokenType.COMMENT) && tokenBuffer.peek().getStartLine() == token.getStartLine()) {
-                scalar.addComment(parseComment());
+                //     }
+                // }
+
+                YamlStreamingEvent event = new YamlStreamingEvent(scalar.getStartLine(), scalar.getStartColumn(), StreamingEventType.VALUE_SCALAR, scalar.getContent());
+
+                debug("PS-begin-queueing-event");
+                try {
+					events.putLast(event);
+                    debug("PS-end-queueing-event");
+				} catch (InterruptedException e) {
+                    debug("PS-error-queueing-event");
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
             }
 
-            parseInlineComment(scalar);
+
             return scalar;
         } finally {
             depth--;
@@ -1781,6 +1916,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         pendingComments.clear();
         depthLimit = options.getDepthLimit();
         isMultiDocumentParsing = options.isMultiDocument();
+        syncObject = Thread.currentThread();
     }
 
     //

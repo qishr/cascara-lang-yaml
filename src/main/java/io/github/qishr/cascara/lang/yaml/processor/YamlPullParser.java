@@ -39,14 +39,15 @@ import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.PullParser;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
-import io.github.qishr.cascara.lang.yaml.internal.YamlStreamEngine;
+import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 import java.io.InputStream;
 import java.util.NoSuchElementException;
 
 public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implements PullParser {
-    private YamlStreamEngine engine = new YamlStreamEngine();
+    // private YamlStreamEngine engine = new YamlStreamEngine();
+    private YamlAstParser engine = new YamlAstParser();
     private final InputStream input;
 
     /// Default constructor for SPI.
@@ -56,7 +57,9 @@ public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implem
 
     public YamlPullParser(InputStream input) {
         this.input = input;
-        engine.setStream(input);
+        engine.setQueueEvents(true);
+        engine.beginParserThread(input);
+        // engine.setStream(input);
     }
 
     @Override protected YamlPullParser self() { return this; }
@@ -78,21 +81,12 @@ public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implem
         return this;
     }
 
-    // private void ensureEngine() {
-    //     if (engine == null) {
-    //         engine = new YamlStreamEngine();
-    //         engine.setOptions(options);
-    //         engine.setReporter(reporter);
-    //         engine.setStream(input);
-    //     }
-    // }
-
     @Override
     public boolean hasNext() {
         try {
             // ensureEngine();
             return engine.hasNextEvent();
-        } catch (ParserException e) {
+        } catch (YamlParserException e) {
             throw new RuntimeException("Error scanning for next streaming event", e);
         }
     }
