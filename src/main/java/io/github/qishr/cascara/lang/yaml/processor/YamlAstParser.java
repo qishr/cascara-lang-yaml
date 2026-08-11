@@ -471,35 +471,13 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             YamlNode result = null;
             String pendingAnchor = null;
 
-
-
-
             YamlToken pendingAnchorToken = null;
             boolean hasIndentedAnchor = false;
             if (checkIndented(YamlTokenType.ANCHOR)) {
                 trace("PM-hasIndentedAnchor1");
                 advance(); // consume INDENT
-                // // consume(YamlTokenType.INDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
-                // skipTrivia();
-
                 hasIndentedAnchor = true;
-                // advance();
             }
-            // if (check(YamlTokenType.ANCHOR)) {
-            //     pendingAnchorToken = advance();
-            //     if (check(YamlTokenType.NEWLINE)) {
-            //         skipTrivia();
-            //     }
-            //     trace("PM-anchor");
-            //     if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
-            //         advance();
-            //         hasIndentedAnchor = false;
-            //         trace("PM-hasIndentedAnchor-dedent");
-            //     }
-            // }
-
-
-
 
             if (check(YamlTokenType.ANCHOR)) {
                 trace("PV-in-if-anchor1");
@@ -513,13 +491,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     trace("PV-after-parseMap-1");
 
 
-
                     // TODO: This must be moved to happen directly after anchor is parsed
                     if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
                         advance();
                         hasIndentedAnchor = false;
                     }
-
 
 
                     return result;
@@ -533,13 +509,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         attachComments(result);
 
 
-
                         // TODO: This must be moved to happen directly after anchor is parsed
                         if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
                             advance();
                             hasIndentedAnchor = false;
                         }
-
 
 
                         return result;
@@ -549,10 +523,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     pendingAnchorToken = advance();
                     trace("PV-in-if-anchor3");
 
-
-
-
-                    // if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
                     if (hasIndentedAnchor) {
                         // skipTrivia();
                         if (check(YamlTokenType.NEWLINE)) {
@@ -561,9 +531,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
                         hasIndentedAnchor = false;
                     }
-
-
-
 
                     String raw = pendingAnchorToken.getContent();
                     pendingAnchor = raw.startsWith("&") ? raw.substring(1) : raw;
@@ -586,13 +553,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     if (candidate.getStartColumn() > parentIndent ||
                         candidate.getType() == YamlTokenType.MAP_START ||
                         candidate.getType() == YamlTokenType.SEQUENCE_START ||
-
-
-
                         candidate.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR
-
-
-
                     ) {
                         skipTrivia();
                     } else {
@@ -608,21 +569,8 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                             result
                         );
                         anchorRegistry.put(pendingAnchor, anchorNode);
-
-
-
-                        // if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
-                        //     advance();
-                        //     hasIndentedAnchor = false;
-                        // }
-
-
-
                         return attachComments(anchorNode);
                     }
-
-
-
 
                     if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
                         trace("PV-hasIndentedAnchor-dedent");
@@ -633,10 +581,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         }
                         hasIndentedAnchor = false;
                     }
-
-
-
-
                 }
             }
             trace("PV-after-if-anchor");
@@ -645,9 +589,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 advance();
                 skipTrivia();
             }
-
-
-
 
             boolean hasIndentedTag = false;
             if (checkIndented(YamlTokenType.TAG)) {
@@ -717,10 +658,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
             }
 
-
-
-
-            // TODO: Is the problem that this indent belongs with the tag?
             boolean expectTagDedent = false;
             if (check(YamlTokenType.INDENT)) {
                 advance();
@@ -822,8 +759,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
                         scalar = new YamlScalar("", ScalarStyle.PLAIN, options);
                         result = scalar;
-                        // String s = scalar.getContent();
-                        // debug("Debug");
                     }
                 }
                 result.setTag(pendingTag);
@@ -841,9 +776,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     // error(peek(), YamlDiagnosticCode.EXPECTED_DEDENT);
                 }
             }
-
-
-
 
             if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
                 advance();
@@ -864,19 +796,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                 anchorRegistry.put(anchorName, result);
                 result = anchorNode;
             }
-
-            // // 3. Apply anchor to the produced node
-            // if (pendingAnchor != null && result != null) {
-            //     result.setAnchor(pendingAnchor);
-            //     YamlAnchor anchorNode = new YamlAnchor(
-            //         result.getStartLine(),
-            //         result.getStartColumn(),
-            //         pendingAnchor,
-            //         result
-            //     );
-            //     anchorRegistry.put(pendingAnchor, result);
-            //     result = anchorNode;
-            // }
 
             return attachComments(result);
 
@@ -1007,39 +926,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     }
                     else {
                         skipTrivia();
-
-                        boolean hasIndentedTag = false;
                         boolean isValueIndented = false;
-
-
-
-
-                        // INDENT, ANCHOR(&anchor), NEWLINE, DEDENT
-                        YamlToken pendingAnchor = null;
                         boolean hasIndentedAnchor = false;
-                        // if (checkIndented(YamlTokenType.ANCHOR)) {
-                        //     trace("PM-hasIndentedAnchor1");
-                        //     hasIndentedAnchor = true;
-                        //     advance();
-                        // }
-                        // if (check(YamlTokenType.ANCHOR)) {
-                        //     pendingAnchor = advance();
-                        //     if (check(YamlTokenType.NEWLINE)) {
-                        //         skipTrivia();
-                        //     }
-                        //     trace("PM-anchor");
-                        //     if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
-                        //         advance();
-                        //         hasIndentedAnchor = false;
-                        //         trace("PM-hasIndentedAnchor-dedent");
-                        //     }
-                        // }
-
-
-
 
                         if (checkIndented(YamlTokenType.TAG)) {
-                            hasIndentedTag = true;
+                            // hasIndentedTag = true;
                         }
                         else if (checkIndented(YamlTokenType.ANCHOR)) {
                             // Let parseValue handle it
@@ -1065,25 +956,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                             trace("PM-hasIndentedAnchor-dedent");
                             consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
                         }
-                        if (pendingAnchor != null) {
-                            String raw = pendingAnchor.getContent();
-                            String name = raw.startsWith("&") ? raw.substring(1) : raw;
-
-                            anchorRegistry.put(name, value);
-
-                            // Wrap in YamlAnchorNode (same as parseValue)
-                            YamlAnchor anchorNode = new YamlAnchor(
-                                value.getStartLine(),
-                                value.getStartColumn(),
-                                name,
-                                value
-                            );
-                            value = anchorNode;
-                        }
-
-
-
-
                     }
                     trace("after parseValue");
 
@@ -1134,18 +1006,12 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
             if (check(YamlTokenType.VALUE_INDICATOR)) {
                 // Empty key
-                // return createNullScalar();
                 return new YamlScalar(peek(), "", PrimitiveType.STRING, ScalarStyle.PLAIN, options);
             }
 
-            if (//tok.getType() == YamlTokenType.MAP_START ||
-                //tok.getType() == YamlTokenType.SEQUENCE_START ||
-                tok.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR ||
+            if (tok.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR ||
                 tok.getType() == YamlTokenType.INDENT) {
 
-                // NOTE: at the moment parseKeyNode is only called for simple keys.
-                // If we call it for complex keys, this parseValue call should
-                // specify if it's a complex key.
                 return parseValue(parentIndent, false);
             }
 
@@ -1187,14 +1053,14 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         skipTrivia();
                     }
                     if (check(YamlTokenType.ANCHOR)) {
-                        YamlToken anchorTok = advance();   // consume &a1
+                        YamlToken anchorTok = advance();
                         String raw = anchorTok.getContent();
                         String name = raw.startsWith("&") ? raw.substring(1) : raw;
                         skipTrivia();
                         if (check(YamlTokenType.SCALAR)) {
-                            key = parseScalar();   // "foo"
-                            key.setTag(tagTok.getContent());  // !!str
-                            key.setAnchor(anchorTok.getContent()); // a1
+                            key = parseScalar();
+                            key.setTag(tagTok.getContent());
+                            key.setAnchor(anchorTok.getContent());
                         } else {
                             // If anchor is not followed by scalar, treat as null key with tag+anchor
                             key = createNullScalar();
@@ -1206,7 +1072,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                     }
                     if (check(YamlTokenType.VALUE_INDICATOR)) {
                         String tag = tagTok.getContent();
-                        // key = createNullScalar();
                         key = new YamlScalar("", ScalarStyle.PLAIN, options);
                         key.setTag(tag);
                     }
@@ -1218,9 +1083,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
                         if (key instanceof YamlScalar scalarKey) {
                             if (scalarKey.getPrimitiveType() == PrimitiveType.NULL) {
                                 key = new YamlScalar("", ScalarStyle.PLAIN, options);
-
-                                // String s = key.getContent();
-                                // debug("Debug");
                             }
                         }
 
@@ -1533,15 +1395,9 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
             if (style == ScalarStyle.FOLDED) {
                 trace("FOLDED");
 
-                // YamlToken contentToken = null;
                 String content;
 
-                // if (check(YamlTokenType.SCALAR)) {
-                //     contentToken = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
-                //     content = contentToken.getContent();
-                // } else {
-                    content = token.getContent();
-                // }
+                content = token.getContent();
 
                 // If the tokenizer already produced multi-line content,
                 // DO NOT re-fold it. Just return it as-is.
@@ -1691,7 +1547,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         pendingComments.clear();
         return node;
     }
-
 
     //
     // Navigation & Streaming Lookahead Helpers
@@ -1872,42 +1727,33 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     private boolean lookAheadToMatchingIndentTriviaOnly() {
-        // debug("lookAheadToMatchingIndentTriviaOnly");
         int indentLevel = 0;
         int ahead = 0;
         while (current + ahead < tokenBuffer.size()) {
             YamlToken token = peek(ahead);
             YamlTokenType type = token.getType();
             if (type == YamlTokenType.EOF || type == YamlTokenType.STREAM_END) {
-                // debug("lookAheadToMatchingIndentTriviaOnly - end - " + ahead);
                 break;
             }
             if (type == YamlTokenType.NEWLINE || type == YamlTokenType.COMMENT) {
-                // debug("lookAheadToMatchingIndentTriviaOnly - trivia - " + ahead);
                 ahead++;
                 continue;
             }
             if (type == YamlTokenType.INDENT) {
-                // debug("lookAheadToMatchingIndentTriviaOnly - indent - " + ahead);
                 indentLevel++;
                 ahead++;
                 continue;
             }
             if (type == YamlTokenType.DEDENT) {
-                // debug("lookAheadToMatchingIndentTriviaOnly - dedent - " + ahead);
                 indentLevel--;
                 if (indentLevel == 0) {
-                    // debug("lookAheadToMatchingIndentTriviaOnly - true - " + ahead);
                     return true;
                 }
-                // debug("lookAheadToMatchingIndentTriviaOnly - continue - " + ahead);
                 ahead++;
                 continue;
             }
-            // debug("lookAheadToMatchingIndentTriviaOnly - false 1 - " + ahead);
             return false;
         }
-        // debug("lookAheadToMatchingIndentTriviaOnly - false 2 - " + ahead);
         return false;
     }
 
