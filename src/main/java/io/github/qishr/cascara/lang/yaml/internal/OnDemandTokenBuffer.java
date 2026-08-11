@@ -2,8 +2,6 @@ package io.github.qishr.cascara.lang.yaml.internal;
 
 import java.io.InputStream;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
@@ -16,148 +14,181 @@ import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
+
 public class OnDemandTokenBuffer implements TokenBuffer {
+
     private static final int MAX_DEBUG_STRING_LENGTH = 20;
 
-    private final List<YamlToken> tokenBuffer = new ArrayList<>(256);
-    private int lastNewlineOrComment;
-    private YamlTokenizer tokenizer;
+    private final int capacity;
+    private final YamlToken[] ring;
+    private int start = 0;     // logical index 0
+    private int count = 0;     // number of valid tokens
+
+    private YamlTokenizer tokenizer = new YamlTokenizer();
     private Reporter reporter = new NoOpReporter();
 
-    private int current = 0;
-
-    public OnDemandTokenBuffer() {
-        tokenizer = new YamlTokenizer();
+    public OnDemandTokenBuffer(int capacity) {
+        this.capacity = Math.max(8, capacity);
+        this.ring = new YamlToken[this.capacity];
     }
 
     @Override
-	public void setReporter(Reporter reporter) {
+    public void setReporter(Reporter reporter) {
         this.reporter = reporter == null ? new NoOpReporter() : reporter;
     }
 
     @Override
-	public void setTokenizer(YamlTokenizer tokenizer) {
+    public void setTokenizer(YamlTokenizer tokenizer) {
         this.tokenizer = tokenizer;
     }
 
     @Override
-	public YamlTokenizer getTokenizer() {
+    public YamlTokenizer getTokenizer() {
         return tokenizer;
     }
 
     @Override
     public void open(String text) {
         tokenizer.open(text);
+        start = 0;
+        count = 0;
     }
 
     @Override
     public void open(byte[] data) {
         tokenizer.open(new String(data));
+        start = 0;
+        count = 0;
     }
 
     @Override
     public void open(Reader reader) {
         tokenizer.open(reader);
+        start = 0;
+        count = 0;
     }
 
     @Override
     public void open(InputStream is) {
         tokenizer.open(is);
+        start = 0;
+        count = 0;
     }
 
     //
-    //
+    // Core circular buffer logic
     //
 
-    // The highest number this is called with is 4. It's usually called with 1.
-    /// Ensures that the lookahead buffer has retrieved tokens up to the requested lookahead index offset.
+    private int physicalIndex(int logicalIndex) {
+        return (start + logicalIndex) % capacity;
+    }
+
     @Override
-	public void ensureBuffered(int ahead) {
-        if (tokenizer == null) return; // Running in fixed List fallback mode
-
-        int targetIndex = current + ahead;
-        while (tokenBuffer.size() <= targetIndex) {
+    public void ensureBuffered(int ahead) {
+        int needed = ahead + 1;
+        while (count < needed) {
             YamlToken next = tokenizer.nextToken();
             if (next == null) break;
-            tokenBuffer.add(next);
-            if (next.getType() == YamlTokenType.EOF || next.getType() == YamlTokenType.STREAM_END) {
+
+            int insertIndex = physicalIndex(count);
+            ring[insertIndex] = next;
+
+            if (count < capacity) {
+                count++;
+            } else {
+                start = (start + 1) % capacity;
+            }
+
+            if (next.getType() == YamlTokenType.EOF ||
+                next.getType() == YamlTokenType.STREAM_END) {
                 break;
             }
         }
     }
 
     @Override
-	public boolean isEmpty() {
-        return tokenBuffer.isEmpty();
-    }
-
-    // This is only used by the parser to check it hasn't got stuck on a token
-    @Override
-	public int offset() {
-        return current;
+    public boolean isEmpty() {
+        ensureBuffered(0);
+        return count == 0;
     }
 
     @Override
-	public boolean isAtEnd(int ahead) {
-        if (current + ahead >= tokenBuffer.size()) return true;
-        YamlTokenType type = tokenBuffer.get(current + ahead).getType();
-        return type == YamlTokenType.EOF || type == YamlTokenType.STREAM_END;
+    public int offset() {
+        return 0;
     }
 
     @Override
-	public boolean isAtEnd() {
+    public boolean isAtEnd(int ahead) {
+        ensureBuffered(ahead);
+        if (ahead >= count) return true;
+        YamlToken t = ring[physicalIndex(ahead)];
+        return t.getType() == YamlTokenType.EOF ||
+               t.getType() == YamlTokenType.STREAM_END;
+    }
+
+    @Override
+    public boolean isAtEnd() {
         return isAtEnd(0);
     }
 
     @Override
-	public YamlToken peekAhead(int ahead) {
-        int targetIndex = current + ahead;
-        if (targetIndex >= tokenBuffer.size()) {
-            return tokenBuffer.isEmpty() ? null : tokenBuffer.get(tokenBuffer.size() - 1);
+    public YamlToken peekAhead(int ahead) {
+        ensureBuffered(ahead);
+        if (ahead >= count) {
+            return count == 0 ? null : ring[physicalIndex(count - 1)];
         }
-        return tokenBuffer.get(targetIndex);
+        return ring[physicalIndex(ahead)];
     }
 
     @Override
-	public YamlToken peek() {
-        return tokenBuffer.get(current);
+    public YamlToken peek() {
+        ensureBuffered(0);
+        return ring[physicalIndex(0)];
     }
 
     @Override
-	public int size() {
-        return tokenBuffer.size();
+    public int size() {
+        return count;
     }
 
     @Override
-	public YamlToken previous() {
-        return tokenBuffer.get(current - 1);
+    public YamlToken previous() {
+        // previous token is at logical index -1
+        if (count == capacity) {
+            // full ring: previous is the element just before start
+            return ring[(start + capacity - 1) % capacity];
+        }
+        if (start == 0) return null;
+        return ring[start - 1];
     }
 
     @Override
-	public YamlToken advance() {
-        trace("advance");
-        if (!isAtEnd()) current++;
+    public YamlToken advance() {
+        trace("> advance");
 
-        // TODO: Replace the old tokenBuffer with a circular buffer
-        // and populate it using  tokenizer.nextToken();
-        // YamlToken token = tokenizer.nextToken();
+        ensureBuffered(1);
 
-        return previous();
+        if (isAtEnd()) {
+            return peek(); // stay on EOF
+        }
+
+        // Save the current token BEFORE advancing
+        YamlToken consumed = ring[start];
+
+        // Advance logical window
+        start = (start + 1) % capacity;
+        count--;
+
+        return consumed;
     }
-
-    //
 
     @Override
-	public boolean isTrailingStreamComment() {
-        return current >= lastNewlineOrComment;
+    public boolean isTrailingStreamComment() {
+        return false;
     }
 
     //
-    //
-    //
-
-    //
-    // Errors and Diagnostics
+    // Diagnostics
     //
 
     private void warn(YamlToken token, DiagnosticCode code, Object... details) {
@@ -165,18 +196,16 @@ public class OnDemandTokenBuffer implements TokenBuffer {
     }
 
     private void error(YamlToken token, DiagnosticCode code, Object... details) {
-        if (token instanceof YamlErrorToken error) {
-            code = error.getCode();
-            details = error.getDetails();
+        if (token instanceof YamlErrorToken err) {
+            code = err.getCode();
+            details = err.getDetails();
         }
-
         reporter.errorAt(token, code, details);
         if (!reporter.collectsProblems()) {
             throw new YamlParserException(token, code, details);
         }
     }
 
-    /// Log the current method name and upcoming tokens
     private void trace(String message, Object... details) {
         if (reporter == null ||
             reporter.isSilent() ||
@@ -184,7 +213,6 @@ public class OnDemandTokenBuffer implements TokenBuffer {
         report(message, details);
     }
 
-    /// Log the current method name and upcoming tokens
     private void debug(String message, Object... details) {
         if (reporter == null ||
             reporter.isSilent() ||
@@ -193,79 +221,59 @@ public class OnDemandTokenBuffer implements TokenBuffer {
     }
 
     private void report(String message, Object... details) {
-        // Ensure at least the current token is loaded to grab safe coordinates
         ensureBuffered(0);
-        if (current >= tokenBuffer.size()) return;
+        if (count == 0) return;
 
-        // Create indentation based on recursion depth
-        // String indent = "  ".repeat(Math.max(0, depth));
-        String indent = "";
+        YamlToken tok = ring[physicalIndex(0)];
 
-        char first = message.charAt(0);
-        String output;
-
-        if (first == '>' || first == '<') {
-            output = first + ANSI_YELLOW + message.substring(1) + ANSI_RESET;
-        } else {
-            output = message;
-        }
-
-        reporter.debug("L%3d C%3d I%3d %s%s: %s",
-            tokenBuffer.get(current).getStartLine(),
-            tokenBuffer.get(current).getStartColumn(),
-            current,
-            indent,
-            output,
-            upcomingTokens());
+        reporter.debug(
+            "L%3d C%3d I%3d %s: %s",
+            tok.getStartLine(),
+            tok.getStartColumn(),
+            0,
+            message,
+            upcomingTokens()
+        );
     }
 
     private static final String ANSI_RESET = "\u001B[0m";
-    private static final String ANSI_BLUE = "\u001B[34m";
-    private static final String ANSI_YELLOW = "\u001B[33m";
+    private static final String ANSI_BLUE  = "\u001B[34m";
+    private static final String ANSI_YELLOW= "\u001B[33m";
     private static final String ANSI_WHITE = "\u001B[37m";
 
-    // Get next 4 tokens as a string.
     @Override
-	public String upcomingTokens() {
+    public String upcomingTokens() {
+        ensureBuffered(4);
         StringBuilder sb = new StringBuilder();
 
-        // Force up to 4 lookahead tokens into the buffer safely
-        ensureBuffered(4);
+        int limit = Math.min(count, 4);
+        for (int i = 0; i < limit; i++) {
+            if (i > 0) sb.append(", ");
 
-        int distance = Math.min(tokenBuffer.size() - current, 4);
-        for (int i = 0; i < distance; i++) {
-            if (i > 0) {
-                sb.append(", ");
-            }
-            YamlToken token = tokenBuffer.get(current + i);
-            sb.append(ANSI_BLUE);
-            sb.append(token.getType());
-            sb.append(ANSI_RESET);
-            if (token.getType() == YamlTokenType.SCALAR ||
-                token.getType() == YamlTokenType.ANCHOR ||
-                token.getType() == YamlTokenType.ALIAS ||
-                token.getType() == YamlTokenType.TAG ||
-                token.getType() == YamlTokenType.DIRECTIVE
-            ){
-                String lexeme = StringUtils.debugString(token.getContent());
-                sb.append("(");
-                sb.append(ANSI_WHITE);
-                if (lexeme.length() <= MAX_DEBUG_STRING_LENGTH) {
-                    sb.append(lexeme);
+            YamlToken t = ring[physicalIndex(i)];
+            sb.append(ANSI_BLUE).append(t.getType()).append(ANSI_RESET);
+
+            if (t.getType() == YamlTokenType.SCALAR ||
+                t.getType() == YamlTokenType.ANCHOR ||
+                t.getType() == YamlTokenType.ALIAS ||
+                t.getType() == YamlTokenType.TAG ||
+                t.getType() == YamlTokenType.DIRECTIVE) {
+
+                String lex = StringUtils.debugString(t.getContent());
+                sb.append("(").append(ANSI_WHITE);
+
+                if (lex.length() <= MAX_DEBUG_STRING_LENGTH) {
+                    sb.append(lex);
                 } else {
-                    sb.append(lexeme.substring(0, MAX_DEBUG_STRING_LENGTH - 1));
-                    sb.append(StringUtils.ELLIPSIS);
+                    sb.append(lex.substring(0, MAX_DEBUG_STRING_LENGTH - 1))
+                      .append(StringUtils.ELLIPSIS);
                 }
-                sb.append(ANSI_RESET);
-                sb.append(")");
+
+                sb.append(ANSI_RESET).append(")");
             }
         }
-        if (tokenBuffer.size() - current > distance) {
-            sb.append(", ");
-            sb.append(StringUtils.ELLIPSIS);
-        }
+
+        if (count > limit) sb.append(", …");
         return sb.toString();
     }
-
-
 }

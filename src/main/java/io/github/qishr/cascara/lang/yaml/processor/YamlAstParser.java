@@ -89,6 +89,8 @@ import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
 public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implements AstParser<YamlNode, YamlToken, YamlTokenizer> {
 
+    private static final int CIRCULAR_BUFFER_SIZE = 256;
+
     private static final String ANSI_RESET = "\u001B[0m";
     private static final String ANSI_YELLOW = "\u001B[33m";
 
@@ -157,12 +159,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
 
     public YamlNode parse(byte[] data) {
         preParseStateInit();
-
-        // TODO: Remove this once OnDemandTokenBuffer is implemented
-        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
-        tokenBuffer = preloaded;
-        //----------------------------------------------------------
-
         tokenBuffer.open(data);
         return parseAndUnpack();
     }
@@ -170,12 +166,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     @Override
     public YamlNode parse(Reader reader) {
         preParseStateInit();
-
-        // TODO: Remove this once OnDemandTokenBuffer is implemented
-        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
-        tokenBuffer = preloaded;
-        //----------------------------------------------------------
-
         tokenBuffer.open(reader);
         return parseAndUnpack();
     }
@@ -184,12 +174,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     @Override
     public YamlNode parse(InputStream is) {
         preParseStateInit();
-
-        // TODO: Remove this once OnDemandTokenBuffer is implemented
-        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
-        tokenBuffer = preloaded;
-        //----------------------------------------------------------
-
         tokenBuffer.open(is);
         return parseAndUnpack();
     }
@@ -203,12 +187,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     public YamlStream parseMulti(String text) {
         preParseStateInit();
         isMultiDocumentParsing = true;
-
-        // TODO: Remove this once OnDemandTokenBuffer is implemented
-        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
-        tokenBuffer = preloaded;
-        //----------------------------------------------------------
-
         tokenBuffer.open(text);
         return (YamlStream)parseAndUnpack();
     }
@@ -217,12 +195,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     public YamlStream parseMulti(byte[] data) {
         preParseStateInit();
         isMultiDocumentParsing = true;
-
-        // TODO: Remove this once OnDemandTokenBuffer is implemented
-        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
-        tokenBuffer = preloaded;
-        //----------------------------------------------------------
-
         tokenBuffer.open(data);
         return (YamlStream)parseAndUnpack();
     }
@@ -232,12 +204,6 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     public YamlStream parseMulti(InputStream is) {
         preParseStateInit();
         isMultiDocumentParsing = true;
-
-        // TODO: Remove this once OnDemandTokenBuffer is implemented
-        PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
-        tokenBuffer = preloaded;
-        //----------------------------------------------------------
-
         tokenBuffer.open(is);
         return (YamlStream)parseAndUnpack();
     }
@@ -260,56 +226,11 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
         preParseStateInit();
         PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
         preloaded.preload(tokens);
-        // tokenBuffer = preloaded;
-        // this.tokenizer = null;
-        // if (tokens != null) {
-        //     preloaded.preload(tokens);
-        //     // this.tokenBuffer.addAll(tokens);
-        // }
         return parseAndUnpack();
     }
 
     //
     // Private Methods
-    //
-
-    // /// Helper to centralize tokenizer execution
-    // private void ensureTokenBufferFilled(String text) {
-    //     YamlTokenizer tz = getTokenizer();
-    //     tz.open(text);
-    //     tokenBuffer.preload(tz);
-    // }
-
-    // /// Helper to centralize tokenizer execution
-    // private void ensureTokenBufferFilled(Reader reader) {
-    //     YamlTokenizer tz = getTokenizer();
-    //     tz.open(reader);
-    //     tokenBuffer.preload(tz);
-    // }
-
-    // private void ensureTokenBufferFilled(InputStream is) {
-    //     YamlTokenizer tz = getTokenizer();
-    //     tz.open(is);
-    //     tokenBuffer.preload(tz);
-    // }
-
-    // private void fillBuffer(YamlTokenizer tz) {
-    //     YamlToken next;
-    //     int idx = 0;
-    //     while ((next = tz.nextToken()) != null) {
-    //         tokenBuffer.add(next);
-    //         if (next.getType() == YamlTokenType.NEWLINE || next.getType() == YamlTokenType.COMMENT) {
-    //             lastNewlineOrComment = idx;
-    //         }
-    //         if (next.getType() == YamlTokenType.EOF || next.getType() == YamlTokenType.STREAM_END) {
-    //             break;
-    //         }
-    //         idx++;
-    //     }
-    // }
-
-    //
-    //
     //
 
     /// Helper to execute internal parsing logic and unpack based on options.
@@ -1854,7 +1775,7 @@ public class YamlAstParser extends AbstractYamlProcessor<YamlAstParser> implemen
     }
 
     private void preParseStateInit() {
-        tokenBuffer = new OnDemandTokenBuffer();
+        tokenBuffer = new OnDemandTokenBuffer(CIRCULAR_BUFFER_SIZE);
         tokenBuffer.setTokenizer(getTokenizer());
         anchorRegistry.clear();
         pendingComments.clear();
