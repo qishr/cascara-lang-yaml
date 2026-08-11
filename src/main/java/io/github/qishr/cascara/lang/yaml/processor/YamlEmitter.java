@@ -195,14 +195,14 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             int scalarIndent = isSequenceItem ? 0 : indent;
             emitScalarInternal(scalar, scalarIndent, isFlow);
         } else if (targetNode instanceof YamlMap map) {
-            if (map.getStyle() == NodeStyle.FLOW) {
+            if (map.getStyle() == NodeStyle.FLOW && !options.forceBlockCollections()) {
                 emitFlowMap(map);
                 if (!isFlow) appendText(NL);
             } else {
                 emitMap(map, indent, isSequenceItem);
             }
         } else if (targetNode instanceof YamlSequence seq) {
-            if (seq.getStyle() == NodeStyle.FLOW) {
+            if (seq.getStyle() == NodeStyle.FLOW && !options.forceBlockCollections()) {
                 emitFlowSequence(seq);
                 if (!isFlow) appendText(NL);
             } else {
@@ -220,6 +220,10 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
         // 1. Implicit Null
         if (stringValue == null) {
             if (!isFlow) appendText(" ".repeat(indent));
+            if (options.forceExplicitNull()) {
+                if (!isFlow || options.forceBlockCollections()) appendText(" ");
+                appendText("null");
+            }
             return;
         }
 

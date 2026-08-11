@@ -34,6 +34,10 @@ public class SpecTests3 extends ParserTestBase {
         YamlDocument doc = stream.getDocuments().getFirst();
         YamlNode body = normalize(doc.getBody());
 
+        String emitted = emitter.emit(body);
+        assertTrue(emitted.contains("null"), "Emitted YAML should contain explicit nulls");
+        // TODO: re-parse this and check the colon after the url didn't become part of the key
+
         YamlMap map = (YamlMap) body;
 
         YamlMapEntry entry0 = map.getEntry(0);
@@ -49,13 +53,6 @@ public class SpecTests3 extends ParserTestBase {
         TestUtils.assertEquals(null, entry2.getValue().asString());
 
     }
-
-    // "-Declipse.application=org.eclipse.jdt.ls.core.id1"
-    // "-Declipse.product=org.eclipse.jdt.ls.core.product"
-
-    // "-Daether.dependencyCollector.impl=bf"
-    // "-DDetectVMInstallationsJob.disabled=true"
-    // "-Djava.import.generatesMetadataFilesAtProjectRoot=true"
 
     @Test
     public void test26DV() {
