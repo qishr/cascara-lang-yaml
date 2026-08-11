@@ -39,7 +39,6 @@ import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.exception.ParserException;
-import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 import io.github.qishr.cascara.common.lang.token.Token;
 import io.github.qishr.cascara.common.util.StringUtils;
@@ -62,7 +61,6 @@ public class YamlStreamEngine {
 
     private final YamlTokenizer tokenizer = new YamlTokenizer();
 
-    private int tokenNumber = -1;
     private YamlToken currentToken;
     private YamlToken bufferedToken;
     private int targetDedentCount = 0;
@@ -559,23 +557,23 @@ public class YamlStreamEngine {
                bufferedToken.getType() == YamlTokenType.VALUE_INDICATOR;
     }
 
-    private boolean isNextTokenMappingStart() throws ParserException {
-        if (bufferedToken == null) {
-            bufferedToken = nextToken();
-        }
+    // private boolean isNextTokenMappingStart() throws ParserException {
+    //     if (bufferedToken == null) {
+    //         bufferedToken = nextToken();
+    //     }
 
-        // Explicit key indicator '? key'
-        if (bufferedToken != null && bufferedToken.getType() == YamlTokenType.KEY_INDICATOR) {
-            return true;
-        }
+    //     // Explicit key indicator '? key'
+    //     if (bufferedToken != null && bufferedToken.getType() == YamlTokenType.KEY_INDICATOR) {
+    //         return true;
+    //     }
 
-        // Standard key 'key:'
-        if (bufferedToken != null && bufferedToken.getType() == YamlTokenType.SCALAR) {
-            return isNextTokenValueIndicator();
-        }
+    //     // Standard key 'key:'
+    //     if (bufferedToken != null && bufferedToken.getType() == YamlTokenType.SCALAR) {
+    //         return isNextTokenValueIndicator();
+    //     }
 
-        return false;
-    }
+    //     return false;
+    // }
 
     private boolean isNextTokenSequenceIndicator() throws ParserException {
         if (bufferedToken == null) {
@@ -630,10 +628,10 @@ public class YamlStreamEngine {
         indentStack.push(indent);
     }
 
-    private void trace(String message, Object... details) {
-        if (reporter.isSilent() || !reporter.getLevel().includes(Level.TRACE)) return;
-        reporter.trace(message, details);
-    }
+    // private void trace(String message, Object... details) {
+    //     if (reporter.isSilent() || !reporter.getLevel().includes(Level.TRACE)) return;
+    //     reporter.trace(message, details);
+    // }
 
     private void debug(String message, Object... details) {
         if (reporter.isSilent() || !reporter.getLevel().includes(Level.DEBUG)) return;
