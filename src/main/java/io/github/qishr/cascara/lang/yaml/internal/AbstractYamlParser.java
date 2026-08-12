@@ -1069,9 +1069,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
                 skipTrivia();
             }
-
-
-
+            YamlNode node = sequence;
 
             if (pendingAnchor != null) {
                 String raw = pendingAnchor.getContent();
@@ -1086,13 +1084,14 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     name,
                     sequence
                 );
-                return anchorNode;
+                // return anchorNode;
+                node = anchorNode;
             }
 
 
             createEvent(tokenBuffer.peek(), StreamingEventType.END_ARRAY, null);
 
-            return sequence;
+            return node;
         } finally {
             depth--;
             debug("<parseSequence");
