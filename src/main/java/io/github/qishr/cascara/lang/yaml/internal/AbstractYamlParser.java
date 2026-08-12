@@ -134,17 +134,21 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         // TODO: Make this capacity higher
         events = new LinkedBlockingDeque<>(2);
 
-        // TODO: Remove this once OnDemandTokenBuffer is working
-        tokenBuffer = new PreloadedTokenBuffer();
-        //------------------------------------------------------
+
+
+        // // TODO: Remove this once OnDemandTokenBuffer is working
+        // tokenBuffer = new PreloadedTokenBuffer();
+        // //------------------------------------------------------
+
+
 
         tokenBuffer.open(input);
         debug("BEGIN");
         parserThread = new Thread(() -> {
             queueEvent(tokenBuffer.peek(), StreamingEventType.START_STREAM, null);
             parseInternal();
-            streamEnded.set(true);
             queueEvent(tokenBuffer.peek(), StreamingEventType.END_STREAM, null);
+            streamEnded.set(true);
             debug("END");
         });
         parserThread.start();

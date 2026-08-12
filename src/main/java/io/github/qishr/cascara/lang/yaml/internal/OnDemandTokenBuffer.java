@@ -48,6 +48,8 @@ public class OnDemandTokenBuffer implements TokenBuffer {
 
     private static final int MAX_DEBUG_STRING_LENGTH = 20;
 
+    private final Object lock = new Object();
+
     private final int capacity;
     private final YamlToken[] ring;
     private final long[] globalIndexRing;
@@ -127,112 +129,134 @@ public class OnDemandTokenBuffer implements TokenBuffer {
 
     @Override
     public void ensureBuffered(int ahead) {
-        int needed = ahead + 1;
+        synchronized (lock) {
+            int needed = ahead + 1;
 
-        while (count < needed) {
-            YamlToken next = tokenizer.nextToken();
-            if (next == null) break;
+            while (count < needed) {
+                YamlToken next = tokenizer.nextToken();
+                if (next == null) break;
 
-            long globalIndex = globalCounter++;
-            int insertIndex = physicalIndex(count);
+                long globalIndex = globalCounter++;
+                int insertIndex = physicalIndex(count);
 
-            ring[insertIndex] = next;
-            globalIndexRing[insertIndex] = globalIndex;
+                ring[insertIndex] = next;
+                globalIndexRing[insertIndex] = globalIndex;
 
-            trackTrailing(next, globalIndex);
+                trackTrailing(next, globalIndex);
 
-            if (count < capacity) {
-                count++;
-            } else {
-                start = (start + 1) % capacity;
-            }
+                if (count < capacity) {
+                    count++;
+                } else {
+                    start = (start + 1) % capacity;
+                }
 
-            if (next.getType() == YamlTokenType.EOF ||
-                next.getType() == YamlTokenType.STREAM_END) {
-                break;
+                if (next.getType() == YamlTokenType.EOF ||
+                    next.getType() == YamlTokenType.STREAM_END) {
+                    break;
+                }
             }
         }
     }
 
     @Override
     public boolean isEmpty() {
-        ensureBuffered(0);
-        return count == 0;
+        synchronized (lock) {
+            ensureBuffered(0);
+            return count == 0;
+        }
     }
 
     @Override
     public int offset() {
-        ensureBuffered(0);
-        if (count == 0) return 0;
-        return (int) globalIndexRing[physicalIndex(0)];
+        synchronized (lock) {
+            ensureBuffered(0);
+            if (count == 0) return 0;
+            return (int) globalIndexRing[physicalIndex(0)];
+        }
     }
 
     @Override
     public boolean isAtEnd(int ahead) {
-        ensureBuffered(ahead);
-        if (ahead >= count) return true;
-        YamlToken t = ring[physicalIndex(ahead)];
-        return t.getType() == YamlTokenType.EOF ||
-               t.getType() == YamlTokenType.STREAM_END;
+        synchronized (lock) {
+            ensureBuffered(ahead);
+            if (ahead >= count) return true;
+            YamlToken t = ring[physicalIndex(ahead)];
+            return t.getType() == YamlTokenType.EOF ||
+                t.getType() == YamlTokenType.STREAM_END;
+        }
     }
 
     @Override
     public boolean isAtEnd() {
-        return isAtEnd(0);
+        synchronized (lock) {
+            return isAtEnd(0);
+        }
     }
 
     @Override
     public YamlToken peekAhead(int ahead) {
-        ensureBuffered(ahead);
-        if (ahead >= count) {
-            return count == 0 ? null : ring[physicalIndex(count - 1)];
+        synchronized (lock) {
+            ensureBuffered(ahead);
+            if (ahead >= count) {
+                return count == 0 ? null : ring[physicalIndex(count - 1)];
+            }
+            return ring[physicalIndex(ahead)];
         }
-        return ring[physicalIndex(ahead)];
     }
 
     @Override
     public YamlToken peek() {
-        ensureBuffered(0);
-        return ring[physicalIndex(0)];
+        synchronized (lock) {
+            ensureBuffered(0);
+            return ring[physicalIndex(0)];
+        }
     }
 
     @Override
     public int size() {
-        return count;
+        synchronized (lock) {
+            return count;
+        }
     }
 
     @Override
     public YamlToken previous() {
-        if (count == capacity) {
-            return ring[(start + capacity - 1) % capacity];
+        synchronized (lock) {
+            if (count == capacity) {
+                return ring[(start + capacity - 1) % capacity];
+            }
+            if (start == 0) return null;
+            return ring[start - 1];
         }
-        if (start == 0) return null;
-        return ring[start - 1];
     }
 
     @Override
     public YamlToken advance() {
-        ensureBuffered(1);
+        synchronized (lock) {
+            ensureBuffered(1);
 
-        if (isAtEnd()) {
-            return peek();
+            if (isAtEnd()) {
+                return peek();
+            }
+
+            YamlToken consumed = ring[start];
+
+            start = (start + 1) % capacity;
+            count--;
+
+            return consumed;
         }
-
-        YamlToken consumed = ring[start];
-
-        start = (start + 1) % capacity;
-        count--;
-
-        return consumed;
     }
 
     @Override
     public boolean isTrailingStreamComment() {
-        YamlToken tok = peek();
-        if (tok == null) return false;
+        synchronized (lock) {
+            YamlToken tok = peek();
+            if (tok == null) return false;
 
-        long globalIndex = globalIndexRing[physicalIndex(0)];
-        return globalIndex >= lastNewlineOrComment;
+            long globalIndex = globalIndexRing[physicalIndex(0)];
+            return globalIndex >= lastNewlineOrComment;
+        }
     }
 
     //
