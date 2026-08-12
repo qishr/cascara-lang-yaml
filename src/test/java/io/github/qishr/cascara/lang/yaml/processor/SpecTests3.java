@@ -15,7 +15,7 @@ import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SpecTests3 extends ParserTestBase {
+public class SpecTests3 extends BaseAstParserTest {
 
     @Test
     public void test4ABK() {
@@ -69,8 +69,6 @@ public class SpecTests3 extends ParserTestBase {
             top6:
                 &anchor6 'key6': scalar6
             """;
-
-        System.out.println("Running via Eclipse: " + JreUtils.isRunningViaEclipse());
 
         tokenize(yaml);
 

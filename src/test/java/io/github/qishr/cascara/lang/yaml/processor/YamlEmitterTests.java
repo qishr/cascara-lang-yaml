@@ -40,8 +40,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
@@ -50,20 +48,22 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
-public class YamlEmitterTests {
+public class YamlEmitterTests extends BaseAstParserTest {
     @Test
     void testEmitterRoundTrip() {
         String original = "name: Cascara\nversion: 1.0\ntags:\n  - java\n  - yaml";
-        YamlAstParser parser = new YamlAstParser();
+
         YamlNode root = parser.parse(original);
 
         YamlEmitter emitter = new YamlEmitter();
         String emitted = emitter.emit(root);
 
-        System.out.println("IN:");
-        System.out.println(StringUtils.debugString(original));
-        System.out.println("OUT:");
-        System.out.println(StringUtils.debugString(emitted));
+        if (DEBUG) {
+            System.out.println("IN:");
+            System.out.println(StringUtils.debugString(original));
+            System.out.println("OUT:");
+            System.out.println(StringUtils.debugString(emitted));
+        }
 
         assertEquals(original.trim(), emitted.trim());
     }
@@ -80,10 +80,6 @@ public class YamlEmitterTests {
             "    - fast # High performance\n" +
             "    - safe";
 
-        YamlAstParser parser = new YamlAstParser();
-        parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
-
-        parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
 
         // TODO: make diagnostics for all tests configurable in one place
         // parser.setReporter(new StandardReporter((s) -> {
@@ -92,7 +88,7 @@ public class YamlEmitterTests {
 
         YamlMap yaml = (YamlMap)parser.parse(original);
 
-        if (true) {
+        if (DEBUG) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -106,7 +102,7 @@ public class YamlEmitterTests {
     @Test
     void test_emitter_anchorRoundTrip() {
         String yaml = "key: &myAnchor value\ncopy: *myAnchor\n";
-        YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
+
         YamlNode root = parser.parse(yaml);
 
         YamlEmitter emitter = new YamlEmitter();
@@ -150,7 +146,6 @@ public class YamlEmitterTests {
     @Test
     void test_emitter_lexeme() {
         String yaml = "key:\n  \"one\n\n  two\"";
-        YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
         YamlNode root = parser.parse(yaml);
 
         YamlEmitter emitter = new YamlEmitter();
@@ -167,10 +162,11 @@ public class YamlEmitterTests {
     @Test
     void test_emitter_lexeme2() {
         String yaml = "\"one\\ntwo\"";
-        YamlAstParser parser = new YamlAstParser().setReporter(new StandardReporter().setLevel(Level.TRACE));
         YamlNode root = parser.parse(yaml);
 
-        TestUtils.dumpTokens(parser.getTokens());
+        if (DEBUG) {
+            TestUtils.dumpTokens(parser.getTokens());
+        }
 
         YamlEmitter emitter = new YamlEmitter();
         String output = emitter.emit(root);

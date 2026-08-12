@@ -111,13 +111,9 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
         events = new LinkedBlockingDeque<>(2);
 
         tokenBuffer.open(input);
-        debug("BEGIN");
         parserThread = new Thread(() -> {
-            createEvent(tokenBuffer.peek(), StreamingEventType.START_STREAM, null);
             parseInternal();
-            createEvent(tokenBuffer.peek(), StreamingEventType.END_STREAM, null);
             streamEnded.set(true);
-            debug("END");
         });
         parserThread.start();
     }

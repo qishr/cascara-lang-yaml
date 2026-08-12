@@ -49,7 +49,7 @@ public class SettingsTestClass {
 
     @AnySetter
     public void addSetting(String key, Object value) {
-        System.out.println("DEBUG: Setting " + key + " to " + value + " (" + value.getClass().getSimpleName() + ")");
+        // System.out.println("DEBUG: Setting " + key + " to " + value + " (" + value.getClass().getSimpleName() + ")");
         this.otherSettings.put(key, value);
     }
 

@@ -40,17 +40,19 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class YamlStreamParserTest {
+class YamlStreamParserTest extends BaseAstParserTest {
 
-    private final YamlOptions options = new YamlOptions().setMultiDocument(true);
-    private final YamlAstParser parser = new YamlAstParser()
-            .setOptions(options)
-            .setReporter(new StandardReporter().setLevel(Level.TRACE));
+    @BeforeEach
+    protected void setup() {
+        super.setup();
+        parser.getOptions().setMultiDocument(true);
+    }
 
     @Test
     void testMultiDocumentStreamWithDirectives() {
@@ -91,12 +93,14 @@ class YamlStreamParserTest {
             "payload: true\n" +
             "# File Footer Comment";
 
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(Level.DEBUG)
-                .setAnsiColoringEnabled(true)
-        );
-        TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
+        if (DEBUG) {
+            parser.getTokenizer().setReporter(
+                new StandardReporter()
+                    .setLevel(Level.DEBUG)
+                    .setAnsiColoringEnabled(true)
+            );
+            TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
+        }
 
         YamlStream stream = (YamlStream) parser.parse(yaml);
 

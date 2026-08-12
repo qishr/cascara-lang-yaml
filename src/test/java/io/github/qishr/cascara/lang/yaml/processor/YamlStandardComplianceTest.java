@@ -50,7 +50,7 @@ import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
-class YamlStandardComplianceTest {
+class YamlStandardComplianceTest extends BaseAstParserTest {
 
     private YamlOptions options;
     private YamlAstParser parser;
@@ -152,6 +152,8 @@ class YamlStandardComplianceTest {
     @Test
     void testDuplicateKeys() throws Exception {
         String yaml = "dup: first\ndup: second";
+
+        // TODO: set option to disallow duplicate keys
 
         // Assert that the parser fails on duplicate keys
         // assertThrows(YamlAstParserException.class, () -> {

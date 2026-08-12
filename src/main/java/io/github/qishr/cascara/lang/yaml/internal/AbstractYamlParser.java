@@ -126,6 +126,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
 
         consume(YamlTokenType.STREAM_START, LangDiagnosticCode.EXPECTED_STREAM_START);
+        createEvent(tokenBuffer.peek(), StreamingEventType.START_STREAM, null);
 
         YamlStream streamNode = new YamlStream(tokenBuffer.peek());
 
@@ -203,6 +204,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             tokenBuffer.advance();
         }
 
+        createEvent(tokenBuffer.peek(), StreamingEventType.END_STREAM, null);
+
         return streamNode;
     }
 
@@ -252,11 +255,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             }
 
-            trace("PD-3");
             if (match(YamlTokenType.DOCUMENT_START)) {
                 skipTrivia();
             }
-            trace("PD-4");
+            createEvent(tokenBuffer.peek(), StreamingEventType.START_DOCUMENT, null);
 
             if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || tokenBuffer.isAtEnd()) {
                 document.setBody(createNullScalar());
@@ -269,6 +271,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             if (match(YamlTokenType.DOCUMENT_END)) {
                 skipTrivia();
             }
+            createEvent(tokenBuffer.peek(), StreamingEventType.END_DOCUMENT, null);
             return document;
         } finally {
             depth--;
@@ -554,7 +557,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 if (tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
                     result = parseMap(isComplexKey);
                 } else {
-                    result = parseScalar();
+                    result = parseScalar(false);
                     trace("PV-after-parseScalar");
                     if (check(YamlTokenType.NEWLINE)) {
                         tokenBuffer.advance();
@@ -643,6 +646,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         debug(">parseMap");
         depth++;
         try {
+            createEvent(tokenBuffer.peek(), StreamingEventType.START_OBJECT, null);
             trace("isComplexKey="+isComplexKey);
             YamlToken startToken = tokenBuffer.peek();
             YamlMap map = new YamlMap(startToken, options);
@@ -812,6 +816,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
             }
 
+            createEvent(tokenBuffer.peek(), StreamingEventType.END_OBJECT, null);
             return map;
         } finally {
             depth--;
@@ -851,7 +856,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 }
 
                 case SCALAR:
-                    YamlScalar scalar = parseScalar();
+                    YamlScalar scalar = parseScalar(true);
                     // skipTrivia();
                     skipEOL();
                     return scalar;
@@ -884,7 +889,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                         String name = raw.startsWith("&") ? raw.substring(1) : raw;
                         skipTrivia();
                         if (check(YamlTokenType.SCALAR)) {
-                            key = parseScalar();
+                            key = parseScalar(true);
                             key.setTag(tagTok.getContent());
                             key.setAnchor(anchorTok.getContent());
                         } else {
@@ -903,7 +908,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     }
                     else if (check(YamlTokenType.SCALAR)) {
                         String tag = tagTok.getContent();
-                        key = parseScalar();
+                        key = parseScalar(true);
 
 
                         if (key instanceof YamlScalar scalarKey) {
@@ -943,7 +948,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                         // NOTE: at the moment parseKeyNode is only called for simple keys.
                         // If we call it for complex keys, this parseValue call should
                         // specify if it's a complex key.
-                        key = parseScalar();
+                        key = parseScalar(true);
                     }
                     else {
                         key = createNullScalar();
@@ -990,7 +995,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         depth++;
         try {
 
-
+            createEvent(tokenBuffer.peek(), StreamingEventType.START_ARRAY, null);
 
 
             boolean hasIndentedAnchor = false;
@@ -1085,7 +1090,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             }
 
 
-
+            createEvent(tokenBuffer.peek(), StreamingEventType.END_ARRAY, null);
 
             return sequence;
         } finally {
@@ -1099,6 +1104,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         debug(">parseFlowSequence");
         depth++;
         try {
+            createEvent(tokenBuffer.peek(), StreamingEventType.START_ARRAY, null);
             YamlToken startToken = consume(YamlTokenType.SEQUENCE_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACKET);
             YamlSequence sequence = new YamlSequence(startToken);
             sequence.setStyle(NodeStyle.FLOW);
@@ -1114,6 +1120,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             }
 
             consume(YamlTokenType.SEQUENCE_END, YamlDiagnosticCode.EXPECTED_CLOSE_BRACKET);
+            createEvent(tokenBuffer.peek(), StreamingEventType.END_ARRAY, null);
             return attachComments(sequence);
         } finally {
             depth--;
@@ -1130,6 +1137,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         debug(">parseFlowMap");
         depth++;
         try {
+            createEvent(tokenBuffer.peek(), StreamingEventType.START_OBJECT, null);
             YamlToken startToken = consume(YamlTokenType.MAP_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACE_FLOW_MAP);
             YamlMap map = new YamlMap(startToken, options);
             map.setStyle(NodeStyle.FLOW);
@@ -1185,6 +1193,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     error(tokenBuffer.peek(), YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP);
                 }
             }
+            createEvent(tokenBuffer.peek(), StreamingEventType.END_OBJECT, null);
             return map;
         } finally {
             depth--;
@@ -1192,7 +1201,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
     }
 
-    private YamlScalar parseScalar() {
+    private YamlScalar parseScalar(boolean isKey) {
         debug(">parseScalar");
         depth++;
         try {
@@ -1262,7 +1271,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 parseInlineComment(scalar);
             }
 
-            createEvent(scalar, StreamingEventType.VALUE_SCALAR, scalar.getContent());
+            if (isKey) {
+                createEvent(scalar, StreamingEventType.FIELD_NAME, scalar.getContent());
+            } else {
+                createEvent(scalar, StreamingEventType.VALUE_SCALAR, scalar.getContent());
+            }
             return scalar;
         } finally {
             depth--;

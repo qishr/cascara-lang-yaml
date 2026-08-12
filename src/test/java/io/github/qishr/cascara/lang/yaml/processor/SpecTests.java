@@ -34,7 +34,7 @@ import java.util.List;
 
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
-public class SpecTests extends ParserTestBase {
+public class SpecTests extends BaseAstParserTest {
 
     @Test
     public void testLiteral0() {
@@ -43,7 +43,7 @@ public class SpecTests extends ParserTestBase {
                 --- |0
             """;
 
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
             YamlTokenizer tokenizer = new YamlTokenizer()
                 .setReporter(new StandardReporter().setLevel(TOKENIZER_LEVEL).setAnsiColoringEnabled(true));
             List<YamlToken> tokens = tokenizer.tokenize(yaml);
@@ -167,14 +167,12 @@ public class SpecTests extends ParserTestBase {
             """;
 
         //
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
             YamlTokenizer tokenizer = new YamlTokenizer()
                 .setReporter(new StandardReporter().setLevel(TOKENIZER_LEVEL).setAnsiColoringEnabled(true));
             List<YamlToken> tokens = tokenizer.tokenize(yaml);
             TestUtils.dumpTokens(tokens);
         }
-
-        reporter.setLevel(Level.DEBUG);
 
         YamlNode root = parser.parse(yaml);
         assertTrue(root instanceof YamlMap);
@@ -312,9 +310,9 @@ public class SpecTests extends ParserTestBase {
             e
             """;
 
-        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE));
-        YamlTokenizer tz = new YamlTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE));
-        TestUtils.dumpTokens(tz.tokenize(yaml));
+        if (DEBUG) {
+            TestUtils.dumpTokens(tokenizer.tokenize(yaml));
+        }
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -339,10 +337,10 @@ public class SpecTests extends ParserTestBase {
             f: g
             """;
 
-        parser.getReporter().setLevel(Level.DEBUG); // TODO: REMOVE THIS
-        // // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE)); // TODO: REMOVE THIS
-        YamlTokenizer tz = new YamlTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE));
-        TestUtils.dumpTokens(tz.tokenize(yaml));
+        if (DEBUG) {
+            YamlTokenizer tz = new YamlTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE));
+            TestUtils.dumpTokens(tz.tokenize(yaml));
+        }
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -368,10 +366,12 @@ public class SpecTests extends ParserTestBase {
             this is#not: a comment
             """;
 
-        YamlTokenizer tokenizer = new YamlTokenizer();
-        tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
-        TestUtils.dumpTokens(tokens);
+        if (DEBUG) {
+            YamlTokenizer tokenizer = new YamlTokenizer();
+            tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
+            List<YamlToken> tokens = tokenizer.tokenize(yaml);
+            TestUtils.dumpTokens(tokens);
+        }
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -398,8 +398,6 @@ public class SpecTests extends ParserTestBase {
              - second  # Only 1 space indent, should fail
             """;
         //
-        YamlTokenizer tokenizer = new YamlTokenizer();
-        tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
         List<YamlToken> tokens = tokenizer.tokenize(yaml);
         TestUtils.dumpTokens(tokens);
 
@@ -414,10 +412,11 @@ public class SpecTests extends ParserTestBase {
              &a !t s
             """;
 
-        YamlTokenizer tokenizer = new YamlTokenizer();
-        tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
-        TestUtils.dumpTokens(tokens);
+        if (DEBUG) {
+            YamlTokenizer tokenizer = new YamlTokenizer();
+            List<YamlToken> tokens = tokenizer.tokenize(yaml);
+            TestUtils.dumpTokens(tokens);
+        }
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -437,12 +436,6 @@ public class SpecTests extends ParserTestBase {
     @Test
     public void test2G84() {
         String yaml = "--- |1-";
-
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(Level.DEBUG)
-                .setAnsiColoringEnabled(true)
-        );
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -474,12 +467,6 @@ public class SpecTests extends ParserTestBase {
              gh
             """;
 
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(Level.DEBUG)
-                .setAnsiColoringEnabled(true)
-        );
-
         YamlStream stream = parser.parseMulti(yaml);
 
 
@@ -498,11 +485,9 @@ public class SpecTests extends ParserTestBase {
     public void test4QFQ() {
         String yaml = "- |\n detected\n- >\n \n  \n  # detected\n- |1\n  explicit\n- >\n detected\n";
 
-        parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -533,20 +518,13 @@ public class SpecTests extends ParserTestBase {
                 xxx
             """;
 
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(Level.DEBUG)
-                .setAnsiColoringEnabled(true)
-        );
 
-        TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
 
-        YamlStream stream = parser.parseMulti(yaml);
-
-        if (true|dumpTokens) {
-            TestUtils.dumpTokens(parser.getTokens());
+        if (DUMP_TOKENS) {
+            TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
         }
 
+        YamlStream stream = parser.parseMulti(yaml);
 
         assertEquals(1, stream.getDocuments().size());
 
@@ -574,23 +552,15 @@ public class SpecTests extends ParserTestBase {
               as a line feed"
             """;
 
-        YamlTokenizer tokenizer = new YamlTokenizer();
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
+            YamlTokenizer tokenizer = new YamlTokenizer();
+            List<YamlToken> tokens = tokenizer.tokenize(yaml);
             TestUtils.dumpTokens(tokens);
         }
 
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(Level.DEBUG)
-                .setAnsiColoringEnabled(true)
-        );
-
-        reporter.setLevel(Level.DEBUG);
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -618,13 +588,13 @@ public class SpecTests extends ParserTestBase {
 
         YamlTokenizer tokenizer = new YamlTokenizer();
         List<YamlToken> tokens = tokenizer.tokenize(yamlString);
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(tokens);
         }
 
         YamlStream stream = parser.parseMulti(yamlString);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -649,11 +619,9 @@ public class SpecTests extends ParserTestBase {
     public void test6FWR() {
         String yaml = "--- |+\nab\n\n \n...\n";
 
-        parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -673,21 +641,9 @@ public class SpecTests extends ParserTestBase {
     public void test6KGN() {
         String yaml = "---\na: &anchor\nb: *anchor";
 
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(TOKENIZER_LEVEL)
-                .setAnsiColoringEnabled(true)
-        );
-
-        parser.setReporter(
-            new StandardReporter()
-                .setLevel(TOKENIZER_LEVEL)
-                .setAnsiColoringEnabled(true));
-
-        parser.getReporter().setLevel(Level.TRACE);
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -711,15 +667,9 @@ public class SpecTests extends ParserTestBase {
             'x\\ny:z\\tx $%^&*()x': 24
             """;
 
-        YamlTokenizer tokenizer = new YamlTokenizer();
-        tokenizer.setReporter(
-            new StandardReporter()
-                .setLevel(Level.DEBUG)
-                .setAnsiColoringEnabled(true)
-        );
         List<YamlToken> tokens = tokenizer.tokenize(yamlString);
 
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(tokens);
         }
 
@@ -759,15 +709,9 @@ public class SpecTests extends ParserTestBase {
     public void test6VJK() {
         String yaml = ">\n Sammy Sosa completed another\n fine season with great stats.\n\n   63 Home Runs\n   0.288 Batting Average\n\n What a year!\n";
 
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(TOKENIZER_LEVEL)
-                .setAnsiColoringEnabled(true)
-        );
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -782,8 +726,10 @@ public class SpecTests extends ParserTestBase {
 
         String expected = "Sammy Sosa completed another fine season with great stats.\n\n  63 Home Runs\n  0.288 Batting Average\n\nWhat a year!\n";
 
-        System.out.println("Expected: " + StringUtils.debugString(expected));
-        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        }
 
         TestUtils.assertEquals(expected, scalar.asString());
     }
@@ -792,15 +738,9 @@ public class SpecTests extends ParserTestBase {
     public void test6WPF() {
         String yaml = "---\n\"\n  foo \n \n    bar\n\n  baz\n\"";
 
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(TOKENIZER_LEVEL)
-                .setAnsiColoringEnabled(true)
-        );
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -823,15 +763,9 @@ public class SpecTests extends ParserTestBase {
                       " 2nd non-empty \n" +
                       "\t3rd non-empty \"\n";
 
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(TOKENIZER_LEVEL)
-                .setAnsiColoringEnabled(true)
-        );
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -846,8 +780,10 @@ public class SpecTests extends ParserTestBase {
 
         String expected = " 1st non-empty\n2nd non-empty 3rd non-empty ";
 
-        System.out.println("Expected: " + StringUtils.debugString(expected));
-        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        }
 
         TestUtils.assertEquals(expected, scalar.asString());
     }
@@ -875,11 +811,9 @@ public class SpecTests extends ParserTestBase {
         YamlTokenizer tokenizer = new YamlTokenizer();
         List<YamlToken> tokens = tokenizer.tokenize(yaml);
 
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(tokens);
         }
-
-        parser.setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true)); // TODO: REMOVE THIS
 
         YamlStream stream = parser.parseMulti(yaml);
         assertEquals(1, stream.getDocuments().size());
@@ -928,17 +862,9 @@ public class SpecTests extends ParserTestBase {
             # Comment
             """;;
 
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(TOKENIZER_LEVEL)
-                .setAnsiColoringEnabled(true)
-        );
-
-        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -953,8 +879,10 @@ public class SpecTests extends ParserTestBase {
 
         String expected = "\nfolded line\nnext line\n  * bullet\n\n  * list\n  * lines\n\nlast line\n";
 
-        System.out.println("Expected: " + StringUtils.debugString(expected));
-        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        }
 
         TestUtils.assertEquals(expected, scalar.asString());
     }
@@ -969,23 +897,18 @@ public class SpecTests extends ParserTestBase {
              c
             """;;
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        parser.getTokenizer().setReporter(reporter);
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        reporter.getWriter(Level.INFO).write("Sample info\n");
-        reporter.getWriter(Level.WARN).write("Sample warning\n");
+        // reporter.getWriter(Level.INFO).write("Sample info\n");
+        // reporter.getWriter(Level.WARN).write("Sample warning\n");
 
         // reporter.error(new LocalizableRuntimeException(
         //     new Exception("Sample error"), GenericDiagnosticCode.ERROR, "Sample error")
         // );
 
-        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        if (DEBUG) {
+            TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        }
 
 
         assertEquals(1, stream.getDocuments().size());
@@ -1013,7 +936,7 @@ public class SpecTests extends ParserTestBase {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -1028,8 +951,10 @@ public class SpecTests extends ParserTestBase {
 
         String expected = "ab";
 
-        System.out.println("Expected: " + StringUtils.debugString(expected));
-        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        }
 
         TestUtils.assertEquals(expected, scalar.asString());
     }
@@ -1141,14 +1066,11 @@ public class SpecTests extends ParserTestBase {
               -	baz
             """;
 
-        YamlTokenizer tokenizer = new YamlTokenizer();
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
+            YamlTokenizer tokenizer = new YamlTokenizer();
+            List<YamlToken> tokens = tokenizer.tokenize(yaml);
             TestUtils.dumpTokens(tokens);
         }
-
-        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
-        reporter.setLevel(Level.DEBUG);
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -1177,16 +1099,9 @@ public class SpecTests extends ParserTestBase {
 
         YamlTokenizer tokenizer = new YamlTokenizer();
         List<YamlToken> tokens = tokenizer.tokenize(yaml);
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(tokens);
         }
-
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(Level.DEBUG)
-                .setAnsiColoringEnabled(true)
-        );
-        reporter.setLevel(Level.DEBUG);
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -1210,14 +1125,11 @@ public class SpecTests extends ParserTestBase {
               foo : bar
             """;
 
-        YamlTokenizer tokenizer = new YamlTokenizer();
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
+            YamlTokenizer tokenizer = new YamlTokenizer();
+            List<YamlToken> tokens = tokenizer.tokenize(yaml);
             TestUtils.dumpTokens(tokens);
         }
-
-        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
-        reporter.setLevel(Level.DEBUG);
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -1243,21 +1155,9 @@ public class SpecTests extends ParserTestBase {
             word2
             """;
 
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(TOKENIZER_LEVEL)
-                .setAnsiColoringEnabled(true)
-        );
-
-        parser.setReporter(
-            new StandardReporter()
-                .setLevel(Level.DEBUG)
-                .setAnsiColoringEnabled(true)
-        );
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -1299,7 +1199,7 @@ public class SpecTests extends ParserTestBase {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -1343,7 +1243,7 @@ public class SpecTests extends ParserTestBase {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -1388,7 +1288,7 @@ public class SpecTests extends ParserTestBase {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
         }
 
@@ -1421,7 +1321,7 @@ public class SpecTests extends ParserTestBase {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
             // TestUtils.dumpTokens(reporter, parser.getTokens());
         }
@@ -1459,7 +1359,7 @@ public class SpecTests extends ParserTestBase {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
 
             TestUtils.dumpTokens(parser.getTokens());
             // TestUtils.dumpTokens(reporter, parser.getTokens());
@@ -1510,7 +1410,7 @@ public class SpecTests extends ParserTestBase {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
 
             TestUtils.dumpTokens(parser.getTokens());
             // TestUtils.dumpTokens(reporter, parser.getTokens());
@@ -1567,16 +1467,16 @@ public class SpecTests extends ParserTestBase {
               http://example.com/foo#bar ]
             """;
 
-        Reporter reporter =  new StandardReporter()
-            .setLevel(TOKENIZER_LEVEL)
-            .setAnsiColoringEnabled(true);
+        // Reporter reporter =  new StandardReporter()
+        //     .setLevel(TOKENIZER_LEVEL)
+        //     .setAnsiColoringEnabled(true);
 
-        parser.getTokenizer().setReporter(reporter);
+        // parser.getTokenizer().setReporter(reporter);
         // parser.setReporter(reporter);
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
 
             TestUtils.dumpTokens(parser.getTokens());
             // TestUtils.dumpTokens(reporter, parser.getTokens());
@@ -1623,7 +1523,7 @@ public class SpecTests extends ParserTestBase {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
 
             TestUtils.dumpTokens(parser.getTokens());
             // TestUtils.dumpTokens(reporter, parser.getTokens());
@@ -1658,7 +1558,7 @@ public class SpecTests extends ParserTestBase {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
 
             TestUtils.dumpTokens(parser.getTokens());
             // TestUtils.dumpTokens(reporter, parser.getTokens());
@@ -1699,14 +1599,14 @@ public class SpecTests extends ParserTestBase {
         parser.getTokenizer().setReporter(reporter);
         parser.setReporter(reporter);
 
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
             // TestUtils.dumpTokens(reporter, parser.getTokens());
         }
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        // if (true|dumpTokens) {
+        // if (DUMP_TOKENS) {
         //     TestUtils.dumpTokens(parser.getTokens());
         //     // TestUtils.dumpTokens(reporter, parser.getTokens());
         // }
@@ -1739,7 +1639,7 @@ public class SpecTests extends ParserTestBase {
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
             // TestUtils.dumpTokens(reporter, parser.getTokens());
         }
@@ -1753,8 +1653,10 @@ public class SpecTests extends ParserTestBase {
 
         String expected = "1st non-empty\n2nd non-empty 3rd non-empty";
 
-        System.out.println("Expected: " + StringUtils.debugString(expected));
-        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        }
 
         TestUtils.assertEquals(expected, scalar.asString());
     }
@@ -1763,16 +1665,16 @@ public class SpecTests extends ParserTestBase {
     public void testJEF9_02() {
         String yaml = "- |+\n   ";
 
-        Reporter reporter =  new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true);
+        // Reporter reporter =  new StandardReporter()
+        //     .setLevel(Level.DEBUG)
+        //     .setAnsiColoringEnabled(true);
 
-        parser.getTokenizer().setReporter(reporter);
+        // parser.getTokenizer().setReporter(reporter);
         // parser.setReporter(reporter);
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
             // TestUtils.dumpTokens(reporter, parser.getTokens());
         }
@@ -1808,14 +1710,14 @@ public class SpecTests extends ParserTestBase {
         parser.getTokenizer().setReporter(reporter);
         // parser.setReporter(reporter);
 
-        // if (true|dumpTokens) {
+        // if (DUMP_TOKENS) {
         //     TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
         //     // TestUtils.dumpTokens(reporter, parser.getTokens());
         // }
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
             // TestUtils.dumpTokens(reporter, parser.getTokens());
         }
@@ -1830,11 +1732,13 @@ public class SpecTests extends ParserTestBase {
         String expected1 = " more indented\nregular1\n";
         String expected2 = "\n\n more indented\nregular2\n";
 
-        System.out.println("Expected: " + StringUtils.debugString(expected1));
-        System.out.println("Actual  : " + StringUtils.debugString(map.getScalar("a").asString()));
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected1));
+            System.out.println("Actual  : " + StringUtils.debugString(map.getScalar("a").asString()));
 
-        System.out.println("Expected: " + StringUtils.debugString(expected2));
-        System.out.println("Actual  : " + StringUtils.debugString(map.getScalar("b").asString()));
+            System.out.println("Expected: " + StringUtils.debugString(expected2));
+            System.out.println("Actual  : " + StringUtils.debugString(map.getScalar("b").asString()));
+        }
 
         TestUtils.assertEquals(expected1, map.getScalar("a").asString());
         TestUtils.assertEquals(expected2, map.getScalar("b").asString());
@@ -1844,16 +1748,11 @@ public class SpecTests extends ParserTestBase {
     public void testSM9W_00() {
         String yaml = "-";
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        parser.getTokenizer().setReporter(reporter);
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        if (DEBUG) {
+            TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        }
 
 
         assertEquals(1, stream.getDocuments().size());
@@ -1871,18 +1770,11 @@ public class SpecTests extends ParserTestBase {
     public void testSM9W_01() {
         String yaml = ":";
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        parser.getTokenizer().setReporter(reporter);
-        parser.setReporter(reporter);
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
-
+        if (DEBUG) {
+            TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        }
 
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
@@ -1910,23 +1802,10 @@ public class SpecTests extends ParserTestBase {
 
             """;
 
-        Reporter reporter =  new StandardReporter()
-            .setLevel(TOKENIZER_LEVEL)
-            .setAnsiColoringEnabled(true);
-
-        parser.getTokenizer().setReporter(reporter);
-        // parser.setReporter(reporter);
-
-        // if (true|dumpTokens) {
-        //     TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
-        //     // TestUtils.dumpTokens(reporter, parser.getTokens());
-        // }
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        if (true|dumpTokens) {
+        if (DUMP_TOKENS) {
             TestUtils.dumpTokens(parser.getTokens());
-            // TestUtils.dumpTokens(reporter, parser.getTokens());
         }
 
         assertEquals(1, stream.getDocuments().size());
@@ -1965,17 +1844,11 @@ public class SpecTests extends ParserTestBase {
             # comments.
           """;
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        parser.getTokenizer().setReporter(reporter);
-        parser.setReporter(reporter);
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        if (DEBUG) {
+            TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        }
 
 
         assertEquals(1, stream.getDocuments().size());
@@ -2004,17 +1877,11 @@ public class SpecTests extends ParserTestBase {
             - {key?: value }
             """;
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        parser.getTokenizer().setReporter(reporter);
-        parser.setReporter(reporter);
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        if (DEBUG) {
+            TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        }
 
 
         assertEquals(1, stream.getDocuments().size());
@@ -2061,17 +1928,12 @@ public class SpecTests extends ParserTestBase {
              - 42
             """;
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        parser.getTokenizer().setReporter(reporter);
-        parser.setReporter(reporter);
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        if (DEBUG) {
+            TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        }
 
 
         assertEquals(1, stream.getDocuments().size());
@@ -2098,17 +1960,12 @@ public class SpecTests extends ParserTestBase {
     public void testMJS9() {
         String yaml = ">\n  foo \n \n  \t bar\n\n  baz\n";
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        parser.getTokenizer().setReporter(reporter);
-        parser.setReporter(reporter);
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        if (DEBUG) {
+            TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        }
 
 
         assertEquals(1, stream.getDocuments().size());
@@ -2131,17 +1988,11 @@ public class SpecTests extends ParserTestBase {
             }
             """;
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        parser.getTokenizer().setReporter(reporter);
-        parser.setReporter(reporter);
-
         YamlStream stream = parser.parseMulti(yaml);
 
-        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        if (DEBUG) {
+            TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        }
 
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
@@ -2169,17 +2020,14 @@ public class SpecTests extends ParserTestBase {
             ? Ken Griff
             """;
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
         parser.getTokenizer().setReporter(reporter);
         parser.setReporter(reporter);
 
         YamlStream stream = parser.parseMulti(yaml);
 
-        TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        if (DEBUG) {
+            TestUtils.dumpTokens(reporter.getWriter(Level.DEBUG), parser.getTokens());
+        }
 
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
@@ -2205,18 +2053,12 @@ public class SpecTests extends ParserTestBase {
             ]
             """;
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        YamlTokenizer tokenizer = new YamlTokenizer()
-            .setReporter(reporter);
-
-        TestUtils.dumpTokens(
-            reporter.getWriter(Level.DEBUG),
-            tokenizer.tokenize(yaml)
-        );
+        if (DEBUG) {
+            TestUtils.dumpTokens(
+                reporter.getWriter(Level.DEBUG),
+                tokenizer.tokenize(yaml)
+            );
+        }
 
         parser.setReporter(reporter);
         parser.parseMulti(yaml);
@@ -2229,18 +2071,12 @@ public class SpecTests extends ParserTestBase {
             : "bar"}
             """;
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        YamlTokenizer tokenizer = new YamlTokenizer()
-            .setReporter(reporter);
-
-        TestUtils.dumpTokens(
-            reporter.getWriter(Level.DEBUG),
-            tokenizer.tokenize(yaml)
-        );
+        if (DEBUG) {
+            TestUtils.dumpTokens(
+                reporter.getWriter(Level.DEBUG),
+                tokenizer.tokenize(yaml)
+            );
+        }
 
         parser.setReporter(reporter);
         parser.parseMulti(yaml);
@@ -2250,18 +2086,12 @@ public class SpecTests extends ParserTestBase {
     public void test6CA3() {
         String yaml = "\t[\n\t]";
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        YamlTokenizer tokenizer = new YamlTokenizer()
-            .setReporter(reporter);
-
-        TestUtils.dumpTokens(
-            reporter.getWriter(Level.DEBUG),
-            tokenizer.tokenize(yaml)
-        );
+        if (DEBUG) {
+            TestUtils.dumpTokens(
+                reporter.getWriter(Level.DEBUG),
+                tokenizer.tokenize(yaml)
+            );
+        }
 
         parser.setReporter(reporter);
         parser.parseMulti(yaml);
@@ -2271,18 +2101,12 @@ public class SpecTests extends ParserTestBase {
     public void test6M2F() {
         String yaml = "&a a: &b b\n: *a\n";
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        YamlTokenizer tokenizer = new YamlTokenizer()
-            .setReporter(reporter);
-
-        TestUtils.dumpTokens(
-            reporter.getWriter(Level.DEBUG),
-            tokenizer.tokenize(yaml)
-        );
+        if (DEBUG) {
+            TestUtils.dumpTokens(
+                reporter.getWriter(Level.DEBUG),
+                tokenizer.tokenize(yaml)
+            );
+        }
 
         parser.setReporter(reporter);
         parser.parseMulti(yaml);
@@ -2298,18 +2122,12 @@ public class SpecTests extends ParserTestBase {
             !!str 23: !!bool false
             """;
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        YamlTokenizer tokenizer = new YamlTokenizer()
-            .setReporter(reporter);
-
-        TestUtils.dumpTokens(
-            reporter.getWriter(Level.DEBUG),
-            tokenizer.tokenize(yaml)
-        );
+        if (DEBUG) {
+            TestUtils.dumpTokens(
+                reporter.getWriter(Level.DEBUG),
+                tokenizer.tokenize(yaml)
+            );
+        }
 
         parser.setReporter(reporter);
         parser.parseMulti(yaml);
@@ -2323,18 +2141,12 @@ public class SpecTests extends ParserTestBase {
                ]
             """;
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
-
-        YamlTokenizer tokenizer = new YamlTokenizer()
-            .setReporter(reporter);
-
-        TestUtils.dumpTokens(
-            reporter.getWriter(Level.DEBUG),
-            tokenizer.tokenize(yaml)
-        );
+        if (DEBUG) {
+            TestUtils.dumpTokens(
+                reporter.getWriter(Level.DEBUG),
+                tokenizer.tokenize(yaml)
+            );
+        }
 
         parser.setReporter(reporter);
         parser.parseMulti(yaml);

@@ -57,15 +57,15 @@ public class YamlPullParserTest {
     public void testScalars() throws Exception {
         String yaml = "a: b\nc: d\n";
 
-        Reporter reporter = new StandardReporter()
-            .setLevel(Level.TRACE)
-            .setFlushEnabled(true)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
+        // Reporter reporter = new StandardReporter()
+        //     .setLevel(Level.TRACE)
+        //     .setFlushEnabled(true)
+        //     .setAnsiColoringEnabled(true)
+        //     .setStackTraceEnabled(true);
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = new YamlPullParser(inputStream)) {
-            parser.setReporter(reporter);
+            // parser.setReporter(reporter);
             while (parser.hasNext()) {
                 StreamingEvent event = parser.next();
                 System.out.println(event.getType() + ": " + event.getContent());
@@ -73,7 +73,6 @@ public class YamlPullParserTest {
         }
     }
 
-    @Disabled("Re-enable when pull parser is finished")
     @Test
     public void testNoCrash() throws Exception {
         String yaml = "a: b";
@@ -91,7 +90,6 @@ public class YamlPullParserTest {
         }
     }
 
-    @Disabled("Re-enable when pull parser is finished")
     @Test
     public void testNestedMappingStreaming() throws Exception {
         String yaml = """
@@ -138,7 +136,6 @@ public class YamlPullParserTest {
         }
     }
 
-    @Disabled("Re-enable when pull parser is finished")
     @Test
     void testMixedMappingAndSequenceStreaming() throws Exception {
         String yaml = """
@@ -180,7 +177,6 @@ public class YamlPullParserTest {
         }
     }
 
-    @Disabled("Re-enable when pull parser is finished")
     @Test
     public void testExplicitKeysAndBlockScalars() throws Exception {
         String yaml = """

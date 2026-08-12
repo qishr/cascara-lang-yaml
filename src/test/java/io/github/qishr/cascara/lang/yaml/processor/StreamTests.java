@@ -55,8 +55,8 @@ public class StreamTests {
 
         InputStream stream = new ByteArrayInputStream(yamlString.getBytes(StandardCharsets.UTF_8));
 
-        YamlAstParser parser = new YamlAstParser()
-                .setReporter(new StandardReporter().setLevel(Level.TRACE));
+        YamlAstParser parser = new YamlAstParser();
+                // .setReporter(new StandardReporter().setLevel(Level.TRACE));
 
         YamlNode node = parser.parse(stream);
         assertInstanceOf(YamlMap.class, node);

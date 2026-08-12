@@ -22,7 +22,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SpecTests2 extends ParserTestBase {
+public class SpecTests2 extends BaseAstParserTest {
 
     @Test
     public void testColon() {
@@ -421,9 +421,9 @@ public class SpecTests2 extends ParserTestBase {
             b: *:@*!$"<foo>:
             """;
 
-        tokenizer.getReporter().setLevel(Level.TRACE);
+        // tokenizer.getReporter().setLevel(Level.TRACE);
         tokenize(yaml);
-        tokenizer.getReporter().setLevel(Level.DEBUG);
+        // tokenizer.getReporter().setLevel(Level.DEBUG);
 
         YamlStream stream = parser.parseMulti(yaml);
 

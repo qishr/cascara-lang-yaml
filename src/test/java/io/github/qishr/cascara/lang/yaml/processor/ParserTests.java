@@ -41,15 +41,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 
-public class ParserTests {
+public class ParserTests extends BaseAstParserTest {
     @Test
     void test_parser_anchoredScalar() {
         String yaml = "status: &val active\nlink: *val";
@@ -87,7 +85,6 @@ public class ParserTests {
                       "  level: 1\n" +
                       "current: *settings";
         YamlAstParser parser = new YamlAstParser();
-        parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
         YamlMap doc = (YamlMap)parser.parse(yaml);
 
         YamlNode defaults = doc.get("defaults");

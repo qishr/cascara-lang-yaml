@@ -11,19 +11,14 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
-public abstract class ParserTestBase {
-    // Old things that need to be removed...
+public abstract class BaseParserTest {
+    protected static final Level TOKENIZER_LEVEL = Level.INFO;
     protected static final Level PARSER_LEVEL = Level.INFO;
-    protected static final Level TOKENIZER_LEVEL = Level.DEBUG;
-    protected static final boolean dumpTokens = false;
-
-
-
-    protected static final boolean DUMP_TOKENS = true;
-    protected static final boolean DEBUG = true;
+    protected static final boolean DUMP_TOKENS = false;
+    protected static final boolean DEBUG = false;
 
     protected YamlTokenizer tokenizer;
-    protected YamlAstParser parser;
+    // protected YamlAstParser parser;
     protected YamlNormalizer normalizer;
     protected YamlAliasResolver resolver;
     protected YamlEmitter emitter;
@@ -33,13 +28,13 @@ public abstract class ParserTestBase {
     @BeforeEach
     protected void setup() {
         reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
+            .setLevel(PARSER_LEVEL)
             .setAnsiColoringEnabled(true)
             .setFlushEnabled(false)
             .setStackTraceEnabled(true);
 
-        parser = new YamlAstParser()
-            .setReporter(reporter);
+        // parser = new YamlAstParser()
+        //     .setReporter(reporter);
 
         tokenizer = new YamlTokenizer()
             .setReporter(reporter);
@@ -56,8 +51,8 @@ public abstract class ParserTestBase {
     }
 
     protected void tokenize(String yaml) {
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
         if (DUMP_TOKENS) {
+            List<YamlToken> tokens = tokenizer.tokenize(yaml);
             TestUtils.dumpTokens(
                 reporter.getWriter(Level.DEBUG),
                 tokens

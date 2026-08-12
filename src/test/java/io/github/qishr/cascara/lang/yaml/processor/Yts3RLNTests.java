@@ -11,24 +11,11 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 
-public class Yts3RLNTests extends ParserTestBase {
+public class Yts3RLNTests extends BaseAstParserTest {
     @Test
     public void test3RLN_00() {
-
         String yaml = "\"1 leading\n    \\ttab\"";
-
-        // My original
-        // String expected = "1 leading \ttab";
-
-        // Copilot (14:30-ish)
-        // String expected = "1 leading \\ttab";
-
-        // Copilot 14:42
-        // String expected = "1 leading \ttab";
-
-        // Copilot 14:47
         String expected = "1 leading \ttab";
-
         String actual = convert(yaml);
         debug(yaml, expected, actual);
         TestUtils.assertEquals(expected, actual);
@@ -54,27 +41,8 @@ public class Yts3RLNTests extends ParserTestBase {
 
     @Test
     public void test3RLN_03() {
-        // Copilot original (14:30-ish)
-        // String yaml = "\"4 leading\n    \\ tab\"";
-
-        // Copilot 15:25
         String yaml = "\"4 leading\n    \\t  tab\"";
-
-        // Copilot (14:30-ish)
-        // String expected = "4 leading \\ tab";
-
-        // Copilot 14:42
-        // String expected = "4 leading \t  tab";
-
-        // Copilot 14:47
-        // String expected = "4 leading \\t  tab";
-
-        // Copilot 14:51
-        // String expected = "4 leading \\ tab";
-
-        // Copilot 15:25
         String expected = "4 leading \t  tab";
-
         String actual = convert(yaml);
         debug(yaml, expected, actual);
         TestUtils.assertEquals(expected, actual);
@@ -103,9 +71,11 @@ public class Yts3RLNTests extends ParserTestBase {
     //
 
     private void debug(String yaml, String expected, String actual) {
-        System.out.println("YAML: " + StringUtils.debugString(yaml));
-        System.out.println("Converted: " + StringUtils.debugString(actual));
-        System.out.println("Expected: " + StringUtils.debugString(expected));
+        if (DEBUG) {
+            System.out.println("YAML: " + StringUtils.debugString(yaml));
+            System.out.println("Converted: " + StringUtils.debugString(actual));
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+        }
     }
 
     private String convert(String yaml) {
