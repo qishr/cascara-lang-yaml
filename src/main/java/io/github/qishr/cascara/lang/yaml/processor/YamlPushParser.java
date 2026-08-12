@@ -37,35 +37,80 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.PushParser;
-import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
-import io.github.qishr.cascara.lang.yaml.internal.YamlStreamEngine;
+import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
+import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
+import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlParser;
+import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.common.lang.streaming.StreamHandler;
 
 import java.io.InputStream;
 
-public class YamlPushParser extends AbstractYamlProcessor<YamlPushParser> implements PushParser {
+public class YamlPushParser extends AbstractYamlParser<YamlPushParser> implements PushParser {
 
-    private YamlStreamEngine engine = new YamlStreamEngine();
+    // private YamlStreamEngine engine = new YamlStreamEngine();
+    StreamHandler handler;
 
     public YamlPushParser() {}
 
     @Override protected YamlPushParser self() { return this; }
 
-    public YamlTokenizer getTokenizer() {
-        return engine.getTokenizer();
-    }
+    // public YamlTokenizer getTokenizer() {
+    //     return engine.getTokenizer();
+    // }
 
     @Override
     public void parse(InputStream input, StreamHandler handler) throws ParserException {
-        engine.setOptions(options);
-        engine.setReporter(reporter);
-        engine.setStream(input);
+        // engine.setOptions(options);
+        // engine.setReporter(reporter);
+        // engine.setStream(input);
 
-        while (engine.hasNextEvent()) {
-            StreamingEvent event = engine.nextEvent();
-            if (event != null) {
-                handler.onEvent(event);
-            }
-        }
+        this.handler = handler;
+        pushEvents(input);
+
+        // while (engine.hasNextEvent()) {
+        //     StreamingEvent event = engine.nextEvent();
+        //     if (event != null) {
+        //         handler.onEvent(event);
+        //     }
+        // }
+    }
+
+    //
+    //
+    //
+
+    protected void pushEvents(InputStream input) {
+        preParseStateInit();
+        tokenBuffer.open(input);
+        createEvent(tokenBuffer.peek(), StreamingEventType.START_STREAM, null);
+
+        // TODO: DOC, etc
+
+        parseInternal();
+
+        createEvent(tokenBuffer.peek(), StreamingEventType.END_STREAM, null);
+    }
+
+    @Override
+    protected void createEvent(YamlToken token, StreamingEventType type, String content) {
+        createEvent(token.getStartLine(), token.getStartColumn(), type, content);
+    }
+
+    @Override
+    protected void createEvent(YamlNode node, StreamingEventType type, String content) {
+        createEvent(node.getStartLine(), node.getStartColumn(), type, content);
+    }
+
+    private void createEvent(int line, int column, StreamingEventType type, String content) {
+
+        YamlStreamingEvent event = new YamlStreamingEvent(
+            line, column,
+            type,
+            content
+        );
+
+        handler.onEvent(event);
+
     }
 }

@@ -41,6 +41,7 @@ import java.util.List;
 
 import io.github.qishr.cascara.common.lang.annotation.Experimental;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlParser;
@@ -147,5 +148,24 @@ public class YamlAstParser extends AbstractYamlParser<YamlAstParser> implements 
         PreloadedTokenBuffer preloaded = new PreloadedTokenBuffer();
         preloaded.preload(tokens);
         return parseAndUnpack();
+    }
+
+    //
+    //
+    //
+
+    /// Helper to execute internal parsing logic and unpack based on options.
+    private YamlNode parseAndUnpack() {
+        YamlStream stream = parseInternal();
+
+        // If the developer wants the full multi-document structure, hand over the stream node
+        if (isMultiDocumentParsing) {
+            return stream;
+        }
+
+        // Otherwise, stay backward-compatible and return the naked first document body
+        return stream.getDocuments().isEmpty()
+            ? new YamlMap()
+            : stream.getDocuments().get(0).getBody();
     }
 }

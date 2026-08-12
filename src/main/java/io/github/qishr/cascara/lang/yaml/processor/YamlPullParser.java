@@ -37,14 +37,22 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.common.lang.processor.PullParser;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
-import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
+import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
+import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlParser;
+import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 import java.io.InputStream;
-import java.util.NoSuchElementException;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implements PullParser {
     private final InputStream input;
+    private Thread parserThread;
+    private BlockingDeque<YamlStreamingEvent> events;
+    private AtomicBoolean streamEnded = new AtomicBoolean();
 
     /// Default constructor for SPI.
     public YamlPullParser() {
@@ -60,25 +68,82 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
 
     @Override
     public boolean hasNext() {
-        try {
-            return hasNextEvent();
-        } catch (YamlParserException e) {
-            throw new RuntimeException("Error scanning for next streaming event", e);
-        }
+        return !streamEnded.get() || !events.isEmpty();
     }
 
     @Override
     public StreamingEvent next() {
+        debug("nextEvent...");
         if (!hasNext()) {
-            throw new NoSuchElementException("No more YAML streaming events available.");
+            debug("nextEvent - stream ended");
         }
-        return nextEvent(); // Throws ParserException, which is a RuntimeException
+        YamlStreamingEvent event;
+		try {
+			event = events.takeFirst();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+            return null;
+		}
+        debug("nextEvent: " + event.getType());
+        return event;
     }
 
     @Override
     public void close() throws Exception {
         if (input != null) {
             input.close();
+        }
+    }
+
+    //
+    //
+    //
+
+    private void queueEvents(InputStream input) {
+        debug("queueEvents");
+        preParseStateInit();
+        // queueEvents = true;
+
+        streamEnded.set(false);
+
+        // TODO: Make this capacity higher. Benchmark various values.
+        events = new LinkedBlockingDeque<>(2);
+
+        tokenBuffer.open(input);
+        debug("BEGIN");
+        parserThread = new Thread(() -> {
+            createEvent(tokenBuffer.peek(), StreamingEventType.START_STREAM, null);
+            parseInternal();
+            createEvent(tokenBuffer.peek(), StreamingEventType.END_STREAM, null);
+            streamEnded.set(true);
+            debug("END");
+        });
+        parserThread.start();
+    }
+
+    @Override
+    protected void createEvent(YamlToken token, StreamingEventType type, String content) {
+        queueEvent(token.getStartLine(), token.getStartColumn(), type, content);
+    }
+
+    @Override
+    protected void createEvent(YamlNode node, StreamingEventType type, String content) {
+        queueEvent(node.getStartLine(), node.getStartColumn(), type, content);
+    }
+
+    private void queueEvent(int line, int column, StreamingEventType type, String content) {
+        YamlStreamingEvent event = new YamlStreamingEvent(
+            line, column,
+            type,
+            content
+        );
+
+        try {
+            events.putLast(event);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
     }
 }

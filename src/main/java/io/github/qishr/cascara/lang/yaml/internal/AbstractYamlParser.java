@@ -35,16 +35,12 @@
 
 package io.github.qishr.cascara.lang.yaml.internal;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
@@ -72,7 +68,6 @@ import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.processor.AbstractYamlProcessor;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
-import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
 import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
@@ -96,89 +91,12 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     private final List<YamlComment> pendingComments = new ArrayList<>();
     private final Map<String, YamlNode> anchorRegistry = new HashMap<>();
 
-    private boolean queueEvents = false;
-    private boolean pushEvents = false;
-
-    private Thread parserThread;
-    private BlockingDeque<YamlStreamingEvent> events;
-    private AtomicBoolean streamEnded = new AtomicBoolean();
-
     protected AbstractYamlParser() {
     }
 
-    //
-    //
-    //
+    protected void createEvent(YamlToken token, StreamingEventType type, String content) {}
 
-    protected void pushEvents(InputStream input) {
-        debug("pushEvents");
-        preParseStateInit();
-        pushEvents = true;
-        tokenBuffer.open(input);
-        pushEvent(tokenBuffer.peek(), StreamingEventType.START_STREAM, null);
-
-        // TODO: DOC, etc
-
-        parseInternal();
-
-        pushEvent(tokenBuffer.peek(), StreamingEventType.END_STREAM, null);
-    }
-
-    protected void queueEvents(InputStream input) {
-        debug("queueEvents");
-        preParseStateInit();
-        queueEvents = true;
-
-        streamEnded.set(false);
-
-        // TODO: Make this capacity higher
-        events = new LinkedBlockingDeque<>(2);
-
-
-
-        // // TODO: Remove this once OnDemandTokenBuffer is working
-        // tokenBuffer = new PreloadedTokenBuffer();
-        // //------------------------------------------------------
-
-
-
-        tokenBuffer.open(input);
-        debug("BEGIN");
-        parserThread = new Thread(() -> {
-            queueEvent(tokenBuffer.peek(), StreamingEventType.START_STREAM, null);
-            parseInternal();
-            queueEvent(tokenBuffer.peek(), StreamingEventType.END_STREAM, null);
-            streamEnded.set(true);
-            debug("END");
-        });
-        parserThread.start();
-    }
-
-    protected boolean hasNextEvent() {
-        return !streamEnded.get() || !events.isEmpty();
-    }
-
-    protected YamlStreamingEvent nextEvent() {
-        debug("nextEvent...");
-        if (!hasNextEvent()) {
-            debug("nextEvent - stream ended");
-        }
-        YamlStreamingEvent event;
-		try {
-			event = events.takeFirst();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-            return null;
-		}
-        debug("nextEvent: " + event.getType());
-        return event;
-    }
-
-    //
-    //
-    //
-
+    protected void createEvent(YamlNode node, StreamingEventType type, String content) {}
 
     public YamlTokenizer getTokenizer() {
         if (tokenizer == null) {
@@ -201,21 +119,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     //
     // Parsing Methods
     //
-
-    /// Helper to execute internal parsing logic and unpack based on options.
-    protected YamlNode parseAndUnpack() {
-        YamlStream stream = parseInternal();
-
-        // If the developer wants the full multi-document structure, hand over the stream node
-        if (isMultiDocumentParsing) {
-            return stream;
-        }
-
-        // Otherwise, stay backward-compatible and return the naked first document body
-        return stream.getDocuments().isEmpty()
-            ? new YamlMap()
-            : stream.getDocuments().get(0).getBody();
-    }
 
     protected YamlStream parseInternal() {
         if (this.tokenBuffer.isEmpty()) {
@@ -1359,26 +1262,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 parseInlineComment(scalar);
             }
 
-
-            debug("PS-before-queueing-event");
-            if (queueEvents) {
-                debug("PS-begin-queueing-event");
-                queueEvent(scalar, StreamingEventType.VALUE_SCALAR, scalar.getContent());
-                // try {
-                //     YamlStreamingEvent event = new YamlStreamingEvent(scalar.getStartLine(), scalar.getStartColumn(), StreamingEventType.VALUE_SCALAR, scalar.getContent());
-				// 	events.putLast(event);
-                //     debug("PS-end-queueing-event");
-				// } catch (InterruptedException e) {
-                //     debug("PS-error-queueing-event");
-				// 	// TODO Auto-generated catch block
-				// 	e.printStackTrace();
-				// }
-            }
-            if (pushEvents) {
-                pushEvent(scalar, StreamingEventType.VALUE_SCALAR, scalar.getContent());
-            }
-
-
+            createEvent(scalar, StreamingEventType.VALUE_SCALAR, scalar.getContent());
             return scalar;
         } finally {
             depth--;
@@ -1488,54 +1372,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
         pendingComments.clear();
         return node;
-    }
-
-    //
-    // Push and Pull helpers
-    //
-
-    private void pushEvent(YamlToken token, StreamingEventType type, String content) {
-        pushEvent(token.getStartLine(), token.getStartColumn(), type, content);
-    }
-
-    private void pushEvent(YamlNode node, StreamingEventType type, String content) {
-        pushEvent(node.getStartLine(), node.getStartColumn(), type, content);
-    }
-
-    private void pushEvent(int line, int column, StreamingEventType type, String content) {
-
-
-        //
-        // TODO
-        //
-
-
-    }
-
-    private void queueEvent(YamlToken token, StreamingEventType type, String content) {
-        queueEvent(token.getStartLine(), token.getStartColumn(), type, content);
-    }
-
-    private void queueEvent(YamlNode node, StreamingEventType type, String content) {
-        queueEvent(node.getStartLine(), node.getStartColumn(), type, content);
-    }
-
-    private void queueEvent(int line, int column, StreamingEventType type, String content) {
-        YamlStreamingEvent event = new YamlStreamingEvent(
-            line, column,
-            type,
-            content
-        );
-
-        debug("PS-begin-queueing-event");
-        try {
-            events.putLast(event);
-            debug("PS-end-queueing-event");
-        } catch (InterruptedException e) {
-            debug("PS-error-queueing-event");
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
     }
 
     //
@@ -1825,11 +1661,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     // Errors and Diagnostics
     //
 
-    private void warn(YamlToken token, DiagnosticCode code, Object... details) {
+    protected void warn(YamlToken token, DiagnosticCode code, Object... details) {
         reporter.warnAt(token, code, details);
     }
 
-    private void error(YamlToken token, DiagnosticCode code, Object... details) {
+    protected void error(YamlToken token, DiagnosticCode code, Object... details) {
         if (token instanceof YamlErrorToken error) {
             code = error.getCode();
             details = error.getDetails();
@@ -1842,7 +1678,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
     /// Log the current method name and upcoming tokens
-    private void trace(String message, Object... details) {
+    protected void trace(String message, Object... details) {
         if (reporter == null ||
             reporter.isSilent() ||
             !reporter.getLevel().includes(Level.TRACE)) return;
@@ -1850,7 +1686,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
     /// Log the current method name and upcoming tokens
-    private void debug(String message, Object... details) {
+    protected void debug(String message, Object... details) {
         if (reporter == null ||
             reporter.isSilent() ||
             !reporter.getLevel().includes(Level.DEBUG)) return;
