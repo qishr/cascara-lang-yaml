@@ -16,10 +16,12 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
+import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
 
 public class YamlAliasResolver {
 
     private Reporter reporter = new NoOpReporter();
+    private int depth;
 
     public YamlAliasResolver() {
 
@@ -35,9 +37,18 @@ public class YamlAliasResolver {
      * all YamlAlias nodes with their dereferenced target nodes.
      */
     public YamlNode resolve(YamlNode root) {
+        if (root == null) return null;
+        YamlNode resolved = resolve(root, 0);
+        if (resolved == null) {
+            reporter.error(YamlDiagnosticCode.DEPTH_LIMIT);
+        }
+        return resolved;
+    }
+
+    private YamlNode resolve(YamlNode root, int depth) {
         Map<String, YamlNode> anchorMap = new HashMap<>();
         collectAnchors(root, anchorMap);
-        return resolveNode(root, anchorMap);
+        return resolveNode(root, anchorMap, depth);
     }
 
     /**
@@ -46,6 +57,14 @@ public class YamlAliasResolver {
      */
     public YamlStream resolve(YamlStream stream) {
         if (stream == null) return null;
+        YamlStream resolved = resolve(stream, 0);
+        if (resolved == null) {
+            reporter.error(YamlDiagnosticCode.DEPTH_LIMIT);
+        }
+        return resolved;
+    }
+
+    private YamlStream resolve(YamlStream stream, int depth) {
 
         List<YamlDocument> resolvedDocs = new ArrayList<>();
 
@@ -97,8 +116,11 @@ public class YamlAliasResolver {
         }
     }
 
-    private YamlNode resolveNode(YamlNode node, Map<String, YamlNode> anchorMap) {
+    private YamlNode resolveNode(YamlNode node, Map<String, YamlNode> anchorMap, int depth) {
         if (node == null) return null;
+        if (depth > 256) {
+            return null;
+        }
 
         // Handle Aliases
         if (node instanceof YamlAlias alias) {
@@ -110,7 +132,7 @@ public class YamlAliasResolver {
             if (target != null) {
                 debug("Resolved alias '%s' to target node: %s", alias.getName(), target);
                 // Recurse in case an alias points to another alias or anchored container
-                return resolveNode(target, anchorMap);
+                return resolveNode(target, anchorMap, depth + 1);
             } else {
                 debug("Warning: Unresolved alias '%s'", alias.getName());
             }
@@ -118,15 +140,15 @@ public class YamlAliasResolver {
 
         // Handle YamlAnchor wrappers (unwrap them during resolution if desired)
         if (node instanceof YamlAnchor anchor) {
-            return resolveNode(anchor.getInnerNode(), anchorMap);
+            return resolveNode(anchor.getInnerNode(), anchorMap, depth + 1);
         }
 
         // Recursively resolve maps (keys AND values)
         if (node instanceof YamlMap map) {
             YamlMap resolvedMap = new YamlMap(map.getToken(), map.getOptions());
             for (YamlMapEntry entry : map.getEntries()) {
-                YamlNode resolvedKey = resolveNode(entry.getKey(), anchorMap);
-                YamlNode resolvedValue = resolveNode(entry.getValue(), anchorMap);
+                YamlNode resolvedKey = resolveNode(entry.getKey(), anchorMap, depth + 1);
+                YamlNode resolvedValue = resolveNode(entry.getValue(), anchorMap, depth + 1);
                 resolvedMap.put(new YamlMapEntry(resolvedKey, resolvedValue));
             }
             return resolvedMap;
@@ -136,7 +158,7 @@ public class YamlAliasResolver {
         if (node instanceof YamlSequence seq) {
             YamlSequence resolvedSeq = new YamlSequence(seq.getToken());
             for (YamlNode child : seq.getChildren()) {
-                resolvedSeq.add(resolveNode(child, anchorMap));
+                resolvedSeq.add(resolveNode(child, anchorMap, depth + 1));
             }
             return resolvedSeq;
         }

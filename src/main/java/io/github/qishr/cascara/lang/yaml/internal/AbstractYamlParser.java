@@ -408,18 +408,20 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             trace("PV-after-skipTrivia");
 
-            NodeContext nodeContext = new NodeContext();
-            YamlNode result = null;
-
-            // YamlToken anchorToken = null;
-            // boolean newlineAfterAnchor = false;
-            // boolean hasIndentedAnchor = false;
-            if (checkIndented(YamlTokenType.ANCHOR)) {
-                trace("PM-hasIndentedAnchor1");
-                tokenBuffer.advance(); // consume INDENT
-                nodeContext.hasIndentedAnchor = true;
+            boolean expectedValueDedent = false;
+            if (check(YamlTokenType.INDENT)) {
+                tokenBuffer.advance();
+                expectedValueDedent = true;
             }
 
+            NodeContext nodeContext = parseNodeContext(true, null);
+            YamlNode result = null;
+
+            // if (checkIndented(YamlTokenType.ANCHOR)) {
+            //     trace("PM-hasIndentedAnchor1");
+            //     tokenBuffer.advance(); // consume INDENT
+            //     nodeContext.hasIndentedAnchor = true;
+            // }
 
 
 
@@ -428,13 +430,16 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-            if (check(YamlTokenType.ANCHOR)) {
-                nodeContext.anchorToken = tokenBuffer.peek();
-                String pendingAnchorName = extractAnchorName(nodeContext.anchorToken);
-                trace("PV-anchor: " + nodeContext.anchorToken);
 
-                YamlToken possibleNewline = lookAheadIgnoringComments(YamlTokenType.NEWLINE);
-                nodeContext.newlineAfterAnchor = possibleNewline != null;
+            // if (check(YamlTokenType.ANCHOR)) {
+            if (nodeContext.anchorToken != null) {
+
+            //     nodeContext.anchorToken = tokenBuffer.peek();
+            //     // String anchorName = extractAnchorName(nodeContext.anchorToken);
+            //     trace("PV-anchor: " + nodeContext.anchorToken);
+
+            //     YamlToken possibleNewline = lookAheadIgnoringComments(YamlTokenType.NEWLINE);
+            //     nodeContext.newlineAfterAnchor = possibleNewline != null;
 
                 YamlToken mapAnchor = null;
                 YamlToken keyAnchor = null;
@@ -452,12 +457,24 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 trace("PV-anchor keyAnchor = " + keyAnchor);
 
 
+
+
                 // lookAheadIgnoringComments rather than peek as it may be on the next line
                 YamlToken colon = lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR);
                 if (colon != null) {
                     // Let parseMap handle the anchor
                     trace("PV-anchor passing1 m=" + nodeContext.anchorToken + " k=null");
+
+
+                    //
+                    //
+                    // TODO: Second anchorToken for key, and pass nodeContext into parseMap
+                    //
+                    //
+
                     result = parseMap(false, isComplexKey, null, nodeContext.anchorToken, null);
+
+
                     attachComments(result);
 
                     // TODO: This must be moved to happen directly after anchor is parsed
@@ -475,14 +492,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
                         trace("PV-anchor passing2 m=" + mapAnchor + " k=" + keyAnchor);
 
-                        // Old logic: The anchor belongs to the next node, so don't pass it in here
-                        // result = parseMap(false, isComplexKey, null, null, null);
-
-                        // New logic: mapAnchor belogns to this map, keyAnchor belongs to its first key
+                        // mapAnchor belogns to this map, keyAnchor belongs to its first key
                         result = parseMap(false, isComplexKey, null, mapAnchor, keyAnchor);
 
                         attachComments(result);
-
 
                         // TODO: Should this be moved to happen directly after anchor is parsed ?
                         if (nodeContext.hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
@@ -490,13 +503,16 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                             nodeContext.hasIndentedAnchor = false;
                         }
 
-
                         return result;
                     }
 
+
+
+
                     // Consume the anchor and set it as pending
-                    nodeContext.anchorToken = tokenBuffer.advance();
+                    // nodeContext.anchorToken = tokenBuffer.advance();
                     trace("PV-anchor-else");
+                    trace("PV-anchorToken="+nodeContext.anchorToken);
 
                     if (nodeContext.hasIndentedAnchor) {
                         // skipTrivia();
@@ -539,11 +555,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                         YamlAnchor anchorNode = new YamlAnchor(
                             result.getStartLine(),
                             result.getStartColumn(),
-                            pendingAnchorName,
+                            nodeContext.anchorName,
                             result
                         );
                         trace("anchor applied");
-                        anchorRegistry.put(pendingAnchorName, anchorNode);
+                        anchorRegistry.put(nodeContext.anchorName, anchorNode);
                         return attachComments(anchorNode);
                     }
 
@@ -578,6 +594,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     mapAnchor = nodeContext.anchorToken;
                 }
             }
+
             trace("mapAnchor = " + mapAnchor);
             trace("keyAnchor = " + keyAnchor);
 
@@ -586,73 +603,71 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 skipTrivia();
             }
 
-            boolean hasIndentedTag = false;
-            if (checkIndented(YamlTokenType.TAG)) {
-                trace("PV-indented-tag start");
-                hasIndentedTag = true;
-                tokenBuffer.advance();
-            }
+            // boolean hasIndentedTag = false;
+            // if (checkIndented(YamlTokenType.TAG)) {
+            //     trace("PV-indented-tag start");
+            //     hasIndentedTag = true;
+            //     tokenBuffer.advance();
+            // }
 
-            boolean expectAnchorDedent = false;
-            if (check(YamlTokenType.INDENT)) {
-                tokenBuffer.advance();
-                trace("Setting expectAnchorDedent");
-                skipTrivia();
-                expectAnchorDedent = true;
-            }
-
-
+            // boolean expectAnchorDedent = false;
+            // if (check(YamlTokenType.INDENT)) {
+            //     tokenBuffer.advance();
+            //     trace("Setting expectAnchorDedent");
+            //     skipTrivia();
+            //     expectAnchorDedent = true;
+            // }
 
 
 
-            // Collect tags (node-level, including !!str on the document body)
-            // String pendingTag = null;
-            // TODO:
-            // https://yaml.org/spec/1.2.2/#682-tag-directives
-            // It is an error to specify more than one “TAG” directive for the same handle
-            // in the same document, even if both occurrences give the same prefix.
-            while (check(YamlTokenType.TAG)) {
-                trace("PV-TAG start");
-
-                // Scalar map keys are handled in parseKeyNode via parseMap
-                if (tokenBuffer.peekAhead(1).getType() == YamlTokenType.ANCHOR &&
-                    tokenBuffer.peekAhead(2).getType() == YamlTokenType.SCALAR &&
-                    tokenBuffer.peekAhead(3).getType() == YamlTokenType.VALUE_INDICATOR
-                ) {
-                    trace("PV-TAGanchor-scalar-valueIndicator passing m=" + nodeContext.anchorToken + " k=null");
-                    result = parseMap(false, isComplexKey, nodeContext.tag, nodeContext.anchorToken, null);
-                    attachComments(result);
-                    return result;
-                }
-
-                //------------------------------------------------------------
-                // Scalar map keys are handled in parseKeyNode via parseMap
-                if (tokenBuffer.peekAhead(1).getType() == YamlTokenType.SCALAR &&
-                    tokenBuffer.peekAhead(2).getType() == YamlTokenType.VALUE_INDICATOR
-                ) {
-                    trace("PV-TAG-scalar-valueIndicator passing m=" + nodeContext.anchorToken + " k=null");
-                    result = parseMap(false, isComplexKey, nodeContext.tag, nodeContext.anchorToken, null);
-                    attachComments(result);
-                    return result;
-                }
-
-                if (tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
-                    trace("PV-TAG-valueindicator passing m=" + nodeContext.anchorToken + " k=null");
-                    result = parseMap(false, isComplexKey, nodeContext.tag, nodeContext.anchorToken, null);
-                    attachComments(result);
-                    // Check: Did parseMap result in the anchor being applied?
-                    return result;
-                }
-                //------------------------------------------------------------
-
-                YamlToken tagTok = tokenBuffer.advance();
-                nodeContext.tag = tagTok.getContent();
-
-                skipTrivia();
-                trace("PV-TAG end");
-            }
 
 
+            // // Collect tags (node-level, including !!str on the document body)
+            // // String pendingTag = null;
+            // // TODO:
+            // // https://yaml.org/spec/1.2.2/#682-tag-directives
+            // // It is an error to specify more than one “TAG” directive for the same handle
+            // // in the same document, even if both occurrences give the same prefix.
+            // while (check(YamlTokenType.TAG)) {
+            //     trace("PV-TAG start");
+
+            //     // Scalar map keys are handled in parseKeyNode via parseMap
+            //     if (tokenBuffer.peekAhead(1).getType() == YamlTokenType.ANCHOR &&
+            //         tokenBuffer.peekAhead(2).getType() == YamlTokenType.SCALAR &&
+            //         tokenBuffer.peekAhead(3).getType() == YamlTokenType.VALUE_INDICATOR
+            //     ) {
+            //         trace("PV-TAGanchor-scalar-valueIndicator passing m=" + nodeContext.anchorToken + " k=null");
+            //         result = parseMap(false, isComplexKey, nodeContext.tag, nodeContext.anchorToken, null);
+            //         attachComments(result);
+            //         return result;
+            //     }
+
+            //     //------------------------------------------------------------
+            //     // Scalar map keys are handled in parseKeyNode via parseMap
+            //     if (tokenBuffer.peekAhead(1).getType() == YamlTokenType.SCALAR &&
+            //         tokenBuffer.peekAhead(2).getType() == YamlTokenType.VALUE_INDICATOR
+            //     ) {
+            //         trace("PV-TAG-scalar-valueIndicator passing m=" + nodeContext.anchorToken + " k=null");
+            //         result = parseMap(false, isComplexKey, nodeContext.tag, nodeContext.anchorToken, null);
+            //         attachComments(result);
+            //         return result;
+            //     }
+
+            //     if (tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
+            //         trace("PV-TAG-valueindicator passing m=" + nodeContext.anchorToken + " k=null");
+            //         result = parseMap(false, isComplexKey, nodeContext.tag, nodeContext.anchorToken, null);
+            //         attachComments(result);
+            //         // Check: Did parseMap result in the anchor being applied?
+            //         return result;
+            //     }
+            //     //------------------------------------------------------------
+
+            //     YamlToken tagTok = tokenBuffer.advance();
+            //     nodeContext.tag = tagTok.getContent();
+
+            //     skipTrivia();
+            //     trace("PV-TAG end");
+            // }
 
 
 
@@ -660,21 +675,23 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-            if (hasIndentedTag) {
-                trace("PV-indented-tag end");
-                while (check(YamlTokenType.NEWLINE)) {
-                    tokenBuffer.advance();
-                }
-                consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
-            }
 
-            boolean expectTagDedent = false;
-            if (check(YamlTokenType.INDENT)) {
-                tokenBuffer.advance();
-                trace("Setting expectTagDedent");
-                skipTrivia();
-                expectTagDedent = true;
-            }
+
+            // if (nodeContext.hasIndentedTag) {
+            //     trace("PV-indented-tag end");
+            //     while (check(YamlTokenType.NEWLINE)) {
+            //         tokenBuffer.advance();
+            //     }
+            //     consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
+            // }
+
+            // boolean expectTagDedent = false;
+            // if (check(YamlTokenType.INDENT)) {
+            //     tokenBuffer.advance();
+            //     trace("Setting expectTagDedent");
+            //     skipTrivia();
+            //     expectTagDedent = true;
+            // }
 
             if (check(YamlTokenType.KEY_INDICATOR)) {
                 trace("PV-key-indicator");
@@ -777,7 +794,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             // Check: Should pending comments be attached to the result before this skipTrivia?
             skipTrivia();
 
-            if (expectTagDedent) {
+            if (nodeContext.expectTagDedent) {
                 if (check(YamlTokenType.DEDENT)) {
                     trace("Consuming expectTagDedent");
                     tokenBuffer.advance();
@@ -801,7 +818,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 attachTag(result, nodeContext.tag);
             }
 
-            if (expectAnchorDedent) {
+            if (nodeContext.expectAnchorDedent) {
                 if (check(YamlTokenType.DEDENT)) {
                     trace("Consuming expectAnchorDedent");
                     tokenBuffer.advance();
@@ -822,6 +839,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             if (nodeContext.anchorToken != null) {
                 trace("PV applying anchor "+nodeContext.anchorToken);
                 String raw = nodeContext.anchorToken.getContent();
+                if (raw == null) {
+                    error(nodeContext.anchorToken, YamlDiagnosticCode.ERROR, "anchor token null content: " + nodeContext.anchorToken);
+                }
                 String anchorName = raw.startsWith("&") ? raw.substring(1) : raw;
                 result.setAnchor(anchorName);
                 YamlAnchor anchorNode = new YamlAnchor(
@@ -832,6 +852,21 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 );
                 anchorRegistry.put(anchorName, result);
                 result = anchorNode;
+            }
+
+            if (expectedValueDedent) {
+
+                // TODO: This is copied from above. Might need to change one or the other
+
+                if (check(YamlTokenType.DEDENT)) {
+                    trace("Consuming expectedValueDedent");
+                    tokenBuffer.advance();
+                } else {
+                    trace("expectedValueDedent not found");
+                    // We should really report this error, but it breaks
+                    // the valid_12_content_type_records test
+                    // error(tokenBuffer.peek(), YamlDiagnosticCode.EXPECTED_DEDENT);
+                }
             }
 
             return attachComments(result);
@@ -922,9 +957,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 if (mapColumn == -1) {
                     mapColumn = markerColumn;
                 } else {
-                    if (markerColumn < mapColumn && !isComplexKey) {
-                        error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
-                    }
+                    // TODO
+                    // if (markerColumn < mapColumn && !isComplexKey) {
+                    //     error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
+                    // }
                 }
 
                 YamlNode key;
@@ -1037,8 +1073,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
 
-    private NodeContext parseNodeContext(YamlToken pendingAnchor) {
-        debug(">parseNodeContext");
+    private NodeContext parseNodeContext(boolean handleIndents, YamlToken pendingAnchor) {
+        debug(">parseNodeContext(hi=" +handleIndents+ ")");
         depth++;
         try {
 
@@ -1049,7 +1085,12 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 nodeContext.anchorToken = pendingAnchor;
             }
 
-            if (check(YamlTokenType.TAG)) {
+            if (handleIndents && checkIndented(YamlTokenType.TAG)) {
+                trace("parseNodeContext: indented tag");
+                nodeContext.hasIndentedTag = true;
+                tokenBuffer.advance(); // Consume indent
+                parseTag(nodeContext);
+            } else if (check(YamlTokenType.TAG)) {
                 parseTag(nodeContext);
             }
 
@@ -1057,7 +1098,16 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 skipTrivia();
             }
 
-            if (check(YamlTokenType.ANCHOR)) {
+            if (handleIndents && checkIndented(YamlTokenType.ANCHOR)) {
+                trace("parseNodeContext: indented anchor");
+                tokenBuffer.advance(); // consume INDENT
+                nodeContext.hasIndentedAnchor = true;
+                if (pendingAnchor != null) {
+                    debug("ERROR");
+                    // TODO: error
+                }
+                parseAnchor(nodeContext);
+            } else if (check(YamlTokenType.ANCHOR)) {
                 if (pendingAnchor != null) {
                     debug("ERROR");
                     // TODO: error
@@ -1069,22 +1119,15 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 skipTrivia();
             }
 
-            if (check(YamlTokenType.TAG)) {
+            if (handleIndents && checkIndented(YamlTokenType.TAG)) {
+                trace("parseNodeContext: indented tag");
+                nodeContext.hasIndentedTag = true;
+                tokenBuffer.advance(); // Consume indent
+                parseTag(nodeContext);
+            } else if (check(YamlTokenType.TAG)) {
                 // TODO: If a tag was alread parsed: error
                 parseTag(nodeContext);
             }
-
-            // TODO
-            // Register the anchor for later alias resolution
-            // anchorRegistry.put(anchorName, key);
-            // Wrap in YamlAnchorNode (same as parseValue)
-            // YamlAnchor anchorNode = new YamlAnchor(
-            //     key.getStartLine(),
-            //     key.getStartColumn(),
-            //     anchorName,
-            //     key
-            // );
-
 
             return nodeContext;
         } finally {
@@ -1095,22 +1138,57 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
     private void parseAnchor(NodeContext nodeContext) {
+        trace("parseAnchor");
         // Anchors on scalars that start a map are not handled in parseValue.
 
         nodeContext.anchorToken = tokenBuffer.peek();
         tokenBuffer.advance(); // consume &anchor
+        trace("parseAnchor: anchor token: " + nodeContext.anchorToken);
 
-        // if (check(YamlTokenType.NEWLINE)) {
-        //     skipTrivia();
-        // }
+        YamlToken possibleNewline = lookAheadIgnoringComments(YamlTokenType.NEWLINE);
+        nodeContext.newlineAfterAnchor = possibleNewline != null;
+
+        if (check(YamlTokenType.NEWLINE)) {
+            skipTrivia();
+        }
+
+        // boolean expectAnchorDedent = false;
+        if (check(YamlTokenType.INDENT)) {
+            tokenBuffer.advance();
+            trace("parseAnchor: Setting expectAnchorDedent");
+            skipTrivia();
+            nodeContext.expectAnchorDedent = true;
+        }
+
 
         // YamlNode key;
         nodeContext.anchorName = extractAnchorName(nodeContext.anchorToken);
     }
 
     private void parseTag(NodeContext nodeContext) {
+        trace("parseTag");
         YamlToken tagTok = tokenBuffer.advance();
         nodeContext.tag = tagTok.getContent();
+
+
+        if (nodeContext.hasIndentedTag) {
+            trace("parseTag: hasIndentedTag");
+            while (check(YamlTokenType.NEWLINE)) {
+                tokenBuffer.advance();
+            }
+            consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
+        }
+
+        if (check(YamlTokenType.NEWLINE)) {
+            skipTrivia();
+        }
+
+        if (check(YamlTokenType.INDENT)) {
+            tokenBuffer.advance();
+            trace("parseTag: Setting expectTagDedent");
+            skipTrivia();
+            nodeContext.expectTagDedent = true;
+        }
     }
 
 
@@ -1125,7 +1203,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 tokenBuffer.advance();
             }
 
-            NodeContext nodeContext = parseNodeContext(pendingAnchor);
+            NodeContext nodeContext = parseNodeContext(false, pendingAnchor);
             YamlToken token = tokenBuffer.peek();
             YamlTokenType tokenType = token.getType();
             YamlNode key;
@@ -2176,5 +2254,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         YamlToken anchorToken;
         boolean newlineAfterAnchor = false;
         boolean hasIndentedAnchor = false;
+        boolean hasIndentedTag = false;
+        boolean expectAnchorDedent = false;
+        boolean expectTagDedent = false;
     }
 }

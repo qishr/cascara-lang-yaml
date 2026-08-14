@@ -148,6 +148,7 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
             } catch (Exception e) {
                 errorEncountered.set(true);
                 trace("parseInternal failed: " + e.getMessage());
+                e.printStackTrace();
             }
             trace("parserThread: ended");
             streamEnded.set(true);
