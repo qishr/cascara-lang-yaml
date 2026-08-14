@@ -422,7 +422,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             if (check(YamlTokenType.ANCHOR)) {
                 pendingAnchor = tokenBuffer.peek();
-                String pendingAnchorName = parseAnchor(pendingAnchor);
+                String pendingAnchorName = extractAnchorName(pendingAnchor);
                 trace("PV-anchor: " + pendingAnchor);
 
                 YamlToken possibleNewline = lookAheadIgnoringComments(YamlTokenType.NEWLINE);
@@ -840,7 +840,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             map.setNodeStyle(isFlowStyle ? NodeStyle.FLOW : NodeStyle.BLOCK);
 
             if (pendingMapAnchor != null) {
-                map.setAnchor(parseAnchor(pendingMapAnchor));
+                map.setAnchor(extractAnchorName(pendingMapAnchor));
             }
             attachTag(map, tag);
             createEvent(map, StreamingEventType.START_OBJECT);
@@ -1018,8 +1018,84 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
 
+    private NodeContext parseNodeContext(YamlToken pendingAnchor) {
+        debug(">parseNodeContext");
+        depth++;
+        try {
+
+            NodeContext nodeContext = new NodeContext();
+
+            // TODO: pendingAnchor that was passed in
+            if (pendingAnchor != null) {
+                nodeContext.anchorToken = pendingAnchor;
+            }
+
+            if (check(YamlTokenType.TAG)) {
+                parseTag(nodeContext);
+            }
+
+            if (check(YamlTokenType.NEWLINE)) {
+                skipTrivia();
+            }
+
+            if (check(YamlTokenType.ANCHOR)) {
+                if (pendingAnchor != null) {
+                    debug("ERROR");
+                    // TODO: error
+                }
+                parseAnchor(nodeContext);
+            }
+
+            if (check(YamlTokenType.NEWLINE)) {
+                skipTrivia();
+            }
+
+            if (check(YamlTokenType.TAG)) {
+                // TODO: If a tag was alread parsed: error
+                parseTag(nodeContext);
+            }
+
+            // TODO
+            // Register the anchor for later alias resolution
+            // anchorRegistry.put(anchorName, key);
+            // Wrap in YamlAnchorNode (same as parseValue)
+            // YamlAnchor anchorNode = new YamlAnchor(
+            //     key.getStartLine(),
+            //     key.getStartColumn(),
+            //     anchorName,
+            //     key
+            // );
+
+
+            return nodeContext;
+        } finally {
+            depth--;
+            debug("<parseNodeContext");
+        }
+
+    }
+
+    private void parseAnchor(NodeContext nodeContext) {
+        // Anchors on scalars that start a map are not handled in parseValue.
+
+        nodeContext.anchorToken = tokenBuffer.peek();
+        tokenBuffer.advance(); // consume &anchor
+
+        // if (check(YamlTokenType.NEWLINE)) {
+        //     skipTrivia();
+        // }
+
+        // YamlNode key;
+        nodeContext.anchorName = extractAnchorName(nodeContext.anchorToken);
+    }
+
+    private void parseTag(NodeContext nodeContext) {
+        YamlToken tagTok = tokenBuffer.advance();
+        nodeContext.tag = tagTok.getContent();
+    }
+
+
     private YamlNode parseKeyNode(int parentIndent, YamlToken pendingAnchor) {
-        YamlToken token = tokenBuffer.peek();
         debug(">parseKeyNode");
         depth++;
         try {
@@ -1030,171 +1106,84 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 tokenBuffer.advance();
             }
 
-            if (check(YamlTokenType.VALUE_INDICATOR)) {
-                // Empty key
-                YamlScalar key = new YamlScalar(tokenBuffer.peek(), "", PrimitiveType.STRING, ScalarStyle.PLAIN, options);
-                // TODO: Pending anchor?
-                createEvent(key, StreamingEventType.FIELD_NAME);
-                return key;
-            }
+            NodeContext nodeContext = parseNodeContext(pendingAnchor);
+            YamlToken token = tokenBuffer.peek();
+            YamlTokenType tokenType = token.getType();
+            YamlNode key;
 
             if (token.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR ||
                 token.getType() == YamlTokenType.INDENT) {
-                return parseValue(parentIndent, false, false, pendingAnchor);
-            }
+                key = parseValue(parentIndent, false, false, nodeContext.anchorToken);
+            } else if (tokenType == YamlTokenType.VALUE_INDICATOR) {
+                // Empty key
 
-            switch (token.getType()) {
-                case MAP_START: {
-                    return parseFlowMap(pendingAnchor);
+                // YamlScalar key = new YamlScalar(tokenBuffer.peek(), "", PrimitiveType.STRING, ScalarStyle.PLAIN, options);
+
+                // TODO: Pending anchor?
+                key = createEmptyScalar(true, nodeContext.tag);
+                // createEvent(key, StreamingEventType.FIELD_NAME);
+            } else if (tokenType == YamlTokenType. MAP_START) {
+                key = parseFlowMap(nodeContext.anchorToken);
+            } else if (tokenType == YamlTokenType. SEQUENCE_START) {
+                key = parseFlowSequence(nodeContext.anchorToken);
+            } else if (tokenType == YamlTokenType. SCALAR) {
+                YamlScalar scalar = parseScalar(true,null,  nodeContext.anchorToken);
+                // skipTrivia();
+                skipEOL();
+                key = scalar;
+            } else if (tokenType == YamlTokenType. ALIAS) {
+                tokenBuffer.advance(); // consume alias token
+
+                String raw = token.getContent();
+                String name = raw.startsWith("*") ? raw.substring(1) : raw;
+
+                YamlAlias alias = new YamlAlias(token, name);
+
+                // Mirror parseValue alias resolution
+                if (anchorRegistry.containsKey(name)) {
+                    alias.setResolvedNode(anchorRegistry.get(name));
                 }
+                createEvent(alias, StreamingEventType.ALIAS);
 
-                case SEQUENCE_START: {
-                    return parseFlowSequence(pendingAnchor);
-                }
+                key = alias;
+            } else if (tokenType == YamlTokenType. KEY_INDICATOR) {
+                trace("parseKeyNode: KEY_INDICATOR");
+                tokenBuffer.advance(); // consume '?'
+                skipTrivia();
+                // NOTE: at the moment parseKeyNode is only called for simple keys.
+                // If we call it for complex keys, this parseValue call should
+                // specify if it's a complex key.
+                key = parseValue(parentIndent, false, false, nodeContext.anchorToken);
+            } else {
+                if (nodeContext.anchorToken != null) {
+                    // TODO: What happens to pendingAnchor now?
+                    key = createNullScalar(true, null, token);
 
-                case SCALAR:
-                    YamlScalar scalar = parseScalar(true,null,  pendingAnchor);
-                    // skipTrivia();
-                    skipEOL();
-                    return scalar;
-
-                case ALIAS: {
-                    tokenBuffer.advance(); // consume alias token
-
-                    String raw = token.getContent();
-                    String name = raw.startsWith("*") ? raw.substring(1) : raw;
-
-                    YamlAlias alias = new YamlAlias(token, name);
-
-                    // Mirror parseValue alias resolution
-                    if (anchorRegistry.containsKey(name)) {
-                        alias.setResolvedNode(anchorRegistry.get(name));
-                    }
-                    createEvent(alias, StreamingEventType.ALIAS);
-
-                    return alias;
-                }
-
-
-
-
-                case TAG: {
-                    YamlScalar key;
-                    YamlToken tagTok = tokenBuffer.advance();
-                    String tag = tagTok.getContent();
-                    if (check(YamlTokenType.NEWLINE)) {
-                        skipTrivia();
-                    }
-
-                    // TODO: pendingAnchor that was passed in
-
-                    if (check(YamlTokenType.ANCHOR)) {
-                        YamlToken anchorToken = tokenBuffer.advance();
-                        String anchorName = parseAnchor(anchorToken);
-                        skipTrivia();
-                        if (check(YamlTokenType.SCALAR)) {
-                            trace("PK-anchor p=" + pendingAnchor + " a="+anchorToken);
-                            key = parseScalar(true, tag, anchorToken);
-                            key.setTag(tagTok.getContent());
-                            key.setAnchor(anchorToken.getContent());
-                        } else {
-                            // If anchor is not followed by scalar, treat as null key with tag+anchor
-
-                            // TODO: What happens to pendingAnchor now?
-                            key = createNullScalar(true, tag, anchorToken);
-
-                            key.setTag(tagTok.getContent());
-                            key.setAnchor(anchorToken.getContent());
-                        }
-                        anchorRegistry.put(anchorName, key);
-                        return key;
-                    }
-                    if (check(YamlTokenType.VALUE_INDICATOR)) {
-                        key = createEmptyScalar(true, tag);
-                        createEvent(key, StreamingEventType.FIELD_NAME);
-                    }
-                    else if (check(YamlTokenType.SCALAR)) {
-                        key = parseScalar(true, tag, null);
-
-                        if (key instanceof YamlScalar scalarKey) {
-                            if (scalarKey.getPrimitiveType() == PrimitiveType.NULL) {
-                                key = new YamlScalar("", ScalarStyle.PLAIN, options);
-                            }
-                        }
-
-                        // TODO: This is probalby unneccessary
-                        attachTag(key, tag);
-                    } else {
-
-                        // TODO: Is this correct?
-                        key = createNullScalar(true, tag, pendingAnchor);
-
+                    if (tokenBuffer.peek().getType().getCategory() != TokenCategory.PUNCTUATION) {
                         error(tokenBuffer.peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, tokenBuffer.peek().getType());
                     }
-                    return key;
-                }
 
-                case ANCHOR: {
-                    // Anchors on scalars that start a map are not handled in parseValue.
-                    tokenBuffer.advance(); // consume &anchor
-                    if (check(YamlTokenType.NEWLINE)) {
-                        skipTrivia();
-                    }
-
-                    YamlNode key;
-                    String anchorName = parseAnchor(token);
-
-                    if (check(YamlTokenType.MAP_START)) {
-                        key = parseFlowMap(token);
-                    }
-                    else if (check(YamlTokenType.SEQUENCE_START)) {
-                        key = parseFlowSequence(token);
-                    }
-                    else if (check(YamlTokenType.SCALAR)) {
-                        // Parse the scalar key that follows
-                        // NOTE: at the moment parseKeyNode is only called for simple keys.
-                        // If we call it for complex keys, this parseValue call should
-                        // specify if it's a complex key.
-                        key = parseScalar(true, null, token);
-                    }
-                    else {
-
-                        // TODO: What happens to pendingAnchor now?
-                        key = createNullScalar(true, null, token);
-
-                        if (tokenBuffer.peek().getType().getCategory() != TokenCategory.PUNCTUATION) {
-                            error(tokenBuffer.peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, tokenBuffer.peek().getType());
-                        }
-                    }
-                    // Register the anchor for later alias resolution
-                    anchorRegistry.put(anchorName, key);
-
-                    // Wrap in YamlAnchorNode (same as parseValue)
-                    YamlAnchor anchorNode = new YamlAnchor(
-                        key.getStartLine(),
-                        key.getStartColumn(),
-                        anchorName,
-                        key
-                    );
-                    return anchorNode;
-                }
-
-
-
-
-                case KEY_INDICATOR:
-                    trace("parseKeyNode: KEY_INDICATOR");
-                    tokenBuffer.advance(); // consume '?'
-                    skipTrivia();
-                    // NOTE: at the moment parseKeyNode is only called for simple keys.
-                    // If we call it for complex keys, this parseValue call should
-                    // specify if it's a complex key.
-                    return parseValue(parentIndent, false, false, pendingAnchor);
-
-                default:
+                    //
+                } else {
                     error(token, GenericDiagnosticCode.ERROR, "Unexpected token in key position: " + token.getType());
-                    return new YamlScalar(token, PrimitiveType.ANY, options);
+                    key = new YamlScalar(token, PrimitiveType.ANY, options);
+                }
             }
+
+            if (nodeContext.anchorToken != null) {
+                anchorRegistry.put(nodeContext.anchorName, key);
+
+                // Wrap in YamlAnchorNode (same as parseValue)
+                YamlAnchor anchorNode = new YamlAnchor(
+                    key.getStartLine(),
+                    key.getStartColumn(),
+                    nodeContext.anchorName,
+                    key
+                );
+                key = anchorNode;
+            }
+
+            return key;
         } finally {
             depth--;
             debug("<parseKeyNode");
@@ -1243,7 +1232,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 sequence.setAnchor(anchorName);
             }
             if (pendingAnchor != null) {
-                sequence.setAnchor(parseAnchor(pendingAnchor));
+                sequence.setAnchor(extractAnchorName(pendingAnchor));
             }
             createEvent(sequence, StreamingEventType.START_ARRAY);
 
@@ -1335,7 +1324,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             sequence.setNodeStyle(NodeStyle.FLOW);
 
             if (pendingAnchor != null) {
-                sequence.setAnchor(parseAnchor(pendingAnchor));
+                sequence.setAnchor(extractAnchorName(pendingAnchor));
             }
             createEvent(sequence, StreamingEventType.START_ARRAY);
 
@@ -1373,7 +1362,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             map.setNodeStyle(NodeStyle.FLOW);
 
             if (pendingAnchor != null) {
-                map.setAnchor(parseAnchor(pendingAnchor));
+                map.setAnchor(extractAnchorName(pendingAnchor));
             }
             createEvent(map, StreamingEventType.START_OBJECT);
 
@@ -1518,7 +1507,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             }
 
             if (pendingAnchor != null) {
-                scalar.setAnchor(parseAnchor(pendingAnchor));
+                scalar.setAnchor(extractAnchorName(pendingAnchor));
             }
 
             if (isKey) {
@@ -1551,7 +1540,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         debug("createNullScalar");
         YamlScalar scalar = new YamlScalar(tokenBuffer.peek(), PrimitiveType.NULL, options);
         attachTag(scalar, tag);
-        scalar.setAnchor(parseAnchor(pendingAnchor));
+        scalar.setAnchor(extractAnchorName(pendingAnchor));
         createEvent(
             scalar,
             isKey ? StreamingEventType.FIELD_NAME
@@ -1577,7 +1566,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
     @Nullable
-    private String parseAnchor(YamlToken anchorToken) {
+    private String extractAnchorName(YamlToken anchorToken) {
         if (anchorToken == null) {
             return null;
         }
@@ -2164,6 +2153,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
     private static class NodeContext {
         String tag;
+        String anchorName;
         YamlToken anchorToken;
         boolean newlineAfterAnchor = false;
         boolean hasIndentedAnchor = false;
