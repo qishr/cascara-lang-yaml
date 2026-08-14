@@ -39,6 +39,7 @@ import java.util.List;
 
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 /// Represents a comment within the YAML source.
 public class YamlComment extends YamlNode implements CommentAstNode {

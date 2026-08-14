@@ -37,9 +37,9 @@ package io.github.qishr.cascara.lang.yaml.streaming;
 
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
-import io.github.qishr.cascara.lang.yaml.ast.NodeStyle;
-import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
+import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
+import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
 
 public class YamlStreamingEvent implements StreamingEvent {
 	private final int lineNumber;

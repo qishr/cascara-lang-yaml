@@ -37,12 +37,8 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.PushParser;
-import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
-import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
-import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlParser;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
-import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.common.lang.streaming.StreamHandler;
 
 import java.io.InputStream;

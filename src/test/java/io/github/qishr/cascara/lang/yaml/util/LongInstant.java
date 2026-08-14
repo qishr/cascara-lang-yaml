@@ -35,9 +35,6 @@
 
 package io.github.qishr.cascara.lang.yaml.util;
 
-import io.github.qishr.cascara.common.lang.annotation.Serializable;
-
-@Serializable
 public class LongInstant {
     private Long value;
 

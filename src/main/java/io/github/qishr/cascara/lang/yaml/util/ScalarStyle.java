@@ -33,10 +33,13 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.ast;
+package io.github.qishr.cascara.lang.yaml.util;
 
-public enum ChompingStyle {
-    CLIP,  // Default (one trailing newline)
-    STRIP, // - (no trailing newlines)
-    KEEP   // + (all trailing newlines preserved)
+public enum ScalarStyle {
+    PLAIN,
+    SINGLE_QUOTED,
+    DOUBLE_QUOTED,
+    LITERAL, // |
+    FOLDED,  // >
+    UNDETERMINED
 }

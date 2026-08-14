@@ -38,11 +38,9 @@ package io.github.qishr.cascara.lang.yaml.util;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.github.qishr.cascara.common.lang.annotation.AnyGetter;
-import io.github.qishr.cascara.common.lang.annotation.AnySetter;
-import io.github.qishr.cascara.common.lang.annotation.Serializable;
+import io.github.qishr.cascara.common.annotation.AnyGetter;
+import io.github.qishr.cascara.common.annotation.AnySetter;
 
-@Serializable
 public class SettingsTestClass {
 
     private Map<String, Object> otherSettings = new HashMap<>();

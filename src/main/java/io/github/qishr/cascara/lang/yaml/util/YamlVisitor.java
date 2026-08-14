@@ -33,15 +33,32 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.ast;
+package io.github.qishr.cascara.lang.yaml.util;
 
-/// The presentation style of a YAML node.
-///
-/// https://yaml.org/spec/1.2.2/#3231-node-styles
-public enum NodeStyle {
-    ///  Block styles use indentation to denote structure.
-    BLOCK,
+import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
+import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
+import io.github.qishr.cascara.lang.yaml.ast.YamlComment;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDirective;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
+import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 
-    /// Flow styles rely on explicit indicators to denote structure.
-    FLOW
+/// Defines a visitor pattern interface for traversing the Cascara YAML AST hierarchy.
+public interface YamlVisitor {
+    // Stream and Document containers
+    void visit(YamlStream node);
+    void visit(YamlDocument node);
+    void visit(YamlDirective node);
+
+    // Standard structural nodes
+    void visit(YamlMap node);
+    void visit(YamlMapEntry node);
+    void visit(YamlSequence node);
+    void visit(YamlScalar node);
+    void visit(YamlAlias node);
+    void visit(YamlComment node);
+    void visit(YamlAnchor node);
 }

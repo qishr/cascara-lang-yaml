@@ -35,10 +35,8 @@
 
 package io.github.qishr.cascara.lang.yaml.util;
 
-import io.github.qishr.cascara.common.lang.annotation.DataField;
-import io.github.qishr.cascara.common.lang.annotation.Serializable;
+import io.github.qishr.cascara.common.annotation.DataField;
 
-@Serializable
 public class Stringy {
     @DataField(key="string")
     private String string = new String("string");

@@ -37,9 +37,6 @@ package io.github.qishr.cascara.lang.yaml.util;
 
 import java.time.ZonedDateTime;
 
-import io.github.qishr.cascara.common.lang.annotation.Serializable;
-
-@Serializable
 public class TypeDescriptorTestClass {
     @SuppressWarnings("unused")
     private ZonedDateTime dateTime;

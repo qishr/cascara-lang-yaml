@@ -47,18 +47,15 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
-import io.github.qishr.cascara.common.lang.annotation.Nullable;
+import io.github.qishr.cascara.common.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.processor.Processor;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 import io.github.qishr.cascara.common.lang.token.TokenCategory;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
-import io.github.qishr.cascara.lang.yaml.ast.NodeStyle;
-import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlComment;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDirective;
-import io.github.qishr.cascara.lang.yaml.ast.YamlDirectiveType;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
@@ -74,6 +71,9 @@ import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
 import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
+import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
+import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
+import io.github.qishr.cascara.lang.yaml.util.YamlDirectiveType;
 
 public abstract class AbstractYamlParser<P extends Processor> extends AbstractYamlProcessor<P> {
     private static final int CIRCULAR_BUFFER_SIZE = 256;
@@ -410,7 +410,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             YamlNode result = null;
 
-            // String pendingAnchorName = null;
             YamlToken pendingAnchor = null;
             boolean newlineAfterAnchor = false;
             boolean hasIndentedAnchor = false;
@@ -421,9 +420,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             }
 
             if (check(YamlTokenType.ANCHOR)) {
-                // YamlToken anchorToken = tokenBuffer.peek();
-                // String raw = anchorToken.getContent();
-                // pendingAnchorName = raw.startsWith("&") ? raw.substring(1) : raw;
                 pendingAnchor = tokenBuffer.peek();
                 String pendingAnchorName = parseAnchor(pendingAnchor);
                 trace("PV-anchor: " + pendingAnchor);
@@ -501,10 +497,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                         consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
                         hasIndentedAnchor = false;
                     }
-
-                    // TODO: This is repeating what we have with anchorName
-                    // raw = pendingAnchor.getContent();
-                    // pendingAnchorName = raw.startsWith("&") ? raw.substring(1) : raw;
 
                     int ahead = 0;
                     YamlToken candidate = null;
@@ -722,9 +714,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     // indicating to the next parse method if we're inside a flow.
                     // return parseMap(false, isComplexKey, pendingTag, pendingAnchorName);
 
-                    // trace("PV-seq-map passing m=" + pendingAnchorName + " k=null");
-                    // return parseMap(isFlowStyle, isComplexKey, pendingTag, pendingAnchor, null);
-
                     trace("PV-seq-map passing m=" + mapAnchor + " k="+keyAnchor);
                     return parseMap(isFlowStyle, isComplexKey, pendingTag, mapAnchor, keyAnchor);
 
@@ -750,7 +739,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
                     trace("PV-scalar passing m=" + pendingAnchor + " k=null");
-                    // result = parseMap(false, isComplexKey, pendingTag, pendingAnchor, null);
                     result = parseMap(isFlowStyle, isComplexKey, pendingTag, pendingAnchor, null);
 
 
@@ -846,13 +834,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             trace("pendingMapAnchor="+pendingMapAnchor);
             trace("pendingKeyAnchor="+pendingKeyAnchor);
 
-            // if (pendingMapAnchor != null && pendingMapAnchor.toString().contains("node1")) {
-            //     debug("pendingMapAnchor");
-            // }
-
             YamlToken startToken = tokenBuffer.peek();
             YamlMap map = new YamlMap(startToken, options);
-            // map.setNodeStyle(NodeStyle.BLOCK);
             map.setNodeStyle(isFlowStyle ? NodeStyle.FLOW : NodeStyle.BLOCK);
 
             if (pendingMapAnchor != null) {
@@ -1105,9 +1088,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
                     if (check(YamlTokenType.ANCHOR)) {
                         YamlToken anchorToken = tokenBuffer.advance();
-                        // String raw = anchorTok.getContent();
-                        // String name = raw.startsWith("&") ? raw.substring(1) : raw;
-                        // String anchorName = (name.length() > 1 && name.charAt(0) == '&' ? name.substring(1) : "");
                         String anchorName = parseAnchor(anchorToken);
                         skipTrivia();
                         if (check(YamlTokenType.SCALAR)) {
@@ -1164,9 +1144,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     }
 
                     YamlNode key;
-                    String raw = token.getContent();
-                    // String name = raw.startsWith("&") ? raw.substring(1) : raw;
-                    // String anchorName = (raw.length() > 1 && raw.charAt(0) == '&' ? raw.substring(1) : raw);
                     String anchorName = parseAnchor(token);
 
                     if (check(YamlTokenType.MAP_START)) {

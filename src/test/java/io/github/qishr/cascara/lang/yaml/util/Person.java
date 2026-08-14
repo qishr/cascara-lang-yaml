@@ -35,13 +35,10 @@
 
 package io.github.qishr.cascara.lang.yaml.util;
 
-import io.github.qishr.cascara.common.lang.annotation.DataField;
-import io.github.qishr.cascara.common.lang.annotation.Serializable;
-import io.github.qishr.cascara.lang.yaml.annotation.Init;
+import io.github.qishr.cascara.common.annotation.DataField;
 
 // Test class
 
-@Serializable
 public class Person {
 
     @DataField
@@ -84,7 +81,6 @@ public class Person {
         bytes = b;
     }
 
-    @Init
     private void initNames() {
         this.firstName = this.firstName.substring(0, 1).toUpperCase()
           + this.firstName.substring(1);

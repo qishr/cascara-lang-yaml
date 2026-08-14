@@ -33,14 +33,15 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.annotation;
+package io.github.qishr.cascara.lang.yaml.util;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.annotation.ElementType;
+/// The presentation style of a YAML node.
+///
+/// https://yaml.org/spec/1.2.2/#3231-node-styles
+public enum NodeStyle {
+    ///  Block styles use indentation to denote structure.
+    BLOCK,
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface Init {
+    /// Flow styles rely on explicit indicators to denote structure.
+    FLOW
 }

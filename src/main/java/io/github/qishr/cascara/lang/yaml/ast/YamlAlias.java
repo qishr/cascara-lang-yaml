@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 public class YamlAlias extends YamlNode {
 

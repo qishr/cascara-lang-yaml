@@ -35,8 +35,6 @@
 
 package io.github.qishr.cascara.lang.yaml.exception;
 
-import java.util.Set;
-
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 
 public enum YamlDiagnosticCode implements DiagnosticCode {

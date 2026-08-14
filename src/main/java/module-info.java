@@ -38,14 +38,12 @@ module cascara.lang.yaml {
     requires javafx.graphics;
 
     exports io.github.qishr.cascara.lang.yaml;
-    exports io.github.qishr.cascara.lang.yaml.annotation;
     exports io.github.qishr.cascara.lang.yaml.ast;
     exports io.github.qishr.cascara.lang.yaml.exception;
     exports io.github.qishr.cascara.lang.yaml.processor;
     exports io.github.qishr.cascara.lang.yaml.token;
     exports io.github.qishr.cascara.lang.yaml.util;
 
-    opens io.github.qishr.cascara.lang.yaml.annotation;
     opens io.github.qishr.cascara.lang.yaml.ast;
     opens io.github.qishr.cascara.lang.yaml.exception;
     opens io.github.qishr.cascara.lang.yaml.processor;

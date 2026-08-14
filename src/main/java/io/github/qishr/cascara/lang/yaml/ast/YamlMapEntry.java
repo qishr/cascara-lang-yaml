@@ -38,6 +38,7 @@ package io.github.qishr.cascara.lang.yaml.ast;
 import java.util.List;
 
 import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
+import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 /// Represents the structural pairing of a key and a value.
 public class YamlMapEntry extends YamlNode implements MapEntryAstNode<YamlNode,YamlNode> {

@@ -37,7 +37,7 @@ package io.github.qishr.cascara.lang.yaml.token;
 
 import io.github.qishr.cascara.common.lang.token.Token;
 import io.github.qishr.cascara.common.util.StringUtils;
-import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
+import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
 
 public class YamlToken implements Token {
     private int line;

@@ -1,6 +1,7 @@
 package io.github.qishr.cascara.lang.yaml.ast;
 
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.YamlDirectiveType;
 
 public class YamlTagDirective extends YamlDirective {
     private String name;

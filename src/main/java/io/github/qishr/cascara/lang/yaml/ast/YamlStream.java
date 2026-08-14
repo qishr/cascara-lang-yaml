@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 public class YamlStream extends YamlNode {
     private final List<YamlDocument> documents = new ArrayList<>();
