@@ -13,10 +13,10 @@ import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public abstract class BaseParserTest {
     protected static final Level TOKENIZER_LEVEL = Level.INFO;
-    // protected static final Level PARSER_LEVEL = Level.INFO;
+    protected static final Level PARSER_LEVEL = Level.INFO;
 
     // protected static final Level TOKENIZER_LEVEL = Level.DEBUG;
-    protected static final Level PARSER_LEVEL = Level.TRACE;
+    // protected static final Level PARSER_LEVEL = Level.TRACE;
 
     protected static final boolean DUMP_TOKENS = false;
     protected static final boolean DEBUG = false;

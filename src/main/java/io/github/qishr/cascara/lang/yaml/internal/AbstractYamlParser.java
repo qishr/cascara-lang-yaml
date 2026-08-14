@@ -408,15 +408,16 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             trace("PV-after-skipTrivia");
 
+            NodeContext nodeContext = new NodeContext();
             YamlNode result = null;
 
             YamlToken pendingAnchor = null;
-            boolean newlineAfterAnchor = false;
-            boolean hasIndentedAnchor = false;
+            // boolean newlineAfterAnchor = false;
+            // boolean hasIndentedAnchor = false;
             if (checkIndented(YamlTokenType.ANCHOR)) {
                 trace("PM-hasIndentedAnchor1");
                 tokenBuffer.advance(); // consume INDENT
-                hasIndentedAnchor = true;
+                nodeContext.hasIndentedAnchor = true;
             }
 
             if (check(YamlTokenType.ANCHOR)) {
@@ -425,7 +426,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 trace("PV-anchor: " + pendingAnchor);
 
                 YamlToken possibleNewline = lookAheadIgnoringComments(YamlTokenType.NEWLINE);
-                newlineAfterAnchor = possibleNewline != null;
+                nodeContext.newlineAfterAnchor = possibleNewline != null;
 
                 YamlToken mapAnchor = null;
                 YamlToken keyAnchor = null;
@@ -433,7 +434,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     mapAnchor = previousPendingAnchor;
                     keyAnchor = pendingAnchor;
                 } else {
-                    if (newlineAfterAnchor) {
+                    if (nodeContext.newlineAfterAnchor) {
                         mapAnchor = pendingAnchor;
                     } else {
                         keyAnchor = pendingAnchor;
@@ -452,9 +453,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     attachComments(result);
 
                     // TODO: This must be moved to happen directly after anchor is parsed
-                    if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
+                    if (nodeContext.hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
                         tokenBuffer.advance();
-                        hasIndentedAnchor = false;
+                        nodeContext.hasIndentedAnchor = false;
                     }
 
                     return result;
@@ -476,9 +477,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
                         // TODO: Should this be moved to happen directly after anchor is parsed ?
-                        if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
+                        if (nodeContext.hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
                             tokenBuffer.advance();
-                            hasIndentedAnchor = false;
+                            nodeContext.hasIndentedAnchor = false;
                         }
 
 
@@ -489,13 +490,13 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     pendingAnchor = tokenBuffer.advance();
                     trace("PV-anchor-else");
 
-                    if (hasIndentedAnchor) {
+                    if (nodeContext.hasIndentedAnchor) {
                         // skipTrivia();
                         if (check(YamlTokenType.NEWLINE)) {
                             tokenBuffer.advance();
                         }
                         consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
-                        hasIndentedAnchor = false;
+                        nodeContext.hasIndentedAnchor = false;
                     }
 
                     int ahead = 0;
@@ -538,14 +539,14 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                         return attachComments(anchorNode);
                     }
 
-                    if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
+                    if (nodeContext.hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
                         trace("PV-hasIndentedAnchor-dedent");
                         tokenBuffer.advance();
                         if (check(YamlTokenType.NEWLINE)) {
                             tokenBuffer.advance();
                             skipTrivia();
                         }
-                        hasIndentedAnchor = false;
+                        nodeContext.hasIndentedAnchor = false;
                     }
                     trace("anchor pending: " + pendingAnchor);
                 }
@@ -562,7 +563,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
                 // mapAnchor = pendingAnchor;
-                if (newlineAfterAnchor) {
+                if (nodeContext.newlineAfterAnchor) {
                     keyAnchor = pendingAnchor;
                 } else {
                     mapAnchor = pendingAnchor;
@@ -793,9 +794,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 }
             }
 
-            if (hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
+            if (nodeContext.hasIndentedAnchor && check(YamlTokenType.DEDENT)) {
                 tokenBuffer.advance();
-                hasIndentedAnchor = false;
+                nodeContext.hasIndentedAnchor = false;
             }
 
 
@@ -1074,6 +1075,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     return alias;
                 }
 
+
+
+
                 case TAG: {
                     YamlScalar key;
                     YamlToken tagTok = tokenBuffer.advance();
@@ -1082,9 +1086,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                         skipTrivia();
                     }
 
-
                     // TODO: pendingAnchor that was passed in
-
 
                     if (check(YamlTokenType.ANCHOR)) {
                         YamlToken anchorToken = tokenBuffer.advance();
@@ -1098,10 +1100,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                         } else {
                             // If anchor is not followed by scalar, treat as null key with tag+anchor
 
-
                             // TODO: What happens to pendingAnchor now?
                             key = createNullScalar(true, tag, anchorToken);
-
 
                             key.setTag(tagTok.getContent());
                             key.setAnchor(anchorToken.getContent());
@@ -1126,10 +1126,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                         attachTag(key, tag);
                     } else {
 
-
                         // TODO: Is this correct?
                         key = createNullScalar(true, tag, pendingAnchor);
-
 
                         error(tokenBuffer.peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, tokenBuffer.peek().getType());
                     }
@@ -1161,10 +1159,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     }
                     else {
 
-
                         // TODO: What happens to pendingAnchor now?
                         key = createNullScalar(true, null, token);
-
 
                         if (tokenBuffer.peek().getType().getCategory() != TokenCategory.PUNCTUATION) {
                             error(tokenBuffer.peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, tokenBuffer.peek().getType());
@@ -1182,6 +1178,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     );
                     return anchorNode;
                 }
+
+
+
 
                 case KEY_INDICATOR:
                     trace("parseKeyNode: KEY_INDICATOR");
@@ -2161,5 +2160,12 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             indent,
             output,
             tokenBuffer.upcomingTokens());
+    }
+
+    private static class NodeContext {
+        String tag;
+        YamlToken anchorToken;
+        boolean newlineAfterAnchor = false;
+        boolean hasIndentedAnchor = false;
     }
 }
