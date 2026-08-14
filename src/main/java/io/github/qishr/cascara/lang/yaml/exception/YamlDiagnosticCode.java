@@ -35,6 +35,8 @@
 
 package io.github.qishr.cascara.lang.yaml.exception;
 
+import java.util.Set;
+
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 
 public enum YamlDiagnosticCode implements DiagnosticCode {
@@ -78,6 +80,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     // A node can have at most one tag
     // A node can have at most one anchor
     // Anchor cannot be an empty string
+    // Set items must all have null values
 
     private final String code;
     private final String message;

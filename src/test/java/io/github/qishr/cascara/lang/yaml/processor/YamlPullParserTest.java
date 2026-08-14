@@ -812,7 +812,7 @@ public class YamlPullParserTest extends BasePullParserTest {
     }
 
     @Test
-    public void testTagAndAnchorOrder() throws Exception {
+    public void testTagAndAnchorOrderWithScalars() throws Exception {
         String yaml = """
             - &a1
               !!str
@@ -853,4 +853,129 @@ public class YamlPullParserTest extends BasePullParserTest {
             assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
         }
     }
+
+    @Test
+    public void testTagAndAnchorOrderWithMaps() throws Exception {
+        String yaml = """
+            - &a1
+              !!str
+              c: x
+            - !!str
+              &a2
+              c: x
+            - *a1
+            - *a2
+            """;
+
+        // parserOptions.setPreloadTokenBuffer(true);
+        // parserReporter.setLevel(Level.TRACE);
+
+        // YamlAstParser astParser = new YamlAstParser();
+        // YamlNode root = astParser.parseMulti(yaml);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
+
+
+            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+
+            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
+
+
+            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
+            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+
+    @Test
+    public void testTagAndAnchorOrderWithMapsAndScalars() throws Exception {
+        String yaml = """
+            - !!str
+              &m1
+              &s1 c: x
+            - &m2
+              !!str
+              &s2 c: x
+            - *m1
+            - *s1
+            - *m2
+            - *s2
+            """;
+
+        // parserOptions.setPreloadTokenBuffer(true);
+        // parserReporter.setLevel(Level.TRACE);
+
+        // YamlAstParser astParser = new YamlAstParser();
+        // YamlNode root = astParser.parseMulti(yaml);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
+
+
+            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+
+            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
+
+
+            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
+            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+
+    // TODO: This should not fully parse
+    //
+    @Test
+    public void testSetItemsMustHaveNullValues() throws Exception {
+        String yaml = """
+            - &c1
+              !!set
+              c: x
+            """;
+
+        // parserOptions.setPreloadTokenBuffer(true);
+        // parserReporter.setLevel(Level.TRACE);
+
+        // YamlAstParser astParser = new YamlAstParser();
+        // YamlNode root = astParser.parseMulti(yaml);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
+
+
+            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+
+            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
+
+
+            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
+            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+
+            assertTrue(false); // TODO: This test should not get to here
+        }
+    }
+
+
 }
