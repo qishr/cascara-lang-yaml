@@ -37,28 +37,78 @@ package io.github.qishr.cascara.lang.yaml.streaming;
 
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
+import io.github.qishr.cascara.lang.yaml.ast.NodeStyle;
+import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
+import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 
 public class YamlStreamingEvent implements StreamingEvent {
 	private final int lineNumber;
 	private final int columnNumber;
-	private final String content;
 	private final StreamingEventType type;
+	private final NodeStyle nodeStyle;
+	private final ScalarStyle scalarStyle;
+	private final String tag;
+	private final String resolvedTag;
+	private final String anchor;
+	private final String lexeme;
+	private final String content;
 
-    public YamlStreamingEvent(int lineNumber, int columnNumber, StreamingEventType type, String content) {
+	// TODO: Remove this:
+	private YamlNode node;
+
+    public YamlStreamingEvent(int lineNumber, int columnNumber, StreamingEventType type, NodeStyle nodeStyle, ScalarStyle scalarStyle, String tag, String resolvedTag, String anchor, String lexeme, String content) {
 		this.lineNumber = lineNumber;
 		this.columnNumber = columnNumber;
 		this.type = type;
-		this.content = content != null ? content : "";
+		this.nodeStyle = nodeStyle;
+		this.scalarStyle = scalarStyle;
+		this.tag = tag;
+		this.resolvedTag = resolvedTag;
+		this.anchor = anchor;
+		this.lexeme = lexeme != null ? lexeme : "";
+		this.content = content;
     }
+
+	public void setNode(YamlNode node) {
+		this.node = node;
+	}
+
+	public YamlNode getNode() {
+		return node;
+	}
 
 	@Override
 	public StreamingEventType getType() {
 		return type;
 	}
 
+	public NodeStyle getNodeStyle() {
+		return nodeStyle;
+	}
+
+	public ScalarStyle getScalarStyle() {
+		return scalarStyle;
+	}
+
 	@Override
 	public String getContent() {
 		return content;
+	}
+
+	public String getLexeme() {
+		return lexeme;
+	}
+
+	public String getTag() {
+		return tag;
+	}
+
+	public String getResolvedTag() {
+		return resolvedTag;
+	}
+
+	public String getAnchor() {
+		return anchor;
 	}
 
 	@Override

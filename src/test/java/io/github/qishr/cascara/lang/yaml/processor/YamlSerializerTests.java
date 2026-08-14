@@ -84,7 +84,7 @@ class YamlSerializerTests {
         YamlSerializer yamlSerializer = new YamlSerializer();
         YamlNode yaml = yamlSerializer.toAst(colordef);
         String string = new YamlEmitter().emit(yaml);
-        System.err.println(string);
+        assertNotNull(string);
         assertNotNull(yaml);
     }
 
@@ -121,7 +121,7 @@ class YamlSerializerTests {
     void test_uri() throws SerializerException {
         UriTestClass uri = new UriTestClass();
 
-        System.out.println("Is named module: " + UriTestClass.class.getModule().isNamed());
+        // System.out.println("Is named module: " + UriTestClass.class.getModule().isNamed());
 
         uri.uri = URI.create("http://io.com");
         YamlSerializer yamlSerializer = new YamlSerializer();

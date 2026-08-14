@@ -35,19 +35,24 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.PullParser;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
-import io.github.qishr.cascara.lang.yaml.internal.YamlStreamEngine;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
+import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlParser;
+import io.github.qishr.cascara.lang.yaml.internal.PreloadedTokenBuffer;
+import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
 
 import java.io.InputStream;
-import java.util.NoSuchElementException;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implements PullParser {
-    private YamlStreamEngine engine = new YamlStreamEngine();
+public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implements PullParser {
     private final InputStream input;
+    private Thread parserThread;
+    private BlockingDeque<YamlStreamingEvent> events;
+    private AtomicBoolean streamEnded = new AtomicBoolean();
+    YamlStreamingEvent nextEvent;
 
     /// Default constructor for SPI.
     public YamlPullParser() {
@@ -56,59 +61,108 @@ public class YamlPullParser extends AbstractYamlProcessor<YamlPullParser> implem
 
     public YamlPullParser(InputStream input) {
         this.input = input;
-        engine.setStream(input);
+        queueEvents(input);
     }
 
     @Override protected YamlPullParser self() { return this; }
 
-    public YamlTokenizer getTokenizer() {
-        return engine.getTokenizer();
-    }
-
-    public YamlPullParser setOptions(YamlOptions options) {
-        super.setOptions(options);
-        engine.setOptions(options);
-        return this;
-    }
-
-    @Override
-    public YamlPullParser setReporter(Reporter reporter) {
-        super.setReporter(reporter);
-        engine.setReporter(reporter);
-        return this;
-    }
-
-    // private void ensureEngine() {
-    //     if (engine == null) {
-    //         engine = new YamlStreamEngine();
-    //         engine.setOptions(options);
-    //         engine.setReporter(reporter);
-    //         engine.setStream(input);
-    //     }
-    // }
-
     @Override
     public boolean hasNext() {
-        try {
-            // ensureEngine();
-            return engine.hasNextEvent();
-        } catch (ParserException e) {
-            throw new RuntimeException("Error scanning for next streaming event", e);
+        if (nextEvent != null) {
+            return true;
         }
+
+        if (events.isEmpty() && (errorEncountered.get() || streamEnded.get())) {
+            return false;
+        }
+
+        if (!events.isEmpty()) {
+            nextEvent = events.poll();
+            if (nextEvent.getType() == StreamingEventType.ERROR) {
+                errorEncountered.set(true);
+                nextEvent = null;
+                return false;
+            }
+            trace("NEXT EVENT: " + nextEvent.getType() + " [a="+nextEvent.getAnchor()+"]");
+            return true;
+        }
+
+		try {
+
+            trace("hasNext: Waiting for event");
+			nextEvent = events.takeFirst();
+            if (nextEvent == null) {
+                trace("EVENT: null");
+            } else {
+                trace("EVENT: " + nextEvent.getType() + " [a="+nextEvent.getAnchor()+"]");
+            }
+            // trace("hasNext: Got event");
+
+		} catch (InterruptedException e) {
+            trace("hasNext: Got interrupt");
+            nextEvent = null;
+		}
+
+        if (nextEvent != null && nextEvent.getType() == StreamingEventType.ERROR) {
+            nextEvent = null;
+        }
+        return nextEvent != null;
     }
 
     @Override
     public StreamingEvent next() {
-        if (!hasNext()) {
-            throw new NoSuchElementException("No more YAML streaming events available.");
+        if (!hasNext() || nextEvent == null) {
+            // We should probably throw an Exception (no more events)
+            return null;
         }
-        return engine.nextEvent(); // Throws ParserException, which is a RuntimeException
+        StreamingEvent event = nextEvent;
+        nextEvent = null;
+        return event;
     }
 
     @Override
     public void close() throws Exception {
         if (input != null) {
             input.close();
+        }
+    }
+
+    //
+    //
+    //
+
+    private void queueEvents(InputStream input) {
+        trace("queueEvents");
+        preParseStateInit();
+
+        setContinueAfterError(false);
+
+        streamEnded.set(false);
+
+        // TODO: Make this capacity higher. Benchmark various values.
+        events = new LinkedBlockingDeque<>(2);
+
+        tokenBuffer.open(input);
+        parserThread = new Thread(() -> {
+            try {
+                parseInternal();
+            } catch (Exception e) {
+                errorEncountered.set(true);
+                trace("parseInternal failed: " + e.getMessage());
+            }
+            trace("parserThread: ended");
+            streamEnded.set(true);
+        });
+        parserThread.setName("yaml-parser");
+        parserThread.start();
+    }
+
+    @Override
+    protected void handleEvent(YamlStreamingEvent event) {
+        try {
+            events.putLast(event);
+        } catch (InterruptedException e) {
+            debug("events.putLast failed: " + e.getMessage());
         }
     }
 }

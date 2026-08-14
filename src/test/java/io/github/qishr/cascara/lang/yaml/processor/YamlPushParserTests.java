@@ -45,8 +45,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 import io.github.qishr.cascara.common.lang.streaming.StreamHandler;
@@ -114,7 +112,6 @@ public class YamlPushParserTests {
 
         InputStream input = createStream(yaml);
 
-        pushParser.setReporter(new StandardReporter().setLevel(Level.TRACE));
         pushParser.getOptions().setMultiDocument(true);
         pushParser.parse(input, handler);
 

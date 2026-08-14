@@ -75,6 +75,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
 
     private boolean forceExplicitNull = false;
     private boolean forceBlockCollections = false;
+    private boolean preloadTokenBuffer = false;
 
     public YamlOptions() {}
 
@@ -99,6 +100,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
 
         forceExplicitNull = original.forceExplicitNull;
         forceBlockCollections = original.forceBlockCollections;
+        preloadTokenBuffer = original.preloadTokenBuffer;
     }
 
     public int getDepthLimit() {return depthLimit; }
@@ -118,6 +120,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
 
     public boolean forceExplicitNull() { return forceExplicitNull; }
     public boolean forceBlockCollections() { return forceBlockCollections; }
+    public boolean preloadTokenBuffer() { return preloadTokenBuffer; }
 
     public YamlOptions setDepthLimit(int val) {
         this.depthLimit = val;
@@ -196,6 +199,11 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         return this;
     }
 
+    public YamlOptions setPreloadTokenBuffer(boolean b) {
+        preloadTokenBuffer = b;
+        return this;
+    }
+
     @Override
     public YamlOptions duplicate() {
         return new YamlOptions(this);
@@ -266,5 +274,10 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         public YamlOptions setForceBlockCollections(boolean b) {
             throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setForceBlockCollections");
         }
+
+        public YamlOptions setPreloadTokenBuffer(boolean b) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setPreloadTokenBuffer");
+        }
+
     }
 }

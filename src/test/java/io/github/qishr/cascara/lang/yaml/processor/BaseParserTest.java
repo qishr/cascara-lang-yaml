@@ -11,55 +11,58 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
-public abstract class ParserTestBase {
-    // Old things that need to be removed...
-    protected static final Level PARSER_LEVEL = Level.INFO;
-    protected static final Level TOKENIZER_LEVEL = Level.DEBUG;
-    protected static final boolean dumpTokens = false;
+public abstract class BaseParserTest {
+    protected static final Level TOKENIZER_LEVEL = Level.INFO;
+    // protected static final Level PARSER_LEVEL = Level.INFO;
 
+    // protected static final Level TOKENIZER_LEVEL = Level.DEBUG;
+    protected static final Level PARSER_LEVEL = Level.TRACE;
 
+    protected static final boolean DUMP_TOKENS = false;
+    protected static final boolean DEBUG = false;
 
-    protected static final boolean DUMP_TOKENS = true;
-    protected static final boolean DEBUG = true;
+    protected Reporter parserReporter;
+    protected Reporter tokenizerReporter;
 
     protected YamlTokenizer tokenizer;
-    protected YamlAstParser parser;
     protected YamlNormalizer normalizer;
     protected YamlAliasResolver resolver;
     protected YamlEmitter emitter;
 
-    protected Reporter reporter;
 
     @BeforeEach
     protected void setup() {
-        reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
+        parserReporter = new StandardReporter()
+            .setLevel(PARSER_LEVEL)
             .setAnsiColoringEnabled(true)
-            .setFlushEnabled(false)
+            .setFlushEnabled(true)
             .setStackTraceEnabled(true);
 
-        parser = new YamlAstParser()
-            .setReporter(reporter);
+        tokenizerReporter = new StandardReporter()
+            .setLevel(TOKENIZER_LEVEL)
+            .setAnsiColoringEnabled(true)
+            .setFlushEnabled(true)
+            .setStackTraceEnabled(true);
 
         tokenizer = new YamlTokenizer()
-            .setReporter(reporter);
+            .setReporter(tokenizerReporter);
 
         normalizer = new YamlNormalizer()
-            .setReporter(reporter);
+            .setReporter(parserReporter);
 
         resolver = new YamlAliasResolver()
-            .setReporter(reporter);
+            .setReporter(parserReporter);
 
         emitter = new YamlEmitter()
-            .setReporter(reporter)
+            .setReporter(parserReporter)
             .setOptions(YamlOptions.CANONICAL);
     }
 
     protected void tokenize(String yaml) {
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
         if (DUMP_TOKENS) {
+            List<YamlToken> tokens = tokenizer.tokenize(yaml);
             TestUtils.dumpTokens(
-                reporter.getWriter(Level.DEBUG),
+                parserReporter.getWriter(Level.DEBUG),
                 tokens
             );
         }

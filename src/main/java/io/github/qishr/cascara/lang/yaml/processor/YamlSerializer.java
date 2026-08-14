@@ -55,6 +55,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNodeFactory;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
+import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlProcessor;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 /// Standard implementation for YAML serialization.

@@ -51,7 +51,7 @@ import io.github.qishr.cascara.lang.yaml.util.Person;
 import io.github.qishr.cascara.lang.yaml.util.PersonSerializer;
 import io.github.qishr.cascara.lang.yaml.util.TypeDescriptorTestClass;
 
-public class ScalarDescriptorTest {
+public class ScalarDescriptorTest extends BaseAstParserTest {
     @Test
     void testDateScalarDescriptor() {
         YamlSerializer yamlSerializer = new YamlSerializer();

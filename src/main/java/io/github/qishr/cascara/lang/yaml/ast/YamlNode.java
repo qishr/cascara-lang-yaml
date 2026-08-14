@@ -55,12 +55,13 @@ public abstract class YamlNode implements AstNode {
     private final int startColumn;
     private final int endLine = 0;
     private final int endColumn = 0;
-    private List<YamlComment> comments = null;
-    private String anchor;
-    private String tag;
     protected YamlToken token;
+    private String tag;
+	private String resolvedTag;
+    private String anchor;
+    protected NodeStyle nodeStyle; // = NodeStyle.FLOW;
+    private List<YamlComment> comments = null;
     protected YamlOptions options;
-    protected NodeStyle nodeStyle;
 
     protected YamlNode() {
         startLine = 0;
@@ -118,18 +119,35 @@ public abstract class YamlNode implements AstNode {
         return this;
     }
 
-    public String getTag() { return tag; }
-    public void setTag(String tag) { this.tag = tag; }
+    public String getTag() {
+        return tag;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
+    }
+
+	public String getResolvedTag() {
+		return resolvedTag;
+	}
+
+    public void setResolvedTag(String resolvedTag) {
+        this.resolvedTag = resolvedTag;
+    }
 
     /// Gets the YAML anchor associated with this node (e.g., &anchorName).
     ///
     /// @return The anchor string, or `null` if no anchor is defined.
-    public String getAnchor() { return anchor; }
+    public String getAnchor() {
+        return anchor;
+    }
 
     /// Sets the YAML anchor for this node.
     ///
     /// @param anchor The anchor string to associate with this node.
-    public void setAnchor(String anchor) { this.anchor = anchor; }
+    public void setAnchor(String anchor) {
+        this.anchor = anchor;
+    }
 
     /// {@inheritDoc}
     ///

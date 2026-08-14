@@ -55,7 +55,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-class YamlComprehensiveTest {
+class YamlComprehensiveTest extends BaseAstParserTest {
 
     // private final YamlAstParser parser = new YamlAstParser();
     // private final YamlTokenizer tokenizer = new YamlTokenizer();
@@ -67,10 +67,11 @@ class YamlComprehensiveTest {
     //     }
     // }
 
-    private YamlOptions options;
-    private YamlTokenizer tokenizer;
-    private YamlAstParser parser;
-    private Reporter reporter;
+    // private YamlOptions options;
+    // private YamlTokenizer tokenizer;
+    // private YamlAstParser parser;
+    // private Reporter reporter;
+
     private List<Diagnostic> diagnostics;
 
     public void collect(Diagnostic diagnostic) {
@@ -83,14 +84,12 @@ class YamlComprehensiveTest {
 
 
     @BeforeEach
-    void init() {
+    protected void setup() {
+        super.setup();
         diagnostics = new ArrayList<>();
-        reporter = new StandardReporter().setDiagnosticConsumer(this::collect);
-        options = new YamlOptions().setStrict(true);
-        tokenizer = new YamlTokenizer().setReporter(reporter);
-        parser = new YamlAstParser()
-            .setOptions(options)
-            .setReporter(reporter);
+
+        parser.getOptions().setStrict(true);
+
     }
 
 
@@ -116,8 +115,6 @@ class YamlComprehensiveTest {
         // Common in config: key followed by newline and another key
         String yaml = "empty_key:\nnext_key: value";
 
-        parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
-
         YamlMap doc = (YamlMap)parser.parse(yaml);
         YamlNode val = doc.get("empty_key");
         assertTrue(val instanceof YamlScalar);
@@ -127,8 +124,6 @@ class YamlComprehensiveTest {
     @Test
     void testNestedFlowCollectionsInBlock() throws Exception {
         String yaml = "matrix: [[1, 2], [3, 4]]";
-
-        parser.setReporter(new StandardReporter().setLevel((Level.TRACE)));
 
         YamlMap rootMap = (YamlMap)parser.parse(yaml);
 
@@ -170,17 +165,9 @@ class YamlComprehensiveTest {
     void testRoundTripPreservesStructure() throws Exception {
         String original = "records:\n  -\n    id: \"1\"\n    tags:\n      -\n        a";
 
-        parser.getTokenizer().setReporter(
-            new StandardReporter()
-                .setLevel(Level.TRACE)
-                .setAnsiColoringEnabled(true)
-        );
-
-        TestUtils.dumpTokens(parser.getTokenizer().tokenize(original));
-
-        parser.setReporter(new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true));
+        if (DEBUG) {
+            TestUtils.dumpTokens(parser.getTokenizer().tokenize(original));
+        }
 
         // 1. Parse
         YamlMap originalMap = (YamlMap)parser.parse(original);
@@ -192,17 +179,21 @@ class YamlComprehensiveTest {
 
         // 2. Emit
         String emitted = new YamlEmitter().setOptions(options).emit(originalMap);
-        System.out.println("--- EMITTED START ---");
-        System.out.println(emitted);
-        System.out.println("--- EMITTED END ---");
+        if (DEBUG) {
+            System.out.println("--- EMITTED START ---");
+            System.out.println(emitted);
+            System.out.println("--- EMITTED END ---");
 
-        System.out.println("Original: " + StringUtils.debugString(original));
-        System.out.println("Emitted : " + StringUtils.debugString(emitted));
+            System.out.println("Original: " + StringUtils.debugString(original));
+            System.out.println("Emitted : " + StringUtils.debugString(emitted));
+        }
 
-        YamlTokenizer tokenizer = new YamlTokenizer()
-            .setReporter(new StandardReporter().setLevel(Level.INFO));
-        List<YamlToken> tokens = tokenizer.tokenize(emitted);
-        TestUtils.dumpTokens(tokens);
+        if (DEBUG) {
+            YamlTokenizer tokenizer = new YamlTokenizer()
+                .setReporter(new StandardReporter().setLevel(Level.INFO));
+            List<YamlToken> tokens = tokenizer.tokenize(emitted);
+            TestUtils.dumpTokens(tokens);
+        }
 
 
         // 3. Re-Parse
@@ -225,20 +216,21 @@ class YamlComprehensiveTest {
         // YAML spec forbids tabs for indentation
         String yaml = "key:\n\t- item";
 
-        Reporter reporter = new StandardReporter()
+        if (DEBUG) {
+            Reporter reporter = new StandardReporter()
             .setLevel(Level.DEBUG)
             .setAnsiColoringEnabled(true)
             .setStackTraceEnabled(true);
 
-        YamlTokenizer tokenizer = new YamlTokenizer()
-            .setReporter(reporter);
+            YamlTokenizer tokenizer = new YamlTokenizer()
+               .setReporter(reporter);
 
-        TestUtils.dumpTokens(
-            reporter.getWriter(Level.DEBUG),
-            tokenizer.tokenize(yaml)
-        );
+            TestUtils.dumpTokens(
+                reporter.getWriter(Level.DEBUG),
+                tokenizer.tokenize(yaml)
+            );
+        }
 
-        parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
         assertThrows(ParserException.class, () -> parser.parse(yaml));
     }
 

@@ -57,6 +57,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
+import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlProcessor;
 
 /// Responsible for converting a [YamlNode] AST back into a valid YAML string.
 ///
@@ -195,14 +196,14 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             int scalarIndent = isSequenceItem ? 0 : indent;
             emitScalarInternal(scalar, scalarIndent, isFlow);
         } else if (targetNode instanceof YamlMap map) {
-            if (map.getStyle() == NodeStyle.FLOW && !options.forceBlockCollections()) {
+            if (map.getNodeStyle() == NodeStyle.FLOW && !options.forceBlockCollections()) {
                 emitFlowMap(map);
                 if (!isFlow) appendText(NL);
             } else {
                 emitMap(map, indent, isSequenceItem);
             }
         } else if (targetNode instanceof YamlSequence seq) {
-            if (seq.getStyle() == NodeStyle.FLOW && !options.forceBlockCollections()) {
+            if (seq.getNodeStyle() == NodeStyle.FLOW && !options.forceBlockCollections()) {
                 emitFlowSequence(seq);
                 if (!isFlow) appendText(NL);
             } else {
@@ -404,8 +405,8 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             }
 
             // Determine if this key requires an explicit complex layout block ('?')
-            boolean isComplexKey = (key instanceof YamlMap m && m.getStyle() == NodeStyle.BLOCK) ||
-                                  (key instanceof YamlSequence s && s.getStyle() == NodeStyle.BLOCK);
+            boolean isComplexKey = (key instanceof YamlMap m && m.getNodeStyle() == NodeStyle.BLOCK) ||
+                                  (key instanceof YamlSequence s && s.getNodeStyle() == NodeStyle.BLOCK);
 
             if (isComplexKey) {
                 appendText("?");
@@ -425,8 +426,8 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             }
 
             YamlNode value = entry.getValue();
-            boolean isBlock = (value instanceof YamlMap m && m.getStyle() == NodeStyle.BLOCK) ||
-                              (value instanceof YamlSequence s && s.getStyle() == NodeStyle.BLOCK);
+            boolean isBlock = (value instanceof YamlMap m && m.getNodeStyle() == NodeStyle.BLOCK) ||
+                              (value instanceof YamlSequence s && s.getNodeStyle() == NodeStyle.BLOCK);
 
             if (isBlock) {
                 if (!isComplexKey) {
@@ -510,11 +511,11 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                     handleExpandedItem(item, indent);
                 }
             }
-            else if (item instanceof YamlMap m && m.getStyle() == NodeStyle.BLOCK) {
+            else if (item instanceof YamlMap m && m.getNodeStyle() == NodeStyle.BLOCK) {
                 appendText(" ");
                 emitMap(m, indent + 2, true);
             }
-            else if (item instanceof YamlSequence s && s.getStyle() == NodeStyle.BLOCK) {
+            else if (item instanceof YamlSequence s && s.getNodeStyle() == NodeStyle.BLOCK) {
                 appendText(NL);
                 emitNode(item, indent + options.getIndentSize(), false, false);
             }

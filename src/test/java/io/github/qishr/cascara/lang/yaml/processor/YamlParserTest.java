@@ -46,9 +46,7 @@ import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
-class YamlParserTest {
-
-    private final YamlAstParser parser = new YamlAstParser();
+class YamlParserTest extends BaseAstParserTest {
 
     @Test
     void testNewLineInsideNestedObject() throws Exception {
@@ -59,13 +57,8 @@ class YamlParserTest {
                 c: 2
             """;
 
-        // TODO: diagnostic level in one place for all tests?
-        // Reporter reporter = new StandardReporter().setLevel(Level.TRACE);
-        // YamlAstParser parser = new YamlAstParser().setReporter(reporter);
-
         YamlAstParser parser = new YamlAstParser();
         parser.parse(yaml);
-
     }
 
 
@@ -78,11 +71,12 @@ class YamlParserTest {
                 """;
 
 
+        if (DEBUG) {
             YamlTokenizer tokenizer = new YamlTokenizer()
                 .setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
             List<YamlToken> tokens = tokenizer.tokenize(yaml);
             TestUtils.dumpTokens(tokens);
-
+        }
 
         YamlMap rootMap = (YamlMap)parser.parse(yaml);
 
@@ -143,11 +137,11 @@ class YamlParserTest {
                   -
                     2
                 """;
-
-        YamlTokenizer tokenizer = new YamlTokenizer();
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
-        TestUtils.dumpTokens(tokens);
-        parser.setReporter(new StandardReporter().setLevel(Level.DEBUG)); // TODO: REMOVE THIS
+        if (DEBUG) {
+            YamlTokenizer tokenizer = new YamlTokenizer();
+            List<YamlToken> tokens = tokenizer.tokenize(yaml);
+            TestUtils.dumpTokens(tokens);
+        }
 
         YamlMap root = (YamlMap) parser.parse(yaml);
 
@@ -155,8 +149,8 @@ class YamlParserTest {
         YamlSequence compact = (YamlSequence) root.get("compact");
         YamlSequence expanded = (YamlSequence) root.get("expanded");
 
-        assertEquals(NodeStyle.FLOW, compact.getStyle());
-        assertEquals(NodeStyle.BLOCK, expanded.getStyle());
+        assertEquals(NodeStyle.FLOW, compact.getNodeStyle());
+        assertEquals(NodeStyle.BLOCK, expanded.getNodeStyle());
     }
 
     @Test

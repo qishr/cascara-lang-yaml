@@ -15,7 +15,7 @@ import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SpecTests3 extends ParserTestBase {
+public class SpecTests3 extends BaseAstParserTest {
 
     @Test
     public void test4ABK() {
@@ -70,15 +70,14 @@ public class SpecTests3 extends ParserTestBase {
                 &anchor6 'key6': scalar6
             """;
 
-        System.out.println("Running via Eclipse: " + JreUtils.isRunningViaEclipse());
-
         tokenize(yaml);
 
         YamlStream stream0 = parser.parseMulti(yaml);
 
         YamlEmitter emitter = new YamlEmitter()
-            .setOptions(YamlOptions.CANONICAL)
-            .setReporter(reporter);
+            // .setOptions(YamlOptions.CANONICAL)
+            .setOptions(new YamlOptions().setIndentSize(4))
+            .setReporter(parserReporter);
 
         String emittedYaml = emitter.emit(stream0);
 
@@ -87,16 +86,16 @@ public class SpecTests3 extends ParserTestBase {
             stream1 = parser.parseMulti(emittedYaml);
         } catch (YamlParserException e) {
 
-            // System.out.println("Failed to parse emitted YAML: " + e.getMessage());
-            // System.out.println(emittedYaml);
-            reporter.debug("Emitted YAML:\n" + emittedYaml);
+            System.out.println("Failed to parse emitted YAML: " + e.getMessage());
+            System.out.println(emittedYaml);
+            // reporter.debug("Emitted YAML:\n" + emittedYaml);
 
             assertTrue(false);
             return;
         }
 
         if (DEBUG) {
-            reporter.debug("Emitted YAML:\n" + emittedYaml);
+            parserReporter.debug("Emitted YAML:\n" + emittedYaml);
         }
 
         assertEquals(1, stream1.getDocuments().size());

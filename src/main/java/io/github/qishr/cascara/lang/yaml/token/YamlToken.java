@@ -36,6 +36,7 @@
 package io.github.qishr.cascara.lang.yaml.token;
 
 import io.github.qishr.cascara.common.lang.token.Token;
+import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
 
 public class YamlToken implements Token {
@@ -130,14 +131,16 @@ public class YamlToken implements Token {
 
     @Override
     public String toString() {
-        String displayLexeme = lexeme.replace("\n", "\\n").replace("\r", "\\r").replace("\"", "\\\"");
-        String valuePart = (content != null) ? " (Value: " + content + ")" : "";
+        String displayLexeme = StringUtils.debugString(16, lexeme);
+        // String displayContent = StringUtils.debugString(16, content);
+        // String displayLexeme = lexeme.replace("\n", "\\n").replace("\r", "\\r").replace("\"", "\\\"");
+        // String valuePart = (content != null) ? " (Value: " + content + ")" : "";
 
-        return String.format("[%-20s | '%-15s'%s | L:%d C:%d]",
+        return String.format("[%s %d:%d %s]",
             type,
-            displayLexeme,
-            valuePart,
             line,
-            column);
+            column,
+            displayLexeme
+        );
     }
 }

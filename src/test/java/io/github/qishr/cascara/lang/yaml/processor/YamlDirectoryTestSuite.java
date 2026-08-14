@@ -52,20 +52,19 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
-class YamlDirectoryTestSuite {
-
-    private YamlOptions options = new YamlOptions().setExpandedStyle(true);
-
-    private YamlAstParser parser;
-    // private Reporter reporter;
+class YamlDirectoryTestSuite extends BaseAstParserTest {
 
     @BeforeEach
-    void init() {
-        // reporter = new StandardReporter();
-        options = new YamlOptions().setStrict(true);
-        parser = new YamlAstParser()
-            .setOptions(options);
-            // .setReporter(reporter);
+    protected void setup() {
+        super.setup();
+
+        parser.getOptions()
+            .setStrict(true);
+
+        emitter.setOptions(new YamlOptions()
+            .setExpandedStyle(true)
+        );
+
     }
 
 
@@ -78,7 +77,6 @@ class YamlDirectoryTestSuite {
     @ParameterizedTest(name = "Invalidating: {0}")
     @MethodSource("getInvalidFiles")
     void testInvalidFiles(String fileName, String content) {
-        parser.setReporter(new StandardReporter().setLevel(Level.TRACE));
         assertThrows(YamlParserException.class, () -> parser.parse(content), "Should have failed: " + fileName);
     }
 
@@ -112,14 +110,16 @@ class YamlDirectoryTestSuite {
         // 1. Setup ONE emitter with desired options
         YamlOptions testOptions = new YamlOptions();
         //.setExpandedStyle(true);
-        YamlEmitter emitter = new YamlEmitter();
+        // YamlEmitter emitter = new YamlEmitter();
         emitter.setOptions(testOptions);
 
         // 2. First Emit
         String emitted = emitter.emit(doc);
 
-        System.out.println("=== FIRST EMIT ===");
-        System.out.println(emitted);
+        if (DEBUG) {
+            System.out.println("=== FIRST EMIT ===");
+            System.out.println(emitted);
+        }
 
         // 3. Re-parse
         YamlMap reParsedDoc = (YamlMap)parser.parse(emitted);
@@ -127,13 +127,15 @@ class YamlDirectoryTestSuite {
         // 4. Second Emit (using the SAME emitter instance)
         String secondEmit = emitter.emit(reParsedDoc);
 
-        if (fileName.contains("01-nested")) {
-            System.out.println("=== FIRST EMIT ===");
-            System.out.println(emitted);
+        if (DEBUG) {
+            if (fileName.contains("01-nested")) {
+                System.out.println("=== FIRST EMIT ===");
+                System.out.println(emitted);
 
-            System.out.println("=== SECOND EMIT ===");
-            reParsedDoc = (YamlMap)parser.parse(emitted);
-            System.out.println(secondEmit);
+                System.out.println("=== SECOND EMIT ===");
+                reParsedDoc = (YamlMap)parser.parse(emitted);
+                System.out.println(secondEmit);
+            }
         }
 
         if (!emitted.equals(secondEmit)) {
@@ -169,24 +171,22 @@ class YamlDirectoryTestSuite {
             # Footer
             """;
 
-        YamlAstParser parser = new YamlAstParser()
-            .setReporter(new StandardReporter().setLevel(Level.TRACE));
-
         YamlMap doc = (YamlMap) parser.parse(yaml);
 
-        YamlOptions opts = new YamlOptions().setExpandedStyle(true);
-        YamlEmitter emitter = new YamlEmitter();
-        emitter.setOptions(opts);
-
         String emitted = emitter.emit(doc);
-        System.out.println("=== FIRST EMIT ===");
-        System.out.println(emitted);
+
+        if (DEBUG) {
+            System.out.println("=== FIRST EMIT ===");
+            System.out.println(emitted);
+        }
 
         YamlMap reparsed = (YamlMap) parser.parse(emitted);
         String secondEmit = emitter.emit(reparsed);
 
-        System.out.println("=== SECOND EMIT ===");
-        System.out.println(secondEmit);
+        if (DEBUG) {
+            System.out.println("=== SECOND EMIT ===");
+            System.out.println(secondEmit);
+        }
     }
 
     @Test
@@ -229,12 +229,14 @@ class YamlDirectoryTestSuite {
         // 4. Second Emit (using the SAME emitter instance)
         String secondEmit = emitter.emit(reParsedDoc);
 
+        if (DEBUG) {
             System.out.println("=== FIRST EMIT ===");
             System.out.println(emitted);
             System.out.println("=== SECOND EMIT ===");
 
             reParsedDoc = (YamlMap)parser.parse(emitted);
             System.out.println(secondEmit);
+        }
 
         if (!emitted.equals(secondEmit)) {
             fail(generateDiffMessage("fileName", emitted, secondEmit));

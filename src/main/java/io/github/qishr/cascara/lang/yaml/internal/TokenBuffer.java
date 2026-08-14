@@ -32,33 +32,56 @@
 // you do not wish to do so, delete this exception statement from your
 // version.
 
+package io.github.qishr.cascara.lang.yaml.internal;
 
-package io.github.qishr.cascara.lang.yaml.processor;
-
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.Reader;
 
-import org.junit.jupiter.api.Test;
+import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
-import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
+public interface TokenBuffer {
 
-public class StreamTests {
-    @Test
-    void test_simpleKeyValue() {
-        String yamlString = "key: value";
+    void setReporter(Reporter reporter);
 
-        InputStream stream = new ByteArrayInputStream(yamlString.getBytes(StandardCharsets.UTF_8));
+    void setTokenizer(YamlTokenizer tokenizer);
 
-        YamlAstParser parser = new YamlAstParser();
-                // .setReporter(new StandardReporter().setLevel(Level.TRACE));
+    YamlTokenizer getTokenizer();
 
-        YamlNode node = parser.parse(stream);
-        assertInstanceOf(YamlMap.class, node);
-    }
+    // The highest number this is called with is 4. It's usually called with 1.
+    /// Ensures that the lookahead buffer has retrieved tokens up to the requested
+    /// lookahead index offset.
+    void ensureBuffered(int ahead);
+
+    boolean isEmpty();
+
+    // This is only used by the parser to check it hasn't got stuck on a token
+    int offset();
+
+    boolean isAtEnd(int ahead);
+
+    boolean isAtEnd();
+
+    YamlToken peekAhead(int ahead);
+
+    YamlToken peek();
+
+    int size();
+
+    YamlToken previous();
+
+    YamlToken advance();
+
+    boolean isTrailingStreamComment();
+
+    // Get next 4 tokens as a string.
+    String upcomingTokens();
+
+
+
+    void open(String text);
+    void open(byte[] data);
+    void open(Reader reader);
+    void open(InputStream is);
 }

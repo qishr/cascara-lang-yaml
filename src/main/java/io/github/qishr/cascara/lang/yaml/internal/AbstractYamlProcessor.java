@@ -33,7 +33,7 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.processor;
+package io.github.qishr.cascara.lang.yaml.internal;
 
 import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
@@ -46,9 +46,9 @@ import io.github.qishr.cascara.common.util.Properties;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public abstract class AbstractYamlProcessor<P extends Processor> implements Processor {
-    static final String YAML_CONTENT_TYPE_STRING = "application/yaml";
+    public static final String YAML_CONTENT_TYPE_STRING = "application/yaml";
 
-    static final ContentType YAML_CONTENT_TYPE =
+    public static final ContentType YAML_CONTENT_TYPE =
         new ContentType("YAML")
             .withType("text/yaml")
             .withType("application/yaml")

@@ -43,6 +43,7 @@ import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 public class YamlDocument extends YamlNode {
     private final List<YamlDirective> directives = new ArrayList<>();
     private YamlNode body;
+    private boolean hasEndMarker;
 
     public YamlDocument(YamlToken token) {
         super(token);
@@ -70,6 +71,14 @@ public class YamlDocument extends YamlNode {
 
     public void setBody(YamlNode body) {
         this.body = body;
+    }
+
+    public boolean hasEndMarker() {
+        return hasEndMarker;
+    }
+
+    public void setHasEndMarker(boolean b) {
+        hasEndMarker = b;
     }
 
     @Override

@@ -47,7 +47,7 @@ import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 /// Represents a YAML sequence (a list of items).
 public class YamlSequence extends YamlNode implements SequenceAstNode<YamlNode> {
     private final List<YamlNode> elements = new ArrayList<>();
-    private NodeStyle style = NodeStyle.BLOCK;
+    // private NodeStyle style = NodeStyle.BLOCK;
     private boolean isExpanded = false; // Default to compact
 
     public YamlSequence() {
@@ -161,12 +161,6 @@ public class YamlSequence extends YamlNode implements SequenceAstNode<YamlNode> 
     /// {@inheritDoc}
     @Override
     public List<YamlNode> getChildren() { return elements; }
-
-    public NodeStyle getStyle() { return style; }
-    public YamlSequence setStyle(NodeStyle style) {
-         this.style = style;
-         return this;
-    }
 
     public boolean isExpanded() { return isExpanded; }
     public void setExpanded(boolean expanded) { this.isExpanded = expanded; }

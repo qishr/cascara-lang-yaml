@@ -50,7 +50,6 @@ import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, YamlMapEntry> {
-    private NodeStyle style = NodeStyle.BLOCK;
     private final LinkedHashMap<YamlNode,YamlMapEntry> entriesByKey = new LinkedHashMap<>();
 
     public YamlMap() {
@@ -156,9 +155,6 @@ public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, 
     }
 
     /// {@inheritDoc}
-    public NodeStyle getStyle() { return style; }
-
-    /// {@inheritDoc}
     @Override
     public Set<YamlNode> keySet() {
         return entriesByKey.keySet();
@@ -196,12 +192,6 @@ public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, 
                 }
             }
         }
-        return this;
-    }
-
-    /// {@inheritDoc}
-    public YamlMap setStyle(NodeStyle style) {
-        this.style = style;
         return this;
     }
 

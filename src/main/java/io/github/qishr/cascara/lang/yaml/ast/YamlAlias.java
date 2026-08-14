@@ -77,6 +77,11 @@ public class YamlAlias extends YamlNode {
     }
 
     @Override
+    public String asString() {
+        return name;
+    }
+
+    @Override
     public void accept(YamlVisitor visitor) {
         visitor.visit(this);
     }

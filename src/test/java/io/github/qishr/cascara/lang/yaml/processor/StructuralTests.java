@@ -4,66 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.lang.yaml.CascaraYaml;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
-import io.github.qishr.cascara.lang.yaml.processor.TestUtils;
-import io.github.qishr.cascara.lang.yaml.processor.YamlAstParser;
-import io.github.qishr.cascara.lang.yaml.processor.YamlNormalizer;
-import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
-import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
-public class StructuralTests {
-    private static final boolean dumpTokens = true;
-
-    private YamlTokenizer tokenizer;
-    private YamlAstParser parser;
-    private Reporter reporter;
-
-    @BeforeEach
-    void setup() {
-        reporter = new StandardReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setFlushEnabled(false)
-            .setStackTraceEnabled(true);
-
-        parser = new YamlAstParser()
-            .setReporter(reporter);
-
-        tokenizer = new YamlTokenizer();
-        tokenizer.setReporter(reporter);
-    }
-
-    private void tokenize(String yaml) {
-        List<YamlToken> tokens = tokenizer.tokenize(yaml);
-        if (dumpTokens) {
-            TestUtils.dumpTokens(
-                reporter.getWriter(Level.DEBUG),
-                tokens
-            );
-        }
-    }
-
-    private YamlNode normalize(YamlNode root) {
-        return CascaraYaml.normalize(root);
-    }
-
-    private YamlNode resolveAliases(YamlNode root) {
-        return CascaraYaml.resolve(root);
-    }
+public class StructuralTests extends BaseAstParserTest {
 
     @Test
     public void testStartsOnNewLine_key_and_scalar_valid1() {

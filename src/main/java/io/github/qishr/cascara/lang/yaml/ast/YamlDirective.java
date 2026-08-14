@@ -41,10 +41,16 @@ import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 public class YamlDirective extends YamlNode {
     private final String content;
+    private YamlDirectiveType type;
 
-    public YamlDirective(YamlToken token, String content) {
+    public YamlDirective(YamlToken token, YamlDirectiveType type, String content) {
         super(token);
+        this.type = type;
         this.content = content;
+    }
+
+    public YamlDirectiveType getType() {
+        return type;
     }
 
     public String getContent() {

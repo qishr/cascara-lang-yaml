@@ -34,7 +34,6 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
@@ -43,14 +42,14 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 
 public class YamlNormalizer {
-    private Reporter reporter = new NoOpReporter();
+    // private Reporter reporter = new NoOpReporter();
 
     public YamlNormalizer() {
 
     }
 
     public YamlNormalizer setReporter(Reporter reporter) {
-        this.reporter = reporter;
+        // this.reporter = reporter;
         return this;
     }
 
@@ -65,6 +64,9 @@ public class YamlNormalizer {
         // Normalize maps recursively
         if (node instanceof YamlMap map) {
             YamlMap newMap = new YamlMap(map.getToken(), map.getOptions());
+            newMap.setAnchor(map.getAnchor());
+            newMap.setTag(map.getTag());
+            newMap.setResolvedTag(map.getResolvedTag());
             for (YamlMapEntry entry : map.getEntries()) {
                 YamlNode key = normalize(entry.getKey());
                 YamlNode value = normalize(entry.getValue());
@@ -76,6 +78,9 @@ public class YamlNormalizer {
         // Normalize sequences recursively
         if (node instanceof YamlSequence seq) {
             YamlSequence newSeq = new YamlSequence(seq.getToken());
+            newSeq.setAnchor(seq.getAnchor());
+            newSeq.setTag(seq.getTag());
+            newSeq.setResolvedTag(seq.getResolvedTag());
             for (YamlNode child : seq.getChildren()) {
                 newSeq.add(normalize(child));
             }
