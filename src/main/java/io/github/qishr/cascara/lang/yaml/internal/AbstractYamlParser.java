@@ -411,7 +411,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             NodeContext nodeContext = new NodeContext();
             YamlNode result = null;
 
-            YamlToken pendingAnchor = null;
+            // YamlToken anchorToken = null;
             // boolean newlineAfterAnchor = false;
             // boolean hasIndentedAnchor = false;
             if (checkIndented(YamlTokenType.ANCHOR)) {
@@ -421,9 +421,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             }
 
             if (check(YamlTokenType.ANCHOR)) {
-                pendingAnchor = tokenBuffer.peek();
-                String pendingAnchorName = extractAnchorName(pendingAnchor);
-                trace("PV-anchor: " + pendingAnchor);
+                nodeContext.anchorToken = tokenBuffer.peek();
+                String pendingAnchorName = extractAnchorName(nodeContext.anchorToken);
+                trace("PV-anchor: " + nodeContext.anchorToken);
 
                 YamlToken possibleNewline = lookAheadIgnoringComments(YamlTokenType.NEWLINE);
                 nodeContext.newlineAfterAnchor = possibleNewline != null;
@@ -432,12 +432,12 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 YamlToken keyAnchor = null;
                 if (previousPendingAnchor != null) {
                     mapAnchor = previousPendingAnchor;
-                    keyAnchor = pendingAnchor;
+                    keyAnchor = nodeContext.anchorToken;
                 } else {
                     if (nodeContext.newlineAfterAnchor) {
-                        mapAnchor = pendingAnchor;
+                        mapAnchor = nodeContext.anchorToken;
                     } else {
-                        keyAnchor = pendingAnchor;
+                        keyAnchor = nodeContext.anchorToken;
                     }
                 }
                 trace("PV-anchor mapAnchor = " + mapAnchor);
@@ -448,8 +448,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 YamlToken colon = lookAheadIgnoringComments(YamlTokenType.VALUE_INDICATOR);
                 if (colon != null) {
                     // Let parseMap handle the anchor
-                    trace("PV-anchor passing1 m=" + pendingAnchor + " k=null");
-                    result = parseMap(false, isComplexKey, null, pendingAnchor, null);
+                    trace("PV-anchor passing1 m=" + nodeContext.anchorToken + " k=null");
+                    result = parseMap(false, isComplexKey, null, nodeContext.anchorToken, null);
                     attachComments(result);
 
                     // TODO: This must be moved to happen directly after anchor is parsed
@@ -487,7 +487,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     }
 
                     // Consume the anchor and set it as pending
-                    pendingAnchor = tokenBuffer.advance();
+                    nodeContext.anchorToken = tokenBuffer.advance();
                     trace("PV-anchor-else");
 
                     if (nodeContext.hasIndentedAnchor) {
@@ -525,7 +525,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
                         // TODO: Is this correct?
-                        result = createNullScalar(isComplexKey, null, pendingAnchor);
+                        result = createNullScalar(isComplexKey, null, nodeContext.anchorToken);
 
 
                         YamlAnchor anchorNode = new YamlAnchor(
@@ -548,7 +548,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                         }
                         nodeContext.hasIndentedAnchor = false;
                     }
-                    trace("anchor pending: " + pendingAnchor);
+                    trace("anchor pending: " + nodeContext.anchorToken);
                 }
             }
 
@@ -558,15 +558,15 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             YamlToken keyAnchor = null;
             if (previousPendingAnchor != null) {
                 mapAnchor = previousPendingAnchor;
-                keyAnchor = pendingAnchor;
+                keyAnchor = nodeContext.anchorToken;
             } else {
 
 
                 // mapAnchor = pendingAnchor;
                 if (nodeContext.newlineAfterAnchor) {
-                    keyAnchor = pendingAnchor;
+                    keyAnchor = nodeContext.anchorToken;
                 } else {
-                    mapAnchor = pendingAnchor;
+                    mapAnchor = nodeContext.anchorToken;
                 }
 
 
@@ -610,8 +610,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     tokenBuffer.peekAhead(2).getType() == YamlTokenType.SCALAR &&
                     tokenBuffer.peekAhead(3).getType() == YamlTokenType.VALUE_INDICATOR
                 ) {
-                    trace("PV-TAGanchor-scalar-valueIndicator passing m=" + pendingAnchor + " k=null");
-                    result = parseMap(false, isComplexKey, pendingTag, pendingAnchor, null);
+                    trace("PV-TAGanchor-scalar-valueIndicator passing m=" + nodeContext.anchorToken + " k=null");
+                    result = parseMap(false, isComplexKey, pendingTag, nodeContext.anchorToken, null);
                     attachComments(result);
                     return result;
                 }
@@ -620,15 +620,15 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 if (tokenBuffer.peekAhead(1).getType() == YamlTokenType.SCALAR &&
                     tokenBuffer.peekAhead(2).getType() == YamlTokenType.VALUE_INDICATOR
                 ) {
-                    trace("PV-TAG-scalar-valueIndicator passing m=" + pendingAnchor + " k=null");
-                    result = parseMap(false, isComplexKey, pendingTag, pendingAnchor, null);
+                    trace("PV-TAG-scalar-valueIndicator passing m=" + nodeContext.anchorToken + " k=null");
+                    result = parseMap(false, isComplexKey, pendingTag, nodeContext.anchorToken, null);
                     attachComments(result);
                     return result;
                 }
 
                 if (tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
-                    trace("PV-TAG-valueindicator passing m=" + pendingAnchor + " k=null");
-                    result = parseMap(false, isComplexKey, pendingTag, pendingAnchor, null);
+                    trace("PV-TAG-valueindicator passing m=" + nodeContext.anchorToken + " k=null");
+                    result = parseMap(false, isComplexKey, pendingTag, nodeContext.anchorToken, null);
                     attachComments(result);
                     // Check: Did parseMap result in the anchor being applied?
                     return result;
@@ -660,15 +660,15 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             if (check(YamlTokenType.KEY_INDICATOR)) {
                 trace("PV-key-indicator");
                 // result = parseMap(isComplexKey);
-                trace("PV-key-indicator passing m=" + pendingAnchor + " k=null");
-                result = parseMap(false, false, pendingTag, pendingAnchor, null);
+                trace("PV-key-indicator passing m=" + nodeContext.anchorToken + " k=null");
+                result = parseMap(false, false, pendingTag, nodeContext.anchorToken, null);
             }
             else if (check(YamlTokenType.ANCHOR)) {
 
 
 
-                trace("PV-TAG-anchor passing " + pendingAnchor);
-                result = parseValue(tokenBuffer.peek().getStartColumn(), isFlowStyle, isComplexKey, pendingAnchor);
+                trace("PV-TAG-anchor passing " + nodeContext.anchorToken);
+                result = parseValue(tokenBuffer.peek().getStartColumn(), isFlowStyle, isComplexKey, nodeContext.anchorToken);
 
 
 
@@ -676,8 +676,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             else if (check(YamlTokenType.ALIAS)) {
                 trace("PV-in-if-alias1");
                 if (tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
-                    trace("PV-alias passing m=" + pendingAnchor + " k=null");
-                    result = parseMap(false, isComplexKey, pendingTag, pendingAnchor, null);
+                    trace("PV-alias passing m=" + nodeContext.anchorToken + " k=null");
+                    result = parseMap(false, isComplexKey, pendingTag, nodeContext.anchorToken, null);
                 } else {
                     YamlToken tok = tokenBuffer.advance();
                     trace("PV-in-if-alias2");
@@ -698,11 +698,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             // Flow map
             else if (check(YamlTokenType.MAP_START)) {
                 if (lookAheadFlowMapIsFollowedByColon()) {
-                    trace("PV-flow-map-as-key passing m=" + pendingAnchor + " k=null");
-                    return parseMap(true, isComplexKey, pendingTag, pendingAnchor, null);
+                    trace("PV-flow-map-as-key passing m=" + nodeContext.anchorToken + " k=null");
+                    return parseMap(true, isComplexKey, pendingTag, nodeContext.anchorToken, null);
                 } else {
-                    trace("PV-flow-map passing pendingAnchor " + pendingAnchor);
-                    result = parseFlowMap(pendingAnchor);
+                    trace("PV-flow-map passing pendingAnchor " + nodeContext.anchorToken);
+                    result = parseFlowMap(nodeContext.anchorToken);
                 }
             }
             // Flow sequence
@@ -721,14 +721,14 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
                 } else {
-                    trace("PV-flow-seq passing pendingAnchor " + pendingAnchor);
-                    result = parseFlowSequence(pendingAnchor);
+                    trace("PV-flow-seq passing pendingAnchor " + nodeContext.anchorToken);
+                    result = parseFlowSequence(nodeContext.anchorToken);
                 }
             }
             // Block sequence
             else if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
-                trace("PV-block-seq passing pendingAnchor " + pendingAnchor);
-                result = parseSequence(pendingTag, pendingAnchor);
+                trace("PV-block-seq passing pendingAnchor " + nodeContext.anchorToken);
+                result = parseSequence(pendingTag, nodeContext.anchorToken);
             }
             else if (check(YamlTokenType.VALUE_INDICATOR)) {
                 // Map entry with null key
@@ -739,12 +739,12 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 if (tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
 
 
-                    trace("PV-scalar passing m=" + pendingAnchor + " k=null");
-                    result = parseMap(isFlowStyle, isComplexKey, pendingTag, pendingAnchor, null);
+                    trace("PV-scalar passing m=" + nodeContext.anchorToken + " k=null");
+                    result = parseMap(isFlowStyle, isComplexKey, pendingTag, nodeContext.anchorToken, null);
 
 
                 } else {
-                    result = parseScalar(isComplexKey, pendingTag, pendingAnchor);
+                    result = parseScalar(isComplexKey, pendingTag, nodeContext.anchorToken);
                     trace("PV-after-parseScalar");
                     if (check(YamlTokenType.NEWLINE)) {
                         tokenBuffer.advance();
@@ -752,7 +752,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 }
             }
             else {
-                result = createNullScalar(isComplexKey, pendingTag, pendingAnchor);
+                result = createNullScalar(isComplexKey, pendingTag, nodeContext.anchorToken);
             }
 
             // Check: Should pending comments be attached to the result before this skipTrivia?
@@ -800,9 +800,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             }
 
 
-            if (pendingAnchor != null) {
-                trace("PV applying anchor "+pendingAnchor);
-                String raw = pendingAnchor.getContent();
+            if (nodeContext.anchorToken != null) {
+                trace("PV applying anchor "+nodeContext.anchorToken);
+                String raw = nodeContext.anchorToken.getContent();
                 String anchorName = raw.startsWith("&") ? raw.substring(1) : raw;
                 result.setAnchor(anchorName);
                 YamlAnchor anchorNode = new YamlAnchor(
