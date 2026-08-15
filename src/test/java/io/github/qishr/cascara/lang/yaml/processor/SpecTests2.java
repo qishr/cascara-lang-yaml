@@ -147,11 +147,35 @@ public class SpecTests2 extends BaseAstParserTest {
     }
 
     @Test
-    public void testBU8L() {
+    public void testBU8La() {
         String yaml = """
             key: &anchor
              !!map
               a: b
+            """;
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = normalize(doc.getBody());
+
+        YamlMap map = (YamlMap) body;
+
+        YamlMap map2 = map.getMap("key");
+
+        TestUtils.assertEquals("b", map2.getString("a"));
+    }
+
+    @Test
+    public void testBU8Lb() {
+        String yaml = """
+            key: &anchor
+                 !!map
+                 a: b
             """;
 
         tokenize(yaml);

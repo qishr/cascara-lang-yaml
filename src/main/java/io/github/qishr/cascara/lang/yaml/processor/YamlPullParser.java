@@ -173,7 +173,7 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
         if (isReportingTrace()) {
             StringBuilder sb = new StringBuilder();
             if (prefix != null) {
-                sb.append(TermUtils.ANSI_MAGENTA);
+                sb.append(TermUtils.ANSI_CYAN);
                 sb.append(prefix);
                 sb.append(TermUtils.ANSI_RESET);
                 sb.append(": ");
@@ -195,14 +195,14 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
                 if ((anchor != null &&! anchor.isEmpty()) ||
                     (tag != null && !tag.isEmpty()) ) {
                     sb.append(" {");
-                    if (!anchor.isEmpty()) {
+                    if (anchor != null && !anchor.isEmpty()) {
                         sb.append("a=");
                         sb.append(TermUtils.ANSI_WHITE);
                         sb.append(anchor);
                         sb.append(TermUtils.ANSI_RESET);
                     }
-                    if (!tag.isEmpty()) {
-                        if (!anchor.isEmpty()) {
+                    if (tag != null && !tag.isEmpty()) {
+                        if (anchor != null && !anchor.isEmpty()) {
                             sb.append(", ");
                         }
                         sb.append("t=");
