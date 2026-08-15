@@ -38,6 +38,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 import io.github.qishr.cascara.common.lang.processor.PullParser;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
+import io.github.qishr.cascara.common.util.TermUtils;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlParser;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
 
@@ -51,7 +52,7 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
     private Thread parserThread;
     private BlockingDeque<YamlStreamingEvent> events;
     private AtomicBoolean streamEnded = new AtomicBoolean();
-    YamlStreamingEvent nextEvent;
+    private YamlStreamingEvent nextEvent;
 
     /// Default constructor for SPI.
     public YamlPullParser() {
@@ -78,27 +79,27 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
         if (!events.isEmpty()) {
             nextEvent = events.poll();
             if (nextEvent.getType() == StreamingEventType.ERROR) {
+                trace("ERROR: " + nextEvent.getContent());
                 errorEncountered.set(true);
                 nextEvent = null;
                 return false;
             }
-            trace("NEXT EVENT: " + nextEvent.getType() + " [a="+nextEvent.getAnchor()+"]");
+            traceEvent("Pending", nextEvent);
             return true;
         }
 
 		try {
 
-            trace("hasNext: Waiting for event");
+            trace("PullParser waiting for event");
 			nextEvent = events.takeFirst();
             if (nextEvent == null) {
                 trace("EVENT: null");
             } else {
-                trace("EVENT: " + nextEvent.getType() + " [a="+nextEvent.getAnchor()+"]");
+                traceEvent("Pending", nextEvent);
             }
-            // trace("hasNext: Got event");
 
 		} catch (InterruptedException e) {
-            trace("hasNext: Got interrupt");
+            trace("PullParser got interrupt");
             nextEvent = null;
 		}
 
@@ -114,8 +115,9 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
             // We should probably throw an Exception (no more events)
             return null;
         }
-        StreamingEvent event = nextEvent;
+        YamlStreamingEvent event = nextEvent;
         nextEvent = null;
+        traceEvent("Pulled", event);
         return event;
     }
 
@@ -131,7 +133,6 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
     //
 
     private void queueEvents(InputStream input) {
-        trace("queueEvents");
         preParseStateInit();
 
         setContinueAfterError(false);
@@ -147,6 +148,7 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
                 parseInternal();
             } catch (Exception e) {
                 errorEncountered.set(true);
+                createEvent(tokenBuffer.peek(), StreamingEventType.ERROR, e.getMessage());
                 trace("parseInternal failed: " + e.getMessage());
                 e.printStackTrace();
             }
@@ -159,10 +161,59 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
 
     @Override
     protected void handleEvent(YamlStreamingEvent event) {
+        traceEvent("Queueing", event);
         try {
             events.putLast(event);
         } catch (InterruptedException e) {
             debug("events.putLast failed: " + e.getMessage());
+        }
+    }
+
+    private void traceEvent(String prefix, YamlStreamingEvent event) {
+        if (isReportingTrace()) {
+            StringBuilder sb = new StringBuilder();
+            if (prefix != null) {
+                sb.append(TermUtils.ANSI_MAGENTA);
+                sb.append(prefix);
+                sb.append(TermUtils.ANSI_RESET);
+                sb.append(": ");
+            }
+            if (event == null) {
+                sb.append("null");
+            } else {
+                sb.append(event.getType());
+                String content = event.getContent();
+                if (content != null && !content.isEmpty()) {
+                    sb.append("(");
+                    sb.append(TermUtils.ANSI_WHITE);
+                    sb.append(content);
+                    sb.append(TermUtils.ANSI_RESET);
+                    sb.append(")");
+                }
+                String anchor = event.getAnchor();
+                String tag = event.getTag();
+                if ((anchor != null &&! anchor.isEmpty()) ||
+                    (tag != null && !tag.isEmpty()) ) {
+                    sb.append(" {");
+                    if (!anchor.isEmpty()) {
+                        sb.append("a=");
+                        sb.append(TermUtils.ANSI_WHITE);
+                        sb.append(anchor);
+                        sb.append(TermUtils.ANSI_RESET);
+                    }
+                    if (!tag.isEmpty()) {
+                        if (!anchor.isEmpty()) {
+                            sb.append(", ");
+                        }
+                        sb.append("t=");
+                        sb.append(TermUtils.ANSI_WHITE);
+                        sb.append(tag);
+                        sb.append(TermUtils.ANSI_RESET);
+                    }
+                    sb.append("}");
+                }
+            }
+            trace(sb.toString());
         }
     }
 }

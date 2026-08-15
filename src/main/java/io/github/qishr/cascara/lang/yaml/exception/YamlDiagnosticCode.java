@@ -73,10 +73,12 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     DEPTH_LIMIT("YAML-202", "Depth limit exceeded"),
     DUPLICATE_KEY("YAML-203", "Duplicate key found: \"{0}\""),
     UNKNOWN_DIRECTIVE("YAML-204", "Unknown directive: '{0}'"),
-    EXPECTED_DEDENT("YAML-205", "Expected dedent");
+    EXPECTED_INDENT("YAML-205", "Expected indent"),
+    EXPECTED_DEDENT("YAML-206", "Expected dedent"),
+    TOO_MANY_ANCHORS("YAML-207", "A node can have at most one anchor"),
+    TOO_MANY_TAGS("YAML-208", "A node can have at most one tag");
 
-    // A node can have at most one tag
-    // A node can have at most one anchor
+    // TODO:
     // Anchor cannot be an empty string
     // Set items must all have null values
 

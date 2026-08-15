@@ -18,8 +18,11 @@ public abstract class BaseParserTest {
     // protected static final Level TOKENIZER_LEVEL = Level.DEBUG;
     protected static final Level PARSER_LEVEL = Level.TRACE;
 
-    protected static final boolean DUMP_TOKENS = false;
-    protected static final boolean DEBUG = false;
+    protected static final boolean DEBUG = true;
+    protected static final boolean DUMP_TOKENS = DEBUG;
+
+    /// Reporter for use by tests
+    protected Reporter reporter;
 
     protected Reporter parserReporter;
     protected Reporter tokenizerReporter;
@@ -32,6 +35,12 @@ public abstract class BaseParserTest {
 
     @BeforeEach
     protected void setup() {
+        reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
+            .setAnsiColoringEnabled(true)
+            .setFlushEnabled(true)
+            .setStackTraceEnabled(true);
+
         parserReporter = new StandardReporter()
             .setLevel(PARSER_LEVEL)
             .setAnsiColoringEnabled(true)

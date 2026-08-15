@@ -812,7 +812,7 @@ public class YamlPullParserTest extends BasePullParserTest {
         }
     }
 
-    @Disabled // TODO
+    // @Disabled // TODO
     @Test
     public void testTagAndAnchorOrderWithScalars() throws Exception {
         String yaml = """
@@ -857,7 +857,7 @@ public class YamlPullParserTest extends BasePullParserTest {
     }
 
     //TODO
-    @Disabled
+    // @Disabled
     @Test
     public void testTagAndAnchorOrderWithMaps() throws Exception {
         String yaml = """
@@ -883,14 +883,19 @@ public class YamlPullParserTest extends BasePullParserTest {
             assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
             assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
 
+            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
+            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
+            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
 
+            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
+            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
             assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
 
 
             assertEquals(StreamingEventType.ALIAS, parser.next().getType());
             assertEquals(StreamingEventType.ALIAS, parser.next().getType());
-
 
             assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
             assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
