@@ -9,20 +9,29 @@ import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.YamlAliasResolver;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public abstract class BaseParserTest {
     protected static final Level TOKENIZER_LEVEL = Level.INFO;
-    // protected static final Level PARSER_LEVEL = Level.INFO;
-
     // protected static final Level TOKENIZER_LEVEL = Level.DEBUG;
-    protected static final Level PARSER_LEVEL = Level.TRACE;
 
-    protected static final boolean DUMP_TOKENS = false;
+    protected static final Level PARSER_LEVEL = Level.INFO;
+    // protected static final Level PARSER_LEVEL = Level.TRACE;
+
+    protected static final Level EMITTER_LEVEL = Level.INFO;
+
     protected static final boolean DEBUG = false;
+    // protected static final boolean DEBUG = true;
 
-    protected Reporter parserReporter;
+    protected static final boolean DUMP_TOKENS = DEBUG;
+
+    /// Reporter for use by tests
+    protected Reporter reporter;
+
     protected Reporter tokenizerReporter;
+    protected Reporter parserReporter;
+    protected Reporter emitterReporter;
 
     protected YamlTokenizer tokenizer;
     protected YamlNormalizer normalizer;
@@ -32,14 +41,26 @@ public abstract class BaseParserTest {
 
     @BeforeEach
     protected void setup() {
-        parserReporter = new StandardReporter()
-            .setLevel(PARSER_LEVEL)
+        reporter = new StandardReporter()
+            .setLevel(Level.DEBUG)
             .setAnsiColoringEnabled(true)
             .setFlushEnabled(true)
             .setStackTraceEnabled(true);
 
         tokenizerReporter = new StandardReporter()
             .setLevel(TOKENIZER_LEVEL)
+            .setAnsiColoringEnabled(true)
+            .setFlushEnabled(true)
+            .setStackTraceEnabled(true);
+
+        parserReporter = new StandardReporter()
+            .setLevel(PARSER_LEVEL)
+            .setAnsiColoringEnabled(true)
+            .setFlushEnabled(true)
+            .setStackTraceEnabled(true);
+
+        emitterReporter = new StandardReporter()
+            .setLevel(EMITTER_LEVEL)
             .setAnsiColoringEnabled(true)
             .setFlushEnabled(true)
             .setStackTraceEnabled(true);
@@ -54,7 +75,7 @@ public abstract class BaseParserTest {
             .setReporter(parserReporter);
 
         emitter = new YamlEmitter()
-            .setReporter(parserReporter)
+            .setReporter(emitterReporter)
             .setOptions(YamlOptions.CANONICAL);
     }
 

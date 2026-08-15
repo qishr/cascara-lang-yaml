@@ -2,7 +2,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.util.JreUtils;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
@@ -14,6 +14,8 @@ import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.IOException;
 
 public class SpecTests3 extends BaseAstParserTest {
 
@@ -55,7 +57,7 @@ public class SpecTests3 extends BaseAstParserTest {
     }
 
     @Test
-    public void test26DV() {
+    public void test26DV() throws IOException {
         String yaml = """
             "top1":
                 "key1": &alias1 scalar1
@@ -95,7 +97,8 @@ public class SpecTests3 extends BaseAstParserTest {
         }
 
         if (DEBUG) {
-            parserReporter.debug("Emitted YAML:\n" + emittedYaml);
+            reporter.debug("Emitted YAML:");
+            reporter.getWriter(Level.DEBUG).write(2, emittedYaml);
         }
 
         assertEquals(1, stream1.getDocuments().size());

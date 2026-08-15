@@ -1,0 +1,66 @@
+package io.github.qishr.cascara.lang.yaml.processor;
+
+import org.junit.jupiter.api.Test;
+
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
+
+public class NodePropertiesMapOfScalarsTests extends BasePropertiesTest {
+
+    @Test
+    public void testTag() {
+        String yaml = """
+            x: !!str v
+            """;
+
+        tokenize(yaml);
+        YamlMap root = (YamlMap) parser.parse(yaml);
+        YamlScalar scalar = root.getScalar("x");
+        TestUtils.assertEquals("v", scalar.getContent());
+        TestUtils.assertEquals("!!str", scalar.getTag());
+        TestUtils.assertEquals(STR_TAG, scalar.getResolvedTag());
+    }
+
+    @Test
+    public void testAnchor() {
+        String yaml = """
+            x: &a v
+            """;
+
+        tokenize(yaml);
+        YamlMap root = (YamlMap) parser.parse(yaml);
+        YamlScalar scalar = root.getScalar("x");
+        TestUtils.assertEquals("v", scalar.getContent());
+        TestUtils.assertEquals("a", scalar.getAnchor());
+    }
+
+    @Test
+    public void testTagAndAnchor() {
+        String yaml = """
+            x: !!str &a v
+            """;
+
+        tokenize(yaml);
+        YamlMap root = (YamlMap) parser.parse(yaml);
+        YamlScalar scalar = root.getScalar("x");
+        TestUtils.assertEquals("v", scalar.getContent());
+        TestUtils.assertEquals("!!str", scalar.getTag());
+        TestUtils.assertEquals(STR_TAG, scalar.getResolvedTag());
+        TestUtils.assertEquals("a", scalar.getAnchor());
+    }
+
+    @Test
+    public void testAnchorAndTag() {
+        String yaml = """
+            x: &a !!str v
+            """;
+
+        tokenize(yaml);
+        YamlMap root = (YamlMap) parser.parse(yaml);
+        YamlScalar scalar = root.getScalar("x");
+        TestUtils.assertEquals("v", scalar.getContent());
+        TestUtils.assertEquals("a", scalar.getAnchor());
+        TestUtils.assertEquals("!!str", scalar.getTag());
+        TestUtils.assertEquals(STR_TAG, scalar.getResolvedTag());
+    }
+}

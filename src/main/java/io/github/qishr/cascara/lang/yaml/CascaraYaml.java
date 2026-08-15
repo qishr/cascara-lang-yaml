@@ -45,9 +45,9 @@ import io.github.qishr.cascara.common.semver.SemVer;
 import io.github.qishr.cascara.common.util.JarManifest;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
-import io.github.qishr.cascara.lang.yaml.processor.YamlAliasResolver;
 import io.github.qishr.cascara.lang.yaml.processor.YamlNormalizer;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
+import io.github.qishr.cascara.lang.yaml.util.YamlAliasResolver;
 
 public final class CascaraYaml {
 
