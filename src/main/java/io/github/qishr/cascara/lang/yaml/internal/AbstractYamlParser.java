@@ -421,10 +421,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             debugProperties("c", collectionProperties);
             debugProperties("n", nodeProperties);
 
-            boolean expectedValueDedent = false;
-            if (check(YamlTokenType.INDENT)) {
+            int expectedDedents = 0;
+            while (check(YamlTokenType.INDENT)) {
                 tokenBuffer.advance();
-                expectedValueDedent = true;
+                trace("indent. re-parsing properties.");
 
                 // If there are node properties (anchor or tag) at this indentation
                 // level, merge them with the current properties
@@ -435,6 +435,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 trace("merged properties");
                 debugProperties("c", collectionProperties);
                 debugProperties("n", nodeProperties);
+                expectedDedents++;
             }
 
             YamlNode result = null;
@@ -543,7 +544,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 result = anchorNode;
             }
 
-            if (expectedValueDedent) {
+            while (expectedDedents > 0) {
                 if (check(YamlTokenType.DEDENT)) {
                     trace("Consuming expectedValueDedent");
                     tokenBuffer.advance();
@@ -556,6 +557,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     trace(TermUtils.ANSI_MAGENTA + "expectedValueDedent not found" + TermUtils.ANSI_RESET);
                     // error(tokenBuffer.peek(), YamlDiagnosticCode.EXPECTED_DEDENT);
                 }
+                expectedDedents--;
             }
 
             return attachComments(result);
