@@ -13,19 +13,22 @@ import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public abstract class BaseParserTest {
     protected static final Level TOKENIZER_LEVEL = Level.INFO;
-    // protected static final Level PARSER_LEVEL = Level.INFO;
+    protected static final Level PARSER_LEVEL = Level.INFO;
+    protected static final Level EMITTER_LEVEL = Level.INFO;
 
     // protected static final Level TOKENIZER_LEVEL = Level.DEBUG;
-    protected static final Level PARSER_LEVEL = Level.TRACE;
+    // protected static final Level PARSER_LEVEL = Level.TRACE;
 
-    protected static final boolean DEBUG = true;
+    protected static final boolean DEBUG = false;
+
     protected static final boolean DUMP_TOKENS = DEBUG;
 
     /// Reporter for use by tests
     protected Reporter reporter;
 
-    protected Reporter parserReporter;
     protected Reporter tokenizerReporter;
+    protected Reporter parserReporter;
+    protected Reporter emitterReporter;
 
     protected YamlTokenizer tokenizer;
     protected YamlNormalizer normalizer;
@@ -41,14 +44,20 @@ public abstract class BaseParserTest {
             .setFlushEnabled(true)
             .setStackTraceEnabled(true);
 
+        tokenizerReporter = new StandardReporter()
+            .setLevel(TOKENIZER_LEVEL)
+            .setAnsiColoringEnabled(true)
+            .setFlushEnabled(true)
+            .setStackTraceEnabled(true);
+
         parserReporter = new StandardReporter()
             .setLevel(PARSER_LEVEL)
             .setAnsiColoringEnabled(true)
             .setFlushEnabled(true)
             .setStackTraceEnabled(true);
 
-        tokenizerReporter = new StandardReporter()
-            .setLevel(TOKENIZER_LEVEL)
+        emitterReporter = new StandardReporter()
+            .setLevel(EMITTER_LEVEL)
             .setAnsiColoringEnabled(true)
             .setFlushEnabled(true)
             .setStackTraceEnabled(true);
@@ -63,7 +72,7 @@ public abstract class BaseParserTest {
             .setReporter(parserReporter);
 
         emitter = new YamlEmitter()
-            .setReporter(parserReporter)
+            .setReporter(emitterReporter)
             .setOptions(YamlOptions.CANONICAL);
     }
 

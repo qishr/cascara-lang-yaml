@@ -868,11 +868,6 @@ public class SpecTests2 extends BaseAstParserTest {
 
         YamlNode body = normalize(doc.getBody());
 
-
-        // TODO: Rename Plain -> Plain (or Intermediate)
-
-
-
         YamlMap map = (YamlMap) body;
         TestUtils.assertEquals("", map.getString("foo"));
         TestUtils.assertEquals("bar", map.getString(""));

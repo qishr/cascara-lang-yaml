@@ -1108,8 +1108,10 @@ public class SpecTests extends BaseAstParserTest {
 
         String expected = "---word1 word2";
 
-        System.out.println("Expected: " + StringUtils.debugString(expected));
-        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        }
 
         TestUtils.assertEquals(expected, scalar.asString());
     }
@@ -1152,8 +1154,10 @@ public class SpecTests extends BaseAstParserTest {
 
         String expected = "unicode anchor";
 
-        System.out.println("Expected: " + StringUtils.debugString(expected));
-        System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
+        }
 
         TestUtils.assertEquals(expected, scalar.asString());
     }
