@@ -571,12 +571,9 @@ public class SpecTests extends BaseAstParserTest {
     public void test6KGN() {
         String yaml = "---\na: &anchor\nb: *anchor";
 
+        tokenize(yaml);
+
         YamlStream stream = parser.parseMulti(yaml);
-
-        if (DUMP_TOKENS) {
-            TestUtils.dumpTokens(parser.getTokens());
-        }
-
 
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();

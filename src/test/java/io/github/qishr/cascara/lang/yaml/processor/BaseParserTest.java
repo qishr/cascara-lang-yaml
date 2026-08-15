@@ -9,19 +9,20 @@ import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.YamlAliasResolver;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public abstract class BaseParserTest {
     protected static final Level TOKENIZER_LEVEL = Level.INFO;
     // protected static final Level TOKENIZER_LEVEL = Level.DEBUG;
 
-    // protected static final Level PARSER_LEVEL = Level.INFO;
-    protected static final Level PARSER_LEVEL = Level.TRACE;
+    protected static final Level PARSER_LEVEL = Level.INFO;
+    // protected static final Level PARSER_LEVEL = Level.TRACE;
 
     protected static final Level EMITTER_LEVEL = Level.INFO;
 
-    // protected static final boolean DEBUG = false;
-    protected static final boolean DEBUG = true;
+    protected static final boolean DEBUG = false;
+    // protected static final boolean DEBUG = true;
 
     protected static final boolean DUMP_TOKENS = DEBUG;
 

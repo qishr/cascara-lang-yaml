@@ -375,7 +375,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     /// 1. Handling anchors (`&`) and aliases (`*`).
     /// 2. Managing block indentation tokens (`INDENT`/`DEDENT`).
     /// 3. Determining the structural type (Map, Sequence, or Scalar) via lookahead.
-    private YamlNode parseValue(int parentIndent, boolean isFlowStyle, boolean isComplexKey, NodeProperties pendingProperties) {
+    private YamlNode parseValue(int parentStartColumn, boolean isFlowStyle, boolean isComplexKey, NodeProperties pendingProperties) {
         debug(">parseValue");
         depth++;
         if (depth > depthLimit) {
@@ -440,12 +440,43 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             YamlNode result = null;
 
-            if (check(YamlTokenType.NEWLINE)) {
-                tokenBuffer.advance();
-                skipTrivia();
-            }
+            // boolean lineContainsOnlyProperties = false;
+            // if (nodeProperties.anchorToken != null) {
+            //     YamlToken potentialNewline = lookAheadIgnoringComments(YamlTokenType.NEWLINE);
+            //     if (potentialNewline != null) {
+            //         lineContainsOnlyProperties = true;
+            //     }
+            // }
 
-            if (check(YamlTokenType.KEY_INDICATOR)) {
+            // TODO: The above won't work because the newline was consumed by parseNodeProperties
+
+            // TODO: Get the next non-trivia token
+            // If it's indentation matches the parent, and there are properties,
+            // treat it as an empty scalar.
+
+
+            //
+            // It might just be that collectionProperties aren't being applied to sequences ?
+            //
+
+
+
+
+
+            // With this block testSKE5 and test6KGN pass
+            YamlToken nextToken = tokenBuffer.peek();
+            if (nextToken.getStartColumn() == parentStartColumn &&
+                nodeProperties.tagToken == null &&
+                !nodeProperties.isEmpty() &&
+                nextToken.getType() != YamlTokenType.SEQUENCE_ENTRY_INDICATOR
+            ) {
+
+                // TODO: Does this work for everything?
+                trace(TermUtils.ANSI_MAGENTA + "next token is at parent column" + TermUtils.ANSI_RESET);
+                result = createNullScalar(isComplexKey, nodeProperties);
+
+            }
+            else if (check(YamlTokenType.KEY_INDICATOR)) {
                 trace("PV-key-indicator");
                 // result = parseMap(isComplexKey);
                 trace("PV-key-indicator passing m=" + nodeProperties.anchorToken + " k=null");

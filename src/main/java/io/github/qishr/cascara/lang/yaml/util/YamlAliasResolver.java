@@ -1,4 +1,4 @@
-package io.github.qishr.cascara.lang.yaml.processor;
+package io.github.qishr.cascara.lang.yaml.util;
 
 
 import java.util.ArrayList;
@@ -105,11 +105,15 @@ public class YamlAliasResolver {
 
         // 3. Recurse through collections
         if (node instanceof YamlMap map) {
+            debug("Recuring into map");
             for (YamlMapEntry entry : map.getEntries()) {
+                debug("key = " + entry.getKey() + "  anchor = " + entry.getKey().getAnchor());
                 collectAnchors(entry.getKey(), anchorMap);
+                debug("val = " + entry.getValue() + "  anchor = " + entry.getValue().getAnchor());
                 collectAnchors(entry.getValue(), anchorMap);
             }
         } else if (node instanceof YamlSequence seq) {
+            debug("Recuring into seq");
             for (YamlNode child : seq.getChildren()) {
                 collectAnchors(child, anchorMap);
             }
@@ -118,7 +122,9 @@ public class YamlAliasResolver {
 
     private YamlNode resolveNode(YamlNode node, Map<String, YamlNode> anchorMap, int depth) {
         if (node == null) return null;
-        if (depth > 256) {
+
+        // TODO: Read from options
+        if (depth > 20) {
             return null;
         }
 
