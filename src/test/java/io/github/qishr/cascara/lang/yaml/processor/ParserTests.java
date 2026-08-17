@@ -63,14 +63,14 @@ public class ParserTests extends BaseAstParserTest {
         assertEquals("val", statusValue.getAnchor());
 
         // We need to get the actual scalar content inside the anchor wrapper
-        if (statusValue instanceof YamlAnchor wrapper) {
-            YamlNode inner = wrapper.getInnerNode();
-            assertInstanceOf(YamlScalar.class, inner);
-            assertEquals("active", ((YamlScalar)inner).getPrimitive()); // or .getString() if it exists there
-        } else {
+        // if (statusValue instanceof YamlAnchor wrapper) {
+        //     YamlNode inner = wrapper.getInnerNode();
+        //     assertInstanceOf(YamlScalar.class, inner);
+        //     assertEquals("active", ((YamlScalar)inner).getPrimitive()); // or .getString() if it exists there
+        // } else {
             // If it's not a wrapper, it must be the scalar itself
             assertEquals("active", ((YamlScalar)statusValue).getPrimitive());
-        }
+        // }
 
         // Check Alias
         YamlNode linkValue = map.get("link");

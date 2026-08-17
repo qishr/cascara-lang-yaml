@@ -122,7 +122,8 @@ public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, 
 
                 if (string.equals(entryKey)) {
                     YamlNode val = entryNode.getValue();
-                    return (val instanceof YamlAnchor a) ? a.getInnerNode() : val;
+                    // return (val instanceof YamlAnchor a) ? a.getInnerNode() : val;
+                    return val;
                 }
             }
         }

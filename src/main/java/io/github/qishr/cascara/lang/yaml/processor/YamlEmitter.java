@@ -156,9 +156,9 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         // 1. Extract the actual target data node if wrapped in an Anchor decorator
         YamlNode targetNode = node;
-        while (targetNode instanceof YamlAnchor wrapper) {
-            targetNode = wrapper.getInnerNode();
-        }
+        // while (targetNode instanceof YamlAnchor wrapper) {
+        //     targetNode = wrapper.getInnerNode();
+        // }
 
         // 2. ALIAS CHECK
         if (targetNode instanceof YamlAlias alias) {
@@ -464,9 +464,9 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                 }
 
                 YamlNode targetNode = value;
-                if (value instanceof YamlAnchor anchor) {
-                    targetNode = anchor.getInnerNode();
-                }
+                // if (value instanceof YamlAnchor anchor) {
+                //     targetNode = anchor.getInnerNode();
+                // }
 
                 if (!(targetNode instanceof YamlMap)) {
                     appendText(NL);

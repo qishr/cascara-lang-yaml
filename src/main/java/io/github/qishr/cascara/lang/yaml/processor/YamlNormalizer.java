@@ -57,9 +57,9 @@ public class YamlNormalizer {
         if (node == null) return null;
 
         // Unwrap structural anchor nodes
-        if (node instanceof YamlAnchor anchor) {
-            return normalize(anchor.getInnerNode());
-        }
+        // if (node instanceof YamlAnchor anchor) {
+        //     return normalize(anchor.getInnerNode());
+        // }
 
         // Normalize maps recursively
         if (node instanceof YamlMap map) {

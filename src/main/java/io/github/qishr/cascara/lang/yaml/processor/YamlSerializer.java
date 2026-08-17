@@ -112,7 +112,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
     /// {@inheritDoc}
     @Override
-    public String toText(Object jvmInstance) {
+    public String toString(Object jvmInstance) {
         // Step 1: Object -> AST
         YamlNode ast = toAst(jvmInstance);
         // Step 2: AST -> String
@@ -135,7 +135,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
     /// {@inheritDoc}
     @Override
-    public <C> C fromText(String text, Class<C> jvmType) {
+    public <C> C fromString(String text, Class<C> jvmType) {
         // Step 1: String -> AST
         YamlNode ast = getParser().parse(text);
         // Step 2: AST -> Object

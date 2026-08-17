@@ -103,7 +103,7 @@ class YamlSerializerTests {
         String yamlString = "disabledModules: \n" + //
                         "  - \"cascara.module.toolbar\"\n";
         YamlSerializer yamlSerializer = new YamlSerializer();
-        TestState t = yamlSerializer.fromText(yamlString, TestState.class);
+        TestState t = yamlSerializer.fromString(yamlString, TestState.class);
         assertEquals(1, t.disabledModules.size());
         assertEquals("cascara.module.toolbar", t.disabledModules.getFirst());
     }
@@ -112,8 +112,8 @@ class YamlSerializerTests {
     void test_stringWithLongValue() throws SerializerException {
         Stringy stringy = new Stringy("00000555");
         YamlSerializer yamlSerializer = new YamlSerializer();
-        String yaml = yamlSerializer.toText(stringy);
-        Stringy answer = yamlSerializer.fromText(yaml, Stringy.class);
+        String yaml = yamlSerializer.toString(stringy);
+        Stringy answer = yamlSerializer.fromString(yaml, Stringy.class);
         assertEquals("00000555", answer.getString());
     }
 
@@ -129,8 +129,8 @@ class YamlSerializerTests {
         UriTypeDescriptor uriTypeDescriptor = new UriTypeDescriptor();
         yamlSerializer.registerTypeDescriptor(uriTypeDescriptor);
 
-        String yaml = yamlSerializer.toText(uri);
-        UriTestClass answer = yamlSerializer.fromText(yaml, UriTestClass.class);
+        String yaml = yamlSerializer.toString(uri);
+        UriTestClass answer = yamlSerializer.fromString(yaml, UriTestClass.class);
         assertEquals("http://io.com", answer.uri.toString());
     }
 
@@ -138,7 +138,7 @@ class YamlSerializerTests {
     void test_map_boolean() throws SerializerException {
         String yamlString = "dumpCss: true\n";
         YamlSerializer yamlSerializer = new YamlSerializer();
-        SettingsTestClass t = yamlSerializer.fromText(yamlString, SettingsTestClass.class);
+        SettingsTestClass t = yamlSerializer.fromString(yamlString, SettingsTestClass.class);
         assertEquals(true, t.getOtherSettings().get("dumpCss"));
     }
 
@@ -146,7 +146,7 @@ class YamlSerializerTests {
     void test_long_object() throws SerializerException {
         String yamlString = "value: 1\n";
         YamlSerializer yamlSerializer = new YamlSerializer();
-        LongObject t = yamlSerializer.fromText(yamlString, LongObject.class);
+        LongObject t = yamlSerializer.fromString(yamlString, LongObject.class);
         assertEquals(1, t.getValue());
     }
 
@@ -161,7 +161,7 @@ class YamlSerializerTests {
         // This is where it currently fails:
         // The parser returns a null scalar, but the mapper
         // expects to see tokens for a NestedConfig object.
-        TestState t = yamlSerializer.fromText(yamlString, TestState.class);
+        TestState t = yamlSerializer.fromString(yamlString, TestState.class);
 
         assertNotNull(t);
         assertNull(t.security, "The security object should be null in the Java state");
@@ -175,13 +175,13 @@ class YamlSerializerTests {
 
         YamlSerializer yamlSerializer = new YamlSerializer();
 
-        String yaml = yamlSerializer.toText(owef);
+        String yaml = yamlSerializer.toString(owef);
 
 
         // This is where it currently fails:
         // The parser returns a null scalar, but the mapper
         // expects to see tokens for a NestedConfig object.
-        ObjectWithEnumField deserialized = yamlSerializer.fromText(yaml, ObjectWithEnumField.class);
+        ObjectWithEnumField deserialized = yamlSerializer.fromString(yaml, ObjectWithEnumField.class);
 
         assertNotNull(deserialized);
         assertEquals(TestEnum.TWO, deserialized.testEnum);

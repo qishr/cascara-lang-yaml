@@ -63,6 +63,7 @@ public abstract class YamlNode implements AstNode {
     private String anchor;
     protected NodeStyle nodeStyle; // = NodeStyle.FLOW;
     private List<YamlComment> comments = null;
+    private List<YamlNodeProperty> properties = null;
     protected YamlOptions options;
 
     protected YamlNode() {
@@ -110,6 +111,13 @@ public abstract class YamlNode implements AstNode {
 
     public YamlOptions getOptions() {
         return options;
+    }
+
+    public List<YamlNodeProperty> getProperties() {
+        if (properties == null) {
+            properties = new ArrayList<>();
+        }
+        return properties;
     }
 
     public NodeStyle getNodeStyle() {

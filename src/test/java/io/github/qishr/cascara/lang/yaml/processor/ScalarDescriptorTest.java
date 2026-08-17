@@ -93,7 +93,7 @@ public class ScalarDescriptorTest extends BaseAstParserTest {
         Long dt = 1L;
         String text = "value: 1\n";
 
-        LongInstant test = yamlSerializer.fromText(text, LongInstant.class);
+        LongInstant test = yamlSerializer.fromString(text, LongInstant.class);
 
 
         assertEquals(dt, test.getValue());
@@ -110,7 +110,7 @@ public class ScalarDescriptorTest extends BaseAstParserTest {
 
         Person person = new Person("Dave", "Smith", "31");
 
-        String yaml = yamlSerializer.toText(person);
+        String yaml = yamlSerializer.toString(person);
 
         String expected = """
                 firstName: Dave
@@ -133,7 +133,7 @@ public class ScalarDescriptorTest extends BaseAstParserTest {
         Person person = new Person("Dave", "Smith", "31");
         person.setBytes(new byte[]{1,2,3});
 
-        String yaml = yamlSerializer.toText(person);
+        String yaml = yamlSerializer.toString(person);
 
         String expected = """
                 firstName: Dave
@@ -143,7 +143,7 @@ public class ScalarDescriptorTest extends BaseAstParserTest {
                 """;
         assertEquals(expected, yaml);
 
-        Person copy = yamlSerializer.fromText(yaml, Person.class);
+        Person copy = yamlSerializer.fromString(yaml, Person.class);
 
         assertNotNull(copy);
         assertEquals(person.getFirstName(), copy.getFirstName());

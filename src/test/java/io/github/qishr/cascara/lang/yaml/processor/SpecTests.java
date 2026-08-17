@@ -143,11 +143,11 @@ public class SpecTests extends BaseAstParserTest {
 
     // TODO CHeck that this is compatible with what yaml-test-suite does
     private void collectAliasKeys(YamlNode node, List<String> out) {
-        if (node instanceof YamlAnchor anchor) {
-            // unwrap and continue into the anchored value
-            collectAliasKeys(anchor.getInnerNode(), out);
-            return;
-        }
+        // if (node instanceof YamlAnchor anchor) {
+        //     // unwrap and continue into the anchored value
+        //     collectAliasKeys(anchor.getInnerNode(), out);
+        //     return;
+        // }
 
         if (node instanceof YamlMap map) {
             for (YamlMapEntry e : map.getEntries()) {

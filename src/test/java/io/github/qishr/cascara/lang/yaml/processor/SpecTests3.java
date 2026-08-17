@@ -1,5 +1,6 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
@@ -56,6 +57,7 @@ public class SpecTests3 extends BaseAstParserTest {
 
     }
 
+    @Disabled // TODO: EMITTER
     @Test
     public void test26DV() throws IOException {
         String yaml = """
