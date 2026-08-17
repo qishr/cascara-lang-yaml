@@ -62,7 +62,7 @@ class YamlDirectoryTestSuite extends BaseAstParserTest {
             .setStrict(true);
 
         emitter.setOptions(new YamlOptions()
-            .setExpandedStyle(true)
+            .setOutputExpandedStyle(true)
         );
 
     }

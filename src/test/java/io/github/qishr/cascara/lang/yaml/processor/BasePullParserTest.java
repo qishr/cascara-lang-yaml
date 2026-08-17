@@ -4,7 +4,7 @@ import java.io.InputStream;
 
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
-public class BasePullParserTest extends BaseParserTest {
+public class BasePullParserTest extends BaseTest {
 
     protected YamlOptions parserOptions = new YamlOptions()
         .setPreloadTokenBuffer(true);

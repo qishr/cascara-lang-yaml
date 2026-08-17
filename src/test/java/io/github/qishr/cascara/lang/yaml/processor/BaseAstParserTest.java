@@ -2,7 +2,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import org.junit.jupiter.api.BeforeEach;
 
-public abstract class BaseAstParserTest extends BaseParserTest {
+public abstract class BaseAstParserTest extends BaseTest {
     protected YamlAstParser parser;
 
     @BeforeEach

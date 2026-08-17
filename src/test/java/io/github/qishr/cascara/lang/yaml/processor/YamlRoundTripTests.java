@@ -30,7 +30,7 @@ public class YamlRoundTripTests extends BaseAstParserTest {
         super.setup();
 
         YamlOptions options = new YamlOptions()
-            .setExpandedStyle(true)
+            .setOutputExpandedStyle(true)
             .setStrict(true);
 
         parser.setOptions(options);
@@ -84,7 +84,7 @@ public class YamlRoundTripTests extends BaseAstParserTest {
         }
 
         // TODO: Without this, the emitter produces invalid YAML
-        YamlEmitter emitter = new YamlEmitter().setOptions(new YamlOptions().setExpandedStyle(false));
+        YamlEmitter emitter = new YamlEmitter().setOptions(new YamlOptions().setOutputExpandedStyle(false));
 
         if (DEBUG){
             YamlTokenizer tz = new YamlTokenizer()

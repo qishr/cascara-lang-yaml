@@ -12,7 +12,7 @@ import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlAliasResolver;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
-public abstract class BaseParserTest {
+public abstract class BaseTest {
     protected static final Level TOKENIZER_LEVEL = Level.INFO;
     // protected static final Level TOKENIZER_LEVEL = Level.DEBUG;
 

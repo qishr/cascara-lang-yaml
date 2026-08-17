@@ -175,7 +175,7 @@ class YamlComprehensiveTest extends BaseAstParserTest {
         // TestUtils.dumpTokens(parser.getTokens());
 
 
-        YamlOptions options = new YamlOptions().setExpandedStyle(true);
+        YamlOptions options = new YamlOptions().setOutputExpandedStyle(true);
 
         // 2. Emit
         String emitted = new YamlEmitter().setOptions(options).emit(originalMap);

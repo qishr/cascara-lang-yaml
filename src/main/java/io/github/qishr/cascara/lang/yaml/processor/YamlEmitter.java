@@ -185,7 +185,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             }
         }
 
-        if (!options.stripComments() && !isFlow) {
+        if (options.outputComments() && !isFlow) {
             emitBlockComments(targetNode, indent);
         }
 
@@ -259,7 +259,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
             if (!isFlow) {
                 // TODO: handleInlineComments(scalar) ?
-                if (!options.stripComments()) {
+                if (options.outputComments()) {
                     handleInlineComments(scalar);
                 }
             }
@@ -306,7 +306,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
         // IF NOT IS FLOW, this is a standalone root scalar or similar
         if (!isFlow) {
-            if (!options.stripComments()) {
+            if (options.outputComments()) {
                 handleInlineComments(scalar);
             }
             appendText(NL);
@@ -431,7 +431,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
             if (isBlock) {
                 if (!isComplexKey) {
-                    if (!options.stripComments()) {
+                    if (options.outputComments()) {
                         handleInlineComments(key);
                     }
                 }
@@ -445,7 +445,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                     && scalar.asString() != null
                     && (scalar.asString().contains("\n") || scalar.asString().contains("\r"))) {
                 if (!isComplexKey) {
-                    if (!options.stripComments()) {
+                    if (options.outputComments()) {
                         handleInlineComments(key);
                     }
                 }
@@ -459,7 +459,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
                 // emitNode(value, 0, false, true);
                 emitNode(value, indent + options.getIndentSize(), false, true);
 
-                if (!options.stripComments()) {
+                if (options.outputComments()) {
                     handleInlineComments(value);
                 }
 
@@ -500,7 +500,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
             appendText("-");
 
             // 2. Now decide how to handle the VALUE after that dash
-            if (options.isExpandedStyle()) {
+            if (options.outputExpandedStyle()) {
                 if (isImplicitNull(item)) {
                     // It's a null value in expanded style.
                     // We just need the newline to finish this item's line.
@@ -539,7 +539,7 @@ public class YamlEmitter extends AbstractYamlProcessor<YamlEmitter> implements E
 
                     // Force isFlow=true only for single lines / flow structures
                     emitNode(item, 0, true, true);
-                    if (!options.stripComments()) {
+                    if (options.outputComments()) {
                         handleInlineComments(item);
                     }
                     appendText(NL);
