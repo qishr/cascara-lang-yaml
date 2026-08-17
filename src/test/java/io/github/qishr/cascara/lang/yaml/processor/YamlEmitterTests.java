@@ -260,4 +260,25 @@ public class YamlEmitterTests extends BaseAstParserTest {
             """
         );
     }
+
+
+    @Test
+    void test_tagOnSeparateLine() {
+        testIntegrity("!!str\na");
+    }
+
+    @Test
+    void test_anchorAndTag() {
+        testIntegrity("&a1 !!str a");
+    }
+
+    @Test
+    void test_tagAndAnchor() {
+        testIntegrity("!!str &a1 a");
+    }
+
+    @Test
+    void test_anchorAndTagOnSeparateLines() {
+        testIntegrity("&a1\n!!str a");
+    }
 }

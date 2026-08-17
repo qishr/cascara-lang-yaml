@@ -12,6 +12,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
+import io.github.qishr.cascara.lang.yaml.ast.YamlNodeProperty;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
@@ -42,6 +43,8 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
     private int indentSize;
     private int indicatorIndentSize;
     private boolean atStartOfLine;
+    private YamlNode previousNode;
+    private boolean preceededByWhitespace;
 
     public YamlAstEmitter() {
 
@@ -63,7 +66,37 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
         emitNode(node);
     }
 
+    private void emitNodeProperties(YamlNode node) {
+        if (!node.getProperties().isEmpty()) {
+            if (!preceededByWhitespace) {
+                emitSpace();
+            }
+            for (YamlNodeProperty property : node.getProperties()) {
+                if (previousNode != null && property.getStartLine() > previousNode.getStartLine()) {
+                    emitNewLine();
+                }
+                if (!preceededByWhitespace) {
+                    emitSpace();
+                }
+                if (property.getToken() != null) {
+                    emit(property.getToken().getLexeme());
+                } else {
+                    // TODO: Implement this
+                }
+                previousNode = property;
+            }
+        }
+    }
+
     private void emitNode(YamlNode node) {
+        emitNodeProperties(node);
+        if (!preceededByWhitespace && previousNode != null) {
+            if (node.getStartLine() > previousNode.getStartLine()) {
+                emitNewLine();
+            } else {
+                emitSpace();
+            }
+        }
         switch (node) {
             case YamlStream stream -> emitStream(stream);
             case YamlDocument document -> emitDocument(document);
@@ -94,7 +127,7 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
         int prevIndentSpaces = indentSpaces;
         for (YamlMapEntry entry : map.getEntries()) {
             if (!firstItem) {
-                emit(NEWLINE);
+                emitNewLine();
             }
             YamlNode key = entry.getKey();
             int keyIndent = indentOf(key, prevIndentSpaces);
@@ -105,21 +138,19 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
             emit(VALUE_INDICATOR);
 
             YamlNode value = entry.getValue();
-            indentSpaces = value.getStartColumn() > 0
-                ? value.getStartColumn() - 1 // Columns start at 1
-                : keyIndent + indentSize;
+            indentSpaces = indentOf(value, keyIndent + indentSize);
 
-            if (value.getStartLine() > key.getStartLine()) {
-                emit(NEWLINE);
-            } else {
-                emit(SPACE);
-            }
+            // if (startLineOf(value) > key.getStartLine()) {
+            //     emitNewLine();
+            // } else {
+            //     emitSpace();
+            // }
 
             emitNode(value);
 
-            indentSpaces = prevIndentSpaces;
             firstItem = false;
         }
+        indentSpaces = prevIndentSpaces;
     }
 
     private void emitSequence(YamlSequence sequence) {
@@ -127,7 +158,6 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
             emitFlowSequence(sequence);
             return;
         }
-
         boolean firstItem = true;
         int prevIndentSpaces = indentSpaces;
 
@@ -136,12 +166,12 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
 
         for (YamlNode item : sequence) {
             if (!firstItem) {
-                emit(NEWLINE);
+                emitNewLine();
             }
 
             indentSpaces = indicatorIndent;
             emit(ITEM_INDICATOR);
-            emit(SPACE);
+            emitSpace();
 
             indentSpaces = indicatorIndent + 2; // Indicator plus space
             emitNode(item);
@@ -183,11 +213,20 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
         }
 
         emit(text);
+        previousNode = scalar;
     }
 
     //
     //
     //
+
+    private int startLineOf(YamlNode node) {
+        if (node.getProperties().isEmpty()) {
+            return node.getStartLine();
+        } else {
+            return node.getProperties().getFirst().getStartLine();
+        }
+    }
 
     private int indentOf(YamlNode node, int defaultValue) {
         return node.getStartColumn() > 0
@@ -211,6 +250,16 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
         return text;
     }
 
+    private void emitSpace() {
+        emit(SPACE);
+        preceededByWhitespace = true;
+    }
+
+    private void emitNewLine() {
+        emit(NEWLINE);
+        preceededByWhitespace = true;
+    }
+
     private void emit(String text) {
         if (text == null || text.isEmpty()) {
             return;
@@ -220,6 +269,7 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
         }
         append(text);
         atStartOfLine = text.endsWith("\n");
+        preceededByWhitespace = atStartOfLine;
     }
 
     private void append(String text) {
@@ -245,6 +295,8 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
         // State
         atStartOfLine = true;
         indentSpaces = 0;
+        previousNode = null;
+        preceededByWhitespace = true;
     }
 
     //
