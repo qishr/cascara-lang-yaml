@@ -54,7 +54,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
-import io.github.qishr.cascara.lang.yaml.exception.YamlConverterException;
+import io.github.qishr.cascara.lang.yaml.diagnostic.YamlConverterException;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlProcessor;
 
 public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implements AstConverter<YamlNode> {

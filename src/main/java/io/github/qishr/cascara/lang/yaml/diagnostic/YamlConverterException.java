@@ -33,23 +33,18 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.exception;
+package io.github.qishr.cascara.lang.yaml.diagnostic;
 
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
-import io.github.qishr.cascara.common.diagnostic.Diagnostic;
-import io.github.qishr.cascara.common.diagnostic.LocatableException;
+import io.github.qishr.cascara.common.diagnostic.LocalizableRuntimeException;
 
-public class YamlEmitterException extends LocatableException {
+public class YamlConverterException extends LocalizableRuntimeException {
 
-    public YamlEmitterException(Throwable cause, DiagnosticCode code, Object... details) {
-        super(null, Diagnostic.UNKNOWN_COORD, Diagnostic.UNKNOWN_COORD, cause, code, details);
+    public YamlConverterException(Throwable cause, DiagnosticCode code, Object... details) {
+        super(cause, code, details);
     }
 
-    public YamlEmitterException(DiagnosticCode code, Object... details) {
+    public YamlConverterException(DiagnosticCode code, Object... details) {
         this(null, code, details);
     }
-
-    // public YamlEmitterException(String message, Throwable cause, int line, int column, URI uri) {
-    //     super(message, cause, line, column, uri);
-    // }
 }

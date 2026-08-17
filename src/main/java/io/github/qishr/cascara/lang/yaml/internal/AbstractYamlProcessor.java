@@ -35,6 +35,7 @@
 
 package io.github.qishr.cascara.lang.yaml.internal;
 
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.lang.processor.Processor;
@@ -99,5 +100,23 @@ public abstract class AbstractYamlProcessor<P extends Processor> implements Proc
 
     public SemVer getVersion() {
         return JarManifest.of(getClass()).getVersion();
+    }
+
+    protected void debug(String message, Object... details) {
+        if (!reporter.reportsDebug()) return;
+        report(Level.DEBUG, message, details);
+    }
+
+    protected void trace(String message, Object... details) {
+        if (!reporter.reportsTrace()) return;
+        report(Level.TRACE, message, details);
+    }
+
+    protected void report(Level level, String message, Object... details) {
+        if (level == Level.TRACE) {
+            trace(message, details);
+        } else {
+            debug(message, details);
+        }
     }
 }

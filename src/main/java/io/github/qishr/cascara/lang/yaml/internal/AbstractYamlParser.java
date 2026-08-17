@@ -46,6 +46,7 @@ import java.util.function.BiConsumer;
 
 import io.github.qishr.cascara.common.diagnostic.AbstractLocalizableException;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
@@ -71,8 +72,8 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 import io.github.qishr.cascara.lang.yaml.ast.YamlTag;
 import io.github.qishr.cascara.lang.yaml.ast.YamlTagDirective;
-import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
-import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
+import io.github.qishr.cascara.lang.yaml.diagnostic.YamlDiagnosticCode;
+import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
 import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
@@ -1980,23 +1981,19 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         reporter.warnAt(token, code, details);
     }
 
-    /// Log the current method name and upcoming tokens
-    protected void trace(String message, Object... details) {
-        if (reporter == null ||
-            reporter.isSilent() ||
-            !reporter.getLevel().includes(Level.TRACE)) return;
-        report(message, details);
-    }
+    // /// Log the current method name and upcoming tokens
+    // protected void debug(String message, Object... details) {
+    //     if (!reporter.reportsDebug()) return;
+    //     report(Level.DEBUG, message, details);
+    // }
 
-    /// Log the current method name and upcoming tokens
-    protected void debug(String message, Object... details) {
-        if (reporter == null ||
-            reporter.isSilent() ||
-            !reporter.getLevel().includes(Level.DEBUG)) return;
-        report(message, details);
-    }
+    // /// Log the current method name and upcoming tokens
+    // protected void trace(String message, Object... details) {
+    //     if (!reporter.reportsTrace()) return;
+    //     report(Level.TRACE, message, details);
+    // }
 
-    private void report(String message, Object... details) {
+    protected void report(Level level, String message, Object... details) {
         // Ensure at least the current token is loaded to grab safe coordinates
         tokenBuffer.ensureBuffered(0);
         if (tokenBuffer.isAtEnd()) return;
@@ -2013,13 +2010,23 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             output = message;
         }
 
-        reporter.debug("L%3d C%3d I%3d %s%s: %s",
-            tokenBuffer.peek().getStartLine(),
-            tokenBuffer.peek().getStartColumn(),
-            tokenBuffer.offset(),
-            indent,
-            output,
-            tokenBuffer.upcomingTokens());
+        if (level == Level.TRACE) {
+            reporter.trace("L%3d C%3d I%3d %s%s: %s",
+                tokenBuffer.peek().getStartLine(),
+                tokenBuffer.peek().getStartColumn(),
+                tokenBuffer.offset(),
+                indent,
+                output,
+                tokenBuffer.upcomingTokens());
+        } else {
+            reporter.debug("L%3d C%3d I%3d %s%s: %s",
+                tokenBuffer.peek().getStartLine(),
+                tokenBuffer.peek().getStartColumn(),
+                tokenBuffer.offset(),
+                indent,
+                output,
+                tokenBuffer.upcomingTokens());
+        }
     }
 
     private String formatMessage(DiagnosticCode code, Object... details) {

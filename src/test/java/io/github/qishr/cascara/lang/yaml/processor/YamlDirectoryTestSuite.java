@@ -49,7 +49,7 @@ import java.util.stream.Stream;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
-import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
+import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 class YamlDirectoryTestSuite extends BaseAstParserTest {

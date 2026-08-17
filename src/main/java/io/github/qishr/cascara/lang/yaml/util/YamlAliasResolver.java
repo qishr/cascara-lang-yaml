@@ -16,7 +16,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
-import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
+import io.github.qishr.cascara.lang.yaml.diagnostic.YamlDiagnosticCode;
 
 public class YamlAliasResolver {
 

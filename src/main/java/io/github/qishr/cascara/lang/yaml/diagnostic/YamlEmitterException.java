@@ -33,27 +33,23 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.exception;
+package io.github.qishr.cascara.lang.yaml.diagnostic;
 
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
-import io.github.qishr.cascara.common.lang.exception.ParserException;
-import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic;
+import io.github.qishr.cascara.common.diagnostic.LocatableException;
 
-public class YamlParserException extends ParserException {
+public class YamlEmitterException extends LocatableException {
 
-    /// Standard constructor for parser-detected logic errors.
-    public YamlParserException(int line, int column, DiagnosticCode code, Object... details) {
-        super(line, column, code, details);
+    public YamlEmitterException(Throwable cause, DiagnosticCode code, Object... details) {
+        super(null, Diagnostic.UNKNOWN_COORD, Diagnostic.UNKNOWN_COORD, cause, code, details);
     }
 
-    /// Standard constructor for parser-detected logic errors.
-    public YamlParserException(YamlToken token, DiagnosticCode code, Object... details) {
-        super(token, code, details);
+    public YamlEmitterException(DiagnosticCode code, Object... details) {
+        this(null, code, details);
     }
 
-    /// Constructor for I/O or Stream failures.
-    public YamlParserException(Throwable cause, DiagnosticCode code, Object... details) {
-        super(cause, code, details);
-    }
-
+    // public YamlEmitterException(String message, Throwable cause, int line, int column, URI uri) {
+    //     super(message, cause, line, column, uri);
+    // }
 }

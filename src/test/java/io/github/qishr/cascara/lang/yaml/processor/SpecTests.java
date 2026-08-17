@@ -24,7 +24,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
-import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
+import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
 
 import static org.junit.jupiter.api.Assertions.*;
 

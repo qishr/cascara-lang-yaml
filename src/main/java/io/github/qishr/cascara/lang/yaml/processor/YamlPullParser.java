@@ -39,7 +39,7 @@ import io.github.qishr.cascara.common.lang.processor.PullParser;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 import io.github.qishr.cascara.common.util.TermUtils;
-import io.github.qishr.cascara.lang.yaml.exception.YamlParserException;
+import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlParser;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
 

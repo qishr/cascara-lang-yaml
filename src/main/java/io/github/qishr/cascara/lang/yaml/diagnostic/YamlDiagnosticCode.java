@@ -33,7 +33,7 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.exception;
+package io.github.qishr.cascara.lang.yaml.diagnostic;
 
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 
@@ -76,11 +76,14 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     EXPECTED_INDENT("YAML-205", "Expected indent"),
     EXPECTED_DEDENT("YAML-206", "Expected dedent"),
     TOO_MANY_ANCHORS("YAML-207", "A node can have at most one anchor"),
-    TOO_MANY_TAGS("YAML-208", "A node can have at most one tag");
+    TOO_MANY_TAGS("YAML-208", "A node can have at most one tag"),
 
     // TODO:
     // Anchor cannot be an empty string
     // Set items must all have null values
+
+    // Serializer / Emitter
+    UNEXPECTED_NODE_TYPE("YAML-301", "Unexpected node type: {0}");
 
     private final String code;
     private final String message;

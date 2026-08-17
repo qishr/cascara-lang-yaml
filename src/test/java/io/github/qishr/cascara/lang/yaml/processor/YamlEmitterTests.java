@@ -40,6 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
@@ -172,5 +174,90 @@ public class YamlEmitterTests extends BaseAstParserTest {
         String output = emitter.emit(root);
 
         TestUtils.assertEquals(yaml, output);
+    }
+
+
+
+
+
+
+    //
+    // New Emitter Tests
+    //
+
+    private void testIntegrity(String yaml) {
+        YamlNode root = parser.parse(yaml);
+        if (DEBUG) {
+            TestUtils.dumpTokens(parser.getTokens());
+        }
+        YamlAstEmitter emitter = new YamlAstEmitter();
+
+        emitter.setReporter(
+            new StandardReporter()
+                .setLevel(Level.TRACE)
+                .setAnsiColoringEnabled(true)
+        );
+
+        String output = emitter.toString(root);
+
+        if (yaml.endsWith("\n") && !output.endsWith("\n")) {
+            output += "\n";
+        }
+
+        TestUtils.assertEquals(yaml, output);
+    }
+
+    @Test
+    void test_scalar() {
+        testIntegrity("a");
+        testIntegrity("'a'");
+        testIntegrity("\"a\"");
+        testIntegrity("a\nb");
+
+        testIntegrity("1");
+        testIntegrity("1.2");
+        testIntegrity("1.0");
+    }
+
+    @Test
+    void test_sequence() {
+        testIntegrity("  - a\n  - b\n  - c");
+    }
+
+    @Test
+    void test_map() {
+        testIntegrity("a: x\nb: y");
+    }
+
+    @Test
+    void test_map_valuesOnNewline() {
+        testIntegrity("a:\n  x\nb:\n  y");
+    }
+
+    @Test
+    void test_sequence_ofMap() {
+        testIntegrity("- a: x\n  b: y\n  c: z");
+    }
+
+    @Test
+    void test_sequence_ofMap_ofSequence() {
+        testIntegrity(
+            """
+            - a:
+                - x
+                - y
+            """
+        );
+    }
+
+    @Test
+    void test_sequence_ofMap_ofMap() {
+        testIntegrity(
+            """
+            - a:
+                x: 1
+                y: 2
+            """
+        );
     }
 }
