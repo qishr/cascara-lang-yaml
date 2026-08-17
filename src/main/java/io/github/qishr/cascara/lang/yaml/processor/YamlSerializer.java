@@ -116,14 +116,26 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         // Step 1: Object -> AST
         YamlNode ast = toAst(jvmInstance);
         // Step 2: AST -> String
-        return new YamlEmitter().setOptions(options).emit(ast);
+
+
+        // TODO: This "emitter" will become part of this class
+        // return new YamlEmitter().setOptions(options).emit(ast);
+        return new YamlAstEmitter().setOptions(options).toString(ast);
+
+
     }
 
     /// {@inheritDoc}
     @Override
     public void toWriter(Object jvmInstance, Writer writer) throws IOException {
         YamlNode ast = toAst(jvmInstance);
-        String text = new YamlEmitter().setOptions(options).emit(ast);
+
+
+        // TODO: This "emitter" will become part of this class
+        // String text = new YamlEmitter().setOptions(options).emit(ast);
+        String text = new YamlAstEmitter().setOptions(options).toString(ast);
+
+
         writer.write(text);
     }
 

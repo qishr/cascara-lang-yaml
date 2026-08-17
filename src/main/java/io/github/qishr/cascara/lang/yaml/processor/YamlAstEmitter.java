@@ -40,6 +40,8 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
     private static final String VALUE_INDICATOR = ":";
     private static final String ITEM_INDICATOR = "-";
     private static final String COMMENT_INDICATOR = "#";
+    private static final String DOCUMENT_START_MARKER = "---";
+    private static final String DOCUMENT_END_MARKER = "...";
 
     private StringBuilder string;
     private Writer writer;
@@ -56,6 +58,7 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
     private boolean atStartOfLine;
     private boolean preceededByWhitespace;
     private YamlNode previousNode;
+    private boolean isSingleScalar;
 
     public YamlAstEmitter() {
 
@@ -69,6 +72,7 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
         setup();
         emitNode(node, false);
         emitInlineComments(previousNode);
+        finishWithLineEnding();
         return string.toString();
     }
 
@@ -106,7 +110,7 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
         emitBlockComments(node);
         switch (node) {
             case YamlStream stream -> emitStream(stream);
-            case YamlDocument document -> emitDocument(document);
+            case YamlDocument document -> emitDocument(document, 1, 1);
             case YamlMap map -> emitMap(map);
             case YamlSequence sequence -> emitSequence(sequence);
             case YamlScalar scalar -> emitScalar(scalar, isBlockKey);
@@ -114,16 +118,40 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
             default -> error(node, YamlDiagnosticCode.UNEXPECTED_NODE_TYPE,
                              node.getClass().getSimpleName());
         }
+        if (!(node instanceof YamlScalar)) {
+            isSingleScalar = false;
+        }
     }
 
     private void emitStream(YamlStream stream) {
-        // TODO: Implement this
-        error(stream, GenericDiagnosticCode.UNSUPPORTED_OPERATION,  "emitStream");
+        var documents = stream.getDocuments();
+        for (int i = 0; i < documents.size(); i++) {
+            YamlDocument doc = documents.get(i);
+            emitDocument(doc, i, documents.size());
+        }
     }
 
-    private void emitDocument(YamlDocument document) {
-        // TODO: Implement this
-        error(document, GenericDiagnosticCode.UNSUPPORTED_OPERATION, "emitDocument");
+    private void emitDocument(YamlDocument doc, int docNum, int numDocs) {
+        // Write explicit document markers if there are multiple documents,
+        // or if the document explicitly contains directives.
+        if (options.isExplicitStart() || numDocs > 1 || !doc.getDirectives().isEmpty()) {
+            emit(DOCUMENT_START_MARKER);
+            emitNewLine();;
+        }
+
+        // TODO: Directives
+
+        // Process the body of this specific document
+        emitNode(doc.getBody(), false);
+
+        // Append a newline between documents if we aren't at the very end
+        // if (docNum < numDocs - 1 && sb.length() > 0 && sb.charAt(sb.length() - 1) != '\n') {
+        //     appendText(NL);
+        // }
+
+        // if (docNum < numDocs - 1 && !isSingleScalar) {
+        //     emitNewLine();
+        // }
     }
 
     private boolean newLineBefore(YamlNode node) {
@@ -502,6 +530,11 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
         return s.chars().allMatch(c -> c <= 127);
     }
 
+    private void finishWithLineEnding() {
+        if (previousNode != null && !isSingleScalar) {
+            emitNewLine();
+        }
+    }
 
     //
     // Setup and Diagnostics
@@ -520,6 +553,7 @@ public class YamlAstEmitter extends AbstractYamlProcessor<YamlAstEmitter> {
         indentSpaces = 0;
         previousNode = null;
         preceededByWhitespace = true;
+        isSingleScalar = true;
     }
 
     protected void error(YamlNode node, DiagnosticCode code, Object... details) {
