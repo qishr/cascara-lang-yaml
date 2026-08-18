@@ -52,7 +52,7 @@ module cascara.lang.yaml {
 
     provides io.github.qishr.cascara.common.service.ServiceProvider
         with io.github.qishr.cascara.lang.yaml.processor.YamlConverter,
-             io.github.qishr.cascara.lang.yaml.processor.YamlEmitter,
+             //io.github.qishr.cascara.lang.yaml.processor.YamlEmitter,
              io.github.qishr.cascara.lang.yaml.processor.YamlAstParser,
              io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 }

@@ -120,15 +120,6 @@ public class SerializerParsedYamlTests extends SerializerTestBase {
         testIntegrity("\"one\\ntwo\"");
     }
 
-
-
-
-
-
-    //
-    // New Emitter Tests
-    //
-
     @Test
     void test_scalar() {
         testIntegrity("a");
@@ -238,6 +229,17 @@ public class SerializerParsedYamlTests extends SerializerTestBase {
             list:
               - item # List comment
             # Footer
+            """);
+    }
+
+    @Test
+    void test_tags() {
+        testIntegrity("""
+            !!str a: b
+            c: !!int 42
+            e: !!str f
+            g: h
+            !!str 23: !!bool false
             """);
     }
 }

@@ -499,8 +499,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             }
             else if (check(YamlTokenType.SCALAR) && tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
-                // TODO: If this map is the body, it should not be getting the leading comment attached ot it.
-                // That is for the first scalar.
                 result = parseMap(isFlowStyle, isComplexKey, collectionProperties, nodeProperties);
             }
 
@@ -700,13 +698,15 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     // Explicit keys are always parsed via parseValue in case they are complex
                     key = parseValue(markerColumn, false, true, nodeProperties);
                 } else {
-                    if (check(YamlTokenType.MAP_START) ||
-                        check(YamlTokenType.SEQUENCE_START)) {
-                        trace("map debug");
-                    }
+                    // if (check(YamlTokenType.MAP_START) ||
+                    //     check(YamlTokenType.SEQUENCE_START)) {
+                    //     trace("map debug");
+                    // }
                     // Standard implicit key
                     key = parseKeyNode(markerColumn, nodeProperties);
                 }
+
+                nodeProperties = null;
 
                 if (options.isStrict()) {
                     // For scalars, track the underlying unescaped string value.
@@ -1017,11 +1017,12 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             }
 
             Pair<NodeProperties,NodeProperties> properties = parseNodePropeties(true, false, pendingProperties);
-            NodeProperties nodeProperties = properties.getL();
+            // NodeProperties nodeProperties = properties.getL();
+            NodeProperties nodeProperties = properties.getR();
 
-            if (pendingProperties != null) {
-                nodeProperties = pendingProperties;
-            }
+            // if (pendingProperties != null) {
+            //     nodeProperties = pendingProperties;
+            // }
 
             YamlToken token = tokenBuffer.peek();
             YamlTokenType tokenType = token.getType();

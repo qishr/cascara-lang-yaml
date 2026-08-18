@@ -353,11 +353,14 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
             hasComplexKey |= entry.hasExplicitKey();
 
-            int keyIndent = indentOf(key, prevIndentSpaces);
-
             if ("key".equals(key.asString())) {
                 debug("Debug");
             }
+            if ("false".equals(value.asString())) {
+                debug("Debug");
+            }
+
+            int keyIndent = indentOf(key, prevIndentSpaces);
 
             indentSpaces = keyIndent;
             if (hasComplexKey) {
@@ -606,7 +609,8 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                 emitSpace();
             }
             for (YamlNodeProperty property : node.getProperties()) {
-                if (previousNode != null && property.getStartLine() > previousNode.getStartLine()) {
+                // if (previousNode != null && property.getStartLine() > previousNode.getStartLine()) {
+                if (newLineBefore(property, false, false)) {
                     emitNewLine();
                 }
                 if (!preceededByWhitespace) {
@@ -757,10 +761,16 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                (node instanceof YamlAlias);
     }
 
-    private int indentOf(YamlNode node, int defaultValue) {
-        return node.getStartColumn() > 0
-            ? node.getStartColumn() - 1 // Columns start at 1
-            : defaultValue;
+    private int indentOf(YamlNode node, int expectedIndent) {
+        if (isSynthetic(node)) {
+            return expectedIndent;
+        } else {
+            if (node.getProperties().isEmpty()) {
+                return node.getStartColumn() - 1; // Columns start at 1
+            } else {
+                return indentOf(node.getProperties().getFirst(), expectedIndent);
+            }
+        }
     }
 
     private boolean isImplicitNull(YamlNode node) {

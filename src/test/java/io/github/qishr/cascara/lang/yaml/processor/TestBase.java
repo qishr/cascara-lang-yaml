@@ -15,8 +15,8 @@ public abstract class TestBase {
     protected static final Level TOKENIZER_LEVEL = Level.INFO;
     // protected static final Level TOKENIZER_LEVEL = Level.DEBUG;
 
-    // protected static final Level PARSER_LEVEL = Level.INFO;
-    protected static final Level PARSER_LEVEL = Level.TRACE;
+    protected static final Level PARSER_LEVEL = Level.INFO;
+    // protected static final Level PARSER_LEVEL = Level.TRACE;
 
     protected static final Level EMITTER_LEVEL = Level.INFO;
 
@@ -33,12 +33,10 @@ public abstract class TestBase {
 
     protected Reporter tokenizerReporter;
     protected Reporter parserReporter;
-    // protected Reporter emitterReporter;
 
     protected YamlTokenizer tokenizer;
     protected YamlNormalizer normalizer;
     protected YamlAliasResolver resolver;
-    // protected YamlEmitter emitter;
 
 
     @BeforeEach
