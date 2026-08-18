@@ -176,19 +176,11 @@ public class SerializerTestBase extends AstParserTestBase {
 
         // YamlNode resolvedRoot = CascaraYaml.resolve(root);
 
-        YamlOptions emitterOptions = new YamlOptions()
+        YamlOptions options = new YamlOptions()
             .setOutputResolvedAliases(false);
+        serializer.setOptions(options);
 
-        YamlAstEmitter emitter = new YamlAstEmitter()
-            .setOptions(emitterOptions);
-
-        emitter.setReporter(
-            new StandardReporter()
-                .setLevel(Level.TRACE)
-                .setAnsiColoringEnabled(true)
-        );
-
-        String emitted = emitter.toString(root);
+        String emitted = serializer.toString(root);
 
         // TODO: Parser needs to ensure trailing whitespace is correct
 
@@ -208,6 +200,11 @@ public class SerializerTestBase extends AstParserTestBase {
 
     protected void reportMismatch(String expected, String actual) {
         try {
+            reporter.debug("Expected YAML:");
+            reporter.getWriter(Level.DEBUG).write(2, StringUtils.debugString(expected));
+            reporter.debug("Actual YAML:");
+            reporter.getWriter(Level.DEBUG).write(2, StringUtils.debugString(actual));
+
             reporter.debug("Expected YAML:");
             reporter.getWriter(Level.DEBUG).write(2, expected);
             reporter.debug("Actual YAML:");

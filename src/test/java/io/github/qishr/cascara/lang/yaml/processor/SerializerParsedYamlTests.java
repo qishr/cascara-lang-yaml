@@ -210,7 +210,7 @@ public class SerializerParsedYamlTests extends SerializerTestBase {
     }
 
     @Test
-    void test_16_keys_explicit_a() {
+    void test_explicitKeys_a() {
         testIntegrity("""
             mapping:
               ? foo
@@ -223,7 +223,7 @@ public class SerializerParsedYamlTests extends SerializerTestBase {
     }
 
     @Test
-    void test_16_keys_explicit_b() {
+    void test_explicitKeys_b() {
         testIntegrity("""
             tiles:
               ? X: -10

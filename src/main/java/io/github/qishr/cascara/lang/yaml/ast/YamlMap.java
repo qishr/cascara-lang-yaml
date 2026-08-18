@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 import io.github.qishr.cascara.common.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
@@ -55,11 +56,12 @@ public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, 
     private final LinkedHashMap<YamlNode,YamlMapEntry> entriesByKey = new LinkedHashMap<>();
 
     public YamlMap() {
-        // This method intentionally left blank
+        nodeStyle = NodeStyle.BLOCK;
     }
 
     public YamlMap(YamlToken token, YamlOptions options) {
         super(token, options);
+        nodeStyle = NodeStyle.BLOCK;
     }
 
     /// {@inheritDoc}
