@@ -107,8 +107,6 @@ class SerializerDirectoryTestSuite extends SerializerTestBase {
 
         // 1. Setup ONE emitter with desired options
         YamlOptions testOptions = new YamlOptions();
-        //.setExpandedStyle(true);
-        // YamlEmitter emitter = new YamlEmitter();
         serializer.setOptions(testOptions);
 
         // 2. First Emit
@@ -198,13 +196,6 @@ class SerializerDirectoryTestSuite extends SerializerTestBase {
           """;
 
         YamlMap doc = (YamlMap)parser.parse(content);
-
-        // 1. Setup ONE emitter with desired options
-        // YamlOptions testOptions = new YamlOptions();
-        // testOptions.setExpandedStyle(true);
-
-        // YamlEmitter emitter = new YamlEmitter();
-        // emitter.setOptions(testOptions);
 
         // 2. First Emit
         // String emitted = emitter.emit(doc);

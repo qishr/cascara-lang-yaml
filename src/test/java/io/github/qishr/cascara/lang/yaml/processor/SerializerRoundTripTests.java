@@ -76,10 +76,7 @@ public class SerializerRoundTripTests extends SerializerTestBase {
         // 1. Parse
         YamlMap originalMap = (YamlMap)parser.parse(original);
 
-        // TestUtils.dumpTokens(parser.getTokens());
-
         // 2. Emit
-        // String emitted = new YamlEmitter().setOptions(options).emit(originalMap);
         String emitted = serializer.toString(originalMap);
 
         if (DEBUG) {

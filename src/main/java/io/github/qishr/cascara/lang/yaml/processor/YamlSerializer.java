@@ -653,9 +653,12 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         if (node == null || !outputComments) return;
         for (YamlComment comment : node.getComments()) {
             if (comment.getCommentStyle() == CommentStyle.TRAILING) {
+                if (!preceededByWhitespace) {
+                    emitNewLine();
+                }
                 emit("#");
                 emit(comment.asString());
-                emitNewLine();
+                // emitNewLine();
             }
         }
     }

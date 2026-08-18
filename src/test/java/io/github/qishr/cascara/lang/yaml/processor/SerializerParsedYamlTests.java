@@ -96,9 +96,6 @@ public class SerializerParsedYamlTests extends SerializerTestBase {
         YamlOptions options = new YamlOptions().setOutputExpandedStyle(true);
         serializer.setOptions(options);
         String output = serializer.toString(root);
-                // new YamlEmitter()
-                // .setOptions(options)
-                // .emit(root);
 
         // Assert: Check for the characteristic newline-and-indent after the dash
         // Assert: tags: must be at column 0 for a root-level map

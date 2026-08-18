@@ -43,7 +43,7 @@ import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 public class YamlStream extends YamlNode {
     private final List<YamlDocument> documents = new ArrayList<>();
-    private final List<YamlComment> comments = new ArrayList<>();
+    // private final List<YamlComment> comments = new ArrayList<>();
 
     public YamlStream() {
         super();
@@ -61,7 +61,7 @@ public class YamlStream extends YamlNode {
     public YamlStream(YamlToken token, List<YamlDocument> documents, List<YamlComment> comments) {
         super(token);
         this.documents.addAll(documents);
-        this.comments.addAll(comments);
+        this.getComments().addAll(comments);
     }
 
     public void addDocument(YamlDocument document) {
@@ -80,9 +80,9 @@ public class YamlStream extends YamlNode {
         return documents.get(i);
     }
 
-    public List<YamlComment> getComments() {
-        return comments;
-    }
+    // public List<YamlComment> getComments() {
+    //     return comments;
+    // }
 
     public boolean isEmpty() {
         return documents.isEmpty();

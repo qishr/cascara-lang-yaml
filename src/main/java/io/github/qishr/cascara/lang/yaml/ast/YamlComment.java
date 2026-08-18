@@ -46,7 +46,7 @@ import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 /// Represents a comment within the YAML source.
 public class YamlComment extends YamlNode implements CommentAstNode {
     private final String text;
-    private final CommentStyle commentStyle;
+    private CommentStyle commentStyle;
     // private final boolean multiLine;
 
     public YamlComment(YamlToken token, String text, CommentStyle commentStyle) {
@@ -67,6 +67,11 @@ public class YamlComment extends YamlNode implements CommentAstNode {
 
     public CommentStyle getCommentStyle() {
         return commentStyle;
+    }
+
+    public YamlComment setCommentStyle(CommentStyle commentStyle) {
+        this.commentStyle = commentStyle;
+        return this;
     }
 
     /// {@inheritDoc}

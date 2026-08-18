@@ -55,9 +55,6 @@ public class SerializerTestBase extends AstParserTestBase {
             fail("Unable to read YAML file " + filename);
         }
 
-        // TODO: Without this, the emitter produces invalid YAML
-        // YamlEmitter emitter = new YamlEmitter().setOptions(new YamlOptions().setOutputExpandedStyle(false));
-
         if (DEBUG){
             YamlTokenizer tz = new YamlTokenizer()
                 .setReporter(new StandardReporter()

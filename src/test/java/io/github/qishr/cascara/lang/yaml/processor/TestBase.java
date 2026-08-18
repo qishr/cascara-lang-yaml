@@ -75,11 +75,6 @@ public abstract class TestBase {
 
         resolver = new YamlAliasResolver()
             .setReporter(parserReporter);
-
-        // emitter = new YamlEmitter()
-        //     .setReporter(emitterReporter)
-        //     .setOptions(YamlOptions.CANONICAL);
-
     }
 
     protected void tokenize(String yaml) {

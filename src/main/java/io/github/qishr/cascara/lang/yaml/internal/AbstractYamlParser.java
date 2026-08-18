@@ -169,7 +169,18 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 if (streamNode.getDocuments().isEmpty() && !lookAheadToExplicitMarker()) {
                     pendingComments.add(parseComment(CommentStyle.LEADING));
                 } else {
-                    streamNode.getComments().add(parseComment(CommentStyle.LEADING));
+
+                    // TODO:
+                    // Basically: If there is an explicit document marker:
+                    //   - Add this comment directly to the stream
+                    //   streamNode.getComments().add(parseComment(CommentStyle.LEADING));
+                    // Otherwise: Do as below
+                    if (isMultiDocumentParsing) {
+                        streamNode.getComments().add(parseComment(CommentStyle.LEADING));
+                    } else {
+                        pendingComments.add(parseComment(CommentStyle.LEADING));
+                    }
+                    debug("Debug");
                 }
                 continue;
             }
@@ -222,7 +233,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
 
         // Attach any loose trailing comments collected during document parsing
-        streamNode.getComments().addAll(pendingComments);
+        for (YamlComment comment : pendingComments) {
+            comment.setCommentStyle(CommentStyle.TRAILING);
+            streamNode.addComment(comment);
+        }
         pendingComments.clear();
 
         // Safely consume trailing layout artifacts and capture any trailing file footer comments
@@ -485,6 +499,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             }
             else if (check(YamlTokenType.SCALAR) && tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
+                // TODO: If this map is the body, it should not be getting the leading comment attached ot it.
+                // That is for the first scalar.
                 result = parseMap(isFlowStyle, isComplexKey, collectionProperties, nodeProperties);
             }
 
@@ -534,9 +550,17 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     : createEmptyScalar(isComplexKey, nodeProperties);
             }
 
-            attachComments(result);
+
+
+            // TODO: The individual parsing methods should be attaching comments.
+            // At this point the comments are likely trailing comments or comments for the next node.
+            // attachComments(result);
+
             // Check: Should pending comments be attached to the result before this skipTrivia?
             skipTrivia();
+
+
+
 
             while (expectedDedents > 0) {
                 if (check(YamlTokenType.DEDENT)) {
@@ -599,6 +623,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             YamlMap map = new YamlMap(startToken, options);
             map.setNodeStyle(isFlowStyle ? NodeStyle.FLOW : NodeStyle.BLOCK);
+            // attachComments(map);
 
             collectionProperties.attachTo(map);
             createEvent(map, StreamingEventType.START_OBJECT);
@@ -961,6 +986,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             String name = raw.startsWith("*") ? raw.substring(1) : raw;
 
             YamlAlias alias = new YamlAlias(aliasToken, name);
+            attachComments(alias);
 
             if (pendingProperties != null) {
                 pendingProperties.attachTo(alias);
@@ -1065,6 +1091,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             YamlSequence sequence = new YamlSequence(startToken);
             sequence.setNodeStyle(NodeStyle.BLOCK);
+            attachComments(sequence);
             if (pendingProperties != null) {
                 pendingProperties.attachTo(sequence);
             }
@@ -1129,6 +1156,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             trace("pendingAnchor="+pendingAnchor);
             YamlToken startToken = consume(YamlTokenType.SEQUENCE_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACKET);
             YamlSequence sequence = new YamlSequence(startToken);
+            attachComments(sequence);
             sequence.setNodeStyle(NodeStyle.FLOW);
 
             if (pendingAnchor != null) {
@@ -1148,7 +1176,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             consume(YamlTokenType.SEQUENCE_END, YamlDiagnosticCode.EXPECTED_CLOSE_BRACKET);
             createEvent(tokenBuffer.peek(), StreamingEventType.END_ARRAY);
-            return attachComments(sequence);
+            return sequence;
         } finally {
             depth--;
             debug("<parseFlowSequence");
@@ -1168,6 +1196,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             YamlToken startToken = consume(YamlTokenType.MAP_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACE_FLOW_MAP);
             YamlMap map = new YamlMap(startToken, options);
             map.setNodeStyle(NodeStyle.FLOW);
+            attachComments(map);
 
             if (pendingProperties != null) {
                 pendingProperties.attachTo(map);
@@ -1259,10 +1288,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     ScalarStyle.LITERAL,
                     options
                 );
+                attachComments(scalar);
 
-                if (check(YamlTokenType.COMMENT) && tokenBuffer.peek().getStartLine() == token.getStartLine()) {
-                    scalar.addComment(parseComment(CommentStyle.INLINE));
-                }
+                // if (check(YamlTokenType.COMMENT) && tokenBuffer.peek().getStartLine() == token.getStartLine()) {
+                //     scalar.addComment(parseComment(CommentStyle.INLINE));
+                // }
                 parseInlineComment(scalar);
             }
 
@@ -1282,6 +1312,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     ScalarStyle.FOLDED,
                     options
                 );
+                attachComments(scalar);
                 parseInlineComment(scalar);
             }
 
@@ -1293,6 +1324,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     PrimitiveType.ANY,
                     options
                 );
+                attachComments(scalar);
                 parseInlineComment(scalar);
             }
             else {
@@ -1302,9 +1334,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     PrimitiveType.ANY,
                     options
                 );
-                if (check(YamlTokenType.COMMENT) && tokenBuffer.peek().getStartLine() == token.getStartLine()) {
-                    scalar.addComment(parseComment(CommentStyle.INLINE));
-                }
+                attachComments(scalar);
+                // if (check(YamlTokenType.COMMENT) && tokenBuffer.peek().getStartLine() == token.getStartLine()) {
+                //     scalar.addComment(parseComment(CommentStyle.INLINE));
+                // }
                 parseInlineComment(scalar);
             }
 
@@ -1354,9 +1387,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         YamlToken token = tokenBuffer.advance();
         String text = token.getContent() != null ? token.getContent().toString() : "";
 
-        if (text.contains("Footer")) {
-            debug("Debug");
-        }
+        // if (text.contains("Footer")) {
+        //     debug("Debug");
+        // }
 
         // Strip the raw hash marker, but preserve the exact space fidelity
         if (text.startsWith("#")) {
@@ -1394,9 +1427,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             // TODO: tidy this up
             if (type == YamlTokenType.COMMENT) {
 
-                if (token.getContent().contains("Footer")) {
-                    debug("Debug");
-                }
+                // if (token.getContent().contains("Footer")) {
+                //     debug("Debug");
+                // }
 
                 // TODO: This is rubbish. Document level comments don't have to be at column 1.
                 // If it's a root-level comment at the end of the file, leave it for the stream

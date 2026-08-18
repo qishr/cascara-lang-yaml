@@ -92,7 +92,7 @@ class AstParserStreamTests extends AstParserTestBase {
             "payload: true\n" +
             "# File Footer Comment";
 
-        if (DEBUG) {
+        if (true|DEBUG) {
             parser.getTokenizer().setReporter(
                 new StandardReporter()
                     .setLevel(Level.DEBUG)
