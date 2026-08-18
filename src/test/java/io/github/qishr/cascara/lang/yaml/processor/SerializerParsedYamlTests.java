@@ -242,4 +242,13 @@ public class SerializerParsedYamlTests extends SerializerTestBase {
             !!str 23: !!bool false
             """);
     }
+
+    @Test
+    void test_docLevelScalarWithAnchorAndTag() {
+        testIntegrity("""
+            &a1
+            !!str
+            scalar1
+            """);
+    }
 }

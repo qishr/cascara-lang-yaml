@@ -483,82 +483,71 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             // Map
 
             else if (check(YamlTokenType.ALIAS) && tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
+                trace("PV-alias-map");
                 result = parseMap(false, isComplexKey, collectionProperties, nodeProperties);
             }
             else if (check(YamlTokenType.MAP_START) && lookAheadFlowMapIsFollowedByColon()) {
-                trace("PV-flow-map-as-key passing m=" + nodeProperties.anchor + " k=null");
+                trace("PV-flowMap-map");
                 return parseMap(true, isComplexKey, collectionProperties, nodeProperties);
             }
             else if (check(YamlTokenType.SEQUENCE_START) && lookAheadFlowSequenceIsFollowedByColon()) {
-
-                // There are possibly other places in parsseValue where we should be
-                // indicating to the next parse method if we're inside a flow.
-
                 trace("PV-seq-map");
                 return parseMap(isFlowStyle, isComplexKey, collectionProperties, nodeProperties);
-
             }
             else if (check(YamlTokenType.SCALAR) && tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
+                trace("PV-scalar-map");
                 result = parseMap(isFlowStyle, isComplexKey, collectionProperties, nodeProperties);
             }
-
-
-            // Other node types
-
-            else if (check(YamlTokenType.KEY_INDICATOR)) {
-                trace("PV-key-indicator");
-                // result = parseMap(isComplexKey);
-                trace("PV-key-indicator passing m=" + nodeProperties.anchor + " k=null");
-                result = parseMap(false, false, collectionProperties, nodeProperties);
-            }
-            else if (check(YamlTokenType.ALIAS)) {
-                trace("PV-in-if-alias1");
-                result = parseAlias(nodeProperties);
-            }
-            // Flow map
-            else if (check(YamlTokenType.MAP_START)) {
-                trace("PV-flow-map passing pendingAnchor " + nodeProperties.anchor);
-                result = parseFlowMap(nodeProperties);
-            }
-            // Flow sequence
-            else if (check(YamlTokenType.SEQUENCE_START)) {
-                trace("PV-flow-seq passing pendingAnchor " + nodeProperties.anchor);
-                result = parseFlowSequence(nodeProperties.anchor);
-            }
-            // Block sequence
-            else if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
-                trace("PV-block-seq passing pendingAnchor " + nodeProperties.anchor);
-                result = parseSequence(nodeProperties);
-            }
-            // Map entry with null key
             else if (check(YamlTokenType.VALUE_INDICATOR)) {
-                trace("PV-value-indicator passing m=null k=null !!!!");
+                // Map entry with null key
+                trace("PV-valueIndicator-map");
                 result = parseMap(false, isComplexKey, collectionProperties, nodeProperties);
             }
-            else if (check(YamlTokenType.SCALAR)) {
-                result = parseScalar(isComplexKey, nodeProperties);
-                trace("PV-after-parseScalar");
-                if (check(YamlTokenType.NEWLINE)) {
-                    tokenBuffer.advance();
-                }
+            else if (check(YamlTokenType.KEY_INDICATOR)) {
+                trace("PV-keyIndicator-map");
+                result = parseMap(false, false, collectionProperties, nodeProperties);
             }
             else {
-                result = nodeProperties.isEmpty()
-                    ? createNullScalar(isComplexKey, nodeProperties)
-                    : createEmptyScalar(isComplexKey, nodeProperties);
+
+                // Other node types
+
+                // TODO: Merge collection properties into node properties
+                moveProperties(collectionProperties, nodeProperties, null);
+
+                if (check(YamlTokenType.ALIAS)) {
+                    trace("PV-in-if-alias1");
+                    result = parseAlias(nodeProperties);
+                }
+                // Flow map
+                else if (check(YamlTokenType.MAP_START)) {
+                    trace("PV-flow-map passing pendingAnchor " + nodeProperties.anchor);
+                    result = parseFlowMap(nodeProperties);
+                }
+                // Flow sequence
+                else if (check(YamlTokenType.SEQUENCE_START)) {
+                    trace("PV-flow-seq passing pendingAnchor " + nodeProperties.anchor);
+                    result = parseFlowSequence(nodeProperties.anchor);
+                }
+                // Block sequence
+                else if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
+                    trace("PV-block-seq passing pendingAnchor " + nodeProperties.anchor);
+                    result = parseSequence(nodeProperties);
+                }
+                else if (check(YamlTokenType.SCALAR)) {
+                    result = parseScalar(isComplexKey, nodeProperties);
+                    trace("PV-after-parseScalar");
+                    if (check(YamlTokenType.NEWLINE)) {
+                        tokenBuffer.advance();
+                    }
+                }
+                else {
+                    result = nodeProperties.isEmpty()
+                        ? createNullScalar(isComplexKey, nodeProperties)
+                        : createEmptyScalar(isComplexKey, nodeProperties);
+                }
             }
 
-
-
-            // TODO: The individual parsing methods should be attaching comments.
-            // At this point the comments are likely trailing comments or comments for the next node.
-            // attachComments(result);
-
-            // Check: Should pending comments be attached to the result before this skipTrivia?
             skipTrivia();
-
-
-
 
             while (expectedDedents > 0) {
                 if (check(YamlTokenType.DEDENT)) {
@@ -584,6 +573,27 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
     }
 
+    private void moveProperties(NodeProperties nodeProperties, NodeProperties collectionProperties, YamlToken startToken) {
+        if (nodeProperties != null && nodeProperties.startLine > 0) {
+            if (nodeProperties.anchor != null && (startToken == null || nodeProperties.anchor.getStartLine() < startToken.getStartLine())) {
+                if (collectionProperties != null && collectionProperties.anchor != null) {
+                    error(nodeProperties.anchor.getToken(), YamlDiagnosticCode.UNEXPECTED_TOKEN, nodeProperties.anchor.getToken().getType());
+                }
+                trace("node properties -> collection properties");
+                collectionProperties.anchor = nodeProperties.anchor;
+                nodeProperties.anchor = null;
+            }
+            if (nodeProperties.tag != null && (startToken == null || nodeProperties.tag.getStartLine() < startToken.getStartLine())) {
+                if (collectionProperties != null && collectionProperties.tag != null) {
+                    error(nodeProperties.tag.getToken(), YamlDiagnosticCode.UNEXPECTED_TOKEN, nodeProperties.tag.getToken().getType());
+                }
+                trace("node properties -> collection properties");
+                collectionProperties.tag = nodeProperties.tag;
+                nodeProperties.tag = null;
+            }
+        }
+    }
+
     /// Parses a block-level mapping and enforces strict key indentation.
     /// This method captures the column of the first key encountered and ensures
     /// all subsequent sibling keys in this map align perfectly.
@@ -597,31 +607,32 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             trace("isComplexKey="+isComplexKey);
 
             // If properties were on a previous line, they belong to a collection
-            if (nodeProperties != null && nodeProperties.startLine > 0) {
-                if (nodeProperties.anchor != null && nodeProperties.anchor.getStartLine() < startToken.getStartLine()) {
-                    if (collectionProperties != null && collectionProperties.anchor != null) {
-                        error(nodeProperties.anchor.getToken(), YamlDiagnosticCode.UNEXPECTED_TOKEN, nodeProperties.anchor.getToken().getType());
-                    }
-                    trace("node properties -> collection properties");
-                    collectionProperties.anchor = nodeProperties.anchor;
-                    nodeProperties.anchor = null;
-                }
-                if (nodeProperties.tag != null && nodeProperties.tag.getStartLine() < startToken.getStartLine()) {
-                    if (collectionProperties != null && collectionProperties.tag != null) {
-                        error(nodeProperties.tag.getToken(), YamlDiagnosticCode.UNEXPECTED_TOKEN, nodeProperties.tag.getToken().getType());
-                    }
-                    trace("node properties -> collection properties");
-                    collectionProperties.tag = nodeProperties.tag;
-                    nodeProperties.tag = null;
-                }
-            }
+            moveProperties(nodeProperties, collectionProperties, startToken);
+
+            // if (nodeProperties != null && nodeProperties.startLine > 0) {
+            //     if (nodeProperties.anchor != null && nodeProperties.anchor.getStartLine() < startToken.getStartLine()) {
+            //         if (collectionProperties != null && collectionProperties.anchor != null) {
+            //             error(nodeProperties.anchor.getToken(), YamlDiagnosticCode.UNEXPECTED_TOKEN, nodeProperties.anchor.getToken().getType());
+            //         }
+            //         trace("node properties -> collection properties");
+            //         collectionProperties.anchor = nodeProperties.anchor;
+            //         nodeProperties.anchor = null;
+            //     }
+            //     if (nodeProperties.tag != null && nodeProperties.tag.getStartLine() < startToken.getStartLine()) {
+            //         if (collectionProperties != null && collectionProperties.tag != null) {
+            //             error(nodeProperties.tag.getToken(), YamlDiagnosticCode.UNEXPECTED_TOKEN, nodeProperties.tag.getToken().getType());
+            //         }
+            //         trace("node properties -> collection properties");
+            //         collectionProperties.tag = nodeProperties.tag;
+            //         nodeProperties.tag = null;
+            //     }
+            // }
 
             debugProperties("c", collectionProperties);
             debugProperties("n", nodeProperties);
 
             YamlMap map = new YamlMap(startToken, options);
             map.setNodeStyle(isFlowStyle ? NodeStyle.FLOW : NodeStyle.BLOCK);
-            // attachComments(map);
 
             collectionProperties.attachTo(map);
             createEvent(map, StreamingEventType.START_OBJECT);
@@ -698,10 +709,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     // Explicit keys are always parsed via parseValue in case they are complex
                     key = parseValue(markerColumn, false, true, nodeProperties);
                 } else {
-                    // if (check(YamlTokenType.MAP_START) ||
-                    //     check(YamlTokenType.SEQUENCE_START)) {
-                    //     trace("map debug");
-                    // }
                     // Standard implicit key
                     key = parseKeyNode(markerColumn, nodeProperties);
                 }
@@ -912,11 +919,17 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             if (!properties.isEmpty()) {
                 int firstLine = properties.getFirst().getStartLine();
                 int lastLine = properties.getLast().getStartLine();
+                int startColumn = properties.getFirst().getStartColumn();
                 boolean multiLine = firstLine != lastLine;
                 if (multiLine) {
-                    trace("multi-line");
+                // if (multiLine && startColumn > 1) {
+                    trace("multi-line with startColumn " + startColumn);
+
                     // Properties are on multiple lines. This is only valid if there
-                    // are proprties for both a map and its first key.
+                    // are proprties for both a map and its first key,
+                    // TODO: OR
+                    // If it's on a document-level scalar and there is at most one of each type.
+
                     for (YamlNodeProperty property : properties) {
                         // YamlTokenType tokenType = token.getType();
                         if (property.getStartLine() == lastLine) {
@@ -957,6 +970,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     }
                 } else {
                     trace("single line");
+                    // trace("single line or document level");
                     if (nAnchors > 1) {
                         error(tag.getToken(), YamlDiagnosticCode.TOO_MANY_ANCHORS);
                     }
