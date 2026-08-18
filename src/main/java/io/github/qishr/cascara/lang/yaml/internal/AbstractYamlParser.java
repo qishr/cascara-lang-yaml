@@ -283,6 +283,13 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 parseDirective();
                 skipTrivia();
             }
+            boolean hasDirectives = !document.getDirectives().isEmpty();
+
+            // if (hasDirectives && (check(YamlTokenType.EOF) || check(YamlTokenType.STREAM_END))) {
+            if (hasDirectives && !check(YamlTokenType.DOCUMENT_START)) {
+                error(tokenBuffer.peek(), YamlDiagnosticCode.MISSING_DIRECTIVES_END_INDICATOR);
+                return document;
+            }
 
             trace("PD-1");
             // After directives, before deciding body, strip layout so skipTrivia can see comments
@@ -295,11 +302,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             // Clean layout indentation wrapping the explicit document boundaries
             if (check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
                 tokenBuffer.ensureBuffered(1);
-
                 if (!tokenBuffer.isAtEnd(1) && tokenBuffer.peekAhead(1).getType() == YamlTokenType.DOCUMENT_START) {
                     tokenBuffer.advance();
                 }
-
             }
 
             YamlToken docStartToken = tokenBuffer.peek();
@@ -308,11 +313,23 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 tokenBuffer.advance();
                 skipTrivia();
             } else {
+
+
+
                 createEvent(tokenBuffer.peek(), StreamingEventType.START_DOCUMENT, "");
+
+
+
             }
 
             if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || tokenBuffer.isAtEnd()) {
+
+
+
                 document.setBody(createNullScalar(false, null));
+
+
+
             } else {
                 YamlNode body = parseValue(0, false, false, null);
                 if (body != null) {
@@ -511,7 +528,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
                 // Other node types
 
-                // TODO: Merge collection properties into node properties
+                // Move collection properties into node properties.
+                // Beyond this point they can't belong to a collection.
                 moveProperties(collectionProperties, nodeProperties, null);
 
                 if (check(YamlTokenType.ALIAS)) {

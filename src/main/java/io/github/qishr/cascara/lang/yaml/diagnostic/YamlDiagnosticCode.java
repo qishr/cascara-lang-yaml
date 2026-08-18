@@ -77,6 +77,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     EXPECTED_DEDENT("YAML-206", "Expected dedent"),
     TOO_MANY_ANCHORS("YAML-207", "A node can have at most one anchor"),
     TOO_MANY_TAGS("YAML-208", "A node can have at most one tag"),
+    MISSING_DIRECTIVES_END_INDICATOR("YAML-209", "Missing directives-end indicator line"),
 
     // TODO:
     // Anchor cannot be an empty string

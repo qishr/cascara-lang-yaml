@@ -55,4 +55,11 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
+
+    @Test
+    void test_yamlDirectiveOnly() {
+        String yaml ="%YAML 1.2\n";
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
 }
