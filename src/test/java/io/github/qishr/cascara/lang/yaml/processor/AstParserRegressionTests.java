@@ -33,58 +33,31 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml.util;
+package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.annotation.DataField;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-// Test class
+import org.junit.jupiter.api.Test;
 
-public class Person {
+import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 
-    @DataField
-    private String firstName;
+public class AstParserRegressionTests extends AstParserTestBase {
 
-    @DataField
-    private String lastName;
+    // If we have a literal block where we want to preserve exact formatting (like a script or a snippet), the current code will turn key: value into key : value (adding spaces) or merge multiple tokens into a single line incorrectly.
+    // A block scalar should ignore the "meaning" of tokens (like : or -) and just treat everything between the INDENT and DEDENT as raw text, only stripping the common indentation prefix.
+    @Test
+    void testLiteralBlockPreservesExactSpacing() {
+        String yaml = """
+            script: |
+              line:one
+              line:two
+            """;
+        YamlMap root = (YamlMap)parser.parse(yaml);
+        YamlScalar script = (YamlScalar) root.get("script");
 
-    @DataField(key = "personAge")
-    private String age;
-
-    byte[] bytes;
-
-    // TODO: Remove this constructor. The serializer shouldn't need it.
-    public Person() {}
-
-    public Person(String firstName, String lastName, String age) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.age = age;
+        // CURRENT EXPECTATION (Failing): "line : one \nline : two \n"
+        // REAL YAML EXPECTATION: "line:one\nline:two\n"
+        assertEquals("line:one\nline:two\n", script.asString());
     }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public String getAge() {
-        return age;
-    }
-
-    public byte[] getBytes() {
-        return bytes;
-    }
-
-    public void setBytes(byte[] b) {
-        bytes = b;
-    }
-
-    // private void initNames() {
-    //     this.firstName = this.firstName.substring(0, 1).toUpperCase()
-    //       + this.firstName.substring(1);
-    //     this.lastName = this.lastName.substring(0, 1).toUpperCase()
-    //       + this.lastName.substring(1);
-    // }
 }

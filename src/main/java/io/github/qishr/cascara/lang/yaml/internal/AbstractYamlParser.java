@@ -99,6 +99,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
     private boolean continueAfterError = true;
     protected AtomicBoolean errorEncountered = new AtomicBoolean();
+    protected boolean fileEndsWithNewLine = false;
 
     /// Buffer to hold comments until a data node is created to claim them.
     private final List<YamlComment> pendingComments = new ArrayList<>();
@@ -193,13 +194,18 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 YamlTokenType tokenAfterDocType = tokenAfterDoc.getType();
                 debug("tokenAfterDoc="+tokenAfterDoc);
 
-                // if (!check(YamlTokenType.DIRECTIVE) &&
-                //     !check(YamlTokenType.DOCUMENT_START)) {
-                //     break;
-                // }
+                if (tokenAfterDocType == YamlTokenType.EOF) {
+                    String fileEnding = tokenAfterDoc.getContent();
+                    debug("fileEnding: " + StringUtils.debugString(fileEnding));
+                    if (fileEnding.equals("\n")) {
+                        fileEndsWithNewLine = true;
+                    }
+                }
+
                 if (tokenBuffer.isAtEnd() || check(YamlTokenType.STREAM_END) || check(YamlTokenType.EOF)) {
                     break;
                 }
+
                 if (!doc.hasEndMarker() && !(
                     tokenAfterDocType == YamlTokenType.COMMENT ||
                     tokenAfterDocType == YamlTokenType.DOCUMENT_START ||
@@ -1936,6 +1942,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         pendingComments.clear();
         depthLimit = options.getDepthLimit();
         isMultiDocumentParsing = options.isMultiDocument();
+        errorEncountered.set(false);
+        fileEndsWithNewLine = false;
     }
 
     //

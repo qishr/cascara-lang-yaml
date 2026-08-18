@@ -62,8 +62,8 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
 
     public String toText(AstNode ast) {
         YamlNode yamlNode = fromAst(ast);
-        YamlEmitter emitter = new YamlEmitter();
-        return emitter.emit(yamlNode);
+        YamlSerializer serializer = new YamlSerializer();
+        return serializer.toString(yamlNode);
     }
 
     @Nullable

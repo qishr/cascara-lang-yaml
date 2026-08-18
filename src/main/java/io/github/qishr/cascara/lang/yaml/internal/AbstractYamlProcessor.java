@@ -114,9 +114,9 @@ public abstract class AbstractYamlProcessor<P extends Processor> implements Proc
 
     protected void report(Level level, String message, Object... details) {
         if (level == Level.TRACE) {
-            trace(message, details);
+            reporter.trace(message, details);
         } else {
-            debug(message, details);
+            reporter.debug(message, details);
         }
     }
 }

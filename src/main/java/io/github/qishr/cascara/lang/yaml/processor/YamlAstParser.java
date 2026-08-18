@@ -190,14 +190,20 @@ public class YamlAstParser extends AbstractYamlParser<YamlAstParser> implements 
     private YamlNode parseAndUnpack() {
         YamlStream stream = parseInternal();
 
-        // If the developer wants the full multi-document structure, hand over the stream node
+        YamlNode root;
+
         if (isMultiDocumentParsing) {
-            return stream;
+            // If the developer wants the full multi-document structure, hand over the stream node
+            root = stream;
+        } else {
+            // Otherwise return the naked first document body
+            root = stream.getDocuments().isEmpty()
+                ? new YamlMap()
+                : stream.getDocuments().get(0).getBody();
         }
 
-        // Otherwise, stay backward-compatible and return the naked first document body
-        return stream.getDocuments().isEmpty()
-            ? new YamlMap()
-            : stream.getDocuments().get(0).getBody();
+        root.setFileEndsWithNewLine(fileEndsWithNewLine);
+
+        return root;
     }
 }
