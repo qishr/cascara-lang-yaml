@@ -59,7 +59,7 @@ class SerializerDirectoryTestSuite extends SerializerTestBase {
         parser.getOptions()
             .setStrict(true);
 
-        emitter.setOptions(new YamlOptions()
+        serializer.setOptions(new YamlOptions()
             .setOutputExpandedStyle(true)
         );
 
@@ -109,10 +109,10 @@ class SerializerDirectoryTestSuite extends SerializerTestBase {
         YamlOptions testOptions = new YamlOptions();
         //.setExpandedStyle(true);
         // YamlEmitter emitter = new YamlEmitter();
-        emitter.setOptions(testOptions);
+        serializer.setOptions(testOptions);
 
         // 2. First Emit
-        String emitted = emitter.emit(doc);
+        String emitted = serializer.toString(doc);
 
         if (DEBUG) {
             System.out.println("=== FIRST EMIT ===");
@@ -123,7 +123,7 @@ class SerializerDirectoryTestSuite extends SerializerTestBase {
         YamlMap reParsedDoc = (YamlMap)parser.parse(emitted);
 
         // 4. Second Emit (using the SAME emitter instance)
-        String secondEmit = emitter.emit(reParsedDoc);
+        String secondEmit = serializer.toString(reParsedDoc);
 
         if (DEBUG) {
             if (fileName.contains("01-nested")) {
@@ -171,7 +171,7 @@ class SerializerDirectoryTestSuite extends SerializerTestBase {
 
         YamlMap doc = (YamlMap) parser.parse(yaml);
 
-        String emitted = emitter.emit(doc);
+        String emitted = serializer.toString(doc);
 
         if (DEBUG) {
             System.out.println("=== FIRST EMIT ===");
@@ -179,7 +179,7 @@ class SerializerDirectoryTestSuite extends SerializerTestBase {
         }
 
         YamlMap reparsed = (YamlMap) parser.parse(emitted);
-        String secondEmit = emitter.emit(reparsed);
+        String secondEmit = serializer.toString(reparsed);
 
         if (DEBUG) {
             System.out.println("=== SECOND EMIT ===");

@@ -3,6 +3,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
 
@@ -49,12 +50,21 @@ public class SerializerSyntheticYamlTests extends SerializerTestBase {
         YamlMap tiles = new YamlMap().put(
             new YamlScalar("mapping"),
             new YamlMap()
-                .put("foo", new YamlScalar(1))
-                .put("bar baz", new YamlScalar(2))
-                .put(
+                .put(new YamlMapEntry(
+                    new YamlScalar("foo"),
+                    new YamlScalar(1),
+                    true
+                ))
+                .put(new YamlMapEntry(
+                    new YamlScalar("bar baz"),
+                    new YamlScalar(2),
+                    true
+                ))
+                .put(new YamlMapEntry(
                     new YamlScalar("qux:quux").setScalarStyle(ScalarStyle.DOUBLE_QUOTED),
-                    new YamlScalar(3)
-                )
+                    new YamlScalar(3),
+                    true
+                ))
         );
 
         String actual = serializer.toString(tiles);

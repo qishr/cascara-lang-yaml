@@ -27,7 +27,7 @@ public class SerializerRoundTripTests extends SerializerTestBase {
             .setStrict(true);
 
         parser.setOptions(options);
-        emitter.setOptions(options);
+        serializer.setOptions(options);
     }
 
     @Test

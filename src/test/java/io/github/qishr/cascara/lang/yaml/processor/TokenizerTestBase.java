@@ -39,10 +39,56 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.BeforeEach;
+
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
 public abstract class TokenizerTestBase {
+    /// Asserts that the sequence of token types matches the expected types.
+    ///
+    /// This helper is used to verify the internal state of the [YamlTokenizer]
+    /// without involving the [YamlAstParser].
+    ///
+    /// @param tokens The list of actual tokens produced by the tokenizer.
+    /// @param expectedTypes A varargs list of the expected [YamlTokenType]s.
+    protected void assertTokensMatch(List<YamlToken> tokens, YamlTokenType... expectedTypes) {
+        List<YamlTokenType> actualTypes = tokens.stream()
+                .map(YamlToken::getType)
+                .toList();
+
+        if (actualTypes.size() != expectedTypes.length) {
+            dumpTokens(tokens);
+            org.junit.jupiter.api.Assertions.assertEquals(
+                java.util.Arrays.asList(expectedTypes),
+                actualTypes,
+                "Token stream length mismatch."
+            );
+        }
+
+        for (int i = 0; i < expectedTypes.length; i++) {
+            if (actualTypes.get(i) != expectedTypes[i]) {
+                dumpTokens(tokens);
+                org.junit.jupiter.api.Assertions.assertEquals(
+                    expectedTypes[i],
+                    actualTypes.get(i),
+                    "Mismatch at token index " + i
+                );
+            }
+        }
+    }
+
+    /// Helper to print tokens in a readable format when a test fails.
+    protected void dumpTokens(List<YamlToken> tokens) {
+        TestUtils.dumpTokens(tokens);
+    }
+
+    YamlTokenizer tokenizer;
+
+    @BeforeEach
+    void setupEach() {
+        tokenizer = new YamlTokenizer();
+    }
 
     protected void assertTokenTypes(List<YamlToken> tokens, YamlTokenType... expectedTypes) {
         // Filter out STREAM_START/END if you want to focus on the meat

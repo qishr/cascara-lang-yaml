@@ -24,10 +24,6 @@ import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 public class SerializerTestBase extends AstParserTestBase {
     private static String VALID_PATH = "src/test/resources/yaml-suite/valid";
 
-    // protected static final Level SERIALIZER_LEVEL = Level.INFO;
-    protected static final Level SERIALIZER_LEVEL = Level.TRACE;
-
-
     protected Reporter serializerReporter;
     protected YamlSerializer serializer;
 

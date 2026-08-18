@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +21,15 @@ import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public class SerializerComplianceTests extends SerializerTestBase {
-        @Disabled // TODO: EMITTER
+
+    @Override
+    @BeforeEach
+    protected void setup() {
+        super.setup();
+        serializer.setOptions(YamlOptions.CANONICAL);
+    }
+
+    @Disabled // TODO: EMITTER
     @Test
     public void test26DV() throws IOException {
         String yaml = """
@@ -77,6 +86,43 @@ public class SerializerComplianceTests extends SerializerTestBase {
 
         TestUtils.assertEquals("alias1", map3k.getName());
         TestUtils.assertEquals("scalar3", map3v.asString());
+
+    }
+
+    @Test
+    public void test4ABK() {
+        String yaml = """
+            {
+            unquoted : "separate",
+            http://foo.com,
+            omitted value:,
+            }
+            """;
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlNode body = normalize(doc.getBody());
+
+        String emitted = serializer.toString(body);
+        assertTrue(emitted.contains("null"), "Emitted YAML should contain explicit nulls");
+        // TODO: re-parse this and check the colon after the url didn't become part of the key
+
+        YamlMap map = (YamlMap) body;
+
+        YamlMapEntry entry0 = map.getEntry(0);
+        TestUtils.assertEquals("unquoted", entry0.getKeyString());
+        TestUtils.assertEquals("separate", entry0.getValue().asString());
+
+        YamlMapEntry entry1 = map.getEntry(1);
+        TestUtils.assertEquals("http://foo.com", entry1.getKeyString());
+        TestUtils.assertEquals(null, entry1.getValue().asString());
+
+        YamlMapEntry entry2 = map.getEntry(2);
+        TestUtils.assertEquals("omitted value", entry2.getKeyString());
+        TestUtils.assertEquals(null, entry2.getValue().asString());
 
     }
 

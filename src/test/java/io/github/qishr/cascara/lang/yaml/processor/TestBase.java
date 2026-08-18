@@ -10,16 +10,18 @@ import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlAliasResolver;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
 public abstract class TestBase {
     protected static final Level TOKENIZER_LEVEL = Level.INFO;
     // protected static final Level TOKENIZER_LEVEL = Level.DEBUG;
 
-    protected static final Level PARSER_LEVEL = Level.INFO;
-    // protected static final Level PARSER_LEVEL = Level.TRACE;
+    // protected static final Level PARSER_LEVEL = Level.INFO;
+    protected static final Level PARSER_LEVEL = Level.TRACE;
 
     protected static final Level EMITTER_LEVEL = Level.INFO;
+
+    // protected static final Level SERIALIZER_LEVEL = Level.INFO;
+    protected static final Level SERIALIZER_LEVEL = Level.TRACE;
 
     protected static final boolean DEBUG = false;
     // protected static final boolean DEBUG = true;
@@ -31,12 +33,12 @@ public abstract class TestBase {
 
     protected Reporter tokenizerReporter;
     protected Reporter parserReporter;
-    protected Reporter emitterReporter;
+    // protected Reporter emitterReporter;
 
     protected YamlTokenizer tokenizer;
     protected YamlNormalizer normalizer;
     protected YamlAliasResolver resolver;
-    protected YamlEmitter emitter;
+    // protected YamlEmitter emitter;
 
 
     @BeforeEach
@@ -59,11 +61,11 @@ public abstract class TestBase {
             .setFlushEnabled(true)
             .setStackTraceEnabled(true);
 
-        emitterReporter = new StandardReporter()
-            .setLevel(EMITTER_LEVEL)
-            .setAnsiColoringEnabled(true)
-            .setFlushEnabled(true)
-            .setStackTraceEnabled(true);
+        // emitterReporter = new StandardReporter()
+        //     .setLevel(EMITTER_LEVEL)
+        //     .setAnsiColoringEnabled(true)
+        //     .setFlushEnabled(true)
+        //     .setStackTraceEnabled(true);
 
         tokenizer = new YamlTokenizer()
             .setReporter(tokenizerReporter);
@@ -74,9 +76,9 @@ public abstract class TestBase {
         resolver = new YamlAliasResolver()
             .setReporter(parserReporter);
 
-        emitter = new YamlEmitter()
-            .setReporter(emitterReporter)
-            .setOptions(YamlOptions.CANONICAL);
+        // emitter = new YamlEmitter()
+        //     .setReporter(emitterReporter)
+        //     .setOptions(YamlOptions.CANONICAL);
 
     }
 

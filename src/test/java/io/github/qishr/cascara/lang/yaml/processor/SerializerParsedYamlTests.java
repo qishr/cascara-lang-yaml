@@ -231,4 +231,16 @@ public class SerializerParsedYamlTests extends SerializerTestBase {
               : 2
             """);
     }
+
+    @Test
+    void test_complexComments() {
+        testIntegrity("""
+            # Header
+            key: value # Inline
+            # Middle
+            list:
+              - item # List comment
+            # Footer
+            """);
+    }
 }

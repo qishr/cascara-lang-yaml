@@ -79,6 +79,7 @@ import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
 import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
+import io.github.qishr.cascara.lang.yaml.util.CommentStyle;
 import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.util.YamlDirectiveType;
@@ -166,9 +167,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 // If there are no documents yet, AND there is no upcoming explicit
                 // document boundary marker or directive, let the first document body claim it.
                 if (streamNode.getDocuments().isEmpty() && !lookAheadToExplicitMarker()) {
-                    pendingComments.add(parseComment(NodeStyle.BLOCK));
+                    pendingComments.add(parseComment(CommentStyle.LEADING));
                 } else {
-                    streamNode.getComments().add(parseComment(NodeStyle.BLOCK));
+                    streamNode.getComments().add(parseComment(CommentStyle.LEADING));
                 }
                 continue;
             }
@@ -229,7 +230,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             if (check(YamlTokenType.NEWLINE) || check(YamlTokenType.INDENT) || check(YamlTokenType.DEDENT)) {
                 tokenBuffer.advance();
             } else if (check(YamlTokenType.COMMENT)) {
-                streamNode.getComments().add(parseComment(NodeStyle.FLOW));
+                streamNode.getComments().add(parseComment(CommentStyle.INLINE));
             } else {
                 break;
             }
@@ -533,6 +534,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     : createEmptyScalar(isComplexKey, nodeProperties);
             }
 
+            attachComments(result);
             // Check: Should pending comments be attached to the result before this skipTrivia?
             skipTrivia();
 
@@ -552,7 +554,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 expectedDedents--;
             }
 
-            return attachComments(result);
+            return result;
 
         } finally {
             depth--;
@@ -749,7 +751,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     }
                 }
 
-                map.put(new YamlMapEntry(key, value));
+                map.put(new YamlMapEntry(key, value, hasExplicitKey));
                 skipTrivia();
 
                 // If a map value is followed by these tokens, the map is finished.
@@ -1259,7 +1261,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 );
 
                 if (check(YamlTokenType.COMMENT) && tokenBuffer.peek().getStartLine() == token.getStartLine()) {
-                    scalar.addComment(parseComment(NodeStyle.FLOW));
+                    scalar.addComment(parseComment(CommentStyle.INLINE));
                 }
                 parseInlineComment(scalar);
             }
@@ -1301,7 +1303,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     options
                 );
                 if (check(YamlTokenType.COMMENT) && tokenBuffer.peek().getStartLine() == token.getStartLine()) {
-                    scalar.addComment(parseComment(NodeStyle.FLOW));
+                    scalar.addComment(parseComment(CommentStyle.INLINE));
                 }
                 parseInlineComment(scalar);
             }
@@ -1348,9 +1350,13 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         return scalar;
     }
 
-    private YamlComment parseComment(NodeStyle nodeStyle) {
+    private YamlComment parseComment(CommentStyle commentStyle) {
         YamlToken token = tokenBuffer.advance();
         String text = token.getContent() != null ? token.getContent().toString() : "";
+
+        if (text.contains("Footer")) {
+            debug("Debug");
+        }
 
         // Strip the raw hash marker, but preserve the exact space fidelity
         if (text.startsWith("#")) {
@@ -1360,22 +1366,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         return new YamlComment(
             token,
             text,
-            nodeStyle
+            commentStyle
         );
     }
-
-    // @Nullable
-    // private String extractAnchorName(YamlToken anchorToken) {
-    //     if (anchorToken == null) {
-    //         return null;
-    //     }
-    //     String raw = anchorToken.getContent();
-    //     if (raw == null || raw.isEmpty()) {
-    //         return null;
-    //     }
-    //     String name = raw.startsWith("&") ? raw.substring(1) : raw;
-    //     return name;
-    // }
 
     /// Collects comments and skips newlines, storing comments in the buffer.
     private void skipTrivia() {
@@ -1400,12 +1393,17 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             // TODO: tidy this up
             if (type == YamlTokenType.COMMENT) {
+
+                if (token.getContent().contains("Footer")) {
+                    debug("Debug");
+                }
+
                 // TODO: This is rubbish. Document level comments don't have to be at column 1.
                 // If it's a root-level comment at the end of the file, leave it for the stream
                 if (tokenBuffer.peek().getStartColumn() == 1 && tokenBuffer.isTrailingStreamComment()) {
                     break;
                 }
-                pendingComments.add(parseComment(NodeStyle.BLOCK)); // TODO: flow or block?
+                pendingComments.add(parseComment(CommentStyle.LEADING)); // TODO: flow or block?
                 continue;
             }
 
@@ -1452,7 +1450,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     private void parseInlineComment(YamlNode node) {
         // If the very next token is a comment on the same line, it belongs to THIS node
         if (check(YamlTokenType.COMMENT) && tokenBuffer.peek().getStartLine() == node.getStartLine()) {
-            node.addComment(parseComment(NodeStyle.FLOW));
+            node.addComment(parseComment(CommentStyle.INLINE));
         }
     }
 

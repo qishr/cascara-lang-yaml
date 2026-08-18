@@ -68,6 +68,7 @@ import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlProcessor;
 import io.github.qishr.cascara.lang.yaml.internal.DebugUtils;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.CommentStyle;
 import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.util.YamlNodeFactory;
@@ -99,6 +100,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private boolean outputResolvedAliases;
     private boolean outputComments;
     private boolean outputExpandedStyle;
+    private boolean forceExplicitNull;
 
     // State
     private int indentSpaces;
@@ -164,7 +166,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         string = new StringBuilder();
         setupEmitter();
         emitNode(rootNode, false, false, false);
-        emitInlineComments(previousNode);
+        emitTrailingComments(rootNode);
         emitFileEnding();
         return string.toString();
     }
@@ -180,7 +182,8 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         this.writer = writer;
         setupEmitter();
         emitNode(rootNode, false, false, false);
-        emitInlineComments(previousNode);
+        emitTrailingComments(rootNode);
+        emitFileEnding();
     }
 
     /// {@inheritDoc}
@@ -348,12 +351,11 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
             boolean hasComplexKey = (key instanceof YamlMap m && m.getNodeStyle() == NodeStyle.BLOCK) ||
                                     (key instanceof YamlSequence s && s.getNodeStyle() == NodeStyle.BLOCK);
 
+            hasComplexKey |= entry.hasExplicitKey();
+
             int keyIndent = indentOf(key, prevIndentSpaces);
 
-            // if ("tiles".equals(key.asString())) {
-            //     debug("Debug");
-            // }
-            if ("2".equals(value.asString())) {
+            if ("key".equals(key.asString())) {
                 debug("Debug");
             }
 
@@ -468,18 +470,18 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         String text;
         String lexeme = scalar.getLexeme();
 
-        if (lexeme == null) {
-            if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
-                if (isImplicitNull(scalar)) {
-                    text = "";
-                } else {
-                    text = "null";
-                }
-            } else if (scalar.getPrimitiveType() == PrimitiveType.STRING) {
+        if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
+            if (!forceExplicitNull && isImplicitNull(scalar)) {
+                text = "";
+            } else {
+                text = "null";
+            }
+        } else if (lexeme == null) {
+            if (scalar.getPrimitiveType() == PrimitiveType.STRING) {
                 String string = scalar.asString();
                 ScalarStyle scalarStyle = scalar.getScalarStyle();
 
-                if ("qux:quux".equals(string)) {
+                if ("value".equals(string)) {
                     debug("Debug");
                 }
 
@@ -624,7 +626,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private void emitBlockComments(YamlNode node) {
         if (node == null || !outputComments) return;
         for (YamlComment comment : node.getComments()) {
-            if (comment.getNodeStyle() == NodeStyle.BLOCK) {
+            if (comment.getCommentStyle() == CommentStyle.LEADING) {
                 emit("#");
                 emit(comment.asString());
                 emitNewLine();
@@ -636,13 +638,24 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private void emitInlineComments(YamlNode node) {
         if (node == null || !outputComments) return;
         for (YamlComment comment : node.getComments()) {
-            if (comment.getNodeStyle() == NodeStyle.FLOW) {
+            if (comment.getCommentStyle() == CommentStyle.INLINE) {
                 if (!preceededByWhitespace) {
                     emitSpace();
                 }
                 emit(COMMENT_INDICATOR);
                 emit(comment.asString());
                 break;
+            }
+        }
+    }
+
+    private void emitTrailingComments(YamlNode node) {
+        if (node == null || !outputComments) return;
+        for (YamlComment comment : node.getComments()) {
+            if (comment.getCommentStyle() == CommentStyle.TRAILING) {
+                emit("#");
+                emit(comment.asString());
+                emitNewLine();
             }
         }
     }
@@ -711,9 +724,9 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         if (!preceededByWhitespace && previousNode != null) {
             if (isSynthetic(node)) {
                 // Synthetic node
-                if (node instanceof YamlScalar s && "2".equals(s.getContent())) {
-                    debug("Debug");
-                }
+                // if (node instanceof YamlScalar s && "2".equals(s.getContent())) {
+                //     debug("Debug");
+                // }
                 if (isScalar(node) || isSequenceItem || isInsideFlow) {
                     return false;
                 } else {
@@ -809,6 +822,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         outputResolvedAliases = options.outputResolvedAliases();
         outputComments = options.outputComments();
         outputExpandedStyle = options.outputExpandedStyle();
+        forceExplicitNull = options.forceExplicitNull();
 
         // State
         atStartOfLine = true;

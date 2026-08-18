@@ -35,16 +35,26 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
+import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
+import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
+import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
+import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 
 public class AstParserTests extends AstParserTestBase {
     @Test
@@ -94,5 +104,138 @@ public class AstParserTests extends AstParserTestBase {
 
         YamlNode current = doc.get("current");
         assertTrue(current instanceof YamlAlias);
+    }
+
+    @Test
+    void testNewLineInsideNestedObject() throws Exception {
+        String yaml = """
+            a:
+                b: 1
+
+                c: 2
+            """;
+
+        YamlAstParser parser = new YamlAstParser();
+        parser.parse(yaml);
+    }
+
+
+    @Test
+    void testIndentedScalarInSequence() throws Exception {
+        String yaml = """
+                mimeTypes:
+                  -
+                    "text/css"
+                """;
+
+
+        if (DEBUG) {
+            YamlTokenizer tokenizer = new YamlTokenizer()
+                .setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
+            List<YamlToken> tokens = tokenizer.tokenize(yaml);
+            TestUtils.dumpTokens(tokens);
+        }
+
+        YamlMap rootMap = (YamlMap)parser.parse(yaml);
+
+        // Use the get(String key) helper from MapAstNode
+        YamlNode rootValue = rootMap.get("mimeTypes");
+
+        assertTrue(rootValue instanceof YamlSequence, "Expected a SequenceNode for mimeTypes");
+        YamlSequence seq = (YamlSequence) rootValue;
+
+        // SequenceAstNode uses get(index)
+        YamlNode firstItem = seq.get(0);
+        assertTrue(firstItem instanceof YamlScalar, "Expected a ScalarNode inside the sequence");
+
+        YamlScalar scalar = (YamlScalar) firstItem;
+        // ScalarAstNode uses getString() or getPrimitive()
+        assertEquals("text/css", scalar.asString(), "Should parse indented scalar without quotes");
+    }
+
+    @Test
+    void testEmptyFileDoesNotCrash() throws Exception {
+        String yaml = "";
+        assertDoesNotThrow(() -> {
+            YamlNode doc = parser.parse(yaml);
+            // doc.getRoot() might be a MapNode with no entries
+            if (doc instanceof YamlMap map) {
+                assertTrue(map.getEntries().isEmpty());
+            }
+        });
+    }
+
+    @Test
+    void testNestedBlockMap() throws Exception {
+        String yaml = """
+                records:
+                  -
+                    id: 1
+                    name: "test"
+                """;
+
+        YamlMap rootMap = (YamlMap) parser.parse(yaml);
+
+        YamlSequence seq = (YamlSequence) rootMap.get("records");
+        // Get the first item in sequence, then cast to map
+        YamlMap innerMap = (YamlMap) seq.get(0);
+
+        assertEquals(2, innerMap.getEntries().size());
+        assertEquals(1, innerMap.getInteger("id"));
+        assertEquals("test", innerMap.getString("name"));
+    }
+
+    @Test
+    void testMixedStyles() throws Exception {
+        String yaml = """
+                compact: [1, 2, 3]
+                expanded:
+                  -
+                    1
+                  -
+                    2
+                """;
+        if (DEBUG) {
+            YamlTokenizer tokenizer = new YamlTokenizer();
+            List<YamlToken> tokens = tokenizer.tokenize(yaml);
+            TestUtils.dumpTokens(tokens);
+        }
+
+        YamlMap root = (YamlMap) parser.parse(yaml);
+
+        // Accessing values by key and checking style
+        YamlSequence compact = (YamlSequence) root.get("compact");
+        YamlSequence expanded = (YamlSequence) root.get("expanded");
+
+        assertEquals(NodeStyle.FLOW, compact.getNodeStyle());
+        assertEquals(NodeStyle.BLOCK, expanded.getNodeStyle());
+    }
+
+    @Test
+    void testComments() {
+        String yaml = """
+            # Header
+            key: value # Inline
+            # Middle
+            list:
+              - item # List comment
+            # Footer
+            """;
+
+        YamlMap root = (YamlMap) parser.parse(yaml);
+        assertEquals(2, root.getComments().size());
+
+        YamlMapEntry keyEntry = root.getEntry(0);
+        YamlNode key = keyEntry.getKey();
+        YamlNode value = keyEntry.getValue();
+        assertEquals(1, key.getComments().size());
+        assertEquals(1, value.getComments().size());
+
+        YamlMapEntry listEntry = root.getEntry(1);
+        YamlNode list = listEntry.getKey();
+        YamlSequence seq = (YamlSequence) listEntry.getValue();
+        YamlNode item = seq.get(0);
+        assertEquals(1, list.getComments().size());
+        assertEquals(1, item.getComments().size());
     }
 }
