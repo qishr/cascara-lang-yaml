@@ -24,18 +24,20 @@ public class SerializerSyntheticYamlTests extends SerializerTestBase {
     void test_explicitKeys_b() {
         String expected = """
             tiles:
-              ? X: -10
-                Y: -10
+              ? x: -10
+                y: -10
               : 2
             """;
 
-        YamlMap tiles = new YamlMap()
-            .put(
+        YamlMap tiles = new YamlMap().put(
+            new YamlScalar("tiles"),
+            new YamlMap().put(
                 new YamlMap()
-                    .put("x", "-10")
-                    .put("y", "-10"),
-                new YamlScalar("2")
-            );
+                    .put("x", new YamlScalar(-10))
+                    .put("y", new YamlScalar(-10)),
+                new YamlScalar(2)
+            )
+        );
 
         String actual = serializer.toString(tiles);
         if (!expected.equals(actual)) {

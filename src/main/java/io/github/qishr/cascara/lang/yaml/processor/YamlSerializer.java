@@ -49,6 +49,7 @@ import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.lang.exception.SerializerException;
 import io.github.qishr.cascara.common.lang.processor.AbstractSerializer;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
+import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.lang.type.TypeReference;
 import io.github.qishr.cascara.common.util.ContentType;
 import io.github.qishr.cascara.common.util.TermUtils;
@@ -105,7 +106,6 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private boolean preceededByWhitespace;
     private YamlNode previousNode;
     private YamlNode rootNode;
-    private boolean isSingleScalar;
 
     public YamlSerializer() {
         super(AbstractYamlProcessor.YAML_CONTENT_TYPE_STRING, new YamlNodeFactory(), new YamlOptions());
@@ -293,9 +293,6 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
             default -> error(node, YamlDiagnosticCode.UNEXPECTED_NODE_TYPE,
                              node.getClass().getSimpleName());
         }
-        if (!(node instanceof YamlScalar)) {
-            isSingleScalar = false;
-        }
     }
 
     private void emitStream(YamlStream stream) {
@@ -454,29 +451,42 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     }
 
     private void emitScalar(YamlScalar scalar, boolean isKeyOfBlockMap) {
-        String text = null;
+        String text;
         String lexeme = scalar.getLexeme();
 
         if (lexeme == null) {
-            if (isImplicitNull(scalar)) {
-                // TODO: or "null", depending on options
-                text = "";
-            } else if (scalar.getScalarStyle() == ScalarStyle.SINGLE_QUOTED) {
-                text = singleQuote(scalar.asString());
-            } else if (scalar.getScalarStyle() == ScalarStyle.DOUBLE_QUOTED) {
-                text = doubleQuote(scalar.asString());
-            } else if (scalar.getScalarStyle() == ScalarStyle.LITERAL) {
-                // TODO: Implement this
-            } else if (scalar.getScalarStyle() == ScalarStyle.FOLDED) {
-                // TODO: Implement this
-            } else {
-                // Plain
-                String string = scalar.asString();
-                if (isSafePlain(string)) {
-                    text = string;
+            if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
+                if (isImplicitNull(scalar)) {
+                    text = "";
                 } else {
-                    text = doubleQuote(string);
+                    text = "null";
                 }
+            } else if (scalar.getPrimitiveType() == PrimitiveType.STRING) {
+                String string = scalar.asString();
+                ScalarStyle scalarStyle = scalar.getScalarStyle();
+
+                if (scalarStyle == ScalarStyle.PLAIN) {
+                    if (!isSafePlain(string)) {
+                        scalarStyle = ScalarStyle.DOUBLE_QUOTED;
+                    }
+                }
+
+                if (scalarStyle == ScalarStyle.SINGLE_QUOTED) {
+                    text = singleQuote(string);
+                } else if (scalarStyle == ScalarStyle.DOUBLE_QUOTED) {
+                    text = doubleQuote(string);
+                } else if (scalarStyle == ScalarStyle.LITERAL) {
+                    // TODO: Implement this
+                    text = "";
+                } else if (scalarStyle == ScalarStyle.FOLDED) {
+                    // TODO: Implement this
+                    text = "";
+                } else {
+                    // Plain
+                    text = string;
+                }
+            } else {
+                text = scalar.asString();
             }
         } else {
             text = formatLexeme(scalar);
@@ -647,7 +657,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         if (string != null) {
             string.append(text);
             if (reporter.reportsTrace()) {
-                reporter.trace("StringBuidler:\n" + DebugUtils.debugStringBuilder(string, -1));
+                debugStringBuilder();
             }
         } else if (writer != null) {
             try {
@@ -756,7 +766,6 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         indentSpaces = 0;
         previousNode = null;
         preceededByWhitespace = true;
-        isSingleScalar = true;
     }
 
     protected void error(YamlNode node, DiagnosticCode code, Object... details) {
@@ -768,6 +777,15 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
     protected void warn(YamlToken token, DiagnosticCode code, Object... details) {
         reporter.warnAt(token, code, details);
+    }
+
+    protected void debugStringBuilder() {
+        reporter.trace("StringBuilder:");
+        try {
+            reporter.getWriter(Level.TRACE).write(2, DebugUtils.debugStringBuilder(string, -1));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     protected void report(Level level, String message, Object... details) {
