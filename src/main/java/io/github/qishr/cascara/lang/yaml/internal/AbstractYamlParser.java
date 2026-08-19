@@ -111,13 +111,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
     private YamlDocument document;
 
-    // TODO: test_VJP3
-    boolean moveParseTrivia = true;
-
-    boolean moveParseTrivia2 = true;
-
-    boolean checkNewlinesInKeys = false; // TODO: Settings this to true breaks M5DY
-
     protected AbstractYamlParser() {
     }
 
@@ -371,10 +364,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-                    // TODO
-                    if (moveParseTrivia) {
+                    // // TODO
+                    // if (moveParseTrivia) {
                         parseTrivia();
-                    }
+                    // }
 
 
 
@@ -434,7 +427,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     private YamlNode parseKey(int parentIndent, boolean isFlowStyle, NodeProperties pendingProperties) {
         debug(">parseKeyNode");
         depth++;
-        implicitKeyDepth++;
+        // implicitKeyDepth++;
         try {
 
             debugProperties("p", pendingProperties);
@@ -489,7 +482,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             return key;
         } finally {
             depth--;
-            implicitKeyDepth--;
+            // implicitKeyDepth--;
             debug("<parseKeyNode");
         }
     }
@@ -534,15 +527,15 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-            // TODO
-            if (moveParseTrivia2) {
+            // // TODO
+            // if (moveParseTrivia2) {
                 parseBlockComments();
-            } else {
-                if (!check(YamlTokenType.SCALAR) ||
-                    tokenBuffer.peek().getScalarStyle() != ScalarStyle.FOLDED) {
-                    parseTrivia();
-                }
-            }
+            // } else {
+            //     if (!check(YamlTokenType.SCALAR) ||
+            //         tokenBuffer.peek().getScalarStyle() != ScalarStyle.FOLDED) {
+            //         parseTrivia();
+            //     }
+            // }
 
 
 
@@ -598,11 +591,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             // Map
             else {
                 if (true || !isFlowStyle) {
-                    if (check(YamlTokenType.MAP_START) && lookAheadFlowMapIsFollowedByColon()) {
+                    if (!isComplexKey &&check(YamlTokenType.MAP_START) && lookAheadFlowMapIsFollowedByColon()) {
                         trace("PV-flowMap-map");
                         return parseMap(true, isComplexKey, collectionProperties, nodeProperties);
                     }
-                    else if (check(YamlTokenType.SEQUENCE_START) && lookAheadFlowSequenceIsFollowedByColon()) {
+                    else if (!isComplexKey && check(YamlTokenType.SEQUENCE_START) && lookAheadFlowSequenceIsFollowedByColon()) {
                         trace("PV-seq-map");
                         return parseMap(isFlowStyle, isComplexKey, collectionProperties, nodeProperties);
                     }
@@ -668,15 +661,15 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-            // TODO
-            if (moveParseTrivia) {
+            // // TODO
+            // if (moveParseTrivia) {
                 int savedIKD = implicitKeyDepth;
                 implicitKeyDepth = 0;
                 parseTrivia();
                 implicitKeyDepth = savedIKD;
-            } else {
-                parseTrivia();
-            }
+            // } else {
+            //     parseTrivia();
+            // }
 
 
 
@@ -848,16 +841,23 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     key = parseValue(markerColumn, false, true, nodeProperties);
                 } else {
                     // Standard implicit key
-                    key = parseKey(markerColumn, flowDepth > 0, nodeProperties);
+
+                    if (hasExplicitKey) {
+                        key = parseKey(markerColumn, flowDepth > 0, nodeProperties);
+                    } else {
+                        implicitKeyDepth++;
+                        key = parseKey(markerColumn, flowDepth > 0, nodeProperties);
+                        implicitKeyDepth--;
+                    }
                 }
 
 
 
 
-                // TODO
-                if (moveParseTrivia) {
+                // // TODO
+                // if (moveParseTrivia) {
                     parseTrivia();
-                }
+                // }
 
 
 
@@ -912,10 +912,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-                        // TODO
-                        if (moveParseTrivia2) {
+                        // // TODO
+                        // if (moveParseTrivia2) {
                             parseTrivia();
-                        }
+                        // }
 
 
 
@@ -1036,10 +1036,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-                // TODO
-                if (moveParseTrivia2) {
+                // // TODO
+                // if (moveParseTrivia2) {
                     parseTrivia();
-                }
+                // }
 
 
 
@@ -1174,11 +1174,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-                    // TODO
-                    if (moveParseTrivia2) {
+                    // // TODO
+                    // if (moveParseTrivia2) {
                         // skipNewline();
                         parseTrivia();
-                    }
+                    // }
 
 
 
@@ -1408,10 +1408,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
     private void skipNewline() {
         if (check(YamlTokenType.NEWLINE)) {
-            if (checkNewlinesInKeys) {
-                if (implicitKeyDepth > 0) {
-                    error(tokenBuffer.peek(), YamlDiagnosticCode.IMPLICIT_KEY_SINGLE_LINE);
-                }
+            if (implicitKeyDepth > 0) {
+                error(tokenBuffer.peek(), YamlDiagnosticCode.IMPLICIT_KEY_SINGLE_LINE);
             }
             tokenBuffer.advance();
             onMarkerLine = false;
