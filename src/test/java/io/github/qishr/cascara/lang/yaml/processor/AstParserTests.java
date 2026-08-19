@@ -267,4 +267,25 @@ public class AstParserTests extends AstParserTestBase {
         assertEquals("implicit", implicitKeyEntry.getKey().asString());
         assertEquals(null, nullKeyEntry.getKey().asString());
     }
+
+    @Test
+    void testTagInSequence() {
+        String yaml = """
+            sequence: !!seq
+            - entry
+            - !!str
+            -
+              a
+            """;
+
+        YamlMap root = (YamlMap) parser.parse(yaml);
+        assertEquals(1, root.size());
+
+        YamlSequence seq = root.getSequence("sequence");
+        assertEquals(3, seq.size());
+        assertEquals("!!seq", seq.getTag());
+
+        YamlScalar empty = seq.getScalar(1);
+        assertEquals("", empty.asString());
+    }
 }

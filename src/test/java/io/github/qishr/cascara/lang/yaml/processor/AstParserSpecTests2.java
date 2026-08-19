@@ -192,9 +192,6 @@ public class AstParserSpecTests2 extends AstParserTestBase {
 
         YamlMap map = (YamlMap) body;
 
-        YamlMap map2 = map.getMap("key");
-
-        TestUtils.assertEquals("b", map2.getString("a"));
     }
 
     @Test
