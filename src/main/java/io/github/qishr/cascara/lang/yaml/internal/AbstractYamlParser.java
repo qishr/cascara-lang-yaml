@@ -111,6 +111,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
     private YamlDocument document;
 
+    boolean test_FH7J = false;
+
     protected AbstractYamlParser() {
     }
 
@@ -527,15 +529,21 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-            // // TODO
-            // if (moveParseTrivia2) {
-                parseBlockComments();
-            // } else {
-            //     if (!check(YamlTokenType.SCALAR) ||
-            //         tokenBuffer.peek().getScalarStyle() != ScalarStyle.FOLDED) {
-            //         parseTrivia();
-            //     }
-            // }
+
+            int savedIKD0 = implicitKeyDepth;
+            implicitKeyDepth = 0;
+            parseTrivia();
+            implicitKeyDepth = savedIKD0;
+
+            // // // TODO
+            // // if (moveParseTrivia2) {
+            //     parseBlockComments();
+            // // } else {
+            // //     if (!check(YamlTokenType.SCALAR) ||
+            // //         tokenBuffer.peek().getScalarStyle() != ScalarStyle.FOLDED) {
+            // //         parseTrivia();
+            // //     }
+            // // }
 
 
 
@@ -545,8 +553,30 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             // Node properties preceeding an initial map key can belong either
             // to the map itself or to the initial key. parseNodeProperties
             // consumes them all and decides what they belong to.
-            // Pair<NodeProperties,NodeProperties> properties = parseNodePropeties(!isFlowStyle, true, pendingProperties);
-            Pair<NodeProperties,NodeProperties> properties = parseNodePropeties(true, true, pendingProperties);
+
+
+
+
+            Pair<NodeProperties,NodeProperties> properties = parseNodePropeties(!isFlowStyle, true, pendingProperties);
+            // Pair<NodeProperties,NodeProperties> properties = parseNodePropeties(true, true, pendingProperties);
+
+
+
+
+
+            if (!test_FH7J) {
+                int savedIKD1 = implicitKeyDepth;
+                implicitKeyDepth = 0;
+                parseTrivia();
+                implicitKeyDepth = savedIKD1;
+            }
+
+
+
+
+
+
+
             NodeProperties collectionProperties = properties.getL();
             NodeProperties nodeProperties = properties.getR();
 
@@ -626,6 +656,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 // Move collection properties into node properties.
                 // Beyond this point they can't belong to a collection.
                 moveProperties(collectionProperties, nodeProperties, null);
+
+                // TODO: In test_FH7J, parseNodeProperties has consumed the NEWLINE after !!str
+                // We kind of need the newline to be left so we can tell if this value is an implicit null
+                // or an empty scalar.
 
                 if (check(YamlTokenType.ALIAS)) {
                     trace("PV-in-if-alias1");
@@ -1508,12 +1542,24 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 }
             }
 
-            // Build a list of property tokens - tags and anchors
+            // Build a list of property nodes - tags and anchors
             while (true) {
-                if (allowMultipleLines && (check(YamlTokenType.NEWLINE) || check(YamlTokenType.COMMENT))) {
+
+
+
+                //lookAheadIgnoringIndentsAndComments
+                // boolean moreProperties = lookAheadIgnoringComments(YamlTokenType.ANCHOR) != null || lookAheadIgnoringComments(YamlTokenType.TAG) != null;
+                boolean moreProperties = lookAheadIgnoringIndentsAndComments(YamlTokenType.ANCHOR) ||
+                                         lookAheadIgnoringIndentsAndComments(YamlTokenType.TAG);
+                moreProperties |= (!test_FH7J);
+                // if (allowMultipleLines && (check(YamlTokenType.NEWLINE) || check(YamlTokenType.COMMENT))) {
+                if (allowMultipleLines && moreProperties && (check(YamlTokenType.NEWLINE) || check(YamlTokenType.COMMENT))) {
                     parseTrivia();
                     continue;
                 }
+
+
+
 
                 if (handleIndents && checkIndented(YamlTokenType.ANCHOR)) {
                     trace("indented anchor");
@@ -1825,6 +1871,21 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             break;
         }
         return null;
+    }
+
+    private boolean lookAheadIgnoringIndentsAndComments(YamlTokenType targetType) {
+        int ahead = 1;
+        while (!tokenBuffer.isAtEnd(ahead)) {
+            YamlToken token = tokenBuffer.peekAhead(ahead);
+            YamlTokenType type = token.getType();
+            if (type == targetType) return true;
+            if (type == YamlTokenType.NEWLINE || type == YamlTokenType.COMMENT) {
+                ahead++;
+                continue;
+            }
+            break;
+        }
+        return false;
     }
 
     private boolean lookAheadFlowSequenceIsFollowedByColon() {

@@ -1179,4 +1179,24 @@ public class AstParserSpecTests2 extends AstParserTestBase {
 
         YamlNode body = normalize(doc.getBody());
     }
+
+    @Test
+    public void test_FH7J() throws Exception {
+        String yaml = """
+            - !!str
+            -
+              !!null : a
+              b: !!str
+            - !!str : !!null
+            """;
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = normalize(doc.getBody());
+
+    }
+
 }

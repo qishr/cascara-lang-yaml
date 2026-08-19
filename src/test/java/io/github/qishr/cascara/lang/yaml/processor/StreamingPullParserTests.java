@@ -984,5 +984,47 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
         }
     }
 
+    @Test
+    public void test_FH7J() throws Exception {
+        String yaml = """
+            - !!str
+            -
+              !!null : a
+              b: !!str
+            - !!str : !!null
+            """;
 
+        // parserOptions.setPreloadTokenBuffer(true);
+        // reporter.setLevel(Level.TRACE);
+
+        // YamlAstParser astParser = new YamlAstParser();
+        // astParser.getTokenizer() .setReporter(reporter);
+        // YamlNode root = astParser.parseMulti(yaml);
+        // TestUtils.dumpTokens(astParser.getTokens());
+
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
+
+            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType()); // gets START_ARRAY
+            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
+            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
+            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
+            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+
+            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
+            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
+            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+
+            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
+            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
 }
