@@ -676,6 +676,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
+            // boolean expectInnerIndent = false;
             if (test_FH7J) {
 
                 // if (check(YamlTokenType.NEWLINE) && checkNext(YamlTokenType.INDENT)) {
@@ -683,6 +684,12 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 // }
                 if (check(YamlTokenType.NEWLINE)) {
                     tokenBuffer.advance(); // Consume the newline, but leave the indent
+                }
+
+                if (check(YamlTokenType.INDENT)) {
+                    tokenBuffer.advance();
+                    // expectInnerIndent = true;
+                    expectedDedents++;
                 }
 
             }
@@ -795,7 +802,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             // }
 
 
+            // if (expectInnerIndent) {
 
+            // }
 
 
             while (expectedDedents > 0) {
@@ -916,13 +925,13 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
                 int markerColumn = markerToken.getStartColumn();
                 if (nodeProperties != null) {
-                    if (nodeProperties.anchor != null) {
+                    if (nodeProperties.anchor != null && nodeProperties.anchor.getStartLine() == markerToken.getStartLine()) {
                         int anchorColumn = nodeProperties.anchor.getStartColumn();
                         if (anchorColumn < markerColumn) {
                             markerColumn = anchorColumn;
                         }
                     }
-                    if (nodeProperties.tag != null) {
+                    if (nodeProperties.tag != null && nodeProperties.tag.getStartLine() == markerToken.getStartLine()) {
                         int tagColumn = nodeProperties.tag.getStartColumn();
                         if (tagColumn < markerColumn) {
                             markerColumn = tagColumn;
@@ -2287,12 +2296,12 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
     private void moveProperties(NodeProperties nodeProperties, NodeProperties collectionProperties, YamlToken startToken) {
+        trace("moveProperties");
         if (nodeProperties != null && nodeProperties.startLine > 0) {
             if (nodeProperties.anchor != null && (startToken == null || nodeProperties.anchor.getStartLine() < startToken.getStartLine())) {
                 if (collectionProperties != null && collectionProperties.anchor != null) {
                     error(nodeProperties.anchor.getToken(), YamlDiagnosticCode.UNEXPECTED_TOKEN, nodeProperties.anchor.getToken().getType());
                 }
-                trace("node properties -> collection properties");
                 collectionProperties.anchor = nodeProperties.anchor;
                 nodeProperties.anchor = null;
             }
@@ -2300,7 +2309,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 if (collectionProperties != null && collectionProperties.tag != null) {
                     error(nodeProperties.tag.getToken(), YamlDiagnosticCode.UNEXPECTED_TOKEN, nodeProperties.tag.getToken().getType());
                 }
-                trace("node properties -> collection properties");
                 collectionProperties.tag = nodeProperties.tag;
                 nodeProperties.tag = null;
             }
