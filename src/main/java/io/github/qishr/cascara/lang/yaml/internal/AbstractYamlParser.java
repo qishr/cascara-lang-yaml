@@ -111,7 +111,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
     private YamlDocument document;
 
-    boolean test_FH7J = false;
+    // With this true, FH7J and BU8La fail
+    // With this false, only FH7J fails.
+    boolean test_FH7J = true;
 
     protected AbstractYamlParser() {
     }
@@ -569,6 +571,20 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 implicitKeyDepth = 0;
                 parseTrivia();
                 implicitKeyDepth = savedIKD1;
+            } else {
+
+                // if (check(YamlTokenType.NEWLINE) && checkNext(YamlTokenType.INDENT)) {
+                //     tokenBuffer.advance(); // Consume the newline, but leave the indent
+                // }
+
+                // if (check(YamlTokenType.NEWLINE)) {
+                //     tokenBuffer.advance(); // Consume the newline, but leave the indent
+                // }
+
+                int savedIKD1 = implicitKeyDepth;
+                implicitKeyDepth = 0;
+                parseTrivia();
+                implicitKeyDepth = savedIKD1;
             }
 
 
@@ -592,6 +608,19 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 // level, merge them with the current properties
                 properties = parseNodePropeties(!isFlowStyle, true, collectionProperties, nodeProperties);
 
+
+
+
+                // if (test_FH7J) {
+                //     if (check(YamlTokenType.NEWLINE) && checkNext(YamlTokenType.INDENT)) {
+                //         tokenBuffer.advance(); // Consume the newline, but leave the indent
+                //     }
+                // }
+
+
+
+
+
                 collectionProperties = properties.getL();
                 nodeProperties = properties.getR();
                 trace("merged properties");
@@ -599,6 +628,26 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 debugProperties("n", nodeProperties);
                 expectedDedents++;
             }
+
+
+
+
+
+            if (test_FH7J) {
+
+                // if (check(YamlTokenType.NEWLINE) && checkNext(YamlTokenType.INDENT)) {
+                //     tokenBuffer.advance(); // Consume the newline, but leave the indent
+                // }
+                if (check(YamlTokenType.NEWLINE)) {
+                    tokenBuffer.advance(); // Consume the newline, but leave the indent
+                }
+
+            }
+
+
+
+
+
 
             YamlNode result = null;
 
@@ -853,6 +902,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     // if (markerColumn < mapColumn && !isComplexKey) {
                     //     error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                     // }
+
+                    // This is needed for test_EHF6:
                     if (markerColumn != mapColumn && !isComplexKey) {
                         error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                     }
@@ -1549,7 +1600,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
                 //lookAheadIgnoringIndentsAndComments
                 // boolean moreProperties = lookAheadIgnoringComments(YamlTokenType.ANCHOR) != null || lookAheadIgnoringComments(YamlTokenType.TAG) != null;
-                boolean moreProperties = lookAheadIgnoringIndentsAndComments(YamlTokenType.ANCHOR) ||
+                boolean moreProperties = check(YamlTokenType.ANCHOR) ||
+                                         check(YamlTokenType.TAG) ||
+                                         lookAheadIgnoringIndentsAndComments(YamlTokenType.ANCHOR) ||
                                          lookAheadIgnoringIndentsAndComments(YamlTokenType.TAG);
                 moreProperties |= (!test_FH7J);
                 // if (allowMultipleLines && (check(YamlTokenType.NEWLINE) || check(YamlTokenType.COMMENT))) {
@@ -1879,7 +1932,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             YamlToken token = tokenBuffer.peekAhead(ahead);
             YamlTokenType type = token.getType();
             if (type == targetType) return true;
-            if (type == YamlTokenType.NEWLINE || type == YamlTokenType.COMMENT) {
+            if (type == YamlTokenType.NEWLINE || type == YamlTokenType.INDENT || type == YamlTokenType.COMMENT) {
                 ahead++;
                 continue;
             }
