@@ -145,7 +145,7 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
         tokenBuffer.open(input);
         parserThread = new Thread(() -> {
             try {
-                parseInternal();
+                parseStream();
             } catch (YamlParserException e) {
                 errorEncountered.set(true);
                 createEvent(tokenBuffer.peek(), StreamingEventType.ERROR, e.getMessage());

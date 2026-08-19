@@ -60,7 +60,7 @@ public class YamlPushParser extends AbstractYamlParser<YamlPushParser> implement
         // tokenBuffer.getTokenizer().setContinueAfterError(false);
 
         tokenBuffer.open(input);
-        parseInternal();
+        parseStream();
     }
 
     //

@@ -190,7 +190,7 @@ public class YamlAstParser extends AbstractYamlParser<YamlAstParser> implements 
 
     /// Helper to execute internal parsing logic and unpack based on options.
     private YamlNode parseAndUnpack() {
-        YamlStream stream = parseInternal();
+        YamlStream stream = parseStream();
 
         YamlNode root;
 
