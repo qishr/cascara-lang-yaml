@@ -111,6 +111,13 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
     private YamlDocument document;
 
+    // TODO: test_VJP3
+    boolean moveParseTrivia = true;
+
+    boolean moveParseTrivia2 = true;
+
+    boolean checkNewlinesInKeys = false; // TODO: Settings this to true breaks M5DY
+
     protected AbstractYamlParser() {
     }
 
@@ -361,7 +368,16 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     }
                 } else {
                     createEvent(tokenBuffer.peek(), StreamingEventType.END_DOCUMENT, "");
-                    parseTrivia();
+
+
+
+                    // TODO
+                    if (moveParseTrivia) {
+                        parseTrivia();
+                    }
+
+
+
                 }
             }
 
@@ -515,11 +531,23 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 error(tokenBuffer.peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, tokenBuffer.peek().getType());
             }
 
-            // if (!check(YamlTokenType.SCALAR) ||
-            //         tokenBuffer.peek().getScalarStyle() != ScalarStyle.FOLDED) {
-            //     parseTrivia();
-            // }
-            parseBlockComments();
+
+
+
+            // TODO
+            if (moveParseTrivia2) {
+                parseBlockComments();
+            } else {
+                if (!check(YamlTokenType.SCALAR) ||
+                    tokenBuffer.peek().getScalarStyle() != ScalarStyle.FOLDED) {
+                    parseTrivia();
+                }
+            }
+
+
+
+
+
 
             // Node properties preceeding an initial map key can belong either
             // to the map itself or to the initial key. parseNodeProperties
@@ -569,17 +597,17 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             // Map
             else {
                 if (true || !isFlowStyle) {
-                    if (check(YamlTokenType.ALIAS) && tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
-                        trace("PV-alias-map");
-                        result = parseMap(false, isComplexKey, collectionProperties, nodeProperties);
-                    }
-                    else if (check(YamlTokenType.MAP_START) && lookAheadFlowMapIsFollowedByColon()) {
+                    if (check(YamlTokenType.MAP_START) && lookAheadFlowMapIsFollowedByColon()) {
                         trace("PV-flowMap-map");
                         return parseMap(true, isComplexKey, collectionProperties, nodeProperties);
                     }
                     else if (check(YamlTokenType.SEQUENCE_START) && lookAheadFlowSequenceIsFollowedByColon()) {
                         trace("PV-seq-map");
                         return parseMap(isFlowStyle, isComplexKey, collectionProperties, nodeProperties);
+                    }
+                    else if (check(YamlTokenType.ALIAS) && tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
+                        trace("PV-alias-map");
+                        result = parseMap(false, isComplexKey, collectionProperties, nodeProperties);
                     }
                     else if (check(YamlTokenType.SCALAR) && tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
                         trace("PV-scalar-map");
@@ -639,7 +667,16 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-            parseTrivia();
+            // TODO
+            if (moveParseTrivia) {
+                int savedIKD = implicitKeyDepth;
+                implicitKeyDepth = 0;
+                parseTrivia();
+                implicitKeyDepth = savedIKD;
+            } else {
+                parseTrivia();
+            }
+
 
 
 
@@ -726,6 +763,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 trace("at markerToken");
                 YamlToken markerToken = tokenBuffer.peek();
 
+                boolean hasExplicitKey = false;
+                if (check(YamlTokenType.KEY_INDICATOR)) {
+                    hasExplicitKey = true;
+                }
                 boolean isScalarKeyStart =
                     check(YamlTokenType.SCALAR) ||
                     check(YamlTokenType.ALIAS) ||
@@ -741,10 +782,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     isScalarKeyStart = true;
                 }
 
-                boolean hasExplicitKey = false;
-                if (check(YamlTokenType.KEY_INDICATOR)) {
+                if (hasExplicitKey) {
                     tokenBuffer.advance(); // Consume '?'
-                    hasExplicitKey = true;
                 }
 
                 if (!hasExplicitKey && !isScalarKeyStart) {
@@ -755,15 +794,40 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     break;
                 }
 
+
+
+
                 int markerColumn = markerToken.getStartColumn();
+                if (nodeProperties != null) {
+                    if (nodeProperties.anchor != null) {
+                        int anchorColumn = nodeProperties.anchor.getStartColumn();
+                        if (anchorColumn < markerColumn) {
+                            markerColumn = anchorColumn;
+                        }
+                    }
+                    if (nodeProperties.tag != null) {
+                        int tagColumn = nodeProperties.tag.getStartColumn();
+                        if (tagColumn < markerColumn) {
+                            markerColumn = tagColumn;
+                        }
+                    }
+                }
+
+
+
 
                 if (mapColumn == -1) {
                     mapColumn = markerColumn;
                 } else {
-                    // TODO
+                    // TODO: When checking this, we need to use any properties
+                    // as the key's start column, if they exist.
+
                     // if (markerColumn < mapColumn && !isComplexKey) {
                     //     error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                     // }
+                    if (markerColumn != mapColumn && !isComplexKey) {
+                        error(markerToken, YamlDiagnosticCode.INCONSISTENT_INDENTATION);
+                    }
                 }
 
                 YamlNode key;
@@ -774,6 +838,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     // Explicit keys are always parsed via parseValue in case they are complex
 
 
+                    // TODO: This should be fixed
                     // TODO: Because we do this, "explicit: entry" in testMixedKeysImplicitExplicitNull
                     // is treated as a new map, when "explicit" should be the key
                     // and "entry" should be the value.
@@ -784,7 +849,17 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     // Standard implicit key
                     key = parseKey(markerColumn, flowDepth > 0, nodeProperties);
                 }
-                parseTrivia();
+
+
+
+
+                // TODO
+                if (moveParseTrivia) {
+                    parseTrivia();
+                }
+
+
+
 
                 nodeProperties = null;
 
@@ -832,6 +907,18 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                             isValueIndented = true;
                             tokenBuffer.advance();
                         }
+
+
+
+
+                        // TODO
+                        if (moveParseTrivia2) {
+                            parseTrivia();
+                        }
+
+
+
+
 
                         value = parseValue(mapColumn, false, false, null);
 
@@ -945,6 +1032,17 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
                 tokenBuffer.advance(); // Consume the '-'
 
+
+
+
+                // TODO
+                if (moveParseTrivia2) {
+                    parseTrivia();
+                }
+
+
+
+
                 if (nextTokenIsIndicator != null && nextTokenIsIndicator.getStartColumn() == indicatorColumn) {
                     sequence.add(createNullScalar(false, null));
                 } else {
@@ -1044,6 +1142,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
                 // 1. Parse Key
 
+
+
+
+                // TODO
                 // YamlNode key = parseKey(startToken.getStartColumn(), null);
                 // boolean hasExplicitKey = check(YamlTokenType.KEY_INDICATOR);
                 YamlNode key;
@@ -1057,12 +1159,28 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     key = parseKey(markerColumn, true, null);
                 // }
 
+
+
+
+
                 parseTrivia();
 
                 YamlNode value;
                 if (check(YamlTokenType.VALUE_INDICATOR)) {
                     // 2. Consume Value Indicator
                     consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP);
+
+
+
+
+                    // TODO
+                    if (moveParseTrivia2) {
+                        // skipNewline();
+                        parseTrivia();
+                    }
+
+
+
 
                     // 3. Parse Value
                     value = parseValue(key.getStartColumn(), true, false, null);
@@ -1289,8 +1407,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
     private void skipNewline() {
         if (check(YamlTokenType.NEWLINE)) {
-            if (implicitKeyDepth > 0) {
-                error(tokenBuffer.peek(), YamlDiagnosticCode.IMPLICIT_KEY_SINGLE_LINE);
+            if (checkNewlinesInKeys) {
+                if (implicitKeyDepth > 0) {
+                    error(tokenBuffer.peek(), YamlDiagnosticCode.IMPLICIT_KEY_SINGLE_LINE);
+                }
             }
             tokenBuffer.advance();
             onMarkerLine = false;

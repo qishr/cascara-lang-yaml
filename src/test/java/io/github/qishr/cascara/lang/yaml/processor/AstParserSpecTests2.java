@@ -1118,4 +1118,65 @@ public class AstParserSpecTests2 extends AstParserTestBase {
         assertEquals(251.42, map.getDouble("tax"));
         assertEquals(4443.52, map.getDouble("total"));
     }
+
+
+    @Test
+    public void test_EHF6() {
+        String yaml = """
+            !!map {
+              k: !!seq
+              [ a, !!str b]
+            }
+            """;
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = normalize(doc.getBody());
+    }
+
+    @Test
+    public void test_VJP3() {
+        String yaml = """
+            k: {
+             k
+             :
+             v
+             }
+            """;
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = normalize(doc.getBody());
+    }
+
+    @Test
+    public void test_M5DY() {
+        String yaml = """
+            ? - Detroit Tigers
+              - Chicago cubs
+            :
+              - 2001-07-23
+
+            ? [ New York Yankees,
+                Atlanta Braves ]
+            : [ 2001-07-02, 2001-08-12,
+                2001-08-14 ]
+            """;
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = normalize(doc.getBody());
+    }
 }
