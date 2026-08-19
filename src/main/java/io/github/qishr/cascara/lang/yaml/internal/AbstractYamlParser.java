@@ -92,16 +92,18 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     private YamlTokenizer tokenizer;
     protected TokenBuffer tokenBuffer;
 
+    // Options
+    protected boolean isMultiDocumentParsing = false;
+    private boolean continueAfterError = true;
+
+    // State
     private int depth;
     private int depthLimit;
     private int flowDepth;
     private int implicitKeyDepth;
-
-    protected boolean isMultiDocumentParsing = false;
-
-    private boolean continueAfterError = true;
-    protected AtomicBoolean errorEncountered = new AtomicBoolean();
+    private boolean onMarkerLine;
     protected boolean fileEndsWithNewLine = false;
+    protected AtomicBoolean errorEncountered = new AtomicBoolean();
 
     /// Buffer to hold comments until a data node is created to claim them.
     private final List<YamlComment> pendingComments = new ArrayList<>();
@@ -312,6 +314,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             if (docStartToken.getType() == YamlTokenType.DOCUMENT_START) {
                 createEvent(tokenBuffer.peek(), StreamingEventType.START_DOCUMENT, "---");
                 tokenBuffer.advance();
+                onMarkerLine = true;
                 parseTrivia();
             } else {
 
@@ -657,6 +660,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         try {
             YamlToken startToken = tokenBuffer.peek();
 
+            if (onMarkerLine && !isFlowStyle) {
+                error(startToken, YamlDiagnosticCode.BLOCK_COLLECTION_SAME_LINE_AS_MARKER);
+            }
+
             trace("isFlowStyle="+isFlowStyle);
             trace("isComplexKey="+isComplexKey);
 
@@ -850,6 +857,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         debug(">parseSequence");
         depth++;
         try {
+
+            if (onMarkerLine) {
+                error(tokenBuffer.peek(), YamlDiagnosticCode.BLOCK_COLLECTION_SAME_LINE_AS_MARKER);
+            }
 
             debugProperties("p", pendingProperties);
 
@@ -1252,6 +1263,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 error(tokenBuffer.peek(), YamlDiagnosticCode.IMPLICIT_KEY_SINGLE_LINE);
             }
             tokenBuffer.advance();
+            onMarkerLine = false;
         }
     }
 
@@ -2010,6 +2022,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         flowDepth = 0;
         depth = 0;
         implicitKeyDepth = 0;
+        onMarkerLine = false;
     }
 
     private void debugProperties(String prefix, NodeProperties properties) {
