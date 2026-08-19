@@ -244,7 +244,7 @@ public class AstParserTests extends AstParserTestBase {
     }
 
     @Test
-    void testMixedKeysImplicitExplicit() {
+    void testMixedKeysImplicitExplicitNull() {
         String yaml = """
             {
             ? explicit: entry,
