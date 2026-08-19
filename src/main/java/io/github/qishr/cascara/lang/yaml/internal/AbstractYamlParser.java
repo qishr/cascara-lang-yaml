@@ -361,6 +361,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     }
                 } else {
                     createEvent(tokenBuffer.peek(), StreamingEventType.END_DOCUMENT, "");
+                    parseTrivia();
                 }
             }
 
@@ -514,10 +515,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 error(tokenBuffer.peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, tokenBuffer.peek().getType());
             }
 
-            if (!check(YamlTokenType.SCALAR) ||
-                    tokenBuffer.peek().getScalarStyle() != ScalarStyle.FOLDED) {
-                parseTrivia();
-            }
+            // if (!check(YamlTokenType.SCALAR) ||
+            //         tokenBuffer.peek().getScalarStyle() != ScalarStyle.FOLDED) {
+            //     parseTrivia();
+            // }
+            parseBlockComments();
 
             // Node properties preceeding an initial map key can belong either
             // to the map itself or to the initial key. parseNodeProperties
@@ -634,7 +636,13 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 }
             }
 
+
+
+
             parseTrivia();
+
+
+
 
             while (expectedDedents > 0) {
                 if (check(YamlTokenType.DEDENT)) {
@@ -776,6 +784,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     // Standard implicit key
                     key = parseKey(markerColumn, flowDepth > 0, nodeProperties);
                 }
+                parseTrivia();
 
                 nodeProperties = null;
 
@@ -1285,6 +1294,24 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             }
             tokenBuffer.advance();
             onMarkerLine = false;
+        }
+    }
+
+    private void parseBlockComments() {
+        while (!tokenBuffer.isAtEnd()) {
+            if (check(YamlTokenType.COMMENT)) {
+                YamlComment comment = parseComment(CommentStyle.LEADING);
+                pendingComments.add(comment);
+                continue;
+            } else if (checkIndented(YamlTokenType.COMMENT)) {
+                tokenBuffer.advance();
+                YamlComment comment = parseComment(CommentStyle.LEADING);
+                pendingComments.add(comment);
+                tokenBuffer.advance();
+                continue;
+            } else {
+                break;
+            }
         }
     }
 

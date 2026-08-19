@@ -1,5 +1,6 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -102,7 +103,7 @@ public class SerializerTestBase extends AstParserTestBase {
             System.out.println(firstYaml);
 
 
-            assertNotNull(null);
+            assertFalse(true, "Failed to parse emitted YAML");
         }
 
         String secondYaml = serializer.toString(secondAst);
