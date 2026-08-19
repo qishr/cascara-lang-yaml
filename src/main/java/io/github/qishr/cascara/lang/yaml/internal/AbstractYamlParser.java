@@ -111,7 +111,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
     private YamlDocument document;
 
-    // With this true, FH7J and BU8La fail
+    // With this true, BU8La fails.
     // With this false, only FH7J fails.
     boolean test_FH7J = true;
 
@@ -562,6 +562,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             Pair<NodeProperties,NodeProperties> properties = parseNodePropeties(!isFlowStyle, true, pendingProperties);
             // Pair<NodeProperties,NodeProperties> properties = parseNodePropeties(true, true, pendingProperties);
 
+            NodeProperties collectionProperties = properties.getL();
+            NodeProperties nodeProperties = properties.getR();
+            YamlNode result = null;
+
 
 
 
@@ -581,6 +585,27 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 //     tokenBuffer.advance(); // Consume the newline, but leave the indent
                 // }
 
+
+
+                // TODO: This breaks it
+                // if (check(YamlTokenType.NEWLINE)) {
+
+                if (check(YamlTokenType.NEWLINE) && lookAheadIgnoringComments(YamlTokenType.SEQUENCE_ENTRY_INDICATOR) != null) {
+                    trace("Debug test_FH7J in");
+                    if (nodeProperties != null && (nodeProperties.anchor != null || nodeProperties.tag != null)) {
+                        trace("Debug test_FH7J has properties");
+                        if (nodeProperties.tag != null) {
+                            trace("Debug test_FH7J has tag");
+                            result = createEmptyScalar(isComplexKey, nodeProperties);
+                            nodeProperties.attachTo(result);
+                        }
+                    }
+                    trace("Debug test_FH7J out");
+                }
+
+
+
+
                 int savedIKD1 = implicitKeyDepth;
                 implicitKeyDepth = 0;
                 parseTrivia();
@@ -593,8 +618,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-            NodeProperties collectionProperties = properties.getL();
-            NodeProperties nodeProperties = properties.getR();
 
             debugProperties("c", collectionProperties);
             debugProperties("n", nodeProperties);
@@ -649,12 +672,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-            YamlNode result = null;
-
-
             // With this block testSKE5 and test6KGN pass
             YamlToken nextToken = tokenBuffer.peek();
-            if (nextToken.getStartColumn() == parentStartColumn &&
+            if (result == null && nextToken.getStartColumn() == parentStartColumn &&
                 nodeProperties.tag == null &&
                 !nodeProperties.isEmpty() &&
                 nextToken.getType() != YamlTokenType.SEQUENCE_ENTRY_INDICATOR)
