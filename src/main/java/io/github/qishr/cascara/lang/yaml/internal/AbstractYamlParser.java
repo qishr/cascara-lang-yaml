@@ -95,6 +95,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     private int depth;
     private int depthLimit;
     private int flowDepth;
+    private int implicitKeyDepth;
 
     protected boolean isMultiDocumentParsing = false;
 
@@ -413,6 +414,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     private YamlNode parseKey(int parentIndent, NodeProperties pendingProperties) {
         debug(">parseKeyNode");
         depth++;
+        implicitKeyDepth++;
         try {
 
             debugProperties("p", pendingProperties);
@@ -442,17 +444,26 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             } else if (tokenType == YamlTokenType. MAP_START) {
                 key = parseFlowMap(nodeProperties);
             } else if (tokenType == YamlTokenType. SEQUENCE_START) {
-                key = parseFlowSequence(nodeProperties.anchor);
+                key = parseFlowSequence(nodeProperties);
             } else if (tokenType == YamlTokenType. SCALAR) {
                 YamlScalar scalar = parseScalar(true, nodeProperties);
-                skipEOL();
+
+
+                skipEOL(); // TODO: Why are we doing this here? Implicit keys must be on a single line
+
+
                 key = scalar;
             } else if (tokenType == YamlTokenType. ALIAS) {
                 key = parseAlias(pendingProperties);
             } else if (tokenType == YamlTokenType. KEY_INDICATOR) {
                 trace("parseKeyNode: KEY_INDICATOR");
                 tokenBuffer.advance(); // consume '?'
-                parseTrivia();
+
+
+                // This only happens in testDFF7
+                parseTrivia(); // TODO: Why are we doing this here? Implicit keys must be on a single line
+
+
                 // NOTE: at the moment parseKeyNode is only called for simple keys.
                 // If we call it for complex keys, this parseValue call should
                 // specify if it's a complex key.
@@ -473,6 +484,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             return key;
         } finally {
             depth--;
+            implicitKeyDepth--;
             debug("<parseKeyNode");
         }
     }
@@ -611,7 +623,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 // Flow sequence
                 else if (check(YamlTokenType.SEQUENCE_START)) {
                     trace("PV-flow-seq passing pendingAnchor " + nodeProperties.anchor);
-                    result = parseFlowSequence(nodeProperties.anchor);
+                    result = parseFlowSequence(nodeProperties);
                 }
                 // Block sequence
                 else if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
@@ -679,7 +691,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             YamlMap map = new YamlMap(startToken, options);
             map.setNodeStyle(isFlowStyle ? NodeStyle.FLOW : NodeStyle.BLOCK);
 
-            collectionProperties.attachTo(map);
+            // collectionProperties.attachTo(map);
+            attachProperties(map, collectionProperties);
             createEvent(map, StreamingEventType.START_OBJECT);
 
             Set<Object> seenKeys = new HashSet<>();
@@ -875,9 +888,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             YamlSequence sequence = new YamlSequence(startToken);
             sequence.setNodeStyle(NodeStyle.BLOCK);
             attachComments(sequence);
-            if (pendingProperties != null) {
-                pendingProperties.attachTo(sequence);
-            }
+            attachProperties(sequence, pendingProperties);
+            // if (pendingProperties != null) {
+            //     pendingProperties.attachTo(sequence);
+            // }
             createEvent(sequence, StreamingEventType.START_ARRAY);
             attachComments(sequence);
 
@@ -932,20 +946,22 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
     /// Parses a flow sequence like [item1, item2].
-    private YamlSequence parseFlowSequence(YamlAnchor pendingAnchor) {
+    private YamlSequence parseFlowSequence(NodeProperties pendingProperties) {
         debug(">parseFlowSequence");
         depth++;
         flowDepth++;
         try {
-            trace("pendingAnchor="+pendingAnchor);
+            // trace("pendingAnchor="+pendingAnchor);
             YamlToken startToken = consume(YamlTokenType.SEQUENCE_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACKET);
             YamlSequence sequence = new YamlSequence(startToken);
-            attachComments(sequence);
             sequence.setNodeStyle(NodeStyle.FLOW);
+            attachComments(sequence);
 
-            if (pendingAnchor != null) {
-                sequence.setAnchor(YamlAnchor.extractAnchorName(pendingAnchor.getToken()));
-            }
+            attachProperties(sequence, pendingProperties);
+            // if (pendingAnchor != null) {
+            //     sequence.setAnchor(YamlAnchor.extractAnchorName(pendingAnchor.getToken()));
+            // }
+
             createEvent(sequence, StreamingEventType.START_ARRAY);
 
             while (!check(YamlTokenType.SEQUENCE_END) && !tokenBuffer.isAtEnd()) {
@@ -984,9 +1000,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             map.setNodeStyle(NodeStyle.FLOW);
             attachComments(map);
 
-            if (pendingProperties != null) {
-                pendingProperties.attachTo(map);
-            }
+            attachProperties(map, pendingProperties);
+            // if (pendingProperties != null) {
+            //     pendingProperties.attachTo(map);
+            // }
+
             createEvent(map, StreamingEventType.START_OBJECT);
 
 
@@ -1003,8 +1021,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 parseTrivia();
 
                 // 1. Parse Key
-                // YamlScalar key = parseScalar();
 
+                if (check(YamlTokenType.KEY_INDICATOR)) {
+
+                }
 
                 // TODO: Do we pass an anchor on here?
                 YamlNode key = parseKey(startToken.getStartColumn(), null);
@@ -1966,6 +1986,12 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
     }
 
+    private void attachProperties(YamlNode node, NodeProperties properties) {
+        if (properties != null) {
+            properties.attachTo(node);
+        }
+    }
+
     /// Clears the [pendingComments] buffer by attaching them to the given node.
     private void attachComments(YamlNode node) {
         for (YamlComment comment : pendingComments) {
@@ -1996,6 +2022,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         fileEndsWithNewLine = false;
         flowDepth = 0;
         depth = 0;
+        implicitKeyDepth = 0;
     }
 
     private void debugProperties(String prefix, NodeProperties properties) {
