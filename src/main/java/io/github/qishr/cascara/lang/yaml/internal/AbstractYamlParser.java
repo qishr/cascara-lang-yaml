@@ -552,7 +552,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             // Node properties preceeding an initial map key can belong either
             // to the map itself or to the initial key. parseNodeProperties
             // consumes them all and decides what they belong to.
-            Pair<NodeProperties,NodeProperties> properties = parseNodePropeties(!isFlowStyle, true, pendingProperties);
+            // Pair<NodeProperties,NodeProperties> properties = parseNodePropeties(!isFlowStyle, true, pendingProperties);
+            Pair<NodeProperties,NodeProperties> properties = parseNodePropeties(true, true, pendingProperties);
             NodeProperties collectionProperties = properties.getL();
             NodeProperties nodeProperties = properties.getR();
 
@@ -1470,6 +1471,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         debug(">parseNodeProperties");
         depth++;
         try {
+            trace("allowMultipleLines=" + allowMultipleLines);
             List<YamlNodeProperty> properties = new ArrayList<>();
             int nAnchors = 0;
             int nTags = 0;
