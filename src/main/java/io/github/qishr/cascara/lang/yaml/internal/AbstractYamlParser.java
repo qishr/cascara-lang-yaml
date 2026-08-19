@@ -111,7 +111,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
     private YamlDocument document;
 
-    // With this true, BU8La fails.
+    // With this true, BU8La and test57H4 fail.
     // With this false, only FH7J fails.
     boolean test_FH7J = true;
 
@@ -590,7 +590,21 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 // TODO: This breaks it
                 // if (check(YamlTokenType.NEWLINE)) {
 
-                if (check(YamlTokenType.NEWLINE) && lookAheadIgnoringComments(YamlTokenType.SEQUENCE_ENTRY_INDICATOR) != null) {
+
+
+
+
+
+                // TODO: For test57H4, the tag must belong to the sequence!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                // We must not enter this block
+
+                // Both test57H4 and test_FH7J have a sequence indicator next.
+                // Both indicators are in column 1
+                // parentColumn is also 1 for both.
+
+                YamlToken sei = lookAheadIgnoringComments(YamlTokenType.SEQUENCE_ENTRY_INDICATOR);
+                if (check(YamlTokenType.NEWLINE) && sei != null) {
+                    int seiCol = sei.getStartColumn();
                     trace("Debug test_FH7J in");
                     if (nodeProperties != null && (nodeProperties.anchor != null || nodeProperties.tag != null)) {
                         trace("Debug test_FH7J has properties");
