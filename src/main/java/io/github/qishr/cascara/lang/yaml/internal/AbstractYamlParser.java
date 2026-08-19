@@ -411,7 +411,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
     }
 
-    private YamlNode parseKey(int parentIndent, NodeProperties pendingProperties) {
+    private YamlNode parseImplicitKey(int parentIndent, NodeProperties pendingProperties) {
         debug(">parseKeyNode");
         depth++;
         implicitKeyDepth++;
@@ -424,12 +424,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             }
 
             Pair<NodeProperties,NodeProperties> properties = parseNodePropeties(true, false, pendingProperties);
-            // NodeProperties nodeProperties = properties.getL();
             NodeProperties nodeProperties = properties.getR();
-
-            // if (pendingProperties != null) {
-            //     nodeProperties = pendingProperties;
-            // }
 
             YamlToken token = tokenBuffer.peek();
             YamlTokenType tokenType = token.getType();
@@ -447,32 +442,17 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 key = parseFlowSequence(nodeProperties);
             } else if (tokenType == YamlTokenType. SCALAR) {
                 YamlScalar scalar = parseScalar(true, nodeProperties);
-
-
-                skipEOL(); // TODO: Why are we doing this here? Implicit keys must be on a single line
-
-
+                // String testName = DebugUtils.getTestName();
+                // if (testName != null) {
+                //     warn(token, GenericDiagnosticCode.WARN, testName);
+                // }
                 key = scalar;
             } else if (tokenType == YamlTokenType. ALIAS) {
                 key = parseAlias(pendingProperties);
-            } else if (tokenType == YamlTokenType. KEY_INDICATOR) {
-                trace("parseKeyNode: KEY_INDICATOR");
-                tokenBuffer.advance(); // consume '?'
-
-
-                // This only happens in testDFF7
-                parseTrivia(); // TODO: Why are we doing this here? Implicit keys must be on a single line
-
-
-                // NOTE: at the moment parseKeyNode is only called for simple keys.
-                // If we call it for complex keys, this parseValue call should
-                // specify if it's a complex key.
-                key = parseValue(parentIndent, false, false, nodeProperties);
             } else {
                 // TODO: A *tag* here should create an empty scalar, not a null
                 if (nodeProperties.anchor != null) {
                     key = createNullScalar(true, nodeProperties);
-
                     if (tokenBuffer.peek().getType().getCategory() != TokenCategory.PUNCTUATION) {
                         error(tokenBuffer.peek(), YamlDiagnosticCode.UNEXPECTED_TOKEN, tokenBuffer.peek().getType());
                     }
@@ -633,9 +613,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 else if (check(YamlTokenType.SCALAR)) {
                     result = parseScalar(isComplexKey, nodeProperties);
                     trace("PV-after-parseScalar");
-                    if (check(YamlTokenType.NEWLINE)) {
-                        tokenBuffer.advance();
-                    }
+                    skipNewline();
                 }
                 else {
                     result = nodeProperties.isEmpty()
@@ -768,7 +746,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     key = parseValue(markerColumn, false, true, nodeProperties);
                 } else {
                     // Standard implicit key
-                    key = parseKey(markerColumn, nodeProperties);
+                    key = parseImplicitKey(markerColumn, nodeProperties);
                 }
 
                 nodeProperties = null;
@@ -1035,7 +1013,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     key = parseValue(markerColumn, false, true, null);
                 } else {
                     // Standard implicit key
-                    key = parseKey(markerColumn, null);
+                    key = parseImplicitKey(markerColumn, null);
                 }
 
                 parseTrivia();
@@ -1214,7 +1192,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 break;
             }
             if (type == YamlTokenType.NEWLINE) {
-                tokenBuffer.advance();
+                skipNewline();
                 continue;
             }
 
@@ -1265,6 +1243,15 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 continue;
             }
             break;
+        }
+    }
+
+    private void skipNewline() {
+        if (check(YamlTokenType.NEWLINE)) {
+            if (implicitKeyDepth > 0) {
+                error(tokenBuffer.peek(), YamlDiagnosticCode.IMPLICIT_KEY_SINGLE_LINE);
+            }
+            tokenBuffer.advance();
         }
     }
 
@@ -1347,10 +1334,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     parseTrivia();
                     continue;
                 }
-
-                // if (!allowMultipleLines && (check(YamlTokenType.NEWLINE) || check(YamlTokenType.COMMENT))) {
-                //     debug("multi line");
-                // }
 
                 if (handleIndents && checkIndented(YamlTokenType.ANCHOR)) {
                     trace("indented anchor");
@@ -1479,14 +1462,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     //
     // Navigation and Lookahead Helpers
     //
-
-    private void skipEOL() {
-        YamlToken token = tokenBuffer.peek();
-        YamlTokenType type = token.getType();
-        if (type == YamlTokenType.NEWLINE) {
-            tokenBuffer.advance();
-        }
-    }
 
     @Nullable
     private YamlToken consume(YamlTokenType type, DiagnosticCode msgCode) {
@@ -1833,6 +1808,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             }
         }
 
+        NodeStyle nodeStyle = flowDepth > 0
+            ? NodeStyle.FLOW
+            : target.getNodeStyle();
+
         ScalarStyle scalarStyle = null;
         if (target instanceof YamlScalar scalar) {
             scalarStyle = scalar.getScalarStyle();
@@ -1842,7 +1821,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             target.getStartLine(),
             target.getStartColumn(),
             type,
-            target.getNodeStyle(),
+            nodeStyle,
             scalarStyle,
             node.getTag(), // TODO: Are we sure this should not be target.getTag() ?
             node.getResolvedTag(),

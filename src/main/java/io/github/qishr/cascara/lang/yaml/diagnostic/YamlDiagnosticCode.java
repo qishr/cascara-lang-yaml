@@ -78,10 +78,13 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     TOO_MANY_ANCHORS("YAML-207", "A node can have at most one anchor"),
     TOO_MANY_TAGS("YAML-208", "A node can have at most one tag"),
     MISSING_DIRECTIVES_END_INDICATOR("YAML-209", "Missing directives-end indicator line"),
+    IMPLICIT_KEY_SINGLE_LINE("YAML-210", "Implicit keys need to be on a single line"),
+    BLOCK_COLLECTION_SAME_LINE_AS_MARKER("YAML-211", "Block collection cannot start on same line with directives-end marker"),
 
     // TODO:
     // Anchor cannot be an empty string
     // Set items must all have null values
+    // Block collection cannot start on same line with directives-end marker
 
     // Serializer / Emitter
     UNEXPECTED_NODE_TYPE("YAML-301", "Unexpected node type: {0}");

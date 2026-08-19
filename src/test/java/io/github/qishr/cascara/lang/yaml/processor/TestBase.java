@@ -20,8 +20,8 @@ public abstract class TestBase {
 
     protected static final Level EMITTER_LEVEL = Level.INFO;
 
-    // protected static final Level SERIALIZER_LEVEL = Level.INFO;
-    protected static final Level SERIALIZER_LEVEL = Level.TRACE;
+    protected static final Level SERIALIZER_LEVEL = Level.INFO;
+    // protected static final Level SERIALIZER_LEVEL = Level.TRACE;
 
     protected static final boolean DEBUG = false;
     // protected static final boolean DEBUG = true;
