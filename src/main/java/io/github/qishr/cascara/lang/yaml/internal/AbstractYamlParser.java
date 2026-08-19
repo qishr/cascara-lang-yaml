@@ -1017,18 +1017,26 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 return map;
             }
 
+            YamlToken markerToken = tokenBuffer.peek();
+            int markerColumn = markerToken.getStartColumn();
+
             while (!tokenBuffer.isAtEnd()) {
                 parseTrivia();
 
                 // 1. Parse Key
 
-                if (check(YamlTokenType.KEY_INDICATOR)) {
-
+                // YamlNode key = parseKey(startToken.getStartColumn(), null);
+                boolean hasExplicitKey = check(YamlTokenType.KEY_INDICATOR);
+                YamlNode key;
+                if (hasExplicitKey) {
+                    tokenBuffer.advance(); // Consume '?'
+                    parseTrivia();
+                    // Explicit keys are always parsed via parseValue in case they are complex
+                    key = parseValue(markerColumn, false, true, null);
+                } else {
+                    // Standard implicit key
+                    key = parseKey(markerColumn, null);
                 }
-
-                // TODO: Do we pass an anchor on here?
-                YamlNode key = parseKey(startToken.getStartColumn(), null);
-
 
                 parseTrivia();
 
