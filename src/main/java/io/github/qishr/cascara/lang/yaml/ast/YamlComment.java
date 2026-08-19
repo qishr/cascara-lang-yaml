@@ -39,24 +39,40 @@ import java.util.List;
 
 import io.github.qishr.cascara.common.lang.ast.CommentAstNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.CommentStyle;
+import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 /// Represents a comment within the YAML source.
 public class YamlComment extends YamlNode implements CommentAstNode {
     private final String text;
-    private final boolean multiLine;
+    private CommentStyle commentStyle;
+    // private final boolean multiLine;
 
-    public YamlComment(YamlToken token, String text, boolean multiLine) {
+    public YamlComment(YamlToken token, String text, CommentStyle commentStyle) {
         super(token);
         this.text = text;
-        this.multiLine = multiLine;
+        // this.multiLine = multiLine;
+        this.commentStyle = commentStyle;
     }
 
     /// {@inheritDoc}
     @Override public String asString() { return text; }
 
     /// {@inheritDoc}
-    @Override public boolean isMultiLine() { return multiLine; }
+    @Override public boolean isMultiLine() {
+        // return multiLine;
+        return nodeStyle == NodeStyle.BLOCK;
+    }
+
+    public CommentStyle getCommentStyle() {
+        return commentStyle;
+    }
+
+    public YamlComment setCommentStyle(CommentStyle commentStyle) {
+        this.commentStyle = commentStyle;
+        return this;
+    }
 
     /// {@inheritDoc}
     @Override public List<YamlNode> getChildren() { return List.of(); }

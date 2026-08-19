@@ -43,6 +43,7 @@ import java.util.NoSuchElementException;
 
 import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 /// Represents a YAML sequence (a list of items).
@@ -52,11 +53,12 @@ public class YamlSequence extends YamlNode implements SequenceAstNode<YamlNode> 
     private boolean isExpanded = false; // Default to compact
 
     public YamlSequence() {
-        // This method intentionally left blank
+        nodeStyle = NodeStyle.BLOCK;
     }
 
     public YamlSequence(YamlToken token) {
         super(token);
+        nodeStyle = NodeStyle.BLOCK;
     }
 
     /// {@inheritDoc}

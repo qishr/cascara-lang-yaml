@@ -16,7 +16,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
-import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
+import io.github.qishr.cascara.lang.yaml.diagnostic.YamlDiagnosticCode;
 
 public class YamlAliasResolver {
 
@@ -87,15 +87,15 @@ public class YamlAliasResolver {
     private void collectAnchors(YamlNode node, Map<String, YamlNode> anchorMap) {
         if (node == null) return;
 
-        // 1. Check if the node is wrapped in a explicit YamlAnchor node
-        if (node instanceof YamlAnchor anchor) {
-            if (anchor.getName() != null) {
-                anchorMap.put(anchor.getName(), anchor.getInnerNode());
-                debug("Collected wrapper anchor: %s", anchor.getName());
-            }
-            collectAnchors(anchor.getInnerNode(), anchorMap);
-            return;
-        }
+        // // 1. Check if the node is wrapped in a explicit YamlAnchor node
+        // if (node instanceof YamlAnchor anchor) {
+        //     if (anchor.getName() != null) {
+        //         anchorMap.put(anchor.getName(), anchor.getInnerNode());
+        //         debug("Collected wrapper anchor: %s", anchor.getName());
+        //     }
+        //     collectAnchors(anchor.getInnerNode(), anchorMap);
+        //     return;
+        // }
 
         // 2. Check if the node (e.g. YamlScalar) carries an anchor property directly
         if (node.getAnchor() != null && !node.getAnchor().isEmpty()) {
@@ -144,10 +144,10 @@ public class YamlAliasResolver {
             }
         }
 
-        // Handle YamlAnchor wrappers (unwrap them during resolution if desired)
-        if (node instanceof YamlAnchor anchor) {
-            return resolveNode(anchor.getInnerNode(), anchorMap, depth + 1);
-        }
+        // // Handle YamlAnchor wrappers (unwrap them during resolution if desired)
+        // if (node instanceof YamlAnchor anchor) {
+        //     return resolveNode(anchor.getInnerNode(), anchorMap, depth + 1);
+        // }
 
         // Recursively resolve maps (keys AND values)
         if (node instanceof YamlMap map) {

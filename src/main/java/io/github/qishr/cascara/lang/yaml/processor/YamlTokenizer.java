@@ -55,7 +55,7 @@ import io.github.qishr.cascara.common.lang.util.SourceBuffer;
 import io.github.qishr.cascara.common.lang.util.SourceInputStreamBuffer;
 import io.github.qishr.cascara.common.lang.util.SourceStringBuffer;
 import io.github.qishr.cascara.common.util.StringUtils;
-import io.github.qishr.cascara.lang.yaml.exception.YamlDiagnosticCode;
+import io.github.qishr.cascara.lang.yaml.diagnostic.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlProcessor;
 import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
@@ -244,7 +244,24 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
 
             streamEnded = true;
-            pendingTokens.add(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.EOF));
+
+
+
+
+            String lexeme = buffer.getTokenWindowLexeme();
+
+            // TODO: lexeme can be empty, so this -1 breaks.
+            // Also, lexeme here doesn't always include the last character of the file
+            // so this is unreliable.
+            // String fileEnding = lexeme.substring(lexeme.length() - 1);
+
+            String fileEnding = Character.toString(buffer.previous());
+            YamlToken eofToken = new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.EOF, fileEnding);
+
+
+
+
+            pendingTokens.add(eofToken);
             pendingTokens.add(new YamlToken(finalLine, finalCol, finalOffset, YamlTokenType.STREAM_END));
             return queueToken(pendingTokens.pollFirst());
         }
@@ -1508,53 +1525,26 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     }
 
     private void trace(String method) {
-        if (reporter == null ||
-            reporter.isSilent() ||
-            !reporter.getLevel().includes(Level.TRACE)) return;
-
+        if (!reporter.reportsTrace()) return;
         char c = buffer.peek();
         reporter.trace("S=%03d C=%03d '%s' %03d:%03d %s",
             buffer.offset(), buffer.offset(), StringUtils.visibleChar(c), buffer.line(), buffer.column(), method);
     }
 
-    private void trace(String method, String info) {
-        if (reporter == null ||
-            reporter.isSilent() ||
-            !reporter.getLevel().includes(Level.TRACE)) return;
-
+    protected void trace(String method, String info) {
+        if (!reporter.reportsTrace()) return;
         char c = buffer.peek();
         reporter.trace("S=%03d C=%03d '%s' %03d:%03d %s: %s",
             buffer.offset(), buffer.offset(), StringUtils.visibleChar(c), buffer.line(), buffer.column(), method, info);
     }
 
-    private void debug(String message, Object... details) {
-        if (reporter == null ||
-            reporter.isSilent() ||
-            !reporter.getLevel().includes(Level.DEBUG)) return;
-        reporter.debug(message, details);
-    }
-
-    // private void debugString(String string) {
-    //     if (reporter == null ||
-    //         reporter.isSilent() ||
-    //         !reporter.getLevel().includes(Level.DEBUG)) return;
-
-    //     reporter.debug(StringUtils.debugString(string));
-    // }
-
     private void debugString(String string, int pos) {
-        if (reporter == null ||
-            reporter.isSilent() ||
-            !reporter.getLevel().includes(Level.DEBUG)) return;
-
+        if (!reporter.reportsDebug()) return;
         reporter.debug(StringUtils.debugString(string, pos));
     }
 
     private void debugString(String string, String name, int pos) {
-        if (reporter == null ||
-            reporter.isSilent() ||
-            !reporter.getLevel().includes(Level.DEBUG)) return;
-
+        if (!reporter.reportsDebug()) return;
         reporter.debug(StringUtils.debugString(string, name, pos));
     }
 }

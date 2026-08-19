@@ -41,12 +41,14 @@ import java.util.List;
 
 import io.github.qishr.cascara.common.annotation.Experimental;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
+import io.github.qishr.cascara.lang.yaml.ast.YamlComment;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlParser;
 import io.github.qishr.cascara.lang.yaml.internal.PreloadedTokenBuffer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.CommentStyle;
 
 /// A recursive descent parser that transforms a stream of [YamlToken]s into a [YamlNode] AST.
 ///
@@ -188,16 +190,29 @@ public class YamlAstParser extends AbstractYamlParser<YamlAstParser> implements 
 
     /// Helper to execute internal parsing logic and unpack based on options.
     private YamlNode parseAndUnpack() {
-        YamlStream stream = parseInternal();
+        YamlStream stream = parseStream();
 
-        // If the developer wants the full multi-document structure, hand over the stream node
+        YamlNode root;
+
         if (isMultiDocumentParsing) {
-            return stream;
+            // If the developer wants the full multi-document structure, hand over the stream node
+            root = stream;
+        } else {
+            // Otherwise return the naked first document body
+            root = stream.getDocuments().isEmpty()
+                ? new YamlMap()
+                : stream.getDocuments().get(0).getBody();
+
+            // Attach trailing comments to root node
+            for (YamlComment comment : stream.getComments()) {
+                if (comment.getCommentStyle() == CommentStyle.TRAILING) {
+                    root.addComment(comment);
+                }
+            }
         }
 
-        // Otherwise, stay backward-compatible and return the naked first document body
-        return stream.getDocuments().isEmpty()
-            ? new YamlMap()
-            : stream.getDocuments().get(0).getBody();
+        root.setFileEndsWithNewLine(fileEndsWithNewLine);
+
+        return root;
     }
 }

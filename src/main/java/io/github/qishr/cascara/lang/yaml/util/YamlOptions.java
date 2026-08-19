@@ -44,7 +44,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
 
     public static final YamlOptions CANONICAL = new ImmutableYamlOptions(
         new YamlOptions()
-            .setStripComments(true)
+            .setOutputComments(false)
             .setStripTags(true)
             .setStripAnchors(false) // YTS expects anchors to remain
             .setSortKeys(false) // YTS expects maps to be in their original order
@@ -60,14 +60,13 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
 
     private boolean allowUnicode = true;
     private boolean explicitStart = false; // Writes '---' if true
-    private boolean expandedStyle = false;
+    private boolean outputExpandedStyle = false;
     private boolean strict = false;
-    private boolean includeComments = false;
+    private boolean outputComments = true;
     private boolean multiDocument = false;
 
     private boolean sortKeys = false;
     private boolean forceQuotes = false; // TODO: Not used
-    private boolean stripComments = false;
     private boolean stripTags = false;
     private boolean stripAnchors = false;
     private boolean normalizeIndent = false;
@@ -76,6 +75,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     private boolean forceExplicitNull = false;
     private boolean forceBlockCollections = false;
     private boolean preloadTokenBuffer = false;
+    private boolean outputResolvedAliases = true;
 
     public YamlOptions() {}
 
@@ -84,14 +84,13 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
 
         allowUnicode = original.allowUnicode;
         explicitStart = original.explicitStart; // Writes '---' if true
-        expandedStyle = original.expandedStyle;
+        outputExpandedStyle = original.outputExpandedStyle;
         strict = original.strict;
-        includeComments = original.includeComments;
+        outputComments = original.outputComments;
         multiDocument = original.multiDocument;
 
         sortKeys = original.sortKeys;
         forceQuotes = original.forceQuotes; // TODO: Not used
-        stripComments = original.stripComments;
         stripTags = original.stripTags;
         stripAnchors = original.stripAnchors;
 
@@ -101,17 +100,17 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         forceExplicitNull = original.forceExplicitNull;
         forceBlockCollections = original.forceBlockCollections;
         preloadTokenBuffer = original.preloadTokenBuffer;
+        outputResolvedAliases = original.outputResolvedAliases;
     }
 
     public int getDepthLimit() {return depthLimit; }
-    public boolean isAllowUnicode() { return allowUnicode; }
+    public boolean allowUnicode() { return allowUnicode; }
     public boolean isExplicitStart() { return explicitStart; }
-    public boolean isExpandedStyle() { return expandedStyle; }
+    public boolean outputExpandedStyle() { return outputExpandedStyle; }
     public boolean isStrict() { return strict; }
-    public boolean isIncludeComments() { return includeComments; }
+    public boolean outputComments() { return outputComments; }
     public boolean isMultiDocument() { return multiDocument; }
 
-    public boolean stripComments() { return stripComments; }
     public boolean stripTags() { return stripTags; }
     public boolean stripAnchors() { return stripAnchors; }
     public boolean sortKeys() { return sortKeys; }
@@ -121,6 +120,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     public boolean forceExplicitNull() { return forceExplicitNull; }
     public boolean forceBlockCollections() { return forceBlockCollections; }
     public boolean preloadTokenBuffer() { return preloadTokenBuffer; }
+    public boolean outputResolvedAliases() { return outputResolvedAliases; }
 
     public YamlOptions setDepthLimit(int val) {
         this.depthLimit = val;
@@ -139,8 +139,8 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         return this;
     }
 
-    public YamlOptions setExpandedStyle(boolean val) {
-        this.expandedStyle = val;
+    public YamlOptions setOutputExpandedStyle(boolean val) {
+        this.outputExpandedStyle = val;
         return this;
     }
 
@@ -149,18 +149,13 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         return this;
     }
 
-    public YamlOptions setIncludeComments(boolean val) {
-        this.includeComments = val;
+    public YamlOptions setOutputComments(boolean val) {
+        this.outputComments = val;
         return this;
     }
 
     public YamlOptions setMultiDocument(boolean val) {
         this.multiDocument = val;
-        return this;
-    }
-
-    public YamlOptions setStripComments(boolean val) {
-        this.stripComments = val;
         return this;
     }
 
@@ -204,6 +199,11 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         return this;
     }
 
+    public YamlOptions setOutputResolvedAliases(boolean b) {
+        outputResolvedAliases = b;
+        return this;
+    }
+
     @Override
     public YamlOptions duplicate() {
         return new YamlOptions(this);
@@ -227,7 +227,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
             throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setExplicitStart");
         }
 
-        public YamlOptions setExpandedStyle(boolean val) {
+        public YamlOptions setOutputExpandedStyle(boolean val) {
             throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setExpandedStyle");
         }
 
@@ -235,7 +235,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
             throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setStrict");
         }
 
-        public YamlOptions setIncludeComments(boolean val) {
+        public YamlOptions setOutputComments(boolean val) {
             throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setIncludeComments");
         }
 
@@ -279,5 +279,8 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
             throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setPreloadTokenBuffer");
         }
 
+        public YamlOptions setOutputResolvedAliases(boolean b) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setOutputResolvedAliases");
+        }
     }
 }

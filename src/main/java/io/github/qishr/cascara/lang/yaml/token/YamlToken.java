@@ -56,13 +56,31 @@ public class YamlToken implements Token {
         int startOffset,
         YamlTokenType type)
     {
+        this(line, column, startOffset, type, null);
+        // this.line = line;
+        // this.column = column;
+        // this.offset = startOffset;
+        // this.type = type;
+
+        // this.lexeme = null;
+        // this.content = null;
+        // this.scalarStyle = ScalarStyle.PLAIN;
+    }
+
+    public YamlToken(
+        int line,
+        int column,
+        int startOffset,
+        YamlTokenType type,
+        String content)
+    {
         this.line = line;
         this.column = column;
         this.offset = startOffset;
         this.type = type;
 
         this.lexeme = null;
-        this.content = null;
+        this.content = content;
         this.scalarStyle = ScalarStyle.PLAIN;
     }
 
