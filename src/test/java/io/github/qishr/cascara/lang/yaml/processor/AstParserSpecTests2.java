@@ -966,8 +966,9 @@ public class AstParserSpecTests2 extends AstParserTestBase {
 
     @Test
     public void testR4YG() {
-        String yaml = "- |\n detected\n- >\n \n  \n # detected\n- |1\n  explicit\n- >\n \t\n detected\n";
+        String yaml = "- |\n detected\n- >\n\n\n # detected\n- |1\n  explicit\n- >\n \t\n detected\n";
 
+        tokenizerReporter.setLevel(Level.TRACE);
         tokenize(yaml);
 
         YamlStream stream = parser.parseMulti(yaml);

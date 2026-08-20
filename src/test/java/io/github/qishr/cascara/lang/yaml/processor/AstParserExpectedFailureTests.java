@@ -118,7 +118,15 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
             ---
             """;
 
-        parserReporter.setLevel(Level.TRACE);
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
+
+    @Test
+    void test_S98Z() {
+        String yaml ="empty block scalar: >\n \n  \n   \n # comment";
+
+        tokenizerReporter.setLevel(Level.TRACE);
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }

@@ -577,6 +577,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         boolean isCharEscaped = false;
         int removedChars = 0;
 
+        int mostSpacesInBlankLine = 0;
+
         // 2. Scan the scalar
 
         while (!buffer.isAtEnd() && action == ScalarAction.CONTINUE) {
@@ -682,6 +684,16 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     if (blockIndent == -1) {
                         blockIndent = charOffset;
                         debug("Block indent set: " + blockIndent);
+
+
+
+                        // TODO: set mostSpacesInBlankLine
+
+
+
+                        if (isBlock && mostSpacesInBlankLine > blockIndent) {
+                            error(YamlDiagnosticCode.EXPLICIT_INDENTATION_INDICATOR_NEEDED);
+                        }
                     }
 
                     if (!isQuoted && blockIndent > -1 && charOffset < blockIndent) {
@@ -716,6 +728,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 }
 
                 isFirstChar = false;
+            }
+
+            if (isBlock && !lineHasContent) { // && lineNum > 0
+                if (charOffset - 1 > mostSpacesInBlankLine) {
+                    mostSpacesInBlankLine = charOffset - 1;
+                }
             }
 
             // 2b. Line trimming
