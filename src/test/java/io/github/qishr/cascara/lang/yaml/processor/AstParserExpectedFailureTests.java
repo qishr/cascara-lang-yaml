@@ -2,6 +2,8 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.concurrent.Flow;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -176,12 +178,29 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
     }
 
     // Anchor before sequence entry on same line
-    @Disabled
     @Test
     void test_SY6V() {
         String yaml = "&anchor - sequence entry\n";
 
-        tokenizerReporter.setLevel(Level.TRACE);
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
+
+    // Implicit keys need to be on a single line
+    // Block collections are not allowed within flow collections
+    // Flow mapping missing a separating comma
+    @Disabled("Come back to this")
+    @Test
+    void test_T833() {
+        String yaml = """
+            ---
+            {
+             foo: 1
+             bar: 2 }
+            """;
+
+        parserReporter.setLevel(Level.TRACE);
+
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }

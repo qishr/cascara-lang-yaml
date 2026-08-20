@@ -431,6 +431,7 @@ public class AstParserSpecTests2 extends AstParserTestBase {
               : &a
             """;
 
+        parserReporter.setLevel(Level.TRACE);
         tokenize(yaml);
 
         YamlStream stream = parser.parseMulti(yaml);
@@ -835,8 +836,6 @@ public class AstParserSpecTests2 extends AstParserTestBase {
 
         tokenize(yaml);
 
-        // parser.getReporter().setLevel(Level.TRACE);
-
         YamlStream stream = parser.parseMulti(yaml);
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
@@ -967,7 +966,6 @@ public class AstParserSpecTests2 extends AstParserTestBase {
     public void testR4YG() {
         String yaml = "- |\n detected\n- >\n\n\n # detected\n- |1\n  explicit\n- >\n \t\n detected\n";
 
-        tokenizerReporter.setLevel(Level.TRACE);
         tokenize(yaml);
 
         YamlStream stream = parser.parseMulti(yaml);
@@ -1270,5 +1268,32 @@ public class AstParserSpecTests2 extends AstParserTestBase {
 
         assertEquals("!", scalar.getTag());
         assertEquals("!", scalar.getResolvedTag());
+    }
+
+    @Disabled
+    @Test
+    public void test_V9D5() throws Exception {
+        String yaml = """
+            - sun: yellow
+            - ? earth: blue
+              : moon: white
+            """;
+
+        parserReporter.setLevel(Level.TRACE);
+
+        tokenize(yaml);
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlSequence seq = (YamlSequence) doc.getBody();
+        YamlMap map = seq.getMap(1);
+        YamlMapEntry entry = map.getEntry(0);
+
+        YamlMap keyMap = (YamlMap) entry.getKey();
+        assertEquals("blue", keyMap.getString("earth"));
+
+        YamlMap valMap = (YamlMap) entry.getValue();
+        assertEquals("white", valMap.getString("moon"));
     }
 }

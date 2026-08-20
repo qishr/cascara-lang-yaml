@@ -543,13 +543,14 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             YamlToken sei = lookAheadIgnoringComments(YamlTokenType.SEQUENCE_ENTRY_INDICATOR);
             if (check(YamlTokenType.NEWLINE) && sei != null && isSequenceItem) {
+                trace("sequence entry after newline ahead");
                 if (nodeProperties != null && (nodeProperties.anchor != null || nodeProperties.tag != null)) {
-                    if (nodeProperties.tag != null) {
+                    // if (nodeProperties.tag != null) {
+                    if (nodeProperties.anchor != null || nodeProperties.tag != null) {
                         result = createEmptyScalar(isComplexKey, nodeProperties);
                         nodeProperties.attachTo(result);
                     }
                 }
-                trace("Debug test_FH7J out");
             }
 
             parseTrivia();
@@ -651,6 +652,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     trace("PV-block-seq passing pendingAnchor " + nodeProperties.anchor);
                     if (isFlowStyle) {
                         error(tokenBuffer.peek(), YamlDiagnosticCode.BLOCK_COLLECTION_INSIDE_FLOW);
+                    }
+                    if (nodeProperties.anchor != null && nodeProperties.anchor.getStartLine() == tokenBuffer.peek().getStartLine()) {
+                        debug("Debug");
+                        error(nodeProperties.anchor.getToken(), YamlDiagnosticCode.MISSING_NEWLINE_BLOCK_SEQ_PROPS);
                     }
                     result = parseSequence(nodeProperties);
                 }
