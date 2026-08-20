@@ -827,8 +827,9 @@ public class AstParserSpecTests extends AstParserTestBase {
              b
 
              c
-            """;;
+            """;
 
+        tokenize(yaml);
         YamlStream stream = parser.parseMulti(yaml);
 
         // reporter.getWriter(Level.INFO).write("Sample info\n");
@@ -1087,6 +1088,7 @@ public class AstParserSpecTests extends AstParserTestBase {
             word2
             """;
 
+        tokenize(yaml);
         YamlStream stream = parser.parseMulti(yaml);
 
         if (DUMP_TOKENS) {

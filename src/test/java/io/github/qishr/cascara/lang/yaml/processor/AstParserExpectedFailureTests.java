@@ -73,4 +73,17 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
+
+    // TODO: "this" should not be part of the "value" scalar because
+    // it has no leading whitespace. Unless it's document-level, it
+    // needs at least one space.
+    @Test
+    void test_GDY7() {
+        String yaml ="""
+            key: value
+            this is #not a: key
+            """;
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
 }
