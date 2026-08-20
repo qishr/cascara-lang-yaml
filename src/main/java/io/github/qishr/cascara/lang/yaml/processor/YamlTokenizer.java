@@ -656,7 +656,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                 // Subsequent lines of a plain scalar must be indented at least one space
                 // unless it is document level.
-                if (scalarStyle == ScalarStyle.PLAIN &&
+                if ((scalarStyle == ScalarStyle.PLAIN || isQuoted) &&
                     !isDocumentLevel && lineNum > 0 && charOffset == 0 &&
                     c != ' ' && c != '\r' && c != '\n' && c != '\t') {
                     // debug("plain scalar finished - no ident");

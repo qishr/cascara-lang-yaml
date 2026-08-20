@@ -126,7 +126,7 @@ class AstParserSpecificYamlTests extends AstParserTestBase {
 
     @Test
     void test_stringContaining_newline() {
-        String yamlString = "name: \"One\nTwo\"";
+        String yamlString = "name: \"One\n Two\"";
 
         YamlMap yaml = (YamlMap)parser.parse(yamlString);
 

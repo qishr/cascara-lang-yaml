@@ -752,16 +752,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 if (true || flowDepth == 0) {
                     if (!isComplexKey &&check(YamlTokenType.MAP_START) && lookAheadFlowMapIsFollowedByColon()) {
                         trace("PV-flowMap-map");
-
-
-
-
-                        // TODO: For test_Q9WF, this should not be flow style.
-                        return parseMap(true, isComplexKey, collectionProperties, nodeProperties);
-
-
-
-
+                        // For test_Q9WF, this should not be flow style.
+                        return parseMap(false, isComplexKey, collectionProperties, nodeProperties);
                     }
                     else if (!isComplexKey && check(YamlTokenType.SEQUENCE_START) && lookAheadFlowSequenceIsFollowedByColon()) {
                         trace("PV-seq-map");
