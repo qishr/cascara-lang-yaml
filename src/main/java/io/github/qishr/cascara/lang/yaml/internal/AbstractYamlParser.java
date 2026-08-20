@@ -786,6 +786,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 // Block sequence
                 else if (check(YamlTokenType.SEQUENCE_ENTRY_INDICATOR)) {
                     trace("PV-block-seq passing pendingAnchor " + nodeProperties.anchor);
+                    if (isFlowStyle) {
+                        error(tokenBuffer.peek(), YamlDiagnosticCode.BLOCK_COLLECTION_INSIDE_FLOW);
+                    }
                     result = parseSequence(nodeProperties);
                 }
                 else if (check(YamlTokenType.SCALAR)) {
@@ -1231,7 +1234,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             while (!check(YamlTokenType.SEQUENCE_END) && !tokenBuffer.isAtEnd()) {
                 parseTrivia();
 
-                sequence.add(parseValue(startToken.getStartColumn(), true, false, true, null));
+                YamlNode item = parseValue(startToken.getStartColumn(), true, false, true, null);
+                // if (isBlockCollection(item)) {
+                //     error(item.getToken(), YamlDiagnosticCode.BLOCK_COLLECTION_INSIDE_FLOW);
+                // }
+                sequence.add(item);
                 parseTrivia();
 
                 if (!match(YamlTokenType.COMMA)) break;
@@ -1308,10 +1315,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     // Standard implicit key
                     key = parseKey(markerColumn, true, null);
                 }
-
-
-
-
 
                 parseTrivia();
 

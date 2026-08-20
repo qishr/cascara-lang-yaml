@@ -360,7 +360,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 addToken(YamlTokenType.SEQUENCE_ENTRY_INDICATOR);
                 return;
             }
-            if (isWhitespace(buffer.peekNext())) {
+            YamlTokenType type = FLOW_CONTEXT_SINGLE_CHAR_TOKENS.get(buffer.peekNext());
+            boolean followedByFlowContextCharacter = type != null;
+            if (isWhitespace(buffer.peekNext()) || followedByFlowContextCharacter) {
                 isDocumentLevel = false;
                 advance();
                 int dashColumn = tokenStartColumn;

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
 
 public class AstParserExpectedFailureTests extends AstParserTestBase {
@@ -104,6 +105,8 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
             ---
             - [-, -]
             """;
+
+        parserReporter.setLevel(Level.TRACE);
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }

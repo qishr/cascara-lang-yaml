@@ -81,6 +81,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     IMPLICIT_KEY_SINGLE_LINE("YAML-210", "Implicit keys need to be on a single line"),
     BLOCK_COLLECTION_SAME_LINE_AS_MARKER("YAML-211", "Block collection cannot start on same line with directives-end marker"),
     MAPPING_KEY_COLUMN("YAML-212", "All mapping items must start at the same column"),
+    BLOCK_COLLECTION_INSIDE_FLOW("YAML-213", "Block collections are not allowed within flow collections"),
 
     // TODO:
     // Anchor cannot be an empty string
