@@ -86,6 +86,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     UNSUPPORTED_VERSION("YAML-215", "Unsupported YAML version {0}"),
     CANNOT_RESOLVE_TAG("YAML-216", "Could not resolve tag {0}"),
     EXPLICIT_INDENTATION_INDICATOR_NEEDED("YAML-217", "Block scalars with more-indented leading empty lines must use an explicit indentation indicator"),
+    DUPICATE_YAML_DIRECTIVE("YAML-218", "Duplicate YAML directive"),
 
     // TODO:
     // Anchor cannot be an empty string

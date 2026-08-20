@@ -391,6 +391,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             String content = directiveToken.getContent();
             YamlDirective directive = null;
             if (content.startsWith("%YAML ")) {
+                if (document.getYamlDirective() != null) {
+                    error(directiveToken, YamlDiagnosticCode.DUPICATE_YAML_DIRECTIVE);
+                }
                 String version = parseYamlDirective(directiveToken);
                 content = content.substring(6);
                 directive = new YamlDirective(

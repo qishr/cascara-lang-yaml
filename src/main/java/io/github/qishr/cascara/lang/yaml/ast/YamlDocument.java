@@ -43,8 +43,10 @@ import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 public class YamlDocument extends YamlNode {
     private final List<YamlDirective> directives = new ArrayList<>();
+    private final List<YamlTagDirective> tagsDirectives = new ArrayList<>();
     private YamlNode body;
     private boolean hasEndMarker;
+    private YamlDirective yamlDirective;
 
     public YamlDocument(YamlToken token) {
         super(token);
@@ -59,11 +61,24 @@ public class YamlDocument extends YamlNode {
     public void addDirective(YamlDirective directive) {
         if (directive != null) {
             this.directives.add(directive);
+            if (directive instanceof YamlTagDirective tagDirective) {
+                tagsDirectives.add(tagDirective);
+            } else {
+                yamlDirective = directive;
+            }
         }
     }
 
     public List<YamlDirective> getDirectives() {
         return directives;
+    }
+
+    public List<YamlTagDirective> getTagsDirectives() {
+        return tagsDirectives;
+    }
+
+    public YamlDirective getYamlDirective() {
+        return yamlDirective;
     }
 
     public YamlNode getBody() {
