@@ -1034,6 +1034,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 advanceBufferBy(currFirstContentOffset + prevNonWhitespaceOffset + 1 - addedLeadingWhitespace);
                 currLineTrimmed = currLineTrimmed.substring(0, prevNonWhitespaceOffset + 1);
                 currLineLexeme = currLineLexeme.substring(0, currFirstContentOffset + prevNonWhitespaceOffset + 1 - addedLeadingWhitespace);
+                if (!content.isEmpty() && !currLineTrimmed.isEmpty()) {
+                    currLineTrimmed = " " + currLineTrimmed;
+                }
             }
         }
 

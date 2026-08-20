@@ -264,4 +264,20 @@ public class AstParserTests extends AstParserTestBase {
         YamlScalar empty = seq.getScalar(1);
         assertEquals("", empty.asString());
     }
+
+    @Test
+    void testMultiLinePlainScalar() {
+        String yaml = """
+            b: plain
+             value  # lala
+            """;
+
+        tokenizerReporter.setLevel(Level.TRACE);
+
+        YamlMap root = (YamlMap) parser.parse(yaml);
+        assertEquals(1, root.size());
+
+        YamlScalar scalar = root.getScalar("b");
+        TestUtils.assertEquals("plain value", scalar.asString());
+    }
 }
