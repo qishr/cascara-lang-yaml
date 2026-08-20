@@ -89,6 +89,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     DUPICATE_YAML_DIRECTIVE("YAML-218", "Duplicate YAML directive"),
     ALIAS_MUST_NOT_SPECIFY_PROPERTIES("YAML-219", "An alias node must not specify any properties"),
     COMMENT_NOT_SEPARATED("YAML-220", "Comments must be separated from other tokens by white space characters"),
+    MALFORMED_TAG("YAML-221", "Malformed tag {0}"),
 
     // TODO:
     // Anchor cannot be an empty string

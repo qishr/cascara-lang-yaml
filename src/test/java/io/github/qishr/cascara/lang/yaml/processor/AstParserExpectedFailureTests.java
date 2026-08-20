@@ -155,10 +155,31 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
 
+    @Test
+    void test_SU74() {
+        String yaml = """
+            key1: &alias value1
+            &b *alias : value2
+            """;
+
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
+
     // COMMENT_NOT_SEPARATED
     @Test
     void test_SU5Z() {
         String yaml = "key: \"value\"# invalid comment\n";
+
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
+
+    // Anchor before sequence entry on same line
+    @Disabled
+    @Test
+    void test_SY6V() {
+        String yaml = "&anchor - sequence entry\n";
 
         tokenizerReporter.setLevel(Level.TRACE);
         tokenize(yaml);

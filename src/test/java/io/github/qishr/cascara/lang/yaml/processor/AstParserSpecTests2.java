@@ -105,7 +105,6 @@ public class AstParserSpecTests2 extends AstParserTestBase {
 
 
     // Duplicate of testMixedKeysImplicitExplicitNull
-    // @Disabled("come back to this")
     @Test
     public void testDFF7() {
         String yaml = """
