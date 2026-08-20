@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
 
 public class AstParserSpecTests extends AstParserTestBase {
 
@@ -1546,8 +1547,11 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         YamlMap map = (YamlMap)body;
 
+        YamlScalar control = map.getScalar("control");
+        assertEquals(ScalarStyle.DOUBLE_QUOTED, control.getScalarStyle());
+
         TestUtils.assertEquals("Sosa did fine.☺", map.getString("unicode"));
-        TestUtils.assertEquals("\b1998\t1999\t2000\n", map.getString("control"));
+        TestUtils.assertEquals("\b1998\t1999\t2000\n", control.asString());
         TestUtils.assertEquals("\r\n is \r\n", map.getString("hex esc"));
         TestUtils.assertEquals("\"Howdy!\" he cried.", map.getString("single"));
         TestUtils.assertEquals(" # Not a 'comment'.", map.getString("quoted"));
@@ -2078,5 +2082,39 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         parser.setReporter(parserReporter);
         parser.parseMulti(yaml);
+    }
+
+    @Test
+    public void testUT92() {
+        String yaml = """
+            ---
+            { matches
+            % : 20 }
+            ...
+            ---
+            # Empty
+            ...
+            """;
+
+        if (DEBUG) {
+            TestUtils.dumpTokens(
+                parserReporter.getWriter(Level.DEBUG),
+                tokenizer.tokenize(yaml)
+            );
+        }
+
+        parser.setReporter(parserReporter);
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(2, stream.getDocuments().size());
+
+        YamlMap map = (YamlMap) stream.getDocument(0).getBody();
+        assertEquals(1, map.size());
+        YamlMapEntry entry = map.getEntry(0);
+        assertEquals("matches %", entry.getKeyString());
+        assertEquals("20", entry.getValue().asString());
+
+
+        YamlScalar scalar = (YamlScalar) stream.getDocument(1).getBody();
+        assertEquals(PrimitiveType.NULL, scalar.getPrimitiveType());
     }
 }

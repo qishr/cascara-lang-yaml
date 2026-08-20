@@ -353,12 +353,12 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
             hasComplexKey |= entry.hasExplicitKey();
 
-            if ("key".equals(key.asString())) {
-                debug("Debug");
-            }
-            if ("false".equals(value.asString())) {
-                debug("Debug");
-            }
+            // if ("key".equals(key.asString())) {
+            //     debug("Debug");
+            // }
+            // if ("false".equals(value.asString())) {
+            //     debug("Debug");
+            // }
 
             int keyIndent = indentOf(key, prevIndentSpaces);
 
@@ -484,9 +484,9 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                 String string = scalar.asString();
                 ScalarStyle scalarStyle = scalar.getScalarStyle();
 
-                if ("value".equals(string)) {
-                    debug("Debug");
-                }
+                // if ("value".equals(string)) {
+                //     debug("Debug");
+                // }
 
                 if (scalarStyle == ScalarStyle.PLAIN) {
                     if (!isSafePlain(string)) {

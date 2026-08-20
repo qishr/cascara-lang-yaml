@@ -187,7 +187,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     } else {
                         pendingComments.add(parseComment(CommentStyle.LEADING));
                     }
-                    debug("Debug");
+                    // debug("Debug");
                 }
                 continue;
             }
@@ -468,6 +468,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 // if (testName != null) {
                 //     warn(token, GenericDiagnosticCode.WARN, testName);
                 // }
+                if (flowDepth == 0 && scalar.getLexeme().contains("\n")) {
+                    error(scalar.getToken(), YamlDiagnosticCode.IMPLICIT_KEY_SINGLE_LINE);
+                }
                 key = scalar;
             } else if (tokenType == YamlTokenType. ALIAS) {
                 key = parseAlias(pendingProperties);

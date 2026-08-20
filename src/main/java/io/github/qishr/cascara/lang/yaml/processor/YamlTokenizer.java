@@ -335,7 +335,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c)) {
-            isDocumentLevel = false;
+            // isDocumentLevel = false;
             advance();
             YamlTokenType type = FLOW_CONTEXT_SINGLE_CHAR_TOKENS.get(c);
 
@@ -657,7 +657,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 if (scalarStyle == ScalarStyle.PLAIN &&
                     !isDocumentLevel && lineNum > 0 && charOffset == 0 &&
                     c != ' ' && c != '\r' && c != '\n' && c != '\t') {
-                    debug("plain scalar finished - no ident");
+                    // debug("plain scalar finished - no ident");
                     action = ScalarAction.STOP_BLOCKINDENT;
                     break;
                 }
@@ -1008,7 +1008,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             advanceBufferBy(charOffset - addedLeadingWhitespace);
 
             if (prevNonWhitespaceOffset < 0) {
-                debug("Debug comment");
+                // debug("Debug comment");
                 backupBufferToEOL();
                 currLineTrimmed = null;
             } else {
@@ -1024,7 +1024,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         } else if (action == ScalarAction.STOP_COMMENT) {
             // Consume currLine up until prevNonWhitespaceOffset
             if (prevNonWhitespaceOffset < 0) {
-                debug("Debug comment");
+                // debug("Debug comment");
                 backupBufferToEOL();
                 currLineTrimmed = null;
             } else {
