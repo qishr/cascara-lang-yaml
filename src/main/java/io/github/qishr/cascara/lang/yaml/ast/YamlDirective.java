@@ -38,20 +38,20 @@ package io.github.qishr.cascara.lang.yaml.ast;
 import java.util.List;
 
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
-import io.github.qishr.cascara.lang.yaml.util.YamlDirectiveType;
+import io.github.qishr.cascara.lang.yaml.util.DirectiveType;
 import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 public class YamlDirective extends YamlNode {
     private final String content;
-    private YamlDirectiveType type;
+    private DirectiveType type;
 
-    public YamlDirective(YamlToken token, YamlDirectiveType type, String content) {
+    public YamlDirective(YamlToken token, DirectiveType type, String content) {
         super(token);
         this.type = type;
         this.content = content;
     }
 
-    public YamlDirectiveType getType() {
+    public DirectiveType getType() {
         return type;
     }
 

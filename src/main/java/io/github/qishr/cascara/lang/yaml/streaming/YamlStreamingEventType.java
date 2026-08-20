@@ -33,27 +33,39 @@
 // version.
 
 
-module cascara.lang.yaml {
-    requires transitive cascara.common;
-    requires javafx.graphics;
+package io.github.qishr.cascara.lang.yaml.streaming;
 
-    exports io.github.qishr.cascara.lang.yaml;
-    exports io.github.qishr.cascara.lang.yaml.ast;
-    exports io.github.qishr.cascara.lang.yaml.diagnostic;
-    exports io.github.qishr.cascara.lang.yaml.processor;
-    exports io.github.qishr.cascara.lang.yaml.streaming;
-    exports io.github.qishr.cascara.lang.yaml.token;
-    exports io.github.qishr.cascara.lang.yaml.util;
+import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 
-    opens io.github.qishr.cascara.lang.yaml.ast;
-    opens io.github.qishr.cascara.lang.yaml.diagnostic;
-    opens io.github.qishr.cascara.lang.yaml.processor;
-    opens io.github.qishr.cascara.lang.yaml.token;
-    opens io.github.qishr.cascara.lang.yaml.util;
+public enum YamlStreamingEventType implements StreamingEventType {
+    START_STREAM,
 
-    provides io.github.qishr.cascara.common.service.ServiceProvider
-        with io.github.qishr.cascara.lang.yaml.processor.YamlConverter,
-             //io.github.qishr.cascara.lang.yaml.processor.YamlEmitter,
-             io.github.qishr.cascara.lang.yaml.processor.YamlAstParser,
-             io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
+    END_STREAM,
+
+    START_DOCUMENT,
+
+    END_DOCUMENT,
+
+    /// Maps to Map/Object entry boundaries
+    START_MAP,
+
+    END_MAP,
+
+    /// Maps to List/Sequence boundaries
+    START_SEQUENCE,
+
+    END_SEQUENCE,
+
+    /// Keys
+    KEY,
+
+    /// String, number, boolean, null
+    VALUE_SCALAR,
+
+    /// Alias
+    ALIAS,
+
+    COMMENT,
+
+    ERROR
 }

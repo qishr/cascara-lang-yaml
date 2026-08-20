@@ -41,10 +41,10 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
 
-public class YamlStreamingEvent implements StreamingEvent {
+public class YamlStreamingEvent implements StreamingEvent<YamlStreamingEventType> {
 	private final int lineNumber;
 	private final int columnNumber;
-	private final StreamingEventType type;
+	private final YamlStreamingEventType type;
 	private final NodeStyle nodeStyle;
 	private final ScalarStyle scalarStyle;
 	private final String tag;
@@ -53,10 +53,7 @@ public class YamlStreamingEvent implements StreamingEvent {
 	private final String lexeme;
 	private final String content;
 
-	// TODO: Remove this:
-	private YamlNode node;
-
-    public YamlStreamingEvent(int lineNumber, int columnNumber, StreamingEventType type, NodeStyle nodeStyle, ScalarStyle scalarStyle, String tag, String resolvedTag, String anchor, String lexeme, String content) {
+    public YamlStreamingEvent(int lineNumber, int columnNumber, YamlStreamingEventType type, NodeStyle nodeStyle, ScalarStyle scalarStyle, String tag, String resolvedTag, String anchor, String lexeme, String content) {
 		this.lineNumber = lineNumber;
 		this.columnNumber = columnNumber;
 		this.type = type;
@@ -69,16 +66,8 @@ public class YamlStreamingEvent implements StreamingEvent {
 		this.content = content;
     }
 
-	public void setNode(YamlNode node) {
-		this.node = node;
-	}
-
-	public YamlNode getNode() {
-		return node;
-	}
-
 	@Override
-	public StreamingEventType getType() {
+	public YamlStreamingEventType getType() {
 		return type;
 	}
 

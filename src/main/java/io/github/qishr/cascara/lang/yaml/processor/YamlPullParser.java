@@ -36,12 +36,11 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.common.lang.processor.PullParser;
-import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
-import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 import io.github.qishr.cascara.common.util.TermUtils;
 import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlParser;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
+import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEventType;
 
 import java.io.InputStream;
 import java.util.concurrent.BlockingDeque;
@@ -79,7 +78,7 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
 
         if (!events.isEmpty()) {
             nextEvent = events.poll();
-            if (nextEvent.getType() == StreamingEventType.ERROR) {
+            if (nextEvent.getType() == YamlStreamingEventType.ERROR) {
                 trace("ERROR: " + nextEvent.getContent());
                 errorEncountered.set(true);
                 nextEvent = null;
@@ -104,14 +103,14 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
             nextEvent = null;
 		}
 
-        if (nextEvent != null && nextEvent.getType() == StreamingEventType.ERROR) {
+        if (nextEvent != null && nextEvent.getType() == YamlStreamingEventType.ERROR) {
             nextEvent = null;
         }
         return nextEvent != null;
     }
 
     @Override
-    public StreamingEvent next() {
+    public YamlStreamingEvent next() {
         if (!hasNext() || nextEvent == null) {
             // We should probably throw an Exception (no more events)
             return null;
@@ -148,11 +147,11 @@ public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implement
                 parseStream();
             } catch (YamlParserException e) {
                 errorEncountered.set(true);
-                createEvent(tokenBuffer.peek(), StreamingEventType.ERROR, e.getMessage());
+                createEvent(tokenBuffer.peek(), YamlStreamingEventType.ERROR, e.getMessage());
                 trace("parsing error: " + e.getMessage());
             } catch (Exception e) {
                 errorEncountered.set(true);
-                createEvent(tokenBuffer.peek(), StreamingEventType.ERROR, e.getMessage());
+                createEvent(tokenBuffer.peek(), YamlStreamingEventType.ERROR, e.getMessage());
                 trace("parseInternal failed: " + e.getMessage());
                 e.printStackTrace();
             }

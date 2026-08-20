@@ -51,7 +51,6 @@ import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
 import io.github.qishr.cascara.common.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.processor.Processor;
-import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 import io.github.qishr.cascara.common.lang.token.TokenCategory;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.util.Pair;
@@ -75,13 +74,14 @@ import io.github.qishr.cascara.lang.yaml.diagnostic.YamlDiagnosticCode;
 import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
+import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEventType;
 import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 import io.github.qishr.cascara.lang.yaml.util.CommentStyle;
 import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
-import io.github.qishr.cascara.lang.yaml.util.YamlDirectiveType;
+import io.github.qishr.cascara.lang.yaml.util.DirectiveType;
 
 public abstract class AbstractYamlParser<P extends Processor> extends AbstractYamlProcessor<P> {
     private static final int CIRCULAR_BUFFER_SIZE = 256;
@@ -153,7 +153,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
 
         consume(YamlTokenType.STREAM_START, LangDiagnosticCode.EXPECTED_STREAM_START);
-        createEvent(tokenBuffer.peek(), StreamingEventType.START_STREAM);
+        createEvent(tokenBuffer.peek(), YamlStreamingEventType.START_STREAM);
 
         YamlStream streamNode = new YamlStream(tokenBuffer.peek());
 
@@ -266,7 +266,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
 
         if (!errorEncountered.get()) {
-            createEvent(tokenBuffer.peek(), StreamingEventType.END_STREAM);
+            createEvent(tokenBuffer.peek(), YamlStreamingEventType.END_STREAM);
         }
 
         return streamNode;
@@ -316,7 +316,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             YamlToken docStartToken = tokenBuffer.peek();
             if (docStartToken.getType() == YamlTokenType.DOCUMENT_START) {
-                createEvent(tokenBuffer.peek(), StreamingEventType.START_DOCUMENT, "---");
+                createEvent(tokenBuffer.peek(), YamlStreamingEventType.START_DOCUMENT, "---");
                 tokenBuffer.advance();
                 onMarkerLine = true;
                 parseTrivia();
@@ -324,7 +324,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-                createEvent(tokenBuffer.peek(), StreamingEventType.START_DOCUMENT, "");
+                createEvent(tokenBuffer.peek(), YamlStreamingEventType.START_DOCUMENT, "");
 
 
 
@@ -357,14 +357,14 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                         nextType == YamlTokenType.COMMENT ||
                         nextType == YamlTokenType.EOF ||
                         nextType == YamlTokenType.STREAM_END) {
-                        createEvent(tokenBuffer.peek(), StreamingEventType.END_DOCUMENT, "...");
+                        createEvent(tokenBuffer.peek(), YamlStreamingEventType.END_DOCUMENT, "...");
                         tokenBuffer.advance();
                         parseTrivia();
                     } else {
                         error(nextToken, YamlDiagnosticCode.UNEXPECTED_TOKEN, nextToken.getType());
                     }
                 } else {
-                    createEvent(tokenBuffer.peek(), StreamingEventType.END_DOCUMENT, "");
+                    createEvent(tokenBuffer.peek(), YamlStreamingEventType.END_DOCUMENT, "");
 
 
 
@@ -395,23 +395,19 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 content = content.substring(6);
                 directive = new YamlDirective(
                     directiveToken,
-                    YamlDirectiveType.YAML,
+                    DirectiveType.YAML,
                     version
                 );
             }
             if (content.startsWith("%TAG ")) {
+                Pair<String,String> tag = parseTagDirective(directiveToken);
                 content = content.substring(5);
-
-                int space = content.indexOf(' ');
-                String name = content.substring(0, space).trim().substring(1);
-                String value = content.substring(space).trim();
-
                 directive = new YamlTagDirective(
                     directiveToken,
-                    YamlDirectiveType.TAG,
-                    directiveToken.getContent(),
-                    name,
-                    value
+                    DirectiveType.TAG,
+                    content,
+                    tag.getL(), // name
+                    tag.getR()  // value
                 );
             }
             document.addDirective(directive);
@@ -449,6 +445,14 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             error(token, YamlDiagnosticCode.UNSUPPORTED_VERSION, version);
         }
         return version;
+    }
+
+    private Pair<String,String> parseTagDirective(YamlToken token) {
+        String content = token.getContent().substring(5);
+        int space = content.indexOf(' ');
+        String name = content.substring(0, space).trim().substring(1);
+        String value = content.substring(space).trim();
+        return new Pair<>(name, value);
     }
 
     private YamlNode parseKey(int parentIndent, boolean isFlowStyle, NodeProperties pendingProperties) {
@@ -534,13 +538,13 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     // Tokenizer error
                     debug("ERROR TOKEN");
                     errorEncountered.set(true);
-                    createEvent(tokenBuffer.peek(), StreamingEventType.ERROR);
+                    createEvent(tokenBuffer.peek(), YamlStreamingEventType.ERROR);
                     return null;
                 }
                 if (errorEncountered.get()) {
                     // Parser error
                     debug("ERROR ENCOUNTERED");
-                    createEvent(tokenBuffer.peek(), StreamingEventType.ERROR);
+                    createEvent(tokenBuffer.peek(), YamlStreamingEventType.ERROR);
                     return null;
                 }
             }
@@ -748,7 +752,16 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 if (true || flowDepth == 0) {
                     if (!isComplexKey &&check(YamlTokenType.MAP_START) && lookAheadFlowMapIsFollowedByColon()) {
                         trace("PV-flowMap-map");
+
+
+
+
+                        // TODO: For test_Q9WF, this should not be flow style.
                         return parseMap(true, isComplexKey, collectionProperties, nodeProperties);
+
+
+
+
                     }
                     else if (!isComplexKey && check(YamlTokenType.SEQUENCE_START) && lookAheadFlowSequenceIsFollowedByColon()) {
                         trace("PV-seq-map");
@@ -896,7 +909,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             // collectionProperties.attachTo(map);
             attachProperties(map, collectionProperties);
-            createEvent(map, StreamingEventType.START_OBJECT);
+            createEvent(map, YamlStreamingEventType.START_MAP);
 
             Set<Object> seenKeys = new HashSet<>();
             int mapColumn = -1;
@@ -1134,7 +1147,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
             }
 
-            createEvent(map, StreamingEventType.END_OBJECT);
+            createEvent(map, YamlStreamingEventType.END_MAP);
             return map;
         } finally {
             depth--;
@@ -1171,7 +1184,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             // if (pendingProperties != null) {
             //     pendingProperties.attachTo(sequence);
             // }
-            createEvent(sequence, StreamingEventType.START_ARRAY);
+            createEvent(sequence, YamlStreamingEventType.START_SEQUENCE);
             attachComments(sequence);
 
             while (!tokenBuffer.isAtEnd()) {
@@ -1226,7 +1239,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 parseTrivia();
             }
 
-            createEvent(tokenBuffer.peek(), StreamingEventType.END_ARRAY);
+            createEvent(tokenBuffer.peek(), YamlStreamingEventType.END_SEQUENCE);
 
             return sequence;
         } finally {
@@ -1252,7 +1265,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             //     sequence.setAnchor(YamlAnchor.extractAnchorName(pendingAnchor.getToken()));
             // }
 
-            createEvent(sequence, StreamingEventType.START_ARRAY);
+            createEvent(sequence, YamlStreamingEventType.START_SEQUENCE);
 
             while (!check(YamlTokenType.SEQUENCE_END) && !tokenBuffer.isAtEnd()) {
                 parseTrivia();
@@ -1269,7 +1282,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             }
 
             consume(YamlTokenType.SEQUENCE_END, YamlDiagnosticCode.EXPECTED_CLOSE_BRACKET);
-            createEvent(tokenBuffer.peek(), StreamingEventType.END_ARRAY);
+            createEvent(tokenBuffer.peek(), YamlStreamingEventType.END_SEQUENCE);
             return sequence;
         } finally {
             depth--;
@@ -1299,7 +1312,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             //     pendingProperties.attachTo(map);
             // }
 
-            createEvent(map, StreamingEventType.START_OBJECT);
+            createEvent(map, YamlStreamingEventType.START_MAP);
 
 
             // Clear any whitespace/newlines before checking for an empty map exit
@@ -1307,7 +1320,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             // Handle empty flow map {}
             if (match(YamlTokenType.MAP_END)) {
-                createEvent(tokenBuffer.peek(), StreamingEventType.END_OBJECT);
+                createEvent(tokenBuffer.peek(), YamlStreamingEventType.END_MAP);
                 return map;
             }
 
@@ -1388,7 +1401,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     error(tokenBuffer.peek(), YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP);
                 }
             }
-            createEvent(tokenBuffer.peek(), StreamingEventType.END_OBJECT);
+            createEvent(tokenBuffer.peek(), YamlStreamingEventType.END_MAP);
             return map;
         } finally {
             depth--;
@@ -1472,9 +1485,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             pendingProperties.attachTo(scalar);
 
             if (isKey) {
-                createEvent(scalar, StreamingEventType.FIELD_NAME);
+                createEvent(scalar, YamlStreamingEventType.KEY);
             } else {
-                createEvent(scalar, StreamingEventType.VALUE_SCALAR);
+                createEvent(scalar, YamlStreamingEventType.VALUE_SCALAR);
             }
             return scalar;
         } finally {
@@ -1503,7 +1516,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             if (anchorRegistry.containsKey(name)) {
                 alias.setResolvedNode(anchorRegistry.get(name));
             }
-            createEvent(alias, StreamingEventType.ALIAS);
+            createEvent(alias, YamlStreamingEventType.ALIAS);
 
             return alias;
         } finally {
@@ -1686,23 +1699,15 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             // Build a list of property nodes - tags and anchors
             while (true) {
 
-
-
-                //lookAheadIgnoringIndentsAndComments
-                // boolean moreProperties = lookAheadIgnoringComments(YamlTokenType.ANCHOR) != null || lookAheadIgnoringComments(YamlTokenType.TAG) != null;
                 boolean moreProperties = check(YamlTokenType.ANCHOR) ||
                                          check(YamlTokenType.TAG) ||
                                          lookAheadIgnoringIndentsAndComments(YamlTokenType.ANCHOR) ||
                                          lookAheadIgnoringIndentsAndComments(YamlTokenType.TAG);
                 moreProperties |= (!test_FH7J);
-                // if (allowMultipleLines && (check(YamlTokenType.NEWLINE) || check(YamlTokenType.COMMENT))) {
                 if (allowMultipleLines && moreProperties && (check(YamlTokenType.NEWLINE) || check(YamlTokenType.COMMENT))) {
                     parseTrivia();
                     continue;
                 }
-
-
-
 
                 if (handleIndents && checkIndented(YamlTokenType.ANCHOR)) {
                     trace("indented anchor");
@@ -2133,31 +2138,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         return content.startsWith("%YAML") || content.startsWith("%TAG");
     }
 
-    private boolean isValidYamlDirectiveContent(YamlToken token) {
-        boolean foundNonWhitespace = false;
-        boolean foundSpaceAfterNonWhitespace = false;
-        String version = "";
-        String content = token.getContent();
-        for (int i = 0; i < content.length(); i++) {
-            char c = content.charAt(i);
-            if (c == '#') {
-                return true;
-            } else if (c == ' ' || c == '\t') {
-                if (foundNonWhitespace) foundSpaceAfterNonWhitespace = true;
-            } else {
-                if (foundSpaceAfterNonWhitespace) {
-                    return false;
-                }
-                foundNonWhitespace = true;
-                version += c;
-            }
-        }
-        if (!version.equals("1.2")) {
-            error(token, YamlDiagnosticCode.UNSUPPORTED_VERSION, version);
-        }
-        return true;
-    }
-
     private YamlScalar createEmptyScalar(boolean isKey, NodeProperties nodeProperties) {
         debug("createEmptyScalar");
         YamlScalar scalar = new YamlScalar(tokenBuffer.peek(), "", PrimitiveType.STRING, ScalarStyle.PLAIN, options);
@@ -2166,8 +2146,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
         createEvent(
             scalar,
-            isKey ? StreamingEventType.FIELD_NAME
-                  : StreamingEventType.VALUE_SCALAR
+            isKey ? YamlStreamingEventType.KEY
+                  : YamlStreamingEventType.VALUE_SCALAR
         );
         return scalar;
     }
@@ -2180,8 +2160,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
         createEvent(
             scalar,
-            isKey ? StreamingEventType.FIELD_NAME
-                  : StreamingEventType.VALUE_SCALAR
+            isKey ? YamlStreamingEventType.KEY
+                  : YamlStreamingEventType.VALUE_SCALAR
         );
         return scalar;
     }
@@ -2190,11 +2170,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     // Event Helpers
     //
 
-    protected void createEvent(YamlToken token, StreamingEventType type) {
+    protected void createEvent(YamlToken token, YamlStreamingEventType type) {
         createEvent(token, type, token.getContent());
     }
 
-    protected void createEvent(YamlToken token, StreamingEventType type, String content) {
+    protected void createEvent(YamlToken token, YamlStreamingEventType type, String content) {
         YamlStreamingEvent event = new YamlStreamingEvent(
             token.getStartLine(),
             token.getStartColumn(),
@@ -2210,15 +2190,15 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         handleEvent(event);
     }
 
-    private void createEvent(YamlNode node, StreamingEventType type) {
+    private void createEvent(YamlNode node, YamlStreamingEventType type) {
         YamlNode target = node;
         String anchorName = "";
 
-        if (type == StreamingEventType.ALIAS ||
-            type == StreamingEventType.FIELD_NAME ||
-            type == StreamingEventType.VALUE_SCALAR ||
-            type == StreamingEventType.START_OBJECT ||
-            type == StreamingEventType.START_ARRAY
+        if (type == YamlStreamingEventType.ALIAS ||
+            type == YamlStreamingEventType.KEY ||
+            type == YamlStreamingEventType.VALUE_SCALAR ||
+            type == YamlStreamingEventType.START_MAP ||
+            type == YamlStreamingEventType.START_SEQUENCE
         ) {
             if (node.getAnchor() instanceof String anchor) {
                 anchorName = anchor;
@@ -2247,13 +2227,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             target.asString()
         );
 
-        event.setNode(node);
-
         handleEvent(event);
     }
 
     //
-    // Anchor, Tag, and Comment Helpers
+    // Node Properties and Comment Helpers
     //
 
     private void attachAnchor(YamlNode node, YamlAnchor anchor) {
@@ -2310,6 +2288,24 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
     private String resolveTag(String raw) {
         if (raw == null) return null;
+
+        if (raw.length() < 2) {
+            return raw;
+        }
+
+        String suffix = raw.substring(1);
+
+        List<YamlDirective> directives = document.getDirectives();
+
+        for (YamlDirective d : directives) {
+            if (d instanceof YamlTagDirective tagDirective) {
+                String handle = tagDirective.getName();
+                if (suffix.startsWith(handle)) {
+                    String decodedSuffix = decodeTagUri(suffix.substring(handle.length()));
+                    return tagDirective.getValue() + decodedSuffix;
+                }
+            }
+        }
 
         if (raw.startsWith("!!")) {
             String name = raw.substring(2);
@@ -2456,7 +2452,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
     protected void error(YamlToken token, DiagnosticCode code, Object... details) {
-        createEvent(token, StreamingEventType.ERROR, formatMessage(code, details));
+        createEvent(token, YamlStreamingEventType.ERROR, formatMessage(code, details));
         errorEncountered.set(true);
 
         if (token instanceof YamlErrorToken error) {

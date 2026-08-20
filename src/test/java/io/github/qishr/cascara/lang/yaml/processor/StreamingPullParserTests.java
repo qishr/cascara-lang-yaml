@@ -37,7 +37,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
-import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
+import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEventType;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
 import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 
@@ -58,15 +58,15 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
 
             YamlStreamingEvent doc = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_DOCUMENT, doc.getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, doc.getType());
             assertEquals("---", doc.getContent());
 
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -76,15 +76,15 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
 
             YamlStreamingEvent doc = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.END_DOCUMENT, doc.getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, doc.getType());
             assertEquals("...", doc.getContent());
 
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -94,19 +94,19 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
 
             YamlStreamingEvent doc = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_DOCUMENT, doc.getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, doc.getType());
             assertEquals("", doc.getContent());
 
             YamlStreamingEvent body = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.VALUE_SCALAR, body.getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, body.getType());
             assertEquals("!!str", body.getTag());
             assertEquals("tag:yaml.org,2002:str", body.getResolvedTag());
 
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -117,13 +117,13 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
 
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
 
             if (parser.next() instanceof YamlStreamingEvent event) {
-                assertEquals(StreamingEventType.VALUE_SCALAR, event.getType());
+                assertEquals(YamlStreamingEventType.VALUE_SCALAR, event.getType());
                 String anchor = event.getAnchor();
                 assertEquals("a1", anchor);
             }
@@ -136,25 +136,25 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
 
             YamlStreamingEvent item1 = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.VALUE_SCALAR, item1.getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, item1.getType());
             assertEquals("s1", item1.getContent());
             assertEquals("!!str", item1.getTag());
             assertEquals("tag:yaml.org,2002:str", item1.getResolvedTag());
 
             YamlStreamingEvent item2 = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.VALUE_SCALAR, item2.getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, item2.getType());
             assertEquals("s2", item2.getContent());
             assertEquals("!!str", item2.getTag());
             assertEquals("tag:yaml.org,2002:str", item2.getResolvedTag());
 
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -173,13 +173,13 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
             //     .setAnsiColoringEnabled(true)
             // );
 
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
 
             if (parser.next() instanceof YamlStreamingEvent event) {
-                assertEquals(StreamingEventType.START_OBJECT, event.getType());
+                assertEquals(YamlStreamingEventType.START_MAP, event.getType());
                 String anchor = event.getAnchor();
                 assertEquals("a1", anchor);
             }
@@ -205,59 +205,59 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
 
             // top1
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
             // top2
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
             // top3
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
             // top4
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
             // top5
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
 
             // top6
             YamlStreamingEvent top6 = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.FIELD_NAME, top6.getType());
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, top6.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
             YamlStreamingEvent key6 = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.FIELD_NAME, key6.getType());
+            assertEquals(YamlStreamingEventType.KEY, key6.getType());
             YamlStreamingEvent scalar6 = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.VALUE_SCALAR, scalar6.getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, scalar6.getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
             assertEquals("", top6.getAnchor());
             assertEquals("anchor6", key6.getAnchor());
             assertEquals("", scalar6.getAnchor());
 
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
 
         }
     }
@@ -298,20 +298,20 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
             });
 
             new StreamingEventValidator(events)//.verbose()
-                .expect(StreamingEventType.START_STREAM)
-                .expect(StreamingEventType.START_DOCUMENT)
-                .expect(StreamingEventType.START_OBJECT)
-                .expect(StreamingEventType.FIELD_NAME, "services")
-                .expect(StreamingEventType.START_OBJECT)
-                .expect(StreamingEventType.FIELD_NAME, "web")
-                .expect(StreamingEventType.START_OBJECT)
-                .expect(StreamingEventType.FIELD_NAME, "port")
-                .expect(StreamingEventType.VALUE_SCALAR, "8080")
-                .expect(StreamingEventType.END_OBJECT)
-                .expect(StreamingEventType.END_OBJECT)
-                .expect(StreamingEventType.END_OBJECT)
-                .expect(StreamingEventType.END_DOCUMENT)
-                .expect(StreamingEventType.END_STREAM)
+                .expect(YamlStreamingEventType.START_STREAM)
+                .expect(YamlStreamingEventType.START_DOCUMENT)
+                .expect(YamlStreamingEventType.START_MAP)
+                .expect(YamlStreamingEventType.KEY, "services")
+                .expect(YamlStreamingEventType.START_MAP)
+                .expect(YamlStreamingEventType.KEY, "web")
+                .expect(YamlStreamingEventType.START_MAP)
+                .expect(YamlStreamingEventType.KEY, "port")
+                .expect(YamlStreamingEventType.VALUE_SCALAR, "8080")
+                .expect(YamlStreamingEventType.END_MAP)
+                .expect(YamlStreamingEventType.END_MAP)
+                .expect(YamlStreamingEventType.END_MAP)
+                .expect(YamlStreamingEventType.END_DOCUMENT)
+                .expect(YamlStreamingEventType.END_STREAM)
                 .validate();
         }
     }
@@ -334,19 +334,19 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
             });
 
             new StreamingEventValidator(events)//.verbose()
-                .expect(StreamingEventType.START_STREAM)
-                .expect(StreamingEventType.START_DOCUMENT)
-                .expect(StreamingEventType.START_OBJECT)
-                .expect(StreamingEventType.FIELD_NAME, "project")
-                .expect(StreamingEventType.VALUE_SCALAR, "Cascara")
-                .expect(StreamingEventType.FIELD_NAME, "targets")
-                .expect(StreamingEventType.START_ARRAY)
-                .expect(StreamingEventType.VALUE_SCALAR, "macos")
-                .expect(StreamingEventType.VALUE_SCALAR, "windows")
-                .expect(StreamingEventType.END_ARRAY)
-                .expect(StreamingEventType.END_OBJECT)
-                .expect(StreamingEventType.END_DOCUMENT)
-                .expect(StreamingEventType.END_STREAM)
+                .expect(YamlStreamingEventType.START_STREAM)
+                .expect(YamlStreamingEventType.START_DOCUMENT)
+                .expect(YamlStreamingEventType.START_MAP)
+                .expect(YamlStreamingEventType.KEY, "project")
+                .expect(YamlStreamingEventType.VALUE_SCALAR, "Cascara")
+                .expect(YamlStreamingEventType.KEY, "targets")
+                .expect(YamlStreamingEventType.START_SEQUENCE)
+                .expect(YamlStreamingEventType.VALUE_SCALAR, "macos")
+                .expect(YamlStreamingEventType.VALUE_SCALAR, "windows")
+                .expect(YamlStreamingEventType.END_SEQUENCE)
+                .expect(YamlStreamingEventType.END_MAP)
+                .expect(YamlStreamingEventType.END_DOCUMENT)
+                .expect(YamlStreamingEventType.END_STREAM)
                 .validate();
         }
     }
@@ -373,16 +373,16 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
             });
 
             new StreamingEventValidator(events)//.verbose()
-                .expect(StreamingEventType.START_STREAM)
-                .expect(StreamingEventType.START_DOCUMENT)
-                .expect(StreamingEventType.START_OBJECT)
-                .expect(StreamingEventType.FIELD_NAME, "explicit_key")
-                .expect(StreamingEventType.VALUE_SCALAR, "Literal block scalar\nretains newlines.\n")
-                .expect(StreamingEventType.FIELD_NAME, "folded_key")
-                .expect(StreamingEventType.VALUE_SCALAR, "Folded block scalar removes single newlines.\n")
-                .expect(StreamingEventType.END_OBJECT)
-                .expect(StreamingEventType.END_DOCUMENT)
-                .expect(StreamingEventType.END_STREAM)
+                .expect(YamlStreamingEventType.START_STREAM)
+                .expect(YamlStreamingEventType.START_DOCUMENT)
+                .expect(YamlStreamingEventType.START_MAP)
+                .expect(YamlStreamingEventType.KEY, "explicit_key")
+                .expect(YamlStreamingEventType.VALUE_SCALAR, "Literal block scalar\nretains newlines.\n")
+                .expect(YamlStreamingEventType.KEY, "folded_key")
+                .expect(YamlStreamingEventType.VALUE_SCALAR, "Folded block scalar removes single newlines.\n")
+                .expect(YamlStreamingEventType.END_MAP)
+                .expect(YamlStreamingEventType.END_DOCUMENT)
+                .expect(YamlStreamingEventType.END_STREAM)
                 .validate();
         }
     }
@@ -393,10 +393,10 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
 
             YamlStreamingEvent doc = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_DOCUMENT, doc.getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, doc.getType());
             assertEquals("---", doc.getContent());
 
             assertFalse(parser.hasNext());
@@ -409,21 +409,21 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
 
             YamlStreamingEvent key = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.FIELD_NAME, key.getType());
+            assertEquals(YamlStreamingEventType.KEY, key.getType());
             assertEquals("", key.getContent());
 
             YamlStreamingEvent value = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.VALUE_SCALAR, value.getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, value.getType());
             assertEquals("a", value.getContent());
 
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -433,24 +433,24 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
 
             YamlStreamingEvent map = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_OBJECT, map.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, map.getType());
             assertEquals("tag:yaml.org,2002:set", map.getResolvedTag());
 
             YamlStreamingEvent key = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.FIELD_NAME, key.getType());
+            assertEquals(YamlStreamingEventType.KEY, key.getType());
             assertEquals("key", key.getContent());
 
             YamlStreamingEvent value = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.VALUE_SCALAR, value.getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, value.getType());
             assertEquals(null, value.getContent());
 
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -460,24 +460,24 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
 
             YamlStreamingEvent map = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_OBJECT, map.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, map.getType());
             assertEquals(NodeStyle.FLOW, map.getNodeStyle());
 
             YamlStreamingEvent key = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.FIELD_NAME, key.getType());
+            assertEquals(YamlStreamingEventType.KEY, key.getType());
             assertEquals("a", key.getContent());
 
             YamlStreamingEvent value = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.VALUE_SCALAR, value.getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, value.getType());
             assertEquals("b", value.getContent());
 
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -487,39 +487,39 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType()); // [
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType()); // [
 
             YamlStreamingEvent outerMap = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_OBJECT, outerMap.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, outerMap.getType());
             assertEquals(NodeStyle.FLOW, outerMap.getNodeStyle());
 
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType()); // a
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // a
 
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
 
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType()); // b
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType()); // c
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // b
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // c
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
 
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType()); // d
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType()); // e
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // d
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // e
 
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType()); // 23
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // 23
 
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType()); // ]
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType()); // ]
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -529,16 +529,16 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
 
             YamlStreamingEvent value = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.VALUE_SCALAR, value.getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, value.getType());
             assertEquals("a", value.getContent());
             assertEquals("!my-", value.getResolvedTag());
 
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -548,29 +548,29 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
 
             YamlStreamingEvent map = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_OBJECT, map.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, map.getType());
             assertEquals("mapping", map.getAnchor(), "&mapping should belong to the map");
 
             YamlStreamingEvent seq = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_ARRAY, seq.getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, seq.getType());
             assertEquals("key", seq.getAnchor(), "&key should belong to the sequence");
 
             YamlStreamingEvent item = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.VALUE_SCALAR, item.getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, item.getType());
             assertEquals("item", item.getAnchor(), "&item should belong to the first item");
             assertEquals("a", item.getContent());
 
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -589,15 +589,15 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
 
             YamlStreamingEvent endDoc = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.END_DOCUMENT, endDoc.getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, endDoc.getType());
             assertEquals("...", endDoc.getContent());
 
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -617,35 +617,35 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
 
             YamlStreamingEvent outer = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_OBJECT, outer.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, outer.getType());
             // System.out.println("outer: " + outer.getAnchor());
             // assertEquals("node1", outer.getAnchor());
 
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType()); //top1
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType()); //top1
 
             YamlStreamingEvent inner = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_OBJECT, inner.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, inner.getType());
             // System.out.println("inner: " + inner.getAnchor());
             assertEquals("node1", inner.getAnchor());
 
             YamlStreamingEvent key1 = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.FIELD_NAME, key1.getType());
+            assertEquals(YamlStreamingEventType.KEY, key1.getType());
             assertEquals("k1", key1.getAnchor());
             assertEquals("key1", key1.getContent());
 
             YamlStreamingEvent val = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.VALUE_SCALAR, val.getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, val.getType());
             assertEquals("one", val.getContent());
 
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
 
     }
@@ -665,35 +665,35 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
 
             YamlStreamingEvent outer = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_OBJECT, outer.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, outer.getType());
             // System.out.println("outer: " + outer.getAnchor());
             // assertEquals("node1", outer.getAnchor());
 
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType()); //top1
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType()); //top1
 
             YamlStreamingEvent inner = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_OBJECT, inner.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, inner.getType());
             // System.out.println("inner: " + inner.getAnchor());
             assertEquals("anchor", inner.getAnchor());
 
             YamlStreamingEvent key1 = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.FIELD_NAME, key1.getType());
+            assertEquals(YamlStreamingEventType.KEY, key1.getType());
             assertEquals("k1", key1.getAnchor());
             assertEquals("key6", key1.getContent());
 
             YamlStreamingEvent val = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.VALUE_SCALAR, val.getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, val.getType());
             assertEquals("scalar6", val.getContent());
 
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -706,33 +706,33 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
 
             YamlStreamingEvent outer = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_OBJECT, outer.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, outer.getType());
 
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType()); //top1
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType()); //top1
 
             YamlStreamingEvent inner = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.START_OBJECT, inner.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, inner.getType());
             // System.out.println("inner: " + inner.getAnchor());
             assertEquals("", inner.getAnchor());
 
             YamlStreamingEvent key1 = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.FIELD_NAME, key1.getType());
+            assertEquals(YamlStreamingEventType.KEY, key1.getType());
             assertEquals("k1", key1.getAnchor());
             assertEquals("key6", key1.getContent());
 
             YamlStreamingEvent val = (YamlStreamingEvent) parser.next();
-            assertEquals(StreamingEventType.VALUE_SCALAR, val.getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, val.getType());
             assertEquals("scalar6", val.getContent());
 
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -742,20 +742,20 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
 
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
 
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
 
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -770,44 +770,44 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
 
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType()); // nested sequences
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType()); // nested sequences
 
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
 
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType()); //[]
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType()); //[]
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
 
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType()); // {}
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType()); // {}
 
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
 
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
 
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
 
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType()); // key1
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType()); //[]
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType()); // key1
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType()); //[]
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
 
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType()); // key2
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType()); // {}
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType()); // key2
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType()); // {}
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -836,22 +836,22 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
 
 
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
 
 
-            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
-            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
 
 
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -878,27 +878,27 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
 
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
 
-            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
-            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
 
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -927,22 +927,22 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
 
 
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
 
 
-            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
-            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
 
 
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -965,22 +965,22 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
 
 
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
 
 
-            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
-            assertEquals(StreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
 
 
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
 
             assertTrue(false); // TODO: This test should not get to here
         }
@@ -1007,26 +1007,26 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_ARRAY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
 
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType()); // gets START_ARRAY
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // gets START_ARRAY
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
 
-            assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 
@@ -1043,19 +1043,61 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
-            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
-            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
 
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
 
-            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
-            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
 
-            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
-            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
-            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void test_Q9WF() throws Exception {
+        String yaml = """
+            { first: Sammy, last: Sosa }:
+            # Statistics:
+              hr:  # Home runs
+                 65
+              avg: # Average
+               0.278
+            """;
+
+        parserReporter.setLevel(Level.TRACE);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+
+            YamlStreamingEvent root = parser.next();
+            assertEquals(NodeStyle.BLOCK, root.getNodeStyle());
+            assertEquals(YamlStreamingEventType.START_MAP, root.getType());
+
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
 }

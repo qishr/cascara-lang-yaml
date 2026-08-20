@@ -1233,7 +1233,42 @@ public class AstParserSpecTests2 extends AstParserTestBase {
         YamlDocument doc = stream.getDocuments().getFirst();
 
         YamlNode body = normalize(doc.getBody());
-
     }
 
+    @Test
+    public void test_P76L() throws Exception {
+        String yaml = """
+            %TAG !! tag:example.com,2000:app/
+            ---
+            !!int 1 - 3 # Interval, not integer
+            """;
+
+        tokenize(yaml);
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlScalar scalar = (YamlScalar) doc.getBody();
+
+        assertEquals("!!int", scalar.getTag());
+        assertEquals("tag:example.com,2000:app/int", scalar.getResolvedTag());
+    }
+
+    @Test
+    public void test_52DL() throws Exception {
+        String yaml = """
+            ---
+            ! a
+            """;
+
+        tokenize(yaml);
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlScalar scalar = (YamlScalar) doc.getBody();
+
+        assertEquals("!", scalar.getTag());
+        assertEquals("!", scalar.getResolvedTag());
+    }
 }

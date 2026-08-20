@@ -1,6 +1,6 @@
 package io.github.qishr.cascara.lang.yaml.util;
 
-public enum YamlDirectiveType {
+public enum DirectiveType {
     YAML,
     TAG,
     INVALID

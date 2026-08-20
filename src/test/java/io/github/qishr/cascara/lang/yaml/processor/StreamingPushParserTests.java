@@ -46,8 +46,8 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
-import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 import io.github.qishr.cascara.common.lang.streaming.StreamHandler;
+import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEventType;
 
 /// Test suite validating Event-Driven Push Parser behaviors across document boundaries,
 /// collections, and streaming configurations using core Cascara Event types.
@@ -74,9 +74,9 @@ public class StreamingPushParserTests {
         List<StreamingEvent> events = handler.getEvents();
         assertFalse(events.isEmpty(), "Should produce streaming events");
 
-        assertEquals(StreamingEventType.START_STREAM, events.get(0).getType());
-        assertEquals(StreamingEventType.START_DOCUMENT, events.get(1).getType());
-        assertEquals(StreamingEventType.VALUE_SCALAR, events.get(2).getType());
+        assertEquals(YamlStreamingEventType.START_STREAM, events.get(0).getType());
+        assertEquals(YamlStreamingEventType.START_DOCUMENT, events.get(1).getType());
+        assertEquals(YamlStreamingEventType.VALUE_SCALAR, events.get(2).getType());
         assertEquals("value", events.get(2).getContent());
     }
 
@@ -89,14 +89,14 @@ public class StreamingPushParserTests {
         List<StreamingEvent> events = handler.getEvents();
         assertFalse(events.isEmpty());
 
-        assertEquals(StreamingEventType.START_STREAM, events.get(0).getType());
-        assertEquals(StreamingEventType.START_DOCUMENT, events.get(1).getType());
-        assertEquals(StreamingEventType.START_OBJECT, events.get(2).getType());
+        assertEquals(YamlStreamingEventType.START_STREAM, events.get(0).getType());
+        assertEquals(YamlStreamingEventType.START_DOCUMENT, events.get(1).getType());
+        assertEquals(YamlStreamingEventType.START_MAP, events.get(2).getType());
 
-        assertEquals(StreamingEventType.FIELD_NAME, events.get(3).getType());
+        assertEquals(YamlStreamingEventType.KEY, events.get(3).getType());
         assertEquals("key", events.get(3).getContent());
 
-        assertEquals(StreamingEventType.VALUE_SCALAR, events.get(4).getType());
+        assertEquals(YamlStreamingEventType.VALUE_SCALAR, events.get(4).getType());
         assertEquals("value", events.get(4).getContent());
     }
 
@@ -119,21 +119,21 @@ public class StreamingPushParserTests {
         assertFalse(events.isEmpty());
 
         long docStarts = events.stream()
-                .filter(e -> e.getType() == StreamingEventType.START_DOCUMENT)
+                .filter(e -> e.getType() == YamlStreamingEventType.START_DOCUMENT)
                 .count();
         assertEquals(2, docStarts);
 
         assertTrue(events.stream().anyMatch(e ->
-            e.getType() == StreamingEventType.VALUE_SCALAR &&
+            e.getType() == YamlStreamingEventType.VALUE_SCALAR &&
             "doc1".equals(e.getContent())
         ));
 
         assertTrue(events.stream().anyMatch(e ->
-            e.getType() == StreamingEventType.VALUE_SCALAR &&
+            e.getType() == YamlStreamingEventType.VALUE_SCALAR &&
             "doc2".equals(e.getContent())
         ));
 
-        assertEquals(StreamingEventType.END_STREAM,
+        assertEquals(YamlStreamingEventType.END_STREAM,
                      events.get(events.size() - 1).getType());
     }
 
