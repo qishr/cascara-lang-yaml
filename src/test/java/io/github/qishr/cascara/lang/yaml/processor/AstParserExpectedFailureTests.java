@@ -204,4 +204,41 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
+
+    @Disabled("Come back to this")
+    @Test
+    void test_VJP3() {
+        String yaml = """
+            k: {
+            k
+            :
+            v
+            }
+            """;
+
+        parserReporter.setLevel(Level.TRACE);
+
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
+
+    @Test
+    void test_X4QW() {
+        String yaml = """
+            block: ># comment
+              scalar
+            """;
+
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
+
+    // Block scalar values in collections must be indented
+    @Test
+    void test_Y79Y() {
+        String yaml = "foo: |\n\t\nbar: 1\n";
+
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
 }

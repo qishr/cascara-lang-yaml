@@ -520,6 +520,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             advance();
             // Parse chomping and indent indicator
             // https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator
+            char prev = '\0';
             while (!buffer.isAtEnd()) {
                 char next = buffer.peek();
                 if (next == '-') {
@@ -538,7 +539,14 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     error(YamlDiagnosticCode.BLOCK_SCALAR_HEADER_EXTRA, next);
                     break;
                 }
+                prev = next;
             }
+
+            char c = buffer.peek();
+            if (c == '#' && !(prev == ' ' || prev == '\t')) {
+                error(YamlDiagnosticCode.COMMENT_NOT_SEPARATED);
+            }
+
             while (!buffer.isAtEnd() && buffer.peek() != '\n') {
                 // TODO: inline comments
                 advance();

@@ -713,8 +713,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             YamlMap map = new YamlMap(startToken, options);
             map.setNodeStyle(isFlowStyle ? NodeStyle.FLOW : NodeStyle.BLOCK);
-
-            // collectionProperties.attachTo(map);
             attachProperties(map, collectionProperties);
             createEvent(map, YamlStreamingEventType.START_MAP);
 
@@ -778,9 +776,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     trace("Not-a-key break");
                     break;
                 }
-
-
-
 
                 int markerColumn = markerToken.getStartColumn();
                 if (nodeProperties != null) {
@@ -911,7 +906,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 map.put(new YamlMapEntry(key, value, hasExplicitKey));
                 parseTrivia();
 
-                // NEW: Break if the next value indicator belongs to the parent mapping entry
+                // Break if the next value indicator belongs to the parent mapping entry
                 YamlToken nextValueIndicator = lookAheadIgnoringIndentsAndComments(YamlTokenType.VALUE_INDICATOR, 0);
                 if (nextValueIndicator != null) {
                     int nextValIndCol = nextValueIndicator.getStartColumn();
@@ -1169,6 +1164,12 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         try {
             debugProperties("p", pendingProperties);
             YamlToken token = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
+
+
+
+            // TODO: Block scalar values in collections must be indented
+
+
 
             ScalarStyle style = token.getScalarStyle();
             YamlScalar scalar;
