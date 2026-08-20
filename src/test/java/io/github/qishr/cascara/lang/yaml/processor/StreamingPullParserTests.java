@@ -35,6 +35,7 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEventType;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
@@ -261,6 +262,7 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
         }
     }
 
+    // TODO: This is hanging sometimes when trace is off
     @Test
     public void testSimpleMapping() throws Exception {
         String yaml = "a: b";
@@ -1023,6 +1025,35 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
             assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
 
             assertEquals(StreamingEventType.END_ARRAY, parser.next().getType());
+            assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void testEmptyFlowNodes() throws Exception {
+        String yaml = """
+            {
+              ? foo :,
+              : bar,
+            }
+            """;
+
+        // parserReporter.setLevel(Level.TRACE);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(StreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(StreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(StreamingEventType.START_OBJECT, parser.next().getType());
+
+            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
+            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+            assertEquals(StreamingEventType.FIELD_NAME, parser.next().getType());
+            assertEquals(StreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+            assertEquals(StreamingEventType.END_OBJECT, parser.next().getType());
             assertEquals(StreamingEventType.END_DOCUMENT, parser.next().getType());
             assertEquals(StreamingEventType.END_STREAM, parser.next().getType());
         }

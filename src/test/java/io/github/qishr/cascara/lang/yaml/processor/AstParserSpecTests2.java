@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.common.lang.plain.PlainNode;
 import io.github.qishr.cascara.common.lang.plain.PlainScalarNode;
 import io.github.qishr.cascara.common.lang.plain.PlainSequenceNode;
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
@@ -104,20 +105,31 @@ public class AstParserSpecTests2 extends AstParserTestBase {
 
 
     // Duplicate of testMixedKeysImplicitExplicitNull
-    // // @Disabled("come back to this")
-    // @Test
-    // public void testDFF7() {
-    //     String yaml = """
-    //         {
-    //         ? explicit: entry,
-    //         implicit: entry,
-    //         ?
-    //         }
-    //         """;
+    // @Disabled("come back to this")
+    @Test
+    public void testDFF7() {
+        String yaml = """
+            {
+            ? explicit: entry,
+            implicit: entry,
+            ?
+            }
+            """;
 
-    //     tokenize(yaml);
-    //     parser.parseMulti(yaml);
-    // }
+        parserReporter.setLevel(Level.TRACE);
+
+        YamlMap root = (YamlMap) parser.parse(yaml);
+
+        assertEquals(3, root.size());
+
+        YamlMapEntry explicitKeyEntry = root.getEntry(0);
+        YamlMapEntry implicitKeyEntry = root.getEntry(1);
+        YamlMapEntry nullKeyEntry = root.getEntry(2);
+
+        assertEquals("explicit", explicitKeyEntry.getKey().asString());
+        assertEquals("implicit", implicitKeyEntry.getKey().asString());
+        assertEquals(null, nullKeyEntry.getKey().asString());
+    }
 
     // TODO: This is not BU8L - what is it?
     @Test
@@ -1214,6 +1226,7 @@ public class AstParserSpecTests2 extends AstParserTestBase {
             - !!str : !!null
             """;
 
+        tokenize(yaml);
         YamlStream stream = parser.parseMulti(yaml);
 
         assertEquals(1, stream.getDocuments().size());

@@ -244,30 +244,6 @@ public class AstParserTests extends AstParserTestBase {
         assertEquals(1, item.getComments().size());
     }
 
-    @Disabled("Come back to this")
-    @Test
-    void testMixedKeysImplicitExplicitNull() {
-        String yaml = """
-            {
-            ? explicit: entry,
-            implicit: entry,
-            ?
-            }
-            """;
-
-        YamlMap root = (YamlMap) parser.parse(yaml);
-
-        assertEquals(3, root.size());
-
-        YamlMapEntry explicitKeyEntry = root.getEntry(0);
-        YamlMapEntry implicitKeyEntry = root.getEntry(1);
-        YamlMapEntry nullKeyEntry = root.getEntry(2);
-
-        assertEquals("explicit", explicitKeyEntry.getKey().asString());
-        assertEquals("implicit", implicitKeyEntry.getKey().asString());
-        assertEquals(null, nullKeyEntry.getKey().asString());
-    }
-
     @Test
     void testTagInSequence() {
         String yaml = """
