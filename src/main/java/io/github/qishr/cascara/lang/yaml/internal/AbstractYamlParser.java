@@ -1496,6 +1496,15 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         debug(">parseAlias");
         depth++;
         try {
+            if (pendingProperties != null) {
+                if (pendingProperties.anchor != null) {
+                    error(pendingProperties.anchor.getToken(), YamlDiagnosticCode.ALIAS_MUST_NOT_SPECIFY_PROPERTIES);
+                }
+                if (pendingProperties.tag != null) {
+                    error(pendingProperties.tag.getToken(), YamlDiagnosticCode.ALIAS_MUST_NOT_SPECIFY_PROPERTIES);
+                }
+            }
+
             YamlToken aliasToken = tokenBuffer.advance();
 
             String raw = aliasToken.getContent();

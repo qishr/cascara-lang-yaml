@@ -140,4 +140,28 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
+
+    // An alias node must not specify any properties
+    // YAML-219
+    // ALIAS_MUST_NOT_SPECIFY_PROPERTIES
+    @Test
+    void test_SR86() {
+        String yaml = """
+            key1: &a value
+            key2: &b *a
+            """;
+
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
+
+    // COMMENT_NOT_SEPARATED
+    @Test
+    void test_SU5Z() {
+        String yaml = "key: \"value\"# invalid comment\n";
+
+        tokenizerReporter.setLevel(Level.TRACE);
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
 }

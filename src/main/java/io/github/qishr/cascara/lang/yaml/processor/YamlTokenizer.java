@@ -325,7 +325,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (c == '#') {
+
+            if (!isWhitespace(buffer.previous()) && buffer.offset() != 0) {
+                error(YamlDiagnosticCode.COMMENT_NOT_SEPARATED);
+            }
+
             advance();
+
             trace(method, "hash");
             while (buffer.peek() != '\n' && buffer.peek() != '\r' && !buffer.isAtEnd()) {
                 advance();
