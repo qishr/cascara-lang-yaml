@@ -38,6 +38,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 import io.github.qishr.cascara.common.diagnostic.StandardReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.*;
+import io.github.qishr.cascara.lang.yaml.util.YamlDirectiveType;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,7 +75,10 @@ class AstParserStreamTests extends AstParserTestBase {
         // Validate Document 1
         YamlDocument doc1 = docs.get(0);
         assertEquals(1, doc1.getDirectives().size());
-        assertEquals("%YAML 1.2", doc1.getDirectives().get(0).getContent());
+        YamlDirective directive = doc1.getDirectives().getFirst();
+        assertEquals(YamlDirectiveType.YAML, directive.getType());
+        assertEquals("%YAML 1.2", directive.getToken().getLexeme());
+        assertEquals("1.2", directive.getContent());
         assertTrue(doc1.getBody() instanceof YamlMap);
 
         // Validate Document 2

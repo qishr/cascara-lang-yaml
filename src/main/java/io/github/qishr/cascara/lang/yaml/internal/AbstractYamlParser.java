@@ -386,20 +386,17 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
     private void parseDirective() {
-        YamlToken directiveToken = tokenBuffer.advance();
+        YamlToken directiveToken = tokenBuffer.peek();
         if (isKnownDirective(directiveToken)) {
-
-            // The entire tag string, e.g.:
-            // %TAG !! tag:example.com,2000:app/
             String content = directiveToken.getContent();
-
             YamlDirective directive = null;
             if (content.startsWith("%YAML ")) {
+                String version = parseYamlDirective(directiveToken);
                 content = content.substring(6);
                 directive = new YamlDirective(
                     directiveToken,
                     YamlDirectiveType.YAML,
-                    directiveToken.getContent()
+                    version
                 );
             }
             if (content.startsWith("%TAG ")) {
@@ -417,7 +414,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     value
                 );
             }
-
             document.addDirective(directive);
         } else {
             warn(
@@ -426,6 +422,33 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 directiveToken.getContent()
             );
         }
+        tokenBuffer.advance();
+    }
+
+    private String parseYamlDirective(YamlToken token) {
+        boolean foundNonWhitespace = false;
+        boolean foundSpaceAfterNonWhitespace = false;
+        String version = "";
+        String content = token.getContent();
+        for (int i = 5; i < content.length(); i++) {
+            char c = content.charAt(i);
+            if (c == '#') {
+                break;
+            } else if (c == ' ' || c == '\t') {
+                if (foundNonWhitespace) foundSpaceAfterNonWhitespace = true;
+            } else {
+                if (foundSpaceAfterNonWhitespace) {
+                    error(token, YamlDiagnosticCode.TOO_MANY_PARTS);
+                    break;
+                }
+                foundNonWhitespace = true;
+                version += c;
+            }
+        }
+        if (!version.equals("1.2")) {
+            error(token, YamlDiagnosticCode.UNSUPPORTED_VERSION, version);
+        }
+        return version;
     }
 
     private YamlNode parseKey(int parentIndent, boolean isFlowStyle, NodeProperties pendingProperties) {
@@ -2108,6 +2131,31 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     private boolean isKnownDirective(YamlToken token) {
         String content = token.getContent();
         return content.startsWith("%YAML") || content.startsWith("%TAG");
+    }
+
+    private boolean isValidYamlDirectiveContent(YamlToken token) {
+        boolean foundNonWhitespace = false;
+        boolean foundSpaceAfterNonWhitespace = false;
+        String version = "";
+        String content = token.getContent();
+        for (int i = 0; i < content.length(); i++) {
+            char c = content.charAt(i);
+            if (c == '#') {
+                return true;
+            } else if (c == ' ' || c == '\t') {
+                if (foundNonWhitespace) foundSpaceAfterNonWhitespace = true;
+            } else {
+                if (foundSpaceAfterNonWhitespace) {
+                    return false;
+                }
+                foundNonWhitespace = true;
+                version += c;
+            }
+        }
+        if (!version.equals("1.2")) {
+            error(token, YamlDiagnosticCode.UNSUPPORTED_VERSION, version);
+        }
+        return true;
     }
 
     private YamlScalar createEmptyScalar(boolean isKey, NodeProperties nodeProperties) {

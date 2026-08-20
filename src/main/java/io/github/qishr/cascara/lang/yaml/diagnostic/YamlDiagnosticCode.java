@@ -82,6 +82,8 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     BLOCK_COLLECTION_SAME_LINE_AS_MARKER("YAML-211", "Block collection cannot start on same line with directives-end marker"),
     MAPPING_KEY_COLUMN("YAML-212", "All mapping items must start at the same column"),
     BLOCK_COLLECTION_INSIDE_FLOW("YAML-213", "Block collections are not allowed within flow collections"),
+    TOO_MANY_PARTS("YAML-214", "%YAML directive should contain exactly one part"),
+    UNSUPPORTED_VERSION("YAML-215", "Unsupported YAML version {0}"),
 
     // TODO:
     // Anchor cannot be an empty string
