@@ -84,6 +84,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     BLOCK_COLLECTION_INSIDE_FLOW("YAML-213", "Block collections are not allowed within flow collections"),
     TOO_MANY_PARTS("YAML-214", "%YAML directive should contain exactly one part"),
     UNSUPPORTED_VERSION("YAML-215", "Unsupported YAML version {0}"),
+    CANNOT_RESOLVE_TAG("YAML-216", "Could not resolve tag {0}"),
 
     // TODO:
     // Anchor cannot be an empty string

@@ -449,8 +449,9 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
     private Pair<String,String> parseTagDirective(YamlToken token) {
         String content = token.getContent().substring(5);
+        // TODO: Make this more robust, like %YAML directive parsing
         int space = content.indexOf(' ');
-        String name = content.substring(0, space).trim().substring(1);
+        String name = content.substring(0, space);
         String value = content.substring(space).trim();
         return new Pair<>(name, value);
     }
@@ -1720,14 +1721,14 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 if (handleIndents && checkIndented(YamlTokenType.TAG)) {
                     trace("indented tag");
                     YamlToken tagToken = consumeIndented(YamlTokenType.TAG);
-                    tag = new YamlTag(tagToken);
+                    tag = parseTag(tagToken); //new YamlTag(tagToken);
                     properties.add(tag);
                     nTags++;
                     continue;
                 } else if (check(YamlTokenType.TAG)) {
                     trace("tag");
                     YamlToken tagToken = tokenBuffer.advance();
-                    tag = new YamlTag(tagToken);
+                    tag = parseTag(tagToken); //new YamlTag(tagToken);
                     properties.add(tag);
                     nTags++;
                     continue;
@@ -1822,6 +1823,44 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         } finally {
             depth--;
             debug("<parseNodeProperties");
+        }
+    }
+
+
+    // §6.8.2 Tag Handles
+    private YamlTag parseTag(YamlToken token) {
+        String raw = token.getContent();
+
+        boolean e0 = false; // First exclamation mark
+        boolean e1 = false; // Second exclamation mark
+        String v0 = "";
+        String v1 = "";
+
+        for (int i = 0; i < raw.length(); i++) {
+            char ch = raw.charAt(i);
+            if (ch == '!') {
+                if (!e0) {
+                    e0 = true;
+                } else if (!e1) {
+                    e1 = true;
+                } else {
+                    // Malformed tag
+                }
+            } else if (e0) {
+                if (e1) {
+                    v1 += ch;
+                } else {
+                    v0 += ch;
+                }
+            }
+        }
+
+        if (e1) {
+            YamlTag tag = new YamlTag(token, "!" + v0 + "!", v0, v1);
+            return tag;
+        } else {
+            YamlTag tag = new YamlTag(token, "!", "", v0);
+            return tag;
         }
     }
 
@@ -2256,11 +2295,12 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     private void attachTag(YamlNode node, YamlTag tag) {
         if (tag == null) return;
 
+        String tagContent = tag.getRawValue();
         if (isReportingTrace()) {
             StringBuilder sb = new StringBuilder();
             sb.append("Attaching tag ");
             sb.append(TermUtils.ANSI_WHITE);
-            sb.append(tag.getContent());
+            sb.append(tagContent);
             sb.append(TermUtils.ANSI_RESET);
             if (node instanceof YamlScalar scalar) {
                 sb.append(" to YamlScalar ");
@@ -2274,67 +2314,64 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             trace(sb.toString());
         }
 
-        node.setTag(tag.getContent());
-        node.setResolvedTag(resolveTag(tag.getContent()));
+        resolveTag(tag);
+
+        node.setResolvedTag(tag.getResolvedValue());
+        node.setTag(tag.getRawValue());
     }
 
-    private String resolveTag(String raw) {
-        if (raw == null) return null;
 
-        if (raw.length() < 2) {
-            return raw;
-        }
+    // According to the YAML specification (§6.8.2 Tag Handles), there are
+    // only three categories of tag handles:
+    //
+    // Primary Handle (!): Starts with !, does not end with !. (e.g., !local, !foo)
+    //
+    // Secondary Handle (!!): Exactly two exclamation marks. (e.g., !!str, !!int, !!map)
+    //
+    // Named Handles (!name!): Starts with !, contains a handle name, and
+    // ends with a second !. (e.g., !e!tag, !prefix!A)
 
-        String suffix = raw.substring(1);
-
+    private void resolveTag(YamlTag tag) {
         List<YamlDirective> directives = document.getDirectives();
-
         for (YamlDirective d : directives) {
             if (d instanceof YamlTagDirective tagDirective) {
-                String handle = tagDirective.getName();
-                if (suffix.startsWith(handle)) {
-                    String decodedSuffix = decodeTagUri(suffix.substring(handle.length()));
-                    return tagDirective.getValue() + decodedSuffix;
+                String directiveHandle = tagDirective.getName();
+                if (directiveHandle.equals(tag.getHandle())) {
+                    debug("Debug");
+                    String decodedSuffix = decodeTagUri(tag.getSuffix());
+                    tag.setResolvedValue(tagDirective.getValue() + decodedSuffix);
+                    return;
                 }
             }
+        }
+
+        String raw = tag.getRawValue();
+
+        if (raw.equals("!")) {
+            tag.setResolvedValue("!");
+            return;
         }
 
         if (raw.startsWith("!!")) {
             String name = raw.substring(2);
-            return "tag:yaml.org,2002:" + name;
+            tag.setResolvedValue("tag:yaml.org,2002:" + name);
+            return;
         }
 
         if (raw.startsWith("!<") && raw.endsWith(">")) {
-            return raw.substring(2, raw.length() - 1);
+            tag.setResolvedValue(raw.substring(2, raw.length() - 1));
+            return;
         }
 
-        // Local tag (requires TAG directive)
-        if (raw.startsWith("!")) {
-            return applyTagDirective(raw.substring(1));
-        }
-
-        return raw;
-    }
-
-    String applyTagDirective(String suffix) {
-        // suffix is everything after the leading "!"
-        // e.g. "e!vector" or "foo" or "bar/baz"
-
-        List<YamlDirective> directives = document.getDirectives();
-
-        for (YamlDirective d : directives) {
-            if (d instanceof YamlTagDirective tagDirective) {
-                String handle = tagDirective.getName();
-                if (suffix.startsWith(handle)) {
-                    String decodedSuffix = decodeTagUri(suffix.substring(handle.length()));
-                    return tagDirective.getValue() + decodedSuffix;
-                }
+        if (tag.getHandle().endsWith("!") && !tag.getHandleName().isEmpty()) {
+            if (tag.getToken() == null) {
+                System.out.println("Debug");
             }
+            error(tag.getToken(), YamlDiagnosticCode.CANNOT_RESOLVE_TAG, tag.getRawValue());
         }
 
-        // No matching directive → local tag with no mapping
-        // YAML 1.2 says: treat as a non-specific tag
-        return "!" + suffix;
+        tag.setResolvedValue(raw);
+
     }
 
     private String decodeTagUri(String rawSuffix) {
@@ -2431,7 +2468,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             trace(
                 prefix + ".tag=" +
                 TermUtils.ANSI_WHITE +
-                properties.tag.getContent() +
+                properties.tag.getRawValue() +
                 TermUtils.ANSI_RESET
             );
         }
@@ -2444,8 +2481,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
     protected void error(YamlToken token, DiagnosticCode code, Object... details) {
-        createEvent(token, YamlStreamingEventType.ERROR, formatMessage(code, details));
         errorEncountered.set(true);
+        createEvent(token, YamlStreamingEventType.ERROR, formatMessage(code, details));
 
         if (token instanceof YamlErrorToken error) {
             code = error.getCode();

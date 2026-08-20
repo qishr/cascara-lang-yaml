@@ -507,7 +507,7 @@ public class AstParserSpecTests extends AstParserTestBase {
     }
 
     @Test
-    void test_tags() {
+    void test_6CK3() {
         String yamlString = """
           %TAG !e! tag:example.com,2000:app/
           ---

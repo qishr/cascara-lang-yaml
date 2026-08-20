@@ -38,6 +38,9 @@ package io.github.qishr.cascara.lang.yaml.processor;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEventType;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
+import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
 import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 
@@ -50,6 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.DynamicTest.stream;
 
 public class StreamingPullParserTests extends StreamingPullParserTestBase {
     @Test
@@ -1070,7 +1074,7 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
                0.278
             """;
 
-        parserReporter.setLevel(Level.TRACE);
+        // parserReporter.setLevel(Level.TRACE);
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
@@ -1100,4 +1104,75 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
             assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
         }
     }
-}
+
+    @Test
+    public void test_QLJ7() throws Exception {
+        String yaml = """
+            %TAG !prefix! tag:example.com,2011:
+            --- !prefix!A
+            a: b
+            --- !prefix!B
+            c: d
+            --- !prefix!C
+            e: f
+            """;
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            YamlStreamingEvent doc = parser.next();
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, doc.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            YamlStreamingEvent key = parser.next();
+            assertEquals(YamlStreamingEventType.KEY, key.getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+
+            // TODO: Not sure about this
+
+            YamlStreamingEvent unexpected = parser.next();
+            assertEquals(null, unexpected);
+        }
+    }
+
+
+    @Test
+    public void test_6WLZ() throws Exception {
+        String yaml = """
+            # Private
+            ---
+            !foo "bar"
+            ...
+            # Global
+            %TAG ! tag:example.com,2000:app/
+            ---
+            !foo "bar"
+            """;
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            YamlStreamingEvent doc = parser.next();
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, doc.getType());
+
+            YamlStreamingEvent key0 = parser.next();
+            assertEquals("!foo", key0.getResolvedTag());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, key0.getType());
+
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+
+            YamlStreamingEvent key1 = parser.next();
+            assertEquals("tag:example.com,2000:app/foo", key1.getResolvedTag());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, key1.getType());
+
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+
+            YamlStreamingEvent unexpected = parser.next();
+            assertEquals(null, unexpected);
+        }
+    }}
