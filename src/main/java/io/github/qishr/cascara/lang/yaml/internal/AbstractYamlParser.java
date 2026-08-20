@@ -654,7 +654,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                         error(tokenBuffer.peek(), YamlDiagnosticCode.BLOCK_COLLECTION_INSIDE_FLOW);
                     }
                     if (nodeProperties.anchor != null && nodeProperties.anchor.getStartLine() == tokenBuffer.peek().getStartLine()) {
-                        debug("Debug");
                         error(nodeProperties.anchor.getToken(), YamlDiagnosticCode.MISSING_NEWLINE_BLOCK_SEQ_PROPS);
                     }
                     result = parseSequence(nodeProperties);
@@ -768,7 +767,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 }
 
                 if (hasExplicitKey) {
-                    tokenBuffer.advance(); // Consume '?'
+                    YamlToken keyIndicator = tokenBuffer.advance(); // Consume '?'
+                    debug("keyIndicator="+keyIndicator);
                 }
 
                 if (!hasExplicitKey && !isScalarKeyStart) {
@@ -845,6 +845,13 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 attachComments(key);
                 trace("After skipTrivia");
 
+                boolean isIndicatorIndented = false;
+                if (check(YamlTokenType.INDENT)) {
+                    trace("PM-indicator-indent");
+                    isIndicatorIndented = true;
+                    tokenBuffer.advance();
+                }
+
                 YamlNode value;
 
                 if (check(YamlTokenType.VALUE_INDICATOR)) {
@@ -853,6 +860,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
                     trace("before parseValue");
                     if (check(YamlTokenType.NEWLINE) && !hasIndentedValueAfterNewline()) {
+                        // TODO: WHen o we arrive here?
                         value = createNullScalar(false, null);
                     }
                     else {
@@ -895,8 +903,25 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     }
                 }
 
+                if (isIndicatorIndented) {
+                    trace("PM-indicator-dedent");
+                    consume(YamlTokenType.DEDENT, YamlDiagnosticCode.EXPECTED_DEDENT);
+                }
+
                 map.put(new YamlMapEntry(key, value, hasExplicitKey));
                 parseTrivia();
+
+                // NEW: Break if the next value indicator belongs to the parent mapping entry
+                YamlToken nextValueIndicator = lookAheadIgnoringIndentsAndComments(YamlTokenType.VALUE_INDICATOR, 0);
+                if (nextValueIndicator != null) {
+                    int nextValIndCol = nextValueIndicator.getStartColumn();
+                    debug("nextValIndCol="+nextValIndCol);
+                    debug("mapColumn="+mapColumn);
+                    if (nextValIndCol < mapColumn) {
+                        debug("next value indicator belongs to parent mapping");
+                        break;
+                    }
+                }
 
                 // If a map value is followed by these tokens, the map is finished.
                 if (check(YamlTokenType.COMMA) ||
@@ -1074,11 +1099,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 YamlNode key;
                 if (hasExplicitKey) {
                     tokenBuffer.advance(); // Consume '?'
-                    if (lookAheadIgnoringIndentsAndComments(YamlTokenType.MAP_START, 0) ||
-                        lookAheadIgnoringIndentsAndComments(YamlTokenType.MAP_END, 0) ||
-                        lookAheadIgnoringIndentsAndComments(YamlTokenType.SEQUENCE_START, 0) ||
-                        lookAheadIgnoringIndentsAndComments(YamlTokenType.SEQUENCE_END, 0) ||
-                        lookAheadIgnoringIndentsAndComments(YamlTokenType.COMMA, 0)
+                    if (lookAheadIgnoringIndentsAndComments(YamlTokenType.MAP_START, 0) != null ||
+                        lookAheadIgnoringIndentsAndComments(YamlTokenType.MAP_END, 0) != null ||
+                        lookAheadIgnoringIndentsAndComments(YamlTokenType.SEQUENCE_START, 0) != null ||
+                        lookAheadIgnoringIndentsAndComments(YamlTokenType.SEQUENCE_END, 0) != null ||
+                        lookAheadIgnoringIndentsAndComments(YamlTokenType.COMMA, 0) != null
                     ){
                         key = createNullScalar(true, null);
                     } else {
@@ -1776,22 +1801,22 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
     private boolean lookAheadIgnoringIndentsAndComments(YamlTokenType targetType) {
-        return lookAheadIgnoringIndentsAndComments(targetType, 1);
+        return lookAheadIgnoringIndentsAndComments(targetType, 1) != null;
     }
 
-    private boolean lookAheadIgnoringIndentsAndComments(YamlTokenType targetType, int startAhead) {
+    private YamlToken lookAheadIgnoringIndentsAndComments(YamlTokenType targetType, int startAhead) {
         int ahead = startAhead;
         while (!tokenBuffer.isAtEnd(ahead)) {
             YamlToken token = tokenBuffer.peekAhead(ahead);
             YamlTokenType type = token.getType();
-            if (type == targetType) return true;
+            if (type == targetType) return token;
             if (type == YamlTokenType.NEWLINE || type == YamlTokenType.INDENT || type == YamlTokenType.COMMENT) {
                 ahead++;
                 continue;
             }
             break;
         }
-        return false;
+        return null;
     }
 
     private boolean lookAheadFlowSequenceIsFollowedByColon() {

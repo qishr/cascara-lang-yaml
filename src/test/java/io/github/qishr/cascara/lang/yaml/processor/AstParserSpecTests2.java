@@ -1270,7 +1270,6 @@ public class AstParserSpecTests2 extends AstParserTestBase {
         assertEquals("!", scalar.getResolvedTag());
     }
 
-    @Disabled
     @Test
     public void test_V9D5() throws Exception {
         String yaml = """
