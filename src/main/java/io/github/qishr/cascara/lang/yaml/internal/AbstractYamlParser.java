@@ -322,7 +322,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || tokenBuffer.isAtEnd()) {
                 document.setBody(createNullScalar(false, null));
             } else {
-                YamlNode body = parseValue(0, false, false, false, null);
+                YamlNode body = parseValue(0, false, false, false, false, null);
                 if (body != null) {
                     document.setBody(body);
                     document.setTag(body.getTag());   // if any
@@ -453,11 +453,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             if (tokenType == YamlTokenType. KEY_INDICATOR) {
                 trace("parseKeyNode: KEY_INDICATOR");
                 tokenBuffer.advance(); // consume '?'
-                key = parseValue(parentIndent, isFlowStyle, false, false, nodeProperties);
+                key = parseValue(parentIndent, isFlowStyle, false, true, false, nodeProperties);
             } else
             if (token.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR ||
                 token.getType() == YamlTokenType.INDENT) {
-                key = parseValue(parentIndent, false, false, false, nodeProperties);
+                key = parseValue(parentIndent, false, false, true, false, nodeProperties);
             } else if (tokenType == YamlTokenType.VALUE_INDICATOR) {
                 // Empty key
                 key = createEmptyScalar(true, nodeProperties);
@@ -466,7 +466,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             } else if (tokenType == YamlTokenType. SEQUENCE_START) {
                 key = parseFlowSequence(nodeProperties);
             } else if (tokenType == YamlTokenType. SCALAR) {
-                YamlScalar scalar = parseScalar(true, nodeProperties);
+                YamlScalar scalar = parseScalar(true, true, nodeProperties);
                 if (flowDepth == 0 && scalar.getLexeme().contains("\n")) {
                     error(scalar.getToken(), YamlDiagnosticCode.IMPLICIT_KEY_SINGLE_LINE);
                 }
@@ -498,7 +498,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     /// 1. Handling anchors (`&`) and aliases (`*`).
     /// 2. Managing block indentation tokens (`INDENT`/`DEDENT`).
     /// 3. Determining the structural type (Map, Sequence, or Scalar) via lookahead.
-    private YamlNode parseValue(int parentStartColumn, boolean isFlowStyle, boolean isComplexKey, boolean isSequenceItem, NodeProperties pendingProperties) {
+    private YamlNode parseValue(int parentStartColumn, boolean isFlowStyle, boolean isComplexKey, boolean isInMap, boolean isSequenceItem, NodeProperties pendingProperties) {
         debug(">parseValue");
         depth++;
         if (depth > depthLimit) {
@@ -659,7 +659,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     result = parseSequence(nodeProperties);
                 }
                 else if (check(YamlTokenType.SCALAR)) {
-                    result = parseScalar(isComplexKey, nodeProperties);
+                    result = parseScalar(isComplexKey, isInMap || isSequenceItem, nodeProperties);
                     trace("PV-after-parseScalar");
                     skipNewline();
                 }
@@ -806,7 +806,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 if (hasExplicitKey && flowDepth == 0) {
                     parseTrivia();
                     // Explicit keys are always parsed via parseValue in case they are complex
-                    key = parseValue(markerColumn, false, true, false, nodeProperties);
+                    key = parseValue(markerColumn, false, true, true, false, nodeProperties);
                 } else {
                     // Standard implicit key
                     if (hasExplicitKey) {
@@ -875,7 +875,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
                         parseTrivia();
 
-                        value = parseValue(mapColumn, false, false, false, null);
+                        value = parseValue(mapColumn, false, false, true, false, null);
 
                         parseTrivia();
                         if (isValueIndented) {
@@ -1004,7 +1004,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 if (nextTokenIsIndicator != null && nextTokenIsIndicator.getStartColumn() == indicatorColumn) {
                     sequence.add(createNullScalar(false, null));
                 } else {
-                    YamlNode item = parseValue(indicatorColumn, false, false, true, null);
+                    YamlNode item = parseValue(indicatorColumn, false, false, false, true, null);
                     sequence.add(item);
                 }
 
@@ -1036,7 +1036,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             while (!check(YamlTokenType.SEQUENCE_END) && !tokenBuffer.isAtEnd()) {
                 parseTrivia();
-                YamlNode item = parseValue(startToken.getStartColumn(), true, false, true, null);
+                YamlNode item = parseValue(startToken.getStartColumn(), true, false, false, true, null);
                 sequence.add(item);
                 parseTrivia();
                 if (!match(YamlTokenType.COMMA)) {
@@ -1120,7 +1120,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     parseTrivia();
 
                     // 3. Parse Value
-                    value = parseValue(key.getStartColumn(), true, false, false, null);
+                    value = parseValue(key.getStartColumn(), true, false, true, false, null);
                 } else {
                     value = createNullScalar(false, null);
                 }
@@ -1158,20 +1158,31 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
     }
 
-    private YamlScalar parseScalar(boolean isKey, NodeProperties pendingProperties) {
+    private YamlScalar parseScalar(boolean isKey, boolean isInCollection, NodeProperties pendingProperties) {
         debug(">parseScalar");
         depth++;
         try {
             debugProperties("p", pendingProperties);
             YamlToken token = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
+            ScalarStyle style = token.getScalarStyle();
 
 
 
             // TODO: Block scalar values in collections must be indented
+            // Might want to store blockIndent in the token. That'll be useful for round-trip too.
+            if (style == ScalarStyle.LITERAL || style == ScalarStyle.FOLDED) {
+                debug("Block Scalar");
+                if (token != null &&
+                    !token.getContent().isEmpty() &&
+                    token.getBlockIndent() == 0 &&
+                    isInCollection
+                ) {
+                    error(token, YamlDiagnosticCode.BLOCK_SCALAR_COLLECTION_INDENT);
+                }
+            }
 
 
 
-            ScalarStyle style = token.getScalarStyle();
             YamlScalar scalar;
 
             if (style == ScalarStyle.LITERAL) {

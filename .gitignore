@@ -1,8 +1,13 @@
-/.gradle
+build
+
 .classpath
+.gradle
+.idea
+.settings
 .project
-/.settings
-src/test/resources/yaml-suite/insane.yaml
-src/test/java/io/github/qishr/cascara/lang/yaml/SingleFileTest.java
+
 *.jfr
 *.hprof
+
+src/test/resources/yaml-suite/insane.yaml
+src/test/java/io/github/qishr/cascara/lang/yaml/SingleFileTest.java

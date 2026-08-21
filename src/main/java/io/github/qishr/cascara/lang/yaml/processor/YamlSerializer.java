@@ -92,7 +92,6 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private Writer writer;
     private YamlAstParser parser;
     private YamlOptions options = new YamlOptions();
-    private Reporter reporter = new NoOpReporter();
 
     // Options
     private int indentSize;
@@ -189,6 +188,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     /// {@inheritDoc}
     @Override
     public YamlNode toAst(Object jvmInstance) {
+        setupSerializer();
         return serialize(jvmInstance);
     }
 
@@ -245,12 +245,14 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     /// {@inheritDoc}
     @Override
     public <C> C fromAst(YamlNode astNode, Class<C> jvmType) {
+        setupSerializer();
         return (C) deserialize(astNode, jvmType);
     }
 
     /// {@inheritDoc}
     @Override
     public <C> C fromAst(YamlNode astNode, TypeReference<C> typeRef) {
+        setupSerializer();
         return (C) deserialize(astNode, typeRef);
     }
 
@@ -827,6 +829,11 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     //
     // Setup and Diagnostics
     //
+
+    protected void setupSerializer() {
+        super.setupSerializer();
+        depthLimit = options.getDepthLimit();
+    }
 
     private void setupEmitter() {
         // Configuration

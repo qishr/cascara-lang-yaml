@@ -238,6 +238,7 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
     void test_Y79Y() {
         String yaml = "foo: |\n\t\nbar: 1\n";
 
+        // DUMP_TOKENS  = true;
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }

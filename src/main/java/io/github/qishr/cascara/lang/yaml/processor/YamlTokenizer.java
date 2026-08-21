@@ -674,7 +674,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 // unless it is document level.
                 if ((scalarStyle == ScalarStyle.PLAIN || isQuoted) &&
                     !isDocumentLevel && lineNum > 0 && charOffset == 0 &&
-                    c != ' ' && c != '\r' && c != '\n' && c != '\t') {
+                    c != ' ' && c != '\r' && c != '\n') { // && c != '\t'
                     // debug("plain scalar finished - no ident");
                     action = ScalarAction.STOP_BLOCKINDENT;
                     break;
@@ -1117,7 +1117,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             YamlTokenType.SCALAR,
             lexeme.toString().stripTrailing(),
             content.toString(),
-            scalarStyle
+            scalarStyle,
+            blockIndent
         );
         addToken(token);
         debug("\n**************** END scanScalar **************** ");
@@ -1503,7 +1504,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     private YamlToken addToken(YamlTokenType type) {
         String text = buffer.getTokenWindowLexeme();
         // TODO: Is this meant to be PLAIN?
-        return addToken(new YamlToken(buffer.windowStartLine(), buffer.windowStartColumn(), buffer.windowStartOffset(), type, text, text, ScalarStyle.PLAIN));
+        return addToken(new YamlToken(buffer.windowStartLine(), buffer.windowStartColumn(), buffer.windowStartOffset(), type, text, text, ScalarStyle.PLAIN, -1));
     }
 
     private void addStructuralToken(YamlTokenType type, int tokenColumn) {

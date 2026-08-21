@@ -43,11 +43,11 @@ public class YamlToken implements Token {
     private int line;
     private int column;
     private int offset;
+    private int blockIndent;
     private YamlTokenType type;
     private String lexeme;
     private String content;
     private final ScalarStyle scalarStyle;
-    // private boolean hasPreceedingWhitespace;
 
     /// Structural Token
     public YamlToken(
@@ -57,14 +57,6 @@ public class YamlToken implements Token {
         YamlTokenType type)
     {
         this(line, column, startOffset, type, null);
-        // this.line = line;
-        // this.column = column;
-        // this.offset = startOffset;
-        // this.type = type;
-
-        // this.lexeme = null;
-        // this.content = null;
-        // this.scalarStyle = ScalarStyle.PLAIN;
     }
 
     public YamlToken(
@@ -74,14 +66,7 @@ public class YamlToken implements Token {
         YamlTokenType type,
         String content)
     {
-        this.line = line;
-        this.column = column;
-        this.offset = startOffset;
-        this.type = type;
-
-        this.lexeme = null;
-        this.content = content;
-        this.scalarStyle = ScalarStyle.PLAIN;
+        this(line, column, startOffset, type, null, content, ScalarStyle.PLAIN, -1);
     }
 
     public YamlToken(
@@ -91,7 +76,8 @@ public class YamlToken implements Token {
         YamlTokenType type,
         String lexeme,
         String content,
-        ScalarStyle scalarStyle)
+        ScalarStyle scalarStyle,
+        int blockIndent)
     {
         this.line = line;
         this.column = column;
@@ -100,6 +86,7 @@ public class YamlToken implements Token {
         this.lexeme = lexeme;
         this.content = content;
         this.scalarStyle = scalarStyle;
+        this.blockIndent = blockIndent;
     }
 
     @Override
@@ -115,6 +102,10 @@ public class YamlToken implements Token {
     @Override
     public int getOffset() {
         return offset;
+    }
+
+    public int getBlockIndent() {
+        return blockIndent;
     }
 
     @Override

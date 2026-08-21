@@ -1734,6 +1734,8 @@ public class AstParserSpecTests extends AstParserTestBase {
 
             """;
 
+
+        tokenize(yaml);
         YamlStream stream = parser.parseMulti(yaml);
 
         if (DUMP_TOKENS) {

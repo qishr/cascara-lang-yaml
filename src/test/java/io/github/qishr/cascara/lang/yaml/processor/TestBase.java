@@ -23,10 +23,10 @@ public abstract class TestBase {
     protected static final Level SERIALIZER_LEVEL = Level.INFO;
     // protected static final Level SERIALIZER_LEVEL = Level.TRACE;
 
-    protected static final boolean DEBUG = false;
+    protected static boolean DEBUG = false;
     // protected static final boolean DEBUG = true;
 
-    protected static final boolean DUMP_TOKENS = DEBUG;
+    protected static boolean DUMP_TOKENS = DEBUG;
 
     /// Reporter for use by tests
     protected Reporter reporter;
