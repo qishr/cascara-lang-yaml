@@ -67,6 +67,11 @@ public class YamlMap
         nodeStyle = NodeStyle.BLOCK;
     }
 
+    public YamlMap(YamlToken token, int line, int column, YamlOptions options) {
+        super(token, options);
+        nodeStyle = NodeStyle.BLOCK;
+    }
+
     /// {@inheritDoc}
     @Override
     public boolean isEmpty() {

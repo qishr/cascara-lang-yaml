@@ -95,7 +95,7 @@ public abstract class YamlNode implements AstNode {
     protected YamlNode(YamlToken token, YamlOptions options) {
         int line = token == null ? Diagnostic.UNKNOWN_COORD : token.getStartLine();
         int column = token == null ? Diagnostic.UNKNOWN_COORD : token.getStartColumn();
-        this(line, column, options);
+        this(token, line, column, options);
         this.token = token;
     }
 
@@ -105,7 +105,7 @@ public abstract class YamlNode implements AstNode {
     /// @param line    The line number (1-based).
     /// @param column  The column number (1-based).
     /// @param options The YAML options.
-    protected YamlNode(int line, int column, YamlOptions options) {
+    protected YamlNode(YamlToken token, int line, int column, YamlOptions options) {
         this.startLine = line;
         this.startColumn = column;
         this.options = (options == null) ? YamlOptions.DEFAULT : options;
