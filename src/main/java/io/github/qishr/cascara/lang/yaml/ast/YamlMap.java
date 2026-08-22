@@ -52,7 +52,10 @@ import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
-public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, YamlMapEntry> {
+public class YamlMap
+       extends YamlNode
+       implements MapAstNode<YamlNode, YamlNode, YamlMapEntry>,
+                  YamlCollection {
     private final LinkedHashMap<YamlNode,YamlMapEntry> entriesByKey = new LinkedHashMap<>();
 
     public YamlMap() {

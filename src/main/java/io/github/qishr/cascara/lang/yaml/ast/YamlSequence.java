@@ -47,9 +47,12 @@ import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 /// Represents a YAML sequence (a list of items).
-public class YamlSequence extends YamlNode implements SequenceAstNode<YamlNode> {
+public class YamlSequence
+       extends YamlNode
+       implements SequenceAstNode<YamlNode>,
+                  YamlCollection {
+
     private final List<YamlNode> elements = new ArrayList<>();
-    // private NodeStyle style = NodeStyle.BLOCK;
     private boolean isExpanded = false; // Default to compact
 
     public YamlSequence() {
