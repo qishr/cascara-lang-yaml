@@ -352,7 +352,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (FLOW_CONTEXT_SINGLE_CHAR_TOKENS.containsKey(c)) {
-            // isDocumentLevel = false;
             advance();
             YamlTokenType type = FLOW_CONTEXT_SINGLE_CHAR_TOKENS.get(c);
 
@@ -412,11 +411,13 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         }
 
         if (c == ':') {
+            char next = buffer.peekAhead(1);
+
             if (lineHasTabs) {
+            // if (lineHasTabs || next == '\t') {
                 error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
             }
 
-            char next = buffer.peekAhead(1);
             boolean isAtEnd = buffer.offset() + 1 == buffer.length();
             boolean prevTokenWasColon = (previousNonWhitespaceToken != null && previousNonWhitespaceToken.getType() == YamlTokenType.VALUE_INDICATOR);
 
@@ -431,20 +432,8 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             boolean cannotBeScalar = isAtEnd || nextCharIsWhitespace ||
                     ((prevTokenWasScalar || prevTokenWasFlowEnd) && flowDepth > 0);
 
-
-
-            if (!cannotBeScalar ||
-                prevTokenWasColon
-
-            )
-
-
-
-            {
-                debug("scalar starts with colon");
-            }
-            else
-            {
+            // if (cannotBeScalar && !prevTokenWasColon) {
+            if (cannotBeScalar) {
                 isDocumentLevel = false;
                 addToken(YamlTokenType.VALUE_INDICATOR);
                 advance();
