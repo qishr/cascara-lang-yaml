@@ -2119,4 +2119,28 @@ public class AstParserSpecTests extends AstParserTestBase {
         YamlScalar scalar = (YamlScalar) stream.getDocument(1).getBody();
         assertEquals(PrimitiveType.NULL, scalar.getPrimitiveType());
     }
+
+    @Test
+    public void testL383() {
+        String yaml = """
+            --- foo  # comment
+            --- foo  # comment
+            """;
+
+        if (DEBUG) {
+            TestUtils.dumpTokens(
+                parserReporter.getWriter(Level.DEBUG),
+                tokenizer.tokenize(yaml)
+            );
+        }
+
+        parser.setReporter(parserReporter);
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(2, stream.getDocuments().size());
+
+        YamlScalar s0 = (YamlScalar) stream.getDocument(0).getBody();
+        assertEquals("foo", s0.asString());
+        YamlScalar s1 = (YamlScalar) stream.getDocument(1).getBody();
+        assertEquals("foo", s1.asString());
+    }
 }

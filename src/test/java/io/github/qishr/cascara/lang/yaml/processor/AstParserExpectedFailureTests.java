@@ -233,12 +233,41 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
 
-    // Block scalar values in collections must be indented
+    // Block scalar values in collections must be indented by a SPACE
     @Test
-    void test_Y79Y() {
+    void test_Y79Y_0() {
         String yaml = "foo: |\n\t\nbar: 1\n";
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
 
+    // Flow sequence in block collection must be sufficiently indented and end with a ]
+    @Test
+    void test_Y79Y_3() {
+        String yaml = "- [\n\tfoo,\n foo\n ]\n";
         // DUMP_TOKENS  = true;
+        // parserReporter.setLevel(Level.TRACE);
+        // tokenizerReporter.setLevel(Level.TRACE);
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
+
+    @Test
+    void test_Y79Y_4() {
+        String yaml = "-\t-\n";
+        // DUMP_TOKENS  = true;
+        // parserReporter.setLevel(Level.TRACE);
+        // tokenizerReporter.setLevel(Level.TRACE);
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
+
+    @Test
+    void test_Y79Y_6() {
+        String yaml = "?\t-\n";
+        DUMP_TOKENS  = true;
+        parserReporter.setLevel(Level.TRACE);
+        tokenizerReporter.setLevel(Level.TRACE);
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }

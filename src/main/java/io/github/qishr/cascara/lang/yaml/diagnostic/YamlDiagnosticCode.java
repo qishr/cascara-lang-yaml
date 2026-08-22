@@ -40,7 +40,7 @@ import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 public enum YamlDiagnosticCode implements DiagnosticCode {
 
     ERROR("YAML-101", "{0}"),
-    TAB_NOT_ALLOWED("YAML-102", "Tab characters are not allowed for indentation in YAML"),
+    TAB_NOT_ALLOWED("YAML-102", "Tabs are not allowed as indentation"),
     INVALID_ESCAPE("YAML-103", "Invalid escape sequence: {0}"),
 
     // Expected Tokens
@@ -92,6 +92,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     MALFORMED_TAG("YAML-221", "Malformed tag {0}"),
     MISSING_NEWLINE_BLOCK_SEQ_PROPS("YAML-222", "Missing newline after block sequence props"),
     BLOCK_SCALAR_COLLECTION_INDENT("YAML-223", "Block scalar values in collections must be indented"),
+    FLOW_SEQUENCE_BLOCK_COLLECTION_INDENT("YAML-224", "Flow sequence in block collection must be sufficiently indented and end with a ]"),
 
     // TODO:
     // Anchor cannot be an empty string

@@ -43,7 +43,9 @@ public class YamlToken implements Token {
     private int line;
     private int column;
     private int offset;
+    private int firstLineIndent;
     private int blockIndent;
+    private boolean startsOnNewLine;
     private YamlTokenType type;
     private String lexeme;
     private String content;
@@ -66,7 +68,7 @@ public class YamlToken implements Token {
         YamlTokenType type,
         String content)
     {
-        this(line, column, startOffset, type, null, content, ScalarStyle.PLAIN, -1);
+        this(line, column, startOffset, type, null, content, ScalarStyle.PLAIN, -1, -1);
     }
 
     public YamlToken(
@@ -77,6 +79,7 @@ public class YamlToken implements Token {
         String lexeme,
         String content,
         ScalarStyle scalarStyle,
+        int firstLineIndent,
         int blockIndent)
     {
         this.line = line;
@@ -86,6 +89,7 @@ public class YamlToken implements Token {
         this.lexeme = lexeme;
         this.content = content;
         this.scalarStyle = scalarStyle;
+        this.firstLineIndent = firstLineIndent;
         this.blockIndent = blockIndent;
     }
 
@@ -102,6 +106,10 @@ public class YamlToken implements Token {
     @Override
     public int getOffset() {
         return offset;
+    }
+
+    public int getFirstLineIndent() {
+        return firstLineIndent;
     }
 
     public int getBlockIndent() {
@@ -135,6 +143,15 @@ public class YamlToken implements Token {
     //     hasPreceedingWhitespace = b;
     //     return this;
     // }
+
+    public boolean startsOnNewLine() {
+        return startsOnNewLine;
+    }
+
+    public YamlToken setStartsOnNewLine(boolean b) {
+        startsOnNewLine = b;
+        return this;
+    }
 
     public void setType(YamlTokenType type) { this.type = type; }
 

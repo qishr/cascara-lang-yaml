@@ -104,25 +104,11 @@ public class TestUtils {
             }
         }
 
-        // PrintWriter pw = new PrintWriter(System.out);
         try {
             table.render(writer);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        // pw.flush();
-
-
-        // for (int i = 0; i < tokens.size(); i++) {
-        //     YamlToken t = tokens.get(i);
-        //     System.out.printf("[%2d] %-20s | L:%-3d C:%-3d | Lexeme: '%s'%n",
-        //         i, t.getType(), t.getStartLine(), t.getStartColumn(),
-        //         t.getLexeme() == null
-        //         ? "null"
-        //         : t.getLexeme().replace("\n", "\\n").replace("\r", "\\r"));
-        // }
-
-        // System.out.println("-----------------------------\n");
     }
 
     public static void dumpYamlAst(YamlNode node, String indent) {
