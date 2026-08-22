@@ -205,7 +205,7 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
 
-    @Disabled("Come back to this")
+    // @Disabled("Come back to this")
     @Test
     void test_VJP3() {
         String yaml = """

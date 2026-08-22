@@ -93,6 +93,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     MISSING_NEWLINE_BLOCK_SEQ_PROPS("YAML-222", "Missing newline after block sequence props"),
     BLOCK_SCALAR_COLLECTION_INDENT("YAML-223", "Block scalar values in collections must be indented"),
     FLOW_SEQUENCE_BLOCK_COLLECTION_INDENT("YAML-224", "Flow sequence in block collection must be sufficiently indented and end with a ]"),
+    FLOW_MAP_BLOCK_INDENT("YAML-225", "Flow map in block collection must be sufficiently indented and end with a }"),
 
     // TODO:
     // Anchor cannot be an empty string

@@ -1229,37 +1229,49 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         debug(">parseScalar");
         depth++;
         try {
-            boolean isInCollection = parentCollection != null;
-            boolean isFlowSequenceItem = (parentCollection instanceof YamlSequence) && parentCollection.getNodeStyle() == NodeStyle.FLOW;
             debugProperties("p", pendingProperties);
             YamlToken token = consume(YamlTokenType.SCALAR, YamlDiagnosticCode.EXPECTED_SCALAR);
             ScalarStyle style = token.getScalarStyle();
 
-
-
             // Block scalar values in collections must be indented
             if (style == ScalarStyle.LITERAL || style == ScalarStyle.FOLDED) {
-                debug("Block Scalar");
                 if (token != null &&
                     !token.getContent().isEmpty() &&
                     token.getBlockIndent() == 0 &&
-                    isInCollection
+                    parentCollection != null
                 ) {
                     error(token, YamlDiagnosticCode.BLOCK_SCALAR_COLLECTION_INDENT);
                 }
             }
 
-            if (isFlowSequenceItem && blockCollectionDepth > 0) {
-                debug("Debug test_Y79Y_003");
 
-                // TODO: Check for test_Y79Y_3
 
-                if (token.startsOnNewLine() && token.getFirstLineIndent() == 0) {
-                    error(token, YamlDiagnosticCode.FLOW_SEQUENCE_BLOCK_COLLECTION_INDENT);
+
+            //
+            // TODO: More errors have crept in
+            //
+            if (parentCollection instanceof YamlMap &&
+                parentCollection.getNodeStyle() == NodeStyle.FLOW &&
+                blockCollectionDepth > 0
+            )  {
+                if(token.getStartLine() > parentCollection.getStartLine()) {
+                    if (token.startsOnNewLine() && token.getFirstLineIndent() == 0) {
+                        error(token, YamlDiagnosticCode.FLOW_MAP_BLOCK_INDENT);
+                    }
                 }
             }
 
 
+
+
+            if ((parentCollection instanceof YamlSequence) && parentCollection.getNodeStyle() == NodeStyle.FLOW) {
+                // Check for test_Y79Y_3
+                // TODO: should this not be:
+                // if(token.getStartLine() > parentCollection.getStartLine() && token.getFirstLineIndent() == 0) {
+                if (token.startsOnNewLine() && token.getFirstLineIndent() == 0) {
+                    error(token, YamlDiagnosticCode.FLOW_SEQUENCE_BLOCK_COLLECTION_INDENT);
+                }
+            }
 
             YamlScalar scalar;
 
