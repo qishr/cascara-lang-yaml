@@ -369,7 +369,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         if (c == '-') {
             if (lineHasTabs) {
-                error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
+                error(YamlDiagnosticCode.TABS_NOT_ALLOWED_AS_INDENTATION);
             }
             if (buffer.offset() + 1 >= buffer.length()) {
                 isDocumentLevel = false;
@@ -392,9 +392,21 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     addStructuralToken(YamlTokenType.INDENT, dashColumn);
                 }
 
-                addToken(YamlTokenType.SEQUENCE_ENTRY_INDICATOR);
+                YamlToken indicator = new YamlToken(
+                    buffer.windowStartLine(),
+                    buffer.windowStartColumn(),
+                    buffer.windowStartOffset(),
+                    YamlTokenType.SEQUENCE_ENTRY_INDICATOR
+                );
 
-                if (buffer.peek() == ' ') advance();
+                if (buffer.peek() == ' ') {
+                    advance();
+                } else if (buffer.peek() == '\t') {
+                    advance();
+                    indicator.setFollowedByTab(true);
+                }
+
+                addToken(indicator);
 
                 if (!buffer.isAtEnd() && buffer.peek() != '\n' && buffer.peek() != '\r') {
                     if (willBeMappingKey()) {
@@ -415,7 +427,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
             if (lineHasTabs) {
             // if (lineHasTabs || next == '\t') {
-                error(YamlDiagnosticCode.TAB_NOT_ALLOWED);
+                error(YamlDiagnosticCode.TABS_NOT_ALLOWED_AS_INDENTATION);
             }
 
             boolean isAtEnd = buffer.offset() + 1 == buffer.length();

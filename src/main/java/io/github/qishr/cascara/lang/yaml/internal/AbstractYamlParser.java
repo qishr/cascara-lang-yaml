@@ -1020,13 +1020,17 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     error(tokenBuffer.peek(), YamlDiagnosticCode.INCONSISTENT_INDENTATION);
                 }
 
-                YamlToken nextTokenIsIndicator = lookAheadIgnoringComments(YamlTokenType.SEQUENCE_ENTRY_INDICATOR);
+                YamlToken thisIndicator = tokenBuffer.peek();
+                YamlToken possibleNextIndicator = lookAheadIgnoringIndentsAndComments(YamlTokenType.SEQUENCE_ENTRY_INDICATOR, 1);
 
-                tokenBuffer.advance(); // Consume the '-'
+                if (this.blockCollectionDepth > 0 && thisIndicator.isFollowedByTab() && possibleNextIndicator != null ) {
+                    error(tokenBuffer.peek(), YamlDiagnosticCode.TABS_NOT_ALLOWED_AS_INDENTATION);
+                }
 
+                tokenBuffer.advance(); // Consume this indicator
                 parseTrivia();
 
-                if (nextTokenIsIndicator != null && nextTokenIsIndicator.getStartColumn() == indicatorColumn) {
+                if (possibleNextIndicator != null && possibleNextIndicator.getStartColumn() == indicatorColumn) {
                     sequence.add(createNullScalar(false, null));
                 } else {
                     YamlNode item = parseValue(indicatorColumn, false, false, true, false, null);

@@ -40,7 +40,7 @@ import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 public enum YamlDiagnosticCode implements DiagnosticCode {
 
     ERROR("YAML-101", "{0}"),
-    TAB_NOT_ALLOWED("YAML-102", "Tabs are not allowed as indentation"),
+    TABS_NOT_ALLOWED_AS_INDENTATION("YAML-102", "Tabs are not allowed as indentation"),
     INVALID_ESCAPE("YAML-103", "Invalid escape sequence: {0}"),
 
     // Expected Tokens

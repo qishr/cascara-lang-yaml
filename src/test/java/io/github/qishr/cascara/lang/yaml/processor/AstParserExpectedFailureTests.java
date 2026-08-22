@@ -269,7 +269,6 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
         String yaml = "? key:\n:\tkey:\n";
         // DUMP_TOKENS  = true;
         // parserReporter.setLevel(Level.TRACE);
-        // tokenizerReporter.setLevel(Level.TRACE);
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }

@@ -2143,4 +2143,11 @@ public class AstParserSpecTests extends AstParserTestBase {
         YamlScalar s1 = (YamlScalar) stream.getDocument(1).getBody();
         assertEquals("foo", s1.asString());
     }
+
+    @Test
+    void test_Y79Y_010() {
+        String yaml = "-\t-1\n";
+        tokenize(yaml);
+        parser.parseMulti(yaml);
+    }
 }
