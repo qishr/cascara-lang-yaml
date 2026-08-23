@@ -1298,4 +1298,52 @@ public class AstParserSpecTests2 extends AstParserTestBase {
         YamlMap valMap = (YamlMap) entry.getValue();
         assertEquals("white", valMap.getString("moon"));
     }
+
+    @Test
+    public void test_DE56_02() throws Exception {
+        String yaml = "\"3 trailing\\\t\n    tab\"\n";
+
+        // tokenizerReporter.setLevel(Level.TRACE);
+
+        tokenize(yaml);
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlScalar scalar = (YamlScalar) doc.getBody();
+
+        String expected = "3 trailing\t tab";
+        String actual = scalar.asString();
+
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(actual));
+        }
+
+        TestUtils.assertEquals(expected, scalar.asString());
+    }
+
+    @Test
+    public void test_DE56_03() throws Exception {
+        String yaml = "\"4 trailing\\\t  \n    tab\"";
+
+        // tokenizerReporter.setLevel(Level.TRACE);
+
+        tokenize(yaml);
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlScalar scalar = (YamlScalar) doc.getBody();
+
+        String expected = "4 trailing\t tab";
+        String actual = scalar.asString();
+
+        if (DEBUG) {
+            System.out.println("Expected: " + StringUtils.debugString(expected));
+            System.out.println("Actual  : " + StringUtils.debugString(actual));
+        }
+
+        TestUtils.assertEquals(expected, scalar.asString());
+    }
 }

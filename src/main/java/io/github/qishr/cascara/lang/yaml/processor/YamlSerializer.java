@@ -41,7 +41,6 @@ import java.io.Reader;
 import java.io.Writer;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
 import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;

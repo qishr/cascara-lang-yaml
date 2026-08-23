@@ -825,20 +825,33 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                         trimmedCharOffset -= (currLine.length() - currLineTrimmed.length());
                     }
                 }
-                currLineTrimmed = currLineTrimmed.stripTrailing();
+
+
+
+
+                // TODO: test_DE56_02 - We need to strip trailing whitespace apart
+                // from tabs that have a backslash in front of them.
+
+                // currLineTrimmed = currLineTrimmed.stripTrailing();
+                currLineTrimmed = stripTrailingLeavingTabs(currLineTrimmed);
+
+
+
 
                 if (isQuoted && action == ScalarAction.CONTINUE) {
+
                     // TODO: Do this for plain too?
+                    // TODO: Surely this is never used since currLineTrimmed is already stripped?
                     if (currLineTrimmed.endsWith("\r\n")) { // !!3
                         currLineTrimmed = currLineTrimmed.substring(0, currLineTrimmed.length() - 2);
                     } else if (currLineTrimmed.endsWith("\n")) {
                         currLineTrimmed = currLineTrimmed.substring(0, currLineTrimmed.length() - 1);
                     }
+
                     if (currLineTrimmed.endsWith("\\")) {
                         // TODO: Only if this is an odd number of backslashes
                         isEolEscaped = true;
                         currLineTrimmed = currLineTrimmed.substring(0, currLineTrimmed.length() - 1);
-                        // removedChars++;
                     }
                 }
 
@@ -1166,6 +1179,25 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         addToken(token);
         lineHasContent = true;
         debug("\n**************** END scanScalar **************** ");
+    }
+
+    // TODO: This is horrendously inefficient
+    private String stripTrailingLeavingTabs(String s) {
+        while (true) {
+            if (s.endsWith("\r") ||
+                s.endsWith("\n") ||
+                s.endsWith(" ")) {
+                s = s.substring(0, s.length() - 1);
+            } else if (s.endsWith("\t")) {
+                if (s.endsWith("\\\t")) {
+                    break;
+                }
+                s = s.substring(0, s.length() - 1);
+            } else {
+                break;
+            }
+        }
+        return s;
     }
 
     private ScalarAction scalarAction(String line, boolean lineHasContent, int offset, ScalarStyle scalarStyle, boolean isFirstChar) {
