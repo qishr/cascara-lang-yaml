@@ -189,7 +189,8 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
     // Implicit keys need to be on a single line
     // Block collections are not allowed within flow collections
     // Flow mapping missing a separating comma
-    @Disabled("Come back to this")
+
+    // TODO: testUT92
     @Test
     void test_T833() {
         String yaml = """
@@ -199,13 +200,12 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
              bar: 2 }
             """;
 
-        parserReporter.setLevel(Level.TRACE);
+        // parserReporter.setLevel(Level.TRACE);
 
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
 
-    // @Disabled("Come back to this")
     @Test
     void test_VJP3() {
         String yaml = """

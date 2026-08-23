@@ -87,6 +87,8 @@ public class YamlAliasResolver {
     private void collectAnchors(YamlNode node, Map<String, YamlNode> anchorMap) {
         if (node == null) return;
 
+        if (node instanceof YamlAlias) return;
+
         // // 1. Check if the node is wrapped in a explicit YamlAnchor node
         // if (node instanceof YamlAnchor anchor) {
         //     if (anchor.getName() != null) {
@@ -98,9 +100,10 @@ public class YamlAliasResolver {
         // }
 
         // 2. Check if the node (e.g. YamlScalar) carries an anchor property directly
-        if (node.getAnchor() != null && !node.getAnchor().isEmpty()) {
-            anchorMap.put(node.getAnchor(), node);
-            debug("Collected property anchor: %s on node %s", node.getAnchor(), node);
+        String anchor = node.getAnchor();
+        if (anchor != null && !anchor.isEmpty()) {
+            anchorMap.put(anchor, node);
+            debug("Collected property anchor: %s on node %s", anchor, node);
         }
 
         // 3. Recurse through collections

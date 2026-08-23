@@ -1340,12 +1340,14 @@ public class AstParserSpecTests extends AstParserTestBase {
               text: Pretty vector drawing.
             """;
 
-        Reporter reporter =  new StandardReporter()
-            .setLevel(TOKENIZER_LEVEL)
-            .setAnsiColoringEnabled(true);
+        parserReporter.setLevel(Level.TRACE);
 
-        parser.getTokenizer().setReporter(reporter);
-        parser.setReporter(reporter);
+        // Reporter reporter =  new StandardReporter()
+        //     .setLevel(TOKENIZER_LEVEL)
+        //     .setAnsiColoringEnabled(true);
+
+        // parser.getTokenizer().setReporter(reporter);
+        // parser.setReporter(reporter);
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -1358,6 +1360,12 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
+
+        //
+        // TODO: Something goes wrong here...
+        // Actually something went wrong before here.
+        // // The anchor &ORIGIN is not on the flow map node.
+        //
 
         YamlNode body = normalize(
             resolveAliases(doc.getBody())
@@ -2016,6 +2024,41 @@ public class AstParserSpecTests extends AstParserTestBase {
         parser.parseMulti(yaml);
     }
 
+    // TODO: test_T833
+    @Test
+    public void testUT92() {
+        String yaml = """
+            ---
+            { matches
+            % : 20 }
+            ...
+            ---
+            # Empty
+            ...
+            """;
+
+        if (DEBUG) {
+            TestUtils.dumpTokens(
+                parserReporter.getWriter(Level.DEBUG),
+                tokenizer.tokenize(yaml)
+            );
+        }
+
+        parser.setReporter(parserReporter);
+        YamlStream stream = parser.parseMulti(yaml);
+        assertEquals(2, stream.getDocuments().size());
+
+        YamlMap map = (YamlMap) stream.getDocument(0).getBody();
+        assertEquals(1, map.size());
+        YamlMapEntry entry = map.getEntry(0);
+        assertEquals("matches %", entry.getKeyString());
+        assertEquals("20", entry.getValue().asString());
+
+
+        YamlScalar scalar = (YamlScalar) stream.getDocument(1).getBody();
+        assertEquals(PrimitiveType.NULL, scalar.getPrimitiveType());
+    }
+
     @Test
     public void test6CA3() {
         String yaml = "\t[\n\t]";
@@ -2067,6 +2110,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         parser.parseMulti(yaml);
     }
 
+    // TODO: Check testUT92 and test_T833
     @Test
     public void test87E4() {
         String yaml = """
@@ -2074,6 +2118,8 @@ public class AstParserSpecTests extends AstParserTestBase {
                 'implicit flow key' : value,
                ]
             """;
+
+        parserReporter.setLevel(Level.TRACE);
 
         if (DEBUG) {
             TestUtils.dumpTokens(
@@ -2084,40 +2130,6 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         parser.setReporter(parserReporter);
         parser.parseMulti(yaml);
-    }
-
-    @Test
-    public void testUT92() {
-        String yaml = """
-            ---
-            { matches
-            % : 20 }
-            ...
-            ---
-            # Empty
-            ...
-            """;
-
-        if (DEBUG) {
-            TestUtils.dumpTokens(
-                parserReporter.getWriter(Level.DEBUG),
-                tokenizer.tokenize(yaml)
-            );
-        }
-
-        parser.setReporter(parserReporter);
-        YamlStream stream = parser.parseMulti(yaml);
-        assertEquals(2, stream.getDocuments().size());
-
-        YamlMap map = (YamlMap) stream.getDocument(0).getBody();
-        assertEquals(1, map.size());
-        YamlMapEntry entry = map.getEntry(0);
-        assertEquals("matches %", entry.getKeyString());
-        assertEquals("20", entry.getValue().asString());
-
-
-        YamlScalar scalar = (YamlScalar) stream.getDocument(1).getBody();
-        assertEquals(PrimitiveType.NULL, scalar.getPrimitiveType());
     }
 
     @Test

@@ -84,6 +84,8 @@ public class AstParserSpecTests2 extends AstParserTestBase {
             - [ {JSON: like}:adjacent ]
             """;
 
+        parserReporter.setLevel(Level.TRACE);
+
         tokenize(yaml);
         parser.parseMulti(yaml);
     }
@@ -313,6 +315,7 @@ public class AstParserSpecTests2 extends AstParserTestBase {
              &g { g: h }
             ]
             """;
+
 
         tokenize(yaml);
 
