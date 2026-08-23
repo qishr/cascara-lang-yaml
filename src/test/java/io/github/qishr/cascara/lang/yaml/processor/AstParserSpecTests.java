@@ -1281,13 +1281,12 @@ public class AstParserSpecTests extends AstParserTestBase {
         TestUtils.assertEquals(expected, scalar.asString());
     }
 
-    @Disabled("Come back to this one later")
     @Test
     public void testAB8U() {
         String yaml = """
             - single multiline
              - sequence entry
-            """;;
+            """;
 
         // Reporter reporter =  new StandardReporter()
         //     .setLevel(TOKENIZER_LEVEL)
@@ -2162,4 +2161,24 @@ public class AstParserSpecTests extends AstParserTestBase {
         tokenize(yaml);
         parser.parseMulti(yaml);
     }
+
+    @Test
+    void test_8UB() {
+        String yaml = """
+            [
+            "double
+             quoted", 'single
+                       quoted',
+            plain
+             text, [ nested ],
+            single: pair,
+            ]
+            """;
+
+        parserReporter.setLevel(Level.TRACE);
+
+        tokenize(yaml);
+        parser.parseMulti(yaml);
+    }
 }
+

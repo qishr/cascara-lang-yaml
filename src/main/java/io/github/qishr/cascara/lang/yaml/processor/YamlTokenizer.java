@@ -826,17 +826,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     }
                 }
 
-
-
-
-                // TODO: test_DE56_02 - We need to strip trailing whitespace apart
+                // We need to strip trailing whitespace apart
                 // from tabs that have a backslash in front of them.
-
-                // currLineTrimmed = currLineTrimmed.stripTrailing();
                 currLineTrimmed = stripTrailingLeavingTabs(currLineTrimmed);
-
-
-
 
                 if (isQuoted && action == ScalarAction.CONTINUE) {
 

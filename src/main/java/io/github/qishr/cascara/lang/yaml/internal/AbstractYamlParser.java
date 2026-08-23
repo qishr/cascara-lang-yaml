@@ -1337,7 +1337,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 // Check for test_Y79Y_3
                 // TODO: should this not be:
                 // if(token.getStartLine() > parentCollection.getStartLine() && token.getFirstLineIndent() == 0) {
-                if (token.startsOnNewLine() && token.getFirstLineIndent() == 0) {
+                if (token.startsOnNewLine() && token.getFirstLineIndent() == 0 && blockCollectionDepth > 0) {
                     error(token, YamlDiagnosticCode.FLOW_SEQUENCE_BLOCK_COLLECTION_INDENT);
                 }
             }
