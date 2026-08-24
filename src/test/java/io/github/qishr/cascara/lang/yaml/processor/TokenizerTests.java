@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
@@ -205,6 +206,8 @@ public class TokenizerTests extends TokenizerTestBase {
         assertEquals(expected, structure);
     }
 
+    // TODO: This doesn't seem like valid YAML
+    // Should probably result in "Unexpected block-seq-ind on same line with key"
     @Test
     void testCompactMappingSequence() {
         // The input represents a key followed immediately by a sequence on the same line

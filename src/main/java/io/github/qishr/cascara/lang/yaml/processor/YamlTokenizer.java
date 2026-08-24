@@ -722,7 +722,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
                 char c = currLine.charAt(charOffset);
 
-                action = scalarAction(currLine, foundContent, charOffset, scalarStyle, isFirstChar);
+                action = scalarAction(currLine, foundContent, charOffset, scalarStyle, lineNum == 0, isFirstChar);
                 if (action != ScalarAction.CONTINUE) {
                     break;
                 }
@@ -1208,7 +1208,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         return s;
     }
 
-    private ScalarAction scalarAction(String line, boolean lineHasContent, int offset, ScalarStyle scalarStyle, boolean isFirstChar) {
+    private ScalarAction scalarAction(String line, boolean lineHasContent, int offset, ScalarStyle scalarStyle, boolean isFirstLine, boolean isFirstChar) {
         char ch = line.charAt(offset);
         char prev = offset > 0 ? line.charAt(offset - 1) : '\0';
         char next = offset + 1 < line.length() ? line.charAt(offset + 1) : '\0';
@@ -1223,12 +1223,26 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
             // testAB8U: if c is a dash and the previous token was a dash
             // c is paert of this string if it's indented more than the previous token.
-            if (ch == '-' &&
-                previousNonWhitespaceToken != null &&
-                previousNonWhitespaceToken.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR &&
-                previousNonWhitespaceToken.getStartColumn() < offset + 1
-            ) {
-                return ScalarAction.CONTINUE;
+            boolean prevTokenWasSequenceIndicator = previousNonWhitespaceToken != null &&
+                previousNonWhitespaceToken.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR;
+            // if (ch == '-' &&
+            //     prevTokenWasSequenceIndicator &&
+            //     previousNonWhitespaceToken.getStartColumn() < offset + 1
+            // ) {
+            //     return ScalarAction.CONTINUE;
+            // }
+            if (prevTokenWasSequenceIndicator) {
+                if (ch == '-' && previousNonWhitespaceToken.getStartColumn() < offset + 1) {
+                    return ScalarAction.CONTINUE;
+                } else {
+                    if (!isFirstLine && ch != ' ' && ch != '\t' && ch != '\r' && ch != '\n') {
+                        // If a non-whitespace character is indented less than or same as
+                        // a preceeding sequence indicator, it's not part of this scalar.
+                        if (offset + 1 <= previousNonWhitespaceToken.getStartColumn()) {
+                            return ScalarAction.STOP_MAP_KEY;
+                        }
+                    }
+                }
             }
             if (ch == '#' && (prev == '\0' || prev == ' ' || prev == '\t' || prev == '\r' || prev == '\n')) {
                 return ScalarAction.STOP_COMMENT;
