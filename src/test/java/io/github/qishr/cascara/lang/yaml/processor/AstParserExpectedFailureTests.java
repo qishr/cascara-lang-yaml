@@ -313,4 +313,16 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
+
+    // IMPLICIT_KEY_SEQ_SAME_LINE
+    @Test
+    void test_DK4H() {
+        String yaml = """
+            ---
+            [ key
+              : value ]
+            """;
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
 }

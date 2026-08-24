@@ -98,6 +98,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     NESTED_MAPPING_IN_COMPACT_MAPPING("YAML-227", "Nested mappings are not allowed in compact mappings"),
     BLOCK_SEQ_IND_SAME_LINE("YAML-228","Unexpected block-seq-ind on same line with key"),
     UNEXPECTED_COMMA_IN_FLOW_SEQ("YAML-229", "Unexpected , in flow sequence"),
+    IMPLICIT_KEY_SEQ_SAME_LINE("YAML-230", "Implicit keys of flow sequence pairs need to be on a single line"),
 
     // TODO:
     // Anchor cannot be an empty string
