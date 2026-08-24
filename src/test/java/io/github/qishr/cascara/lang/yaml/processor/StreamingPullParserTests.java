@@ -1175,4 +1175,30 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
             YamlStreamingEvent unexpected = parser.next();
             assertEquals(null, unexpected);
         }
-    }}
+    }
+
+    // @Test
+    // public void test_S4GJ() throws Exception {
+    //     String yaml = """
+    //         ---
+    //         folded: > first line
+    //           second line
+    //         """;
+
+    //     ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+    //     try (YamlPullParser parser = newParser(inputStream)) {
+    //         assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+    //         YamlStreamingEvent doc = parser.next();
+    //         assertEquals(YamlStreamingEventType.START_DOCUMENT, doc.getType());
+    //         assertEquals(YamlStreamingEventType.START_MAP, doc.getType());
+
+    //         YamlStreamingEvent key0 = parser.next();
+    //         assertEquals("!foo", key0.getResolvedTag());
+    //         assertEquals(YamlStreamingEventType.VALUE_SCALAR, key0.getType());
+
+    //         assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+    //         assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+    //         assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+    //     }
+    // }
+}

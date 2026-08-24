@@ -1376,4 +1376,28 @@ public class AstParserSpecTests2 extends AstParserTestBase {
     // YamlScalar val = (YamlScalar) entry.getValue();
     // assertTrue(key.isEmpty());
     // assertEquals(PrimitiveType.NULL, val.getPrimitiveType());
+
+
+    @Test
+    public void test_() throws Exception {
+        String yaml = """
+            - | # Empty header↓
+             literal
+            - >1 # Indentation indicator↓
+              folded
+            - |+ # Chomping indicator↓
+             keep
+
+            - >1- # Both indicators↓
+              strip
+            """;
+
+        parserReporter.setLevel(Level.TRACE);
+
+        tokenize(yaml);
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+    }
 }

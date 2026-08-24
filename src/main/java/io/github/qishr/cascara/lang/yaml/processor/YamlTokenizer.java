@@ -543,6 +543,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             char prev = '\0';
             while (!buffer.isAtEnd()) {
                 char next = buffer.peek();
+                debug("Header char: " + StringUtils.debugString(""+next));
                 if (next == '-') {
                     chompingStyle = ChompingStyle.STRIP;
                     advance();
@@ -553,8 +554,11 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     // TODO: Can this be >9 ?
                     explicitIndent = next - '0';
                     advance();
-                } else if (next ==' ' || next == '\t' || next =='#' || next == '\r' || next == '\n') {
+                // } else if (next ==' ' || next == '\t' || next =='#' || next == '\r' || next == '\n') {
+                } else if (next =='#' || next == '\r' || next == '\n') {
                     break;
+                } else if (next ==' ' || next == '\t') {
+                    advance();
                 } else {
                     error(YamlDiagnosticCode.BLOCK_SCALAR_HEADER_EXTRA, next);
                     break;
@@ -563,14 +567,26 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
 
             char c = buffer.peek();
-            if (c == '#' && !(prev == ' ' || prev == '\t')) {
-                error(YamlDiagnosticCode.COMMENT_NOT_SEPARATED);
-            }
-
-            while (!buffer.isAtEnd() && buffer.peek() != '\n') {
+            if (c == '#') {
+                if (!(prev == ' ' || prev == '\t')) {
+                    error(YamlDiagnosticCode.COMMENT_NOT_SEPARATED);
+                }
                 // TODO: inline comments
                 advance();
+                while (!buffer.isAtEnd() && buffer.peek() != '\n') {
+                    advance();
+                }
+            } else if (c != '\n') {
+                while (!buffer.isAtEnd() && buffer.peek() != '\n') {
+                    if (buffer.peek() != ' ' && buffer.peek() != '\t' && buffer.peek() != '\r' ) {
+                        error(YamlDiagnosticCode.BLOCK_SCALAR_HEADER_EXTRA, buffer.peek());
+                    }
+                    advance();
+                }
             }
+
+            // while (!buffer.isAtEnd() && buffer.peek() != '\n') {
+            // }
             advance(); // consume the newline
             lexeme.append(buffer.getTokenWindowLexeme());
             isBlock = true;
