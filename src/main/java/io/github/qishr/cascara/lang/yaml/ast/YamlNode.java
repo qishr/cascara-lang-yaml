@@ -57,6 +57,7 @@ public abstract class YamlNode implements AstNode {
     private final int startColumn;
     private final int endLine = 0;
     private final int endColumn = 0;
+    private int semanticColumn = 0;
     protected YamlToken token;
     private String tag;
 	private String resolvedTag;
@@ -106,6 +107,7 @@ public abstract class YamlNode implements AstNode {
     /// @param column  The column number (1-based).
     /// @param options The YAML options.
     protected YamlNode(YamlToken token, int line, int column, YamlOptions options) {
+        this.token = token;
         this.startLine = line;
         this.startColumn = column;
         this.options = (options == null) ? YamlOptions.DEFAULT : options;
@@ -191,6 +193,21 @@ public abstract class YamlNode implements AstNode {
     /// {@inheritDoc}
     @Override
     public int getEndColumn() { return endColumn; }
+
+    /// Set the *semantic column* number of this node.
+    /// This is the column number of the node itself, unless it has properties on the same line,
+    /// in which case it is the column number of the leftmost property.
+    public int getSemanticColumn() {
+        return semanticColumn == 0 ? startColumn : semanticColumn;
+    }
+
+    /// Retrieves the *semantic column* number of this node.
+    /// This is the column number of the node itself, unless a *semantic column* has been set,
+    /// in which case that *semantic column* value is returned.
+    public YamlNode setSemanticColumn(int n) {
+        semanticColumn = n;
+        return this;
+    }
 
     /// {@inheritDoc}
     @Override

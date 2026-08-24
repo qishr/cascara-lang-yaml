@@ -8,4 +8,5 @@ public interface YamlCollection {
     NodeStyle getNodeStyle();
     int getStartLine();
     int getStartColumn();
+    int getSemanticColumn();
 }

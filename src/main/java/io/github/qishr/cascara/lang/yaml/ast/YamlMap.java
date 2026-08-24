@@ -68,7 +68,7 @@ public class YamlMap
     }
 
     public YamlMap(YamlToken token, int line, int column, YamlOptions options) {
-        super(token, options);
+        super(token, token.getStartLine(), column, options);
         nodeStyle = NodeStyle.BLOCK;
     }
 
