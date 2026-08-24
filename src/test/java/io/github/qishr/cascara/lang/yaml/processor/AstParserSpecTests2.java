@@ -1202,6 +1202,24 @@ public class AstParserSpecTests2 extends AstParserTestBase {
     }
 
     @Test
+    public void test_M5DY_part_2() {
+        String yaml = """
+            ? [ New York Yankees,
+                Atlanta Braves ]
+            : [ 2001-07-02, 2001-08-12,
+                2001-08-14 ]
+            """;
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlNode body = normalize(doc.getBody());
+    }
+
+    @Test
     public void test_FH7J() throws Exception {
         String yaml = """
             - !!str
@@ -1325,7 +1343,6 @@ public class AstParserSpecTests2 extends AstParserTestBase {
         TestUtils.assertEquals(expected, scalar.asString());
     }
 
-    @Disabled
     @Test
     public void test_M2N8_01() throws Exception {
         String yaml = "? []: x";
@@ -1338,12 +1355,25 @@ public class AstParserSpecTests2 extends AstParserTestBase {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
 
-        YamlMap outer = (YamlMap) doc.getBody();
-        YamlMap inner = outer.getMap("key");
-        YamlMapEntry entry = inner.getEntries().getFirst();
-        YamlSequence key = (YamlSequence) entry.getKey();
-        YamlScalar val = (YamlScalar) entry.getValue();
-        assertTrue(key.isEmpty());
-        assertEquals(PrimitiveType.NULL, val.getPrimitiveType());
+        YamlMap outerMap = (YamlMap) doc.getBody();
+        YamlMapEntry outerEntry = outerMap.getEntries().getFirst();
+
+        YamlMap innerMap = (YamlMap) outerEntry.getKey();
+        YamlMapEntry innerEntry = innerMap.getEntries().getFirst();
+        YamlSequence seq = (YamlSequence) innerEntry.getKey();
+        YamlScalar innerVal = (YamlScalar) innerEntry.getValue();
+        assertTrue(seq.isEmpty());
+        assertEquals("x", innerVal.asString());
+
+        YamlScalar outerVal = (YamlScalar) outerEntry.getValue();
+        assertEquals(PrimitiveType.NULL, outerVal.getPrimitiveType());
     }
+
+    // YamlMap outer = (YamlMap) doc.getBody();
+    // YamlMap inner = outer.getMap("key");
+    // YamlMapEntry entry = inner.getEntries().getFirst();
+    // YamlSequence key = (YamlSequence) entry.getKey();
+    // YamlScalar val = (YamlScalar) entry.getValue();
+    // assertTrue(key.isEmpty());
+    // assertEquals(PrimitiveType.NULL, val.getPrimitiveType());
 }

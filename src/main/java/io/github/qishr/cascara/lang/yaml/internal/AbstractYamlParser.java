@@ -618,15 +618,19 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
 
 
-                else if (!isKey && check(YamlTokenType.SEQUENCE_START) && lookAheadFlowSequenceIsFollowedByColon()) {
-                    trace("PV-seq-map");
-                    return parseMap(parentCollection, collectionProperties, nodeProperties, isKey);
-                }
-
-                // else if (check(YamlTokenType.SEQUENCE_START) && lookAheadFlowSequenceIsFollowedByColon()) {
+                // else if (!isKey && check(YamlTokenType.SEQUENCE_START) && lookAheadFlowSequenceIsFollowedByColon()) {
                 //     trace("PV-seq-map");
-                //     return parseMap(parentCollection, collectionProperties, nodeProperties, true);
+                //     return parseMap(parentCollection, collectionProperties, nodeProperties, isKey);
                 // }
+
+                // TODO: in test_M5DY_part_2 we end up going in here although the
+                // sequence is not yhe start of a new map. It is the key of the map
+                // that got us here.
+
+                else if (check(YamlTokenType.SEQUENCE_START) && lookAheadFlowSequenceIsFollowedByColon(isKey)) {
+                    trace("PV-seq-map");
+                    return parseMap(parentCollection, collectionProperties, nodeProperties, true);
+                }
 
 
 
@@ -639,9 +643,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 else if (check(YamlTokenType.SCALAR) && tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
                     trace("PV-scalar-map");
                     if (flowDepth > 0) {
-
-                        // TODO: Are we sure parseFlowMap doesn't need to know id it's a key?
-
                         // Implicit flow map does not have {} around it.
                         result = parseFlowMap(collectionProperties, nodeProperties, true);
                     } else {
@@ -918,7 +919,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
                     trace("before parseValue");
                     if (check(YamlTokenType.NEWLINE) && !hasIndentedValueAfterNewline()) {
-                        // TODO: WHen o we arrive here?
+                        // TODO: When do we arrive here?
                         value = createNullScalar(false, null);
                     }
                     else {
@@ -1956,7 +1957,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         return null;
     }
 
-    private boolean lookAheadFlowSequenceIsFollowedByColon() {
+    private boolean lookAheadFlowSequenceIsFollowedByColon(boolean isKey) {
         int i = 0;
 
         // Must start with '['
@@ -1982,6 +1983,15 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
                 case NEWLINE:
                 case COMMENT:
+
+
+
+                    if (isKey) {
+                        return false;
+                    }
+
+
+
                     // ignore trivia
                     break;
 
