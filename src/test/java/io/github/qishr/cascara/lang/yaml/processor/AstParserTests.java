@@ -272,8 +272,6 @@ public class AstParserTests extends AstParserTestBase {
              value  # lala
             """;
 
-        tokenizerReporter.setLevel(Level.TRACE);
-
         YamlMap root = (YamlMap) parser.parse(yaml);
         assertEquals(1, root.size());
 

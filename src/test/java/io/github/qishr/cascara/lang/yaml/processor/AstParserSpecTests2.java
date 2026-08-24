@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import io.github.qishr.cascara.common.lang.plain.PlainNode;
 import io.github.qishr.cascara.common.lang.plain.PlainScalarNode;
 import io.github.qishr.cascara.common.lang.plain.PlainSequenceNode;
+import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
@@ -84,8 +85,6 @@ public class AstParserSpecTests2 extends AstParserTestBase {
             - [ {JSON: like}:adjacent ]
             """;
 
-        parserReporter.setLevel(Level.TRACE);
-
         tokenize(yaml);
         parser.parseMulti(yaml);
     }
@@ -116,8 +115,6 @@ public class AstParserSpecTests2 extends AstParserTestBase {
             ?
             }
             """;
-
-        parserReporter.setLevel(Level.TRACE);
 
         YamlMap root = (YamlMap) parser.parse(yaml);
 
@@ -434,7 +431,6 @@ public class AstParserSpecTests2 extends AstParserTestBase {
               : &a
             """;
 
-        parserReporter.setLevel(Level.TRACE);
         tokenize(yaml);
 
         YamlStream stream = parser.parseMulti(yaml);
@@ -484,10 +480,7 @@ public class AstParserSpecTests2 extends AstParserTestBase {
             b: *:@*!$"<foo>:
             """;
 
-        // tokenizer.getReporter().setLevel(Level.TRACE);
         tokenize(yaml);
-        // tokenizer.getReporter().setLevel(Level.DEBUG);
-
         YamlStream stream = parser.parseMulti(yaml);
 
         assertEquals(1, stream.getDocuments().size());
@@ -559,10 +552,7 @@ public class AstParserSpecTests2 extends AstParserTestBase {
     public void test58MP() {
         String yaml = "{x: :x}";
 
-        // tokenizer.getReporter().setLevel(Level.TRACE);
         tokenize(yaml);
-        // tokenizer.getReporter().setLevel(Level.DEBUG);
-
         YamlStream stream = parser.parseMulti(yaml);
 
         assertEquals(1, stream.getDocuments().size());
@@ -576,10 +566,7 @@ public class AstParserSpecTests2 extends AstParserTestBase {
     public void test5MUD() {
         String yaml = "{ \"foo\"\n  :bar }";
 
-        // tokenizer.getReporter().setLevel(Level.TRACE);
         tokenize(yaml);
-        // tokenizer.getReporter().setLevel(Level.DEBUG);
-
         YamlStream stream = parser.parseMulti(yaml);
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
@@ -596,10 +583,7 @@ public class AstParserSpecTests2 extends AstParserTestBase {
             - { "key"::value }
             """;
 
-        // tokenizer.getReporter().setLevel(Level.TRACE);
         tokenize(yaml);
-        // tokenizer.getReporter().setLevel(Level.DEBUG);
-
         YamlStream stream = parser.parseMulti(yaml);
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
@@ -1281,8 +1265,6 @@ public class AstParserSpecTests2 extends AstParserTestBase {
               : moon: white
             """;
 
-        parserReporter.setLevel(Level.TRACE);
-
         tokenize(yaml);
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -1302,8 +1284,6 @@ public class AstParserSpecTests2 extends AstParserTestBase {
     @Test
     public void test_DE56_02() throws Exception {
         String yaml = "\"3 trailing\\\t\n    tab\"\n";
-
-        // tokenizerReporter.setLevel(Level.TRACE);
 
         tokenize(yaml);
         YamlStream stream = parser.parseMulti(yaml);
@@ -1327,8 +1307,6 @@ public class AstParserSpecTests2 extends AstParserTestBase {
     public void test_DE56_03() throws Exception {
         String yaml = "\"4 trailing\\\t  \n    tab\"";
 
-        // tokenizerReporter.setLevel(Level.TRACE);
-
         tokenize(yaml);
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -1345,5 +1323,27 @@ public class AstParserSpecTests2 extends AstParserTestBase {
         }
 
         TestUtils.assertEquals(expected, scalar.asString());
+    }
+
+    @Disabled
+    @Test
+    public void test_M2N8_01() throws Exception {
+        String yaml = "? []: x";
+
+        parserReporter.setLevel(Level.TRACE);
+
+        tokenize(yaml);
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+
+        YamlMap outer = (YamlMap) doc.getBody();
+        YamlMap inner = outer.getMap("key");
+        YamlMapEntry entry = inner.getEntries().getFirst();
+        YamlSequence key = (YamlSequence) entry.getKey();
+        YamlScalar val = (YamlScalar) entry.getValue();
+        assertTrue(key.isEmpty());
+        assertEquals(PrimitiveType.NULL, val.getPrimitiveType());
     }
 }

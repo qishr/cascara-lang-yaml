@@ -252,8 +252,6 @@ public class TokenizerTests extends TokenizerTestBase {
     void testFoldedScalarTokenization() {
         String yaml = "--- >\n ab\n cd\n\n ef\n\n\n gh\n";
 
-        // tokenizer.setReporter(new StandardReporter().setLevel(Level.TRACE));
-
         List<YamlToken> tokens = tokenizer.tokenize(yaml);
 
         assertTokensMatch(tokens,

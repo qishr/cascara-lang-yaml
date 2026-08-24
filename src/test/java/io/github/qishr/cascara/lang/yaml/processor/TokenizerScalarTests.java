@@ -56,7 +56,6 @@ public class TokenizerScalarTests {
 
     String blockScalar(String source, int indent) {
         YamlTokenizer tokenizer = new YamlTokenizer();
-        // tokenizer.setReporter(new StandardReporter().setLevel(Level.TRACE));
 
         char header = source.charAt(0);
         ScalarStyle style = header == '>'

@@ -1339,15 +1339,6 @@ public class AstParserSpecTests extends AstParserTestBase {
               text: Pretty vector drawing.
             """;
 
-        parserReporter.setLevel(Level.TRACE);
-
-        // Reporter reporter =  new StandardReporter()
-        //     .setLevel(TOKENIZER_LEVEL)
-        //     .setAnsiColoringEnabled(true);
-
-        // parser.getTokenizer().setReporter(reporter);
-        // parser.setReporter(reporter);
-
         YamlStream stream = parser.parseMulti(yaml);
 
         if (DUMP_TOKENS) {
@@ -2109,7 +2100,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         parser.parseMulti(yaml);
     }
 
-    // TODO: Check testUT92 and test_T833
+    // Related to testUT92 and test_T833
     @Test
     public void test87E4() {
         String yaml = """
@@ -2117,8 +2108,6 @@ public class AstParserSpecTests extends AstParserTestBase {
                 'implicit flow key' : value,
                ]
             """;
-
-        parserReporter.setLevel(Level.TRACE);
 
         if (DEBUG) {
             TestUtils.dumpTokens(
@@ -2174,8 +2163,6 @@ public class AstParserSpecTests extends AstParserTestBase {
             single: pair,
             ]
             """;
-
-        parserReporter.setLevel(Level.TRACE);
 
         tokenize(yaml);
         parser.parseMulti(yaml);

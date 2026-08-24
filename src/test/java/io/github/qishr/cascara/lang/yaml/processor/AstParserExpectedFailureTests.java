@@ -2,12 +2,10 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.concurrent.Flow;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
 
 public class AstParserExpectedFailureTests extends AstParserTestBase {
@@ -200,8 +198,6 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
              bar: 2 }
             """;
 
-        // parserReporter.setLevel(Level.TRACE);
-
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
@@ -215,8 +211,6 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
             v
             }
             """;
-
-        parserReporter.setLevel(Level.TRACE);
 
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
@@ -237,9 +231,6 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
     @Test
     void test_Y79Y_000() {
         String yaml = "foo: |\n\t\nbar: 1\n";
-        DUMP_TOKENS = true;
-        tokenizerReporter.setLevel(Level.TRACE);
-        // parserReporter.setLevel(Level.TRACE);
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
@@ -270,8 +261,6 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
     @Test
     void test_Y79Y_009() {
         String yaml = "? key:\n:\tkey:\n";
-        // DUMP_TOKENS  = true;
-        // parserReporter.setLevel(Level.TRACE);
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }

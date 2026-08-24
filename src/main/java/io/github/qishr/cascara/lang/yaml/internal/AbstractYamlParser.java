@@ -439,7 +439,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         depth++;
         try {
 
-            boolean isFlowStyle = flowDepth > 0;
             debugProperties("p", pendingProperties);
 
             if (check(YamlTokenType.NEWLINE)) {
@@ -531,7 +530,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             boolean isFlowStyle = flowDepth > 0;
             int parentStartColumn = parentCollection == null ? 0 : parentCollection.getStartColumn();
             boolean isSequenceItem = (parentCollection instanceof YamlSequence);
-            // boolean isFlowSequenceItem = (parentCollection instanceof YamlSequence seq) && seq.getNodeStyle() == NodeStyle.FLOW;
 
             trace("isFlowStyle="+isFlowStyle);
             trace("isComplexKey="+isKey);
@@ -557,7 +555,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             if (check(YamlTokenType.NEWLINE) && sei != null && isSequenceItem) {
                 trace("sequence entry after newline ahead");
                 if (nodeProperties != null && (nodeProperties.anchor != null || nodeProperties.tag != null)) {
-                    // if (nodeProperties.tag != null) {
                     if (nodeProperties.anchor != null || nodeProperties.tag != null) {
                         result = createEmptyScalar(isKey, nodeProperties);
                         nodeProperties.attachTo(result);
@@ -617,10 +614,21 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     // For test_Q9WF, this should not be flow style.
                     return parseMap(parentCollection, collectionProperties, nodeProperties, isKey);
                 }
+
+
+
+
                 else if (!isKey && check(YamlTokenType.SEQUENCE_START) && lookAheadFlowSequenceIsFollowedByColon()) {
                     trace("PV-seq-map");
                     return parseMap(parentCollection, collectionProperties, nodeProperties, isKey);
                 }
+
+                // else if (check(YamlTokenType.SEQUENCE_START) && lookAheadFlowSequenceIsFollowedByColon()) {
+                //     trace("PV-seq-map");
+                //     return parseMap(parentCollection, collectionProperties, nodeProperties, true);
+                // }
+
+
 
 
                 if (check(YamlTokenType.ALIAS) && tokenBuffer.peekAhead(1).getType() == YamlTokenType.VALUE_INDICATOR) {
@@ -633,8 +641,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     if (flowDepth > 0) {
 
                         // TODO: Are we sure parseFlowMap doesn't need to know id it's a key?
-
-                        // result = parseFlowMap(collectionProperties, nodeProperties, isKey);
 
                         // Implicit flow map does not have {} around it.
                         result = parseFlowMap(collectionProperties, nodeProperties, true);
@@ -673,12 +679,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     result = parseAlias(nodeProperties);
                     if (result == null) return null;
                 }
-                // // Flow map
-                // else if (check(YamlTokenType.MAP_START)) {
-                //     trace("PV-flow-map passing pendingAnchor " + nodeProperties.anchor);
-                //     result = parseFlowMap(nodeProperties);
-                //     if (result == null) return null;
-                // }
                 // Flow sequence
                 else if (check(YamlTokenType.SEQUENCE_START)) {
                     result = parseFlowSequence(isInCollection, nodeProperties);
@@ -1240,9 +1240,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     if (match(YamlTokenType.MAP_END)) {
                         break;
                     }
-
-
-
                     if (null != lookAheadIgnoringComments(YamlTokenType.SEQUENCE_END)) {
                         trace("parseFlowMap; break0 on SEQ_END");
                         parseTrivia();
@@ -1252,21 +1249,12 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                         trace("parseFlowMap; break1 on SEQ_END");
                         break;
                     }
-
-
-
                     continue;
                 } else if (match(YamlTokenType.MAP_END)) {
                     break;
-
-
-
                 } else if (isImplicitFlowMap && check(YamlTokenType.SEQUENCE_END)) {
                     trace("parseFlowMap; break2 on SEQ_END");
                     break;
-
-
-
                 } else if (null != lookAheadIgnoringComments(YamlTokenType.MAP_END)) {
                     parseTrivia();
                     break;
@@ -1302,24 +1290,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 }
             }
 
-
-
-            // if (style == ScalarStyle.PLAIN && flowDepth > 0) {
-            //     // Plain scalars inside flow collections cannot be multi-line
-            //     if (token.getLexeme().contains("\n")) {
-            //     }
-            // }
-
-            // if (isKey) {
-            //     if (token.getLexeme().contains("\n")) {
-            //         // Implicit keys need to be on a single line
-            //         error(token, YamlDiagnosticCode.IMPLICIT_KEY_SINGLE_LINE);
-            //     }
-            // }
-
-            //
-            // TODO: More errors have crept in
-            //
             if (parentCollection instanceof YamlMap &&
                 parentCollection.getNodeStyle() == NodeStyle.FLOW &&
                 blockCollectionDepth > 0
@@ -1331,12 +1301,8 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 }
             }
 
-
-
             if ((parentCollection instanceof YamlSequence) && parentCollection.getNodeStyle() == NodeStyle.FLOW) {
                 // Check for test_Y79Y_3
-                // TODO: should this not be:
-                // if(token.getStartLine() > parentCollection.getStartLine() && token.getFirstLineIndent() == 0) {
                 if (token.startsOnNewLine() && token.getFirstLineIndent() == 0 && blockCollectionDepth > 0) {
                     error(token, YamlDiagnosticCode.FLOW_SEQUENCE_BLOCK_COLLECTION_INDENT);
                 }

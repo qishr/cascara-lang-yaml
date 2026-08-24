@@ -101,8 +101,6 @@ class SerializerDirectoryTestSuite extends SerializerTestBase {
     @MethodSource("getValidFiles")
     void testRoundTripStability(String fileName, String content) throws Exception {
 
-        // reporter.setLevel(Level.TRACE);
-
         YamlMap doc = (YamlMap)parser.parse(content);
 
         // 1. Setup ONE emitter with desired options
