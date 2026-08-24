@@ -1400,4 +1400,28 @@ public class AstParserSpecTests2 extends AstParserTestBase {
         assertEquals(1, stream.getDocuments().size());
         YamlDocument doc = stream.getDocuments().getFirst();
     }
+
+    @Test
+    public void test_CN3R() throws Exception {
+        String yaml = """
+            &flowseq [
+             a: b,
+             &c c: d,
+             { &e e: f },
+             &g { g: h }
+             ]
+            """;
+
+        parserReporter.setLevel(Level.TRACE);
+
+        tokenize(yaml);
+        YamlStream stream = parser.parseMulti(yaml);
+
+        assertEquals(1, stream.getDocuments().size());
+        YamlDocument doc = stream.getDocuments().getFirst();
+        YamlSequence seq = (YamlSequence) doc.getBody();
+        YamlMap map = seq.getMap(1);
+        assertNull(map.getAnchor());
+        assertNotNull(map.getEntries().getFirst().getKey().getAnchor());
+    }
 }

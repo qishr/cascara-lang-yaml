@@ -1195,8 +1195,14 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 consume(YamlTokenType.MAP_START, YamlDiagnosticCode.EXPECTED_OPEN_BRACE_FLOW_MAP);
             }
 
-            // If properties were on a previous line, they belong to a collection
-            moveProperties(nodeProperties, collectionProperties, null);
+            // If properties were on a previous line or declared before the start
+            // of an explicit flow map, they belong to the map.x
+            if (!isImplicitFlowMap || (nodeProperties != null && (
+                (nodeProperties.anchor != null && nodeProperties.anchor.getStartLine() < startToken.getStartLine()) ||
+                (nodeProperties.tag != null && nodeProperties.tag.getStartLine() < startToken.getStartLine())
+            ))) {
+                moveProperties(nodeProperties, collectionProperties, null);
+            }
 
             YamlMap map = new YamlMap(startToken, options);
             map.setNodeStyle(NodeStyle.FLOW);
@@ -1228,16 +1234,20 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                         lookAheadIgnoringIndentsAndComments(YamlTokenType.SEQUENCE_END, 0) != null ||
                         lookAheadIgnoringIndentsAndComments(YamlTokenType.COMMA, 0) != null
                     ){
-                        key = createNullScalar(true, null);
+                        key = createNullScalar(true, nodeProperties);
                     } else {
                         // Complex key
                         parseTrivia();
-                        key = parseKey(map, null);
+                        key = parseKey(map, nodeProperties);
                     }
                 } else {
                     // Standard implicit key
-                    key = parseKey(map, null);
+                    key = parseKey(map, nodeProperties);
                 }
+
+                // This is needed because parseKey creates a new NodeProperties and
+                // doesnt set this one's properties to null.
+                nodeProperties = null;
 
                 parseTrivia();
 
