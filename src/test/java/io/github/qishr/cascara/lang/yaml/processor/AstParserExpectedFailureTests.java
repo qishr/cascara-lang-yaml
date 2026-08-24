@@ -306,4 +306,11 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
+
+    @Test
+    void test_9MAG() {
+        String yaml = "[ , a, b, c ]";
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
 }
