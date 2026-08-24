@@ -295,4 +295,13 @@ public abstract class YamlNode implements AstNode {
     public int hashCode() {
         return Objects.hash(anchor, getChildren());
     }
+
+    @Override
+    public String toString() {
+        if (getStartLine() > 0) {
+            return this.getClass().getSimpleName() + " at " + getStartLine() + ":" + getStartColumn();
+        } else {
+            return this.getClass().getSimpleName();
+        }
+    }
 }

@@ -9,7 +9,6 @@ import java.util.Map;
 import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
-import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
@@ -59,7 +58,7 @@ public class YamlAliasResolver {
         if (stream == null) return null;
         YamlStream resolved = resolve(stream, 0);
         if (resolved == null) {
-            reporter.error(YamlDiagnosticCode.DEPTH_LIMIT);
+            reporter.error(YamlDiagnosticCode.ERROR, "Unresolved alias");
         }
         return resolved;
     }

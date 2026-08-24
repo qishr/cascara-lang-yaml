@@ -1257,6 +1257,15 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
                 YamlNode value;
                 if (check(YamlTokenType.VALUE_INDICATOR)) {
+                    YamlToken valueIndicator = tokenBuffer.peek();
+                    if (!hasExplicitKey &&
+                        isImplicitFlowMap &&
+                        parentCollection instanceof YamlSequence &&
+                        valueIndicator.getStartLine() != key.getStartLine()
+                    ) {
+                        error(valueIndicator, YamlDiagnosticCode.IMPLICIT_KEY_SEQ_SAME_LINE);
+                    }
+
                     // 2. Consume Value Indicator
                     consume(YamlTokenType.VALUE_INDICATOR, YamlDiagnosticCode.EXPECTED_COLON_FLOW_MAP);
                     parseTrivia();

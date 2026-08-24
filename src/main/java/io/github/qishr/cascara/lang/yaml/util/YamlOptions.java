@@ -54,6 +54,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
             .setExplicitStart(false) // YTS expects no --- if there doesn't need to be one
             .setForceExplicitNull(true)
             .setForceBlockCollections(true)
+            .setOutputResolvedAliases(false)
     );
 
     private int depthLimit = 500;
@@ -75,7 +76,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     private boolean forceExplicitNull = false;
     private boolean forceBlockCollections = false;
     private boolean preloadTokenBuffer = false;
-    private boolean outputResolvedAliases = true;
+    private boolean outputResolvedAliases = false;
 
     public YamlOptions() {}
 

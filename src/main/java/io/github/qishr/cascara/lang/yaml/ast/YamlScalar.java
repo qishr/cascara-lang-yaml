@@ -344,7 +344,11 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
     /// {@inheritDoc}
     @Override
     public String toString() {
-        return asString();
+        if (getStartLine() > 0) {
+            return this.getClass().getSimpleName() + " [" + asString() + "] at " + getStartLine() + ":" + getStartColumn();
+        } else {
+            return this.getClass().getSimpleName();
+        }
     }
 
     //

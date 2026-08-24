@@ -51,6 +51,7 @@ import io.github.qishr.cascara.common.lang.processor.AstParser;
 import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.lang.type.TypeReference;
 import io.github.qishr.cascara.common.util.ContentType;
+import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.common.util.TermUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
@@ -99,6 +100,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private boolean outputComments;
     private boolean outputExpandedStyle;
     private boolean forceExplicitNull;
+    private boolean debugStringBuilder = false;
 
     // State
     private int indentSpaces;
@@ -302,14 +304,17 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     }
 
     private void emitStream(YamlStream stream) {
+        debug(">emitStream");
         var documents = stream.getDocuments();
         for (int i = 0; i < documents.size(); i++) {
             YamlDocument doc = documents.get(i);
             emitDocument(doc, i, documents.size());
         }
+        debug("<emitStream");
     }
 
     private void emitDocument(YamlDocument doc, int docNum, int numDocs) {
+        debug(">emitDocument");
         // Write explicit document markers if there are multiple documents,
         // or if the document explicitly contains directives.
         if (options.isExplicitStart() || numDocs > 1 || !doc.getDirectives().isEmpty()) {
@@ -330,200 +335,237 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         // if (docNum < numDocs - 1 && !isSingleScalar) {
         //     emitNewLine();
         // }
+        debug("<emitDocument");
     }
 
     private void emitMap(YamlMap map, boolean isMapKey, boolean isSequenceItem, boolean isInsideFlow) {
-        if (map == null) return;
-        if (map.getNodeStyle() == NodeStyle.FLOW) {
-            emitFlowMap(map, isMapKey, isSequenceItem, isInsideFlow);
-            return;
-        }
-        boolean firstItem = true;
-        int prevIndentSpaces = indentSpaces;
-        // We use getEntries() because entrySet() is unordered
-        for (YamlMapEntry entry : map.getEntries()) {
-            if (!firstItem) {
-                emitNewLine();
+        debug(">emitMap");
+        depth++;
+        try {
+            if (map == null) return;
+            if (map.getNodeStyle() == NodeStyle.FLOW) {
+                emitFlowMap(map, isMapKey, isSequenceItem, isInsideFlow);
+                return;
             }
-            YamlNode key = entry.getKey();
-            YamlNode value = entry.getValue();
-
-            // Determine if this key requires an explicit complex layout block ('?')
-            boolean hasComplexKey = (key instanceof YamlMap m && m.getNodeStyle() == NodeStyle.BLOCK) ||
-                                    (key instanceof YamlSequence s && s.getNodeStyle() == NodeStyle.BLOCK);
-
-            hasComplexKey |= entry.hasExplicitKey();
-
-            // if ("key".equals(key.asString())) {
-            //     debug("Debug");
-            // }
-            // if ("false".equals(value.asString())) {
-            //     debug("Debug");
-            // }
-
-            int keyIndent = indentOf(key, prevIndentSpaces);
-
-            indentSpaces = keyIndent;
-            if (hasComplexKey) {
-                if (!isSynthetic(key)) {
-                    indentSpaces = keyIndent - 2;
+            boolean firstItem = true;
+            int prevIndentSpaces = indentSpaces;
+            // We use getEntries() because entrySet() is unordered
+            for (YamlMapEntry entry : map.getEntries()) {
+                if (!firstItem) {
+                    emitNewLine();
                 }
-                emit(KEY_INDICATOR);
-                emitSpace();
-                indentSpaces = keyIndent + 2;
-            }
+                YamlNode key = entry.getKey();
+                YamlNode value = entry.getValue();
 
-            // indentSpaces = keyIndent;
-            emitNode(key, true, false, false);
+                // Determine if this key requires an explicit complex layout block ('?')
+                boolean hasComplexKey = (key instanceof YamlMap m && m.getNodeStyle() == NodeStyle.BLOCK) ||
+                                        (key instanceof YamlSequence s && s.getNodeStyle() == NodeStyle.BLOCK);
 
-            if (hasComplexKey) {
-                emitNewLine();
-                indentSpaces = keyIndent;
-                if (!(isSynthetic(key))) {
-                    indentSpaces = keyIndent - 2;
-                }
-            }
+                hasComplexKey |= entry.hasExplicitKey();
 
-            emit(VALUE_INDICATOR);
-
-            if (hasComplexKey) {
-                indentSpaces = keyIndent;
-            }
-
-            if (newLineBefore(value, false, false)) {
-                emitInlineComments(key);
-            }
-
-            int expectedValueIndent = keyIndent + indentSize;
-            // int expectedValueIndent = hasComplexKey
-            //     ? keyIndent + 2
-            //     : keyIndent + indentSize;
-
-            indentSpaces = indentOf(value, expectedValueIndent);
-
-            emitNode(value, false, false, false);
-
-            firstItem = false;
-        }
-        indentSpaces = prevIndentSpaces;
-    }
-
-    private void emitSequence(YamlSequence sequence, boolean isMapKey, boolean isSequenceItem, boolean isInsideFlow) {
-        if (sequence == null) return;
-        if (sequence.getNodeStyle() == NodeStyle.FLOW) {
-            emitFlowSequence(sequence, isMapKey, isSequenceItem, isInsideFlow);
-            return;
-        }
-        boolean firstItem = true;
-        int prevIndentSpaces = indentSpaces;
-
-        // TODO: Take ancestor node modification into account
-        int indicatorIndent = indentOf(sequence, prevIndentSpaces + indicatorIndentSize);
-
-        for (YamlNode item : sequence) {
-            if (!firstItem) {
-                emitNewLine();
-            }
-
-            indentSpaces = indicatorIndent;
-            emit(ITEM_INDICATOR);
-            if (outputExpandedStyle) {
-                emitNewLine();
-            } else {
-                emitSpace();
-            }
-
-            indentSpaces = indicatorIndent + 2; // Indicator plus space
-            emitNode(item, false, true, false);
-
-            firstItem = false;
-        }
-        indentSpaces = prevIndentSpaces;
-    }
-
-    private void emitFlowMap(YamlMap map, boolean isMapKey, boolean isSequenceItem, boolean isInsideFlow) {
-        emit("{");
-        var entries = map.getEntries();
-        for (int i = 0; i < entries.size(); i++) {
-            var entry = entries.get(i);
-            if (entry.getKey() instanceof YamlScalar s) {
-                emitScalar(s, false, false, true);
-            }
-            emit(VALUE_INDICATOR);
-            emitSpace();
-            emitNode(entry.getValue(), false, false, true);
-            if (i < entries.size() - 1) emit(", ");
-        }
-        emit("}");
-    }
-
-    private void emitFlowSequence(YamlSequence seq, boolean isMapKey, boolean isSequenceItem, boolean isInsideFlow) {
-        emit("[");
-        var items = seq.getElements();
-        for (int i = 0; i < items.size(); i++) {
-            emitNode(items.get(i), false, true, true);
-            if (i < items.size() - 1) {
-                emitComma();
-                emitSpace();
-            }
-        }
-        emit("]");
-    }
-
-    private void emitScalar(YamlScalar scalar, boolean isMapKey, boolean isSequenceItem, boolean isInsideFlow) {
-        String text;
-        String lexeme = scalar.getLexeme();
-
-        if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
-            if (!forceExplicitNull && isImplicitNull(scalar)) {
-                text = "";
-            } else {
-                text = "null";
-            }
-        } else if (lexeme == null) {
-            if (scalar.getPrimitiveType() == PrimitiveType.STRING) {
-                String string = scalar.asString();
-                ScalarStyle scalarStyle = scalar.getScalarStyle();
-
-                // if ("value".equals(string)) {
+                // if ("key".equals(key.asString())) {
+                //     debug("Debug");
+                // }
+                // if ("false".equals(value.asString())) {
                 //     debug("Debug");
                 // }
 
-                if (scalarStyle == ScalarStyle.PLAIN) {
-                    if (!isSafePlain(string)) {
-                        scalarStyle = ScalarStyle.DOUBLE_QUOTED;
+                int keyIndent = indentOf(key, prevIndentSpaces);
+
+                indentSpaces = keyIndent;
+                if (hasComplexKey) {
+                    if (!isSynthetic(key)) {
+                        indentSpaces = keyIndent - 2;
+                    }
+                    emit(KEY_INDICATOR);
+                    emitSpace();
+                    indentSpaces = keyIndent + 2;
+                }
+
+                // indentSpaces = keyIndent;
+                emitNode(key, true, false, false);
+
+                if (hasComplexKey) {
+                    emitNewLine();
+                    indentSpaces = keyIndent;
+                    if (!(isSynthetic(key))) {
+                        indentSpaces = keyIndent - 2;
                     }
                 }
 
-                if (scalarStyle == ScalarStyle.SINGLE_QUOTED) {
-                    text = singleQuote(string);
-                } else if (scalarStyle == ScalarStyle.DOUBLE_QUOTED) {
-                    text = doubleQuote(string);
-                } else if (scalarStyle == ScalarStyle.LITERAL) {
-                    // TODO: Implement this
-                    text = "";
-                } else if (scalarStyle == ScalarStyle.FOLDED) {
-                    // TODO: Implement this
+                emit(VALUE_INDICATOR);
+
+                if (hasComplexKey) {
+                    indentSpaces = keyIndent;
+                }
+
+                if (newLineBefore(value, false, false)) {
+                    emitInlineComments(key);
+                }
+
+                int expectedValueIndent = keyIndent + indentSize;
+                // int expectedValueIndent = hasComplexKey
+                //     ? keyIndent + 2
+                //     : keyIndent + indentSize;
+
+                indentSpaces = indentOf(value, expectedValueIndent);
+
+                emitNode(value, false, false, false);
+
+                firstItem = false;
+            }
+            indentSpaces = prevIndentSpaces;
+        } finally {
+            depth--;
+            debug("<emitMap");
+        }
+    }
+
+    private void emitSequence(YamlSequence sequence, boolean isMapKey, boolean isSequenceItem, boolean isInsideFlow) {
+        debug(">emitSequence");
+        depth++;
+        try {
+            if (sequence == null) return;
+            if (sequence.getNodeStyle() == NodeStyle.FLOW) {
+                emitFlowSequence(sequence, isMapKey, isSequenceItem, isInsideFlow);
+                return;
+            }
+            boolean firstItem = true;
+            int prevIndentSpaces = indentSpaces;
+
+            // TODO: Take ancestor node modification into account
+            int indicatorIndent = indentOf(sequence, prevIndentSpaces + indicatorIndentSize);
+
+            for (YamlNode item : sequence) {
+                if (!firstItem) {
+                    emitNewLine();
+                }
+
+                indentSpaces = indicatorIndent;
+                emit(ITEM_INDICATOR);
+                if (outputExpandedStyle) {
+                    emitNewLine();
+                } else {
+                    emitSpace();
+                }
+
+                indentSpaces = indicatorIndent + 2; // Indicator plus space
+                emitNode(item, false, true, false);
+
+                firstItem = false;
+            }
+            indentSpaces = prevIndentSpaces;
+        } finally {
+            depth --;
+            debug("<emitSequence");
+        }
+    }
+
+    private void emitFlowMap(YamlMap map, boolean isMapKey, boolean isSequenceItem, boolean isInsideFlow) {
+        debug(">emitFlowMap");
+        depth++;
+        try {
+            emit("{");
+            var entries = map.getEntries();
+            for (int i = 0; i < entries.size(); i++) {
+                var entry = entries.get(i);
+                if (entry.getKey() instanceof YamlScalar s) {
+                    emitScalar(s, false, false, true);
+                }
+                emit(VALUE_INDICATOR);
+                emitSpace();
+                emitNode(entry.getValue(), false, false, true);
+                if (i < entries.size() - 1) emit(", ");
+            }
+            emit("}");
+            debug("<emitFlowMap");
+        } finally {
+            depth--;
+            debug("<emitFlowSequence>");
+        }
+    }
+
+    private void emitFlowSequence(YamlSequence seq, boolean isMapKey, boolean isSequenceItem, boolean isInsideFlow) {
+        debug(">emitFlowSequence");
+        depth++;
+        try {
+            emit("[");
+            var items = seq.getElements();
+            for (int i = 0; i < items.size(); i++) {
+                emitNode(items.get(i), false, true, true);
+                if (i < items.size() - 1) {
+                    emitComma();
+                    emitSpace();
+                }
+            }
+            emit("]");
+        } finally {
+            depth--;
+            debug("<emitFlowSequence>");
+        }
+    }
+
+    private void emitScalar(YamlScalar scalar, boolean isMapKey, boolean isSequenceItem, boolean isInsideFlow) {
+        debug(">emitScalar");
+        depth++;
+        try {
+            String text;
+            String lexeme = scalar.getLexeme();
+
+            if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
+                if (!forceExplicitNull && isImplicitNull(scalar)) {
                     text = "";
                 } else {
-                    // Plain
-                    text = string;
+                    text = "null";
+                }
+            } else if (lexeme == null) {
+                if (scalar.getPrimitiveType() == PrimitiveType.STRING) {
+                    String string = scalar.asString();
+                    ScalarStyle scalarStyle = scalar.getScalarStyle();
+
+                    // if ("value".equals(string)) {
+                    //     debug("Debug");
+                    // }
+
+                    if (scalarStyle == ScalarStyle.PLAIN) {
+                        if (!isSafePlain(string)) {
+                            scalarStyle = ScalarStyle.DOUBLE_QUOTED;
+                        }
+                    }
+
+                    if (scalarStyle == ScalarStyle.SINGLE_QUOTED) {
+                        text = singleQuote(string);
+                    } else if (scalarStyle == ScalarStyle.DOUBLE_QUOTED) {
+                        text = doubleQuote(string);
+                    } else if (scalarStyle == ScalarStyle.LITERAL) {
+                        // TODO: Implement this
+                        text = "";
+                    } else if (scalarStyle == ScalarStyle.FOLDED) {
+                        // TODO: Implement this
+                        text = "";
+                    } else {
+                        // Plain
+                        text = string;
+                    }
+                } else {
+                    text = scalar.asString();
                 }
             } else {
-                text = scalar.asString();
+                text = formatLexeme(scalar);
             }
-        } else {
-            text = formatLexeme(scalar);
-        }
 
-        if (!isSynthetic(scalar)) {
-            originalLineNumber = scalar.getStartLine();
+            if (!isSynthetic(scalar)) {
+                originalLineNumber = scalar.getStartLine();
+            }
+            emit(text);
+            if (!isMapKey) {
+                emitInlineComments(scalar);
+            }
+            previousNode = scalar;
+        } finally {
+            depth--;
+            debug("<emitScalar>");
         }
-        emit(text);
-        if (!isMapKey) {
-            emitInlineComments(scalar);
-        }
-        previousNode = scalar;
     }
 
     private void emitMultilineScalar(YamlScalar scalar) {
@@ -585,18 +627,25 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     }
 
     private void emitAlias(YamlAlias alias, boolean isBlockKey, boolean isSequenceItem, boolean isInsideFlow) {
-        if (outputResolvedAliases) {
-            YamlNode target = alias.getResolvedNode();
-            emitNode(target, isBlockKey, isSequenceItem, isInsideFlow);
-        } else {
-            if (!isSynthetic(alias)) {
-                originalLineNumber = alias.getStartLine();
+        debug(">emitAlias");
+        depth++;
+        try {
+            if (outputResolvedAliases) {
+                YamlNode target = alias.getResolvedNode();
+                emitNode(target, isBlockKey, isSequenceItem, isInsideFlow);
+            } else {
+                if (!isSynthetic(alias)) {
+                    originalLineNumber = alias.getStartLine();
+                }
+                emit("*");
+                emit(alias.getName());
+                if (!isBlockKey) {
+                    emitInlineComments(alias);
+                }
             }
-            emit("*");
-            emit(alias.getName());
-            if (!isBlockKey) {
-                emitInlineComments(alias);
-            }
+        } finally {
+            depth--;
+            debug("<emitAlias");
         }
     }
 
@@ -698,6 +747,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         atStartOfLine = text.endsWith("\n");
         preceededByWhitespace = atStartOfLine;
         previousEmissionLineNumber = originalLineNumber;
+        trace("Emitted text for line " + originalLineNumber + ": " + StringUtils.debugString(16, text));
     }
 
     private void append(String text) {
@@ -743,6 +793,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
             } else {
                 // Parsed node
                 if (node.getStartLine() > previousEmissionLineNumber) {
+                    trace("Start line differs for " + debugNode(node) + " (prev line = " + previousEmissionLineNumber + ")");
                     return true;
                 } else {
                     return false;
@@ -830,8 +881,12 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     //
 
     protected void setupSerializer() {
+        // Configuration
         super.setupSerializer();
         depthLimit = options.getDepthLimit();
+
+        // State
+        depth = 0;
     }
 
     private void setupEmitter() {
@@ -850,6 +905,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         preceededByWhitespace = true;
         previousEmissionLineNumber = 1;
         originalLineNumber = 1;
+        depth = 0;
     }
 
     protected void error(YamlNode node, DiagnosticCode code, Object... details) {
@@ -863,17 +919,33 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         reporter.warnAt(token, code, details);
     }
 
+    protected String debugNode(YamlNode node) {
+        if (node instanceof YamlScalar scalar) {
+            if (node.getStartLine() > 0) {
+                return node.getClass().getSimpleName() + " (" +
+                TermUtils.ANSI_WHITE + scalar.asString() + TermUtils.ANSI_GREEN +
+                ") at " + node.getStartLine() + ":" + node.getStartColumn();
+            } else {
+                return node.getClass().getSimpleName();
+            }
+        } else {
+            return node.toString();
+        }
+    }
+
     protected void debugStringBuilder() {
-        reporter.trace("StringBuilder:");
-        try {
-            reporter.getWriter(Level.TRACE).write(2, DebugUtils.debugStringBuilder(string, -1));
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (debugStringBuilder) {
+            reporter.trace("StringBuilder:");
+            try {
+                reporter.getWriter(Level.TRACE).write(2, DebugUtils.debugStringBuilder(string, -1));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     protected void report(Level level, String message, Object... details) {
-        String indentation = "  ".repeat(Math.max(0, indentSpaces));
+        String indentation = "  ".repeat(Math.max(0, depth));
         char first = message.charAt(0);
         String output;
         if (first == '>' || first == '<') {
