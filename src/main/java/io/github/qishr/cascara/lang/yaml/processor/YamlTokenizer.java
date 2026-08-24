@@ -704,12 +704,12 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             for (charOffset = 0; charOffset < currLine.length(); charOffset++) {
                 debugString(currLine, charOffset);
 
+                char c = currLine.charAt(charOffset);
+
                 action = scalarAction(currLine, foundContent, charOffset, scalarStyle, isFirstChar);
                 if (action != ScalarAction.CONTINUE) {
                     break;
                 }
-
-                char c = currLine.charAt(charOffset);
 
                 // Subsequent lines of a plain scalar must be indented at least one space
                 // unless it is document level.
@@ -1203,6 +1203,15 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         if (scalarStyle == ScalarStyle.PLAIN) {
             if (isFirstChar && ch == ':') {
+                return ScalarAction.CONTINUE;
+            }
+            // testAB8U: if c is a dash and the previous token was a dash
+            // c is paert of this string if it's indented more than the previous token.
+            if (ch == '-' &&
+                previousNonWhitespaceToken != null &&
+                previousNonWhitespaceToken.getType() == YamlTokenType.SEQUENCE_ENTRY_INDICATOR &&
+                previousNonWhitespaceToken.getStartColumn() < offset + 1
+            ) {
                 return ScalarAction.CONTINUE;
             }
             if (ch == '#' && (prev == '\0' || prev == ' ' || prev == '\t' || prev == '\r' || prev == '\n')) {
