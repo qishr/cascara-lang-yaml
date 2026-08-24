@@ -1162,6 +1162,10 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                 if (!match(YamlTokenType.COMMA)) {
                     break;
                 }
+                if (tokenBuffer.peek().getType() == YamlTokenType.COMMA) {
+                    error(tokenBuffer.peek(), YamlDiagnosticCode.UNEXPECTED_COMMA_IN_FLOW_SEQ);
+                }
+
                 parseTrivia();
             }
 
