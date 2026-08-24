@@ -38,23 +38,22 @@ module cascara.lang.yaml {
     requires javafx.graphics;
 
     exports io.github.qishr.cascara.lang.yaml;
-    exports io.github.qishr.cascara.lang.yaml.annotation;
     exports io.github.qishr.cascara.lang.yaml.ast;
-    exports io.github.qishr.cascara.lang.yaml.exception;
+    exports io.github.qishr.cascara.lang.yaml.diagnostic;
     exports io.github.qishr.cascara.lang.yaml.processor;
+    exports io.github.qishr.cascara.lang.yaml.streaming;
     exports io.github.qishr.cascara.lang.yaml.token;
     exports io.github.qishr.cascara.lang.yaml.util;
 
-    opens io.github.qishr.cascara.lang.yaml.annotation;
     opens io.github.qishr.cascara.lang.yaml.ast;
-    opens io.github.qishr.cascara.lang.yaml.exception;
+    opens io.github.qishr.cascara.lang.yaml.diagnostic;
     opens io.github.qishr.cascara.lang.yaml.processor;
     opens io.github.qishr.cascara.lang.yaml.token;
     opens io.github.qishr.cascara.lang.yaml.util;
 
     provides io.github.qishr.cascara.common.service.ServiceProvider
         with io.github.qishr.cascara.lang.yaml.processor.YamlConverter,
-             io.github.qishr.cascara.lang.yaml.processor.YamlEmitter,
+             //io.github.qishr.cascara.lang.yaml.processor.YamlEmitter,
              io.github.qishr.cascara.lang.yaml.processor.YamlAstParser,
              io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 }

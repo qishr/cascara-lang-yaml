@@ -40,10 +40,12 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
-import io.github.qishr.cascara.common.lang.annotation.Nullable;
+import io.github.qishr.cascara.common.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 /// Base implementation for all YAML AST nodes.
 ///
@@ -55,12 +57,17 @@ public abstract class YamlNode implements AstNode {
     private final int startColumn;
     private final int endLine = 0;
     private final int endColumn = 0;
-    private List<YamlComment> comments = null;
-    private String anchor;
-    private String tag;
+    private int semanticColumn = 0;
     protected YamlToken token;
+    private String tag;
+	private String resolvedTag;
+    private String anchor;
+    protected NodeStyle nodeStyle; // = NodeStyle.FLOW;
+    private List<YamlComment> comments = null;
+    private List<YamlNodeProperty> properties = null;
     protected YamlOptions options;
-    protected NodeStyle nodeStyle;
+
+    private boolean fileEndsWithNewLine = false;
 
     protected YamlNode() {
         startLine = 0;
@@ -89,7 +96,7 @@ public abstract class YamlNode implements AstNode {
     protected YamlNode(YamlToken token, YamlOptions options) {
         int line = token == null ? Diagnostic.UNKNOWN_COORD : token.getStartLine();
         int column = token == null ? Diagnostic.UNKNOWN_COORD : token.getStartColumn();
-        this(line, column, options);
+        this(token, line, column, options);
         this.token = token;
     }
 
@@ -99,7 +106,8 @@ public abstract class YamlNode implements AstNode {
     /// @param line    The line number (1-based).
     /// @param column  The column number (1-based).
     /// @param options The YAML options.
-    protected YamlNode(int line, int column, YamlOptions options) {
+    protected YamlNode(YamlToken token, int line, int column, YamlOptions options) {
+        this.token = token;
         this.startLine = line;
         this.startColumn = column;
         this.options = (options == null) ? YamlOptions.DEFAULT : options;
@@ -107,6 +115,13 @@ public abstract class YamlNode implements AstNode {
 
     public YamlOptions getOptions() {
         return options;
+    }
+
+    public List<YamlNodeProperty> getProperties() {
+        if (properties == null) {
+            properties = new ArrayList<>();
+        }
+        return properties;
     }
 
     public NodeStyle getNodeStyle() {
@@ -118,18 +133,43 @@ public abstract class YamlNode implements AstNode {
         return this;
     }
 
-    public String getTag() { return tag; }
-    public void setTag(String tag) { this.tag = tag; }
+    public boolean fileEndsWithNewLine() {
+        return fileEndsWithNewLine;
+    }
+
+    public void setFileEndsWithNewLine(boolean b) {
+        fileEndsWithNewLine = b;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
+    }
+
+	public String getResolvedTag() {
+		return resolvedTag;
+	}
+
+    public void setResolvedTag(String resolvedTag) {
+        this.resolvedTag = resolvedTag;
+    }
 
     /// Gets the YAML anchor associated with this node (e.g., &anchorName).
     ///
     /// @return The anchor string, or `null` if no anchor is defined.
-    public String getAnchor() { return anchor; }
+    public String getAnchor() {
+        return anchor;
+    }
 
     /// Sets the YAML anchor for this node.
     ///
     /// @param anchor The anchor string to associate with this node.
-    public void setAnchor(String anchor) { this.anchor = anchor; }
+    public void setAnchor(String anchor) {
+        this.anchor = anchor;
+    }
 
     /// {@inheritDoc}
     ///
@@ -153,6 +193,21 @@ public abstract class YamlNode implements AstNode {
     /// {@inheritDoc}
     @Override
     public int getEndColumn() { return endColumn; }
+
+    /// Set the *semantic column* number of this node.
+    /// This is the column number of the node itself, unless it has properties on the same line,
+    /// in which case it is the column number of the leftmost property.
+    public int getSemanticColumn() {
+        return semanticColumn == 0 ? startColumn : semanticColumn;
+    }
+
+    /// Retrieves the *semantic column* number of this node.
+    /// This is the column number of the node itself, unless a *semantic column* has been set,
+    /// in which case that *semantic column* value is returned.
+    public YamlNode setSemanticColumn(int n) {
+        semanticColumn = n;
+        return this;
+    }
 
     /// {@inheritDoc}
     @Override
@@ -239,5 +294,14 @@ public abstract class YamlNode implements AstNode {
     @Override
     public int hashCode() {
         return Objects.hash(anchor, getChildren());
+    }
+
+    @Override
+    public String toString() {
+        if (getStartLine() > 0) {
+            return this.getClass().getSimpleName() + " at " + getStartLine() + ":" + getStartColumn();
+        } else {
+            return this.getClass().getSimpleName();
+        }
     }
 }

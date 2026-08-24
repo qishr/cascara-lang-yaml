@@ -44,21 +44,32 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.github.qishr.cascara.common.lang.annotation.Nullable;
+import io.github.qishr.cascara.common.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
+import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
-public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, YamlMapEntry> {
-    private NodeStyle style = NodeStyle.BLOCK;
+public class YamlMap
+       extends YamlNode
+       implements MapAstNode<YamlNode, YamlNode, YamlMapEntry>,
+                  YamlCollection {
     private final LinkedHashMap<YamlNode,YamlMapEntry> entriesByKey = new LinkedHashMap<>();
 
     public YamlMap() {
-        // This method intentionally left blank
+        nodeStyle = NodeStyle.BLOCK;
     }
 
     public YamlMap(YamlToken token, YamlOptions options) {
         super(token, options);
+        nodeStyle = NodeStyle.BLOCK;
+    }
+
+    public YamlMap(YamlToken token, int line, int column, YamlOptions options) {
+        super(token, token.getStartLine(), column, options);
+        nodeStyle = NodeStyle.BLOCK;
     }
 
     /// {@inheritDoc}
@@ -121,7 +132,8 @@ public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, 
 
                 if (string.equals(entryKey)) {
                     YamlNode val = entryNode.getValue();
-                    return (val instanceof YamlAnchor a) ? a.getInnerNode() : val;
+                    // return (val instanceof YamlAnchor a) ? a.getInnerNode() : val;
+                    return val;
                 }
             }
         }
@@ -154,9 +166,6 @@ public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, 
     public List<YamlMapEntry> getEntries() {
         return List.copyOf(entriesByKey.values());
     }
-
-    /// {@inheritDoc}
-    public NodeStyle getStyle() { return style; }
 
     /// {@inheritDoc}
     @Override
@@ -196,12 +205,6 @@ public class YamlMap extends YamlNode implements MapAstNode<YamlNode, YamlNode, 
                 }
             }
         }
-        return this;
-    }
-
-    /// {@inheritDoc}
-    public YamlMap setStyle(NodeStyle style) {
-        this.style = style;
         return this;
     }
 

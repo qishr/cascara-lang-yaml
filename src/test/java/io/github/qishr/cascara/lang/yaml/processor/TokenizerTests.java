@@ -40,80 +40,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
-import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
-public class TokenizerTests {
-
-    /// Asserts that the sequence of token types matches the expected types.
-    ///
-    /// This helper is used to verify the internal state of the [YamlTokenizer]
-    /// without involving the [YamlAstParser].
-    ///
-    /// @param tokens The list of actual tokens produced by the tokenizer.
-    /// @param expectedTypes A varargs list of the expected [YamlTokenType]s.
-    private void assertTokensMatch(List<YamlToken> tokens, YamlTokenType... expectedTypes) {
-        List<YamlTokenType> actualTypes = tokens.stream()
-                .map(YamlToken::getType)
-                .toList();
-
-        if (actualTypes.size() != expectedTypes.length) {
-            dumpTokens(tokens);
-            org.junit.jupiter.api.Assertions.assertEquals(
-                java.util.Arrays.asList(expectedTypes),
-                actualTypes,
-                "Token stream length mismatch."
-            );
-        }
-
-        for (int i = 0; i < expectedTypes.length; i++) {
-            if (actualTypes.get(i) != expectedTypes[i]) {
-                dumpTokens(tokens);
-                org.junit.jupiter.api.Assertions.assertEquals(
-                    expectedTypes[i],
-                    actualTypes.get(i),
-                    "Mismatch at token index " + i
-                );
-            }
-        }
-    }
-
-    /// Helper to print tokens in a readable format when a test fails.
-    private void dumpTokens(List<YamlToken> tokens) {
-        TestUtils.dumpTokens(tokens);
-        // for (int i = 0; i < tokens.size(); i++) {
-        //     YamlToken t = tokens.get(i);
-        //     YamlTokenType type = t.getType();
-        //     switch (type) {
-        //         case SCALAR, ALIAS, ANCHOR, COMMENT, TAG:
-        //             System.out.printf("[%2d] %-20s | L:%-3d C:%-3d | Lexeme: '%s'%n",
-        //                 i, t.getType(), t.getStartLine(), t.getStartColumn(),
-        //                 t.getLexeme() == null
-        //                     ? "null"
-        //                     : t.getLexeme().replace("\n", "\\n").replace("\r", "\\r"));
-        //             break;
-        //         default:
-        //             System.out.printf("[%2d] %-20s | L:%-3d C:%-3d%n",
-        //                 i, t.getType(), t.getStartLine(), t.getStartColumn());
-        //     }
-        // }
-        // System.out.println("-----------------------------\n");
-    }
-
-    YamlTokenizer tokenizer;
-
-    @BeforeEach
-    void setupEach() {
-        tokenizer = new YamlTokenizer();
-    }
-
-    //
-    //
-    //
+public class TokenizerTests extends TokenizerTestBase {
 
     @Test
     void testSimpleMap() {
@@ -121,12 +54,6 @@ public class TokenizerTests {
                 a: x
                 b: y
                 """;
-
-        tokenizer.setReporter(
-            new StandardReporter()
-                .setLevel(Level.TRACE)
-                .setAnsiColoringEnabled(true)
-        );
 
         List<YamlToken> tokens = tokenizer.tokenize(yaml);
 
@@ -155,12 +82,6 @@ public class TokenizerTests {
                 - b
                 """;
 
-        tokenizer.setReporter(
-            new StandardReporter()
-                .setLevel(Level.TRACE)
-                .setAnsiColoringEnabled(true)
-        );
-
         List<YamlToken> tokens = tokenizer.tokenize(yaml);
 
         assertTokensMatch(tokens,
@@ -177,6 +98,24 @@ public class TokenizerTests {
             YamlTokenType.EOF,
             YamlTokenType.STREAM_END
         );
+    }
+
+    @Test
+    void testTokenBalance() {
+        String yaml = """
+                root:
+                level1:
+                    - item1
+                """;
+        // Assuming YamlTokenizer exists and returns a List of YamlToken
+        List<YamlToken> tokens = new YamlTokenizer().tokenize(yaml);
+
+        long indents = tokens.stream().filter(t -> t.getType() == YamlTokenType.INDENT).count();
+        long dedents = tokens.stream().filter(t -> t.getType() == YamlTokenType.DEDENT).count();
+
+        assertEquals(indents, dedents, "Every INDENT must be matched by a DEDENT");
+        assertEquals(YamlTokenType.STREAM_START, tokens.get(0).getType());
+        assertEquals(YamlTokenType.STREAM_END, tokens.get(tokens.size() - 1).getType());
     }
 
     @Test
@@ -243,8 +182,6 @@ public class TokenizerTests {
                 compact: - item
                 """;
 
-        tokenizer.setReporter(new StandardReporter().setLevel(Level.TRACE));
-
         List<YamlToken> tokens = tokenizer.tokenize(yaml);
 
         // Filter to see the structural 'skeleton'
@@ -269,6 +206,8 @@ public class TokenizerTests {
         assertEquals(expected, structure);
     }
 
+    // TODO: This doesn't seem like valid YAML
+    // Should probably result in "Unexpected block-seq-ind on same line with key"
     @Test
     void testCompactMappingSequence() {
         // The input represents a key followed immediately by a sequence on the same line
@@ -315,8 +254,6 @@ public class TokenizerTests {
     @Test
     void testFoldedScalarTokenization() {
         String yaml = "--- >\n ab\n cd\n\n ef\n\n\n gh\n";
-
-        tokenizer.setReporter(new StandardReporter().setLevel(Level.TRACE));
 
         List<YamlToken> tokens = tokenizer.tokenize(yaml);
 

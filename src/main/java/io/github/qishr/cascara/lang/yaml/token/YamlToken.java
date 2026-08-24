@@ -36,17 +36,21 @@
 package io.github.qishr.cascara.lang.yaml.token;
 
 import io.github.qishr.cascara.common.lang.token.Token;
-import io.github.qishr.cascara.lang.yaml.ast.ScalarStyle;
+import io.github.qishr.cascara.common.util.StringUtils;
+import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
 
 public class YamlToken implements Token {
     private int line;
     private int column;
     private int offset;
+    private int firstLineIndent;
+    private int blockIndent;
+    private boolean startsOnNewLine;
+    private boolean followedByTab;
     private YamlTokenType type;
     private String lexeme;
     private String content;
     private final ScalarStyle scalarStyle;
-    // private boolean hasPreceedingWhitespace;
 
     /// Structural Token
     public YamlToken(
@@ -55,14 +59,17 @@ public class YamlToken implements Token {
         int startOffset,
         YamlTokenType type)
     {
-        this.line = line;
-        this.column = column;
-        this.offset = startOffset;
-        this.type = type;
+        this(line, column, startOffset, type, null);
+    }
 
-        this.lexeme = null;
-        this.content = null;
-        this.scalarStyle = ScalarStyle.PLAIN;
+    public YamlToken(
+        int line,
+        int column,
+        int startOffset,
+        YamlTokenType type,
+        String content)
+    {
+        this(line, column, startOffset, type, null, content, ScalarStyle.PLAIN, -1, -1);
     }
 
     public YamlToken(
@@ -72,7 +79,9 @@ public class YamlToken implements Token {
         YamlTokenType type,
         String lexeme,
         String content,
-        ScalarStyle scalarStyle)
+        ScalarStyle scalarStyle,
+        int firstLineIndent,
+        int blockIndent)
     {
         this.line = line;
         this.column = column;
@@ -81,6 +90,8 @@ public class YamlToken implements Token {
         this.lexeme = lexeme;
         this.content = content;
         this.scalarStyle = scalarStyle;
+        this.firstLineIndent = firstLineIndent;
+        this.blockIndent = blockIndent;
     }
 
     @Override
@@ -96,6 +107,14 @@ public class YamlToken implements Token {
     @Override
     public int getOffset() {
         return offset;
+    }
+
+    public int getFirstLineIndent() {
+        return firstLineIndent;
+    }
+
+    public int getBlockIndent() {
+        return blockIndent;
     }
 
     @Override
@@ -117,27 +136,38 @@ public class YamlToken implements Token {
         return scalarStyle;
     }
 
-    // public boolean hasPreceedingWhitespace() {
-    //     return hasPreceedingWhitespace;
-    // }
+    public boolean startsOnNewLine() {
+        return startsOnNewLine;
+    }
 
-    // public YamlToken setHasPreceedingWhitespace(boolean b) {
-    //     hasPreceedingWhitespace = b;
-    //     return this;
-    // }
+    public YamlToken setStartsOnNewLine(boolean b) {
+        startsOnNewLine = b;
+        return this;
+    }
+
+    public boolean isFollowedByTab() {
+        return followedByTab;
+    }
+
+    public YamlToken setFollowedByTab(boolean b) {
+        followedByTab = b;
+        return this;
+    }
 
     public void setType(YamlTokenType type) { this.type = type; }
 
     @Override
     public String toString() {
-        String displayLexeme = lexeme.replace("\n", "\\n").replace("\r", "\\r").replace("\"", "\\\"");
-        String valuePart = (content != null) ? " (Value: " + content + ")" : "";
+        String displayLexeme = StringUtils.debugString(16, lexeme);
+        // String displayContent = StringUtils.debugString(16, content);
+        // String displayLexeme = lexeme.replace("\n", "\\n").replace("\r", "\\r").replace("\"", "\\\"");
+        // String valuePart = (content != null) ? " (Value: " + content + ")" : "";
 
-        return String.format("[%-20s | '%-15s'%s | L:%d C:%d]",
+        return String.format("[%s %d:%d %s]",
             type,
-            displayLexeme,
-            valuePart,
             line,
-            column);
+            column,
+            displayLexeme
+        );
     }
 }

@@ -3,5 +3,4 @@ io.github.qishr.cascara.lang.yaml.processor.YamlPullParser
 io.github.qishr.cascara.lang.yaml.processor.YamlPushParser
 io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer
 io.github.qishr.cascara.lang.yaml.processor.YamlSerializer
-io.github.qishr.cascara.lang.yaml.processor.YamlEmitter
 io.github.qishr.cascara.lang.yaml.processor.YamlConverter

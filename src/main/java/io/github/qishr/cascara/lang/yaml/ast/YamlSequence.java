@@ -43,19 +43,25 @@ import java.util.NoSuchElementException;
 
 import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
+import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 /// Represents a YAML sequence (a list of items).
-public class YamlSequence extends YamlNode implements SequenceAstNode<YamlNode> {
+public class YamlSequence
+       extends YamlNode
+       implements SequenceAstNode<YamlNode>,
+                  YamlCollection {
+
     private final List<YamlNode> elements = new ArrayList<>();
-    private NodeStyle style = NodeStyle.BLOCK;
     private boolean isExpanded = false; // Default to compact
 
     public YamlSequence() {
-        // This method intentionally left blank
+        nodeStyle = NodeStyle.BLOCK;
     }
 
     public YamlSequence(YamlToken token) {
         super(token);
+        nodeStyle = NodeStyle.BLOCK;
     }
 
     /// {@inheritDoc}
@@ -161,12 +167,6 @@ public class YamlSequence extends YamlNode implements SequenceAstNode<YamlNode> 
     /// {@inheritDoc}
     @Override
     public List<YamlNode> getChildren() { return elements; }
-
-    public NodeStyle getStyle() { return style; }
-    public YamlSequence setStyle(NodeStyle style) {
-         this.style = style;
-         return this;
-    }
 
     public boolean isExpanded() { return isExpanded; }
     public void setExpanded(boolean expanded) { this.isExpanded = expanded; }

@@ -38,10 +38,8 @@ package io.github.qishr.cascara.lang.yaml.util;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.github.qishr.cascara.common.lang.annotation.DataField;
-import io.github.qishr.cascara.common.lang.annotation.Serializable;
+import io.github.qishr.cascara.common.annotation.DataField;
 
-@Serializable
 public class TestState {
     @DataField
     public List<String> disabledModules = new ArrayList<>();

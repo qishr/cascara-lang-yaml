@@ -38,9 +38,11 @@ package io.github.qishr.cascara.lang.yaml.ast;
 import java.util.List;
 
 import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
+import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 /// Represents the structural pairing of a key and a value.
 public class YamlMapEntry extends YamlNode implements MapEntryAstNode<YamlNode,YamlNode> {
+    private boolean hasExplicitKey;
     private final YamlNode key;
     private YamlNode value;
 
@@ -50,6 +52,13 @@ public class YamlMapEntry extends YamlNode implements MapEntryAstNode<YamlNode,Y
         this.value = value;
     }
 
+    public YamlMapEntry(YamlNode key, YamlNode value, boolean hasExplicitKey) {
+        super(key.getToken());
+        this.key = key;
+        this.value = value;
+        this.hasExplicitKey = hasExplicitKey;
+    }
+
     /// {@inheritDoc}
     @Override
     public YamlNode getKey() { return key; }
@@ -57,6 +66,15 @@ public class YamlMapEntry extends YamlNode implements MapEntryAstNode<YamlNode,Y
     /// {@inheritDoc}
     @Override
     public YamlNode getValue() { return value; }
+
+    public boolean hasExplicitKey() {
+        return hasExplicitKey;
+    }
+
+    public YamlMapEntry setHasExplicityKey(boolean b) {
+        this.hasExplicitKey = b;
+        return this;
+    }
 
     /// {@inheritDoc}
     @Override

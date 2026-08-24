@@ -37,10 +37,8 @@ package io.github.qishr.cascara.lang.yaml.util;
 
 import java.util.UUID;
 
-import io.github.qishr.cascara.common.lang.annotation.DataField;
-import io.github.qishr.cascara.common.lang.annotation.Serializable;
+import io.github.qishr.cascara.common.annotation.DataField;
 
-@Serializable
 public class ColorDefinition {
     private static final String NAME_PLACEHOLDER = "<name>";
 

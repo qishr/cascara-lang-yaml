@@ -1,0 +1,1229 @@
+// # License & Terms
+//
+// This file is part of **Cascara**.
+//
+// **Cascara** is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// ---
+//
+// ## Special Runtime Exception
+//
+// As a special exception, the copyright holders of this library give you
+// permission to link this library with independent modules to produce an
+// executable, regardless of the license terms of these independent modules,
+// and to copy and distribute the resulting executable under terms of your
+// choice, provided that you also meet, for each linked independent module,
+// the terms and conditions of the license of that module.
+//
+// An independent module is a module which is not derived from or based on
+// this library. If you modify this library, you may extend this exception
+// to your version of the library, but you are not obligated to do so. If
+// you do not wish to do so, delete this exception statement from your
+// version.
+
+
+package io.github.qishr.cascara.lang.yaml.processor;
+
+import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
+import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEventType;
+import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
+import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
+import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
+import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
+import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.DynamicTest.stream;
+
+public class StreamingPullParserTests extends StreamingPullParserTestBase {
+    @Test
+    public void testExplicitDocStart() throws Exception {
+        String yaml = "---\nscalar";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+
+            YamlStreamingEvent doc = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, doc.getType());
+            assertEquals("---", doc.getContent());
+
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void testExplicitDocEnd() throws Exception {
+        String yaml = "---\nscalar\n...\n";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+            YamlStreamingEvent doc = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, doc.getType());
+            assertEquals("...", doc.getContent());
+
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void testImplicitDocStart() throws Exception {
+        String yaml = "!!str scalar";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+
+            YamlStreamingEvent doc = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, doc.getType());
+            assertEquals("", doc.getContent());
+
+            YamlStreamingEvent body = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, body.getType());
+            assertEquals("!!str", body.getTag());
+            assertEquals("tag:yaml.org,2002:str", body.getResolvedTag());
+
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void testAnchorOnScalar() throws Exception {
+        String yaml = "a: &a1 b\nc: d\n";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+
+            if (parser.next() instanceof YamlStreamingEvent event) {
+                assertEquals(YamlStreamingEventType.VALUE_SCALAR, event.getType());
+                String anchor = event.getAnchor();
+                assertEquals("a1", anchor);
+            }
+        }
+    }
+
+    @Test
+    public void testTagInSequence() throws Exception {
+        String yaml = "- !!str s1\n- !!str s2\n";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+
+            YamlStreamingEvent item1 = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, item1.getType());
+            assertEquals("s1", item1.getContent());
+            assertEquals("!!str", item1.getTag());
+            assertEquals("tag:yaml.org,2002:str", item1.getResolvedTag());
+
+            YamlStreamingEvent item2 = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, item2.getType());
+            assertEquals("s2", item2.getContent());
+            assertEquals("!!str", item2.getTag());
+            assertEquals("tag:yaml.org,2002:str", item2.getResolvedTag());
+
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void testAnchorOnMap() throws Exception {
+        String yaml = "a: &a1\n  c: d\n";
+
+        // YamlNode root = new YamlAstParser().parse(yaml);
+        // YamlNode resolved = CascaraYaml.resolve(root);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+
+            // parser.setReporter(new StandardReporter()
+            //     .setLevel(Level.TRACE)
+            //     .setAnsiColoringEnabled(true)
+            // );
+
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+
+            if (parser.next() instanceof YamlStreamingEvent event) {
+                assertEquals(YamlStreamingEventType.START_MAP, event.getType());
+                String anchor = event.getAnchor();
+                assertEquals("a1", anchor);
+            }
+        }
+    }
+
+    @Test
+    public void testAliasAndEmptyKeysAreParsed() throws Exception {
+        String yaml = """
+            "top1" :
+                "key1" : &alias1 scalar1
+            'top2' :
+                'key2' : &alias2 scalar2
+            top3: &node3
+                *alias1 : scalar3
+            top4:
+                *alias2 : scalar4
+            top5   :
+                scalar5
+            top6:
+                &anchor6 'key6' : scalar6
+            """;
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+
+            // top1
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            // top2
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            // top3
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            // top4
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            // top5
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+            // top6
+            YamlStreamingEvent top6 = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.KEY, top6.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            YamlStreamingEvent key6 = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.KEY, key6.getType());
+            YamlStreamingEvent scalar6 = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, scalar6.getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            assertEquals("", top6.getAnchor());
+            assertEquals("anchor6", key6.getAnchor());
+            assertEquals("", scalar6.getAnchor());
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+
+        }
+    }
+
+    // TODO: This is hanging sometimes when trace is off
+    @Test
+    public void testSimpleMapping() throws Exception {
+        String yaml = "a: b";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            while (parser.hasNext()) {
+                StreamingEvent event = parser.next();
+                assertNotNull(event);
+            }
+        }
+    }
+
+    @Test
+    public void testNestedMappingStreaming() throws Exception {
+        String yaml = """
+            # Project Configuration
+            services:
+              web:
+                port: 8080
+            """;
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+
+            List<StreamingEvent> events = new ArrayList<>();
+
+            parser.forEachRemaining(e ->{
+                if (e!=null) {
+                    parserReporter.debug("Event: " + e.getType() + ": " + e.getContent());
+                    events.add(e);
+                }
+            });
+
+            new StreamingEventValidator(events)//.verbose()
+                .expect(YamlStreamingEventType.START_STREAM)
+                .expect(YamlStreamingEventType.START_DOCUMENT)
+                .expect(YamlStreamingEventType.START_MAP)
+                .expect(YamlStreamingEventType.KEY, "services")
+                .expect(YamlStreamingEventType.START_MAP)
+                .expect(YamlStreamingEventType.KEY, "web")
+                .expect(YamlStreamingEventType.START_MAP)
+                .expect(YamlStreamingEventType.KEY, "port")
+                .expect(YamlStreamingEventType.VALUE_SCALAR, "8080")
+                .expect(YamlStreamingEventType.END_MAP)
+                .expect(YamlStreamingEventType.END_MAP)
+                .expect(YamlStreamingEventType.END_MAP)
+                .expect(YamlStreamingEventType.END_DOCUMENT)
+                .expect(YamlStreamingEventType.END_STREAM)
+                .validate();
+        }
+    }
+
+    @Test
+    void testMixedMappingAndSequenceStreaming() throws Exception {
+        String yaml = """
+            project: Cascara
+            targets:
+              - macos
+              - windows
+            """;
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            List<StreamingEvent> events = new ArrayList<>();
+
+            parser.forEachRemaining(e -> {
+                if (e != null) events.add(e);
+            });
+
+            new StreamingEventValidator(events)//.verbose()
+                .expect(YamlStreamingEventType.START_STREAM)
+                .expect(YamlStreamingEventType.START_DOCUMENT)
+                .expect(YamlStreamingEventType.START_MAP)
+                .expect(YamlStreamingEventType.KEY, "project")
+                .expect(YamlStreamingEventType.VALUE_SCALAR, "Cascara")
+                .expect(YamlStreamingEventType.KEY, "targets")
+                .expect(YamlStreamingEventType.START_SEQUENCE)
+                .expect(YamlStreamingEventType.VALUE_SCALAR, "macos")
+                .expect(YamlStreamingEventType.VALUE_SCALAR, "windows")
+                .expect(YamlStreamingEventType.END_SEQUENCE)
+                .expect(YamlStreamingEventType.END_MAP)
+                .expect(YamlStreamingEventType.END_DOCUMENT)
+                .expect(YamlStreamingEventType.END_STREAM)
+                .validate();
+        }
+    }
+
+    // This occasionally hangs when reporting is on (like 1 in 100 times)
+    @Test
+    public void testExplicitKeysAndBlockScalars() throws Exception {
+        String yaml = """
+            ? explicit_key
+            : |
+              Literal block scalar
+              retains newlines.
+            folded_key: >
+              Folded block scalar
+              removes single newlines.
+            """;
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            List<StreamingEvent> events = new ArrayList<>();
+
+            parser.forEachRemaining(e -> {
+                if (e != null) events.add(e);
+            });
+
+            new StreamingEventValidator(events)//.verbose()
+                .expect(YamlStreamingEventType.START_STREAM)
+                .expect(YamlStreamingEventType.START_DOCUMENT)
+                .expect(YamlStreamingEventType.START_MAP)
+                .expect(YamlStreamingEventType.KEY, "explicit_key")
+                .expect(YamlStreamingEventType.VALUE_SCALAR, "Literal block scalar\nretains newlines.\n")
+                .expect(YamlStreamingEventType.KEY, "folded_key")
+                .expect(YamlStreamingEventType.VALUE_SCALAR, "Folded block scalar removes single newlines.\n")
+                .expect(YamlStreamingEventType.END_MAP)
+                .expect(YamlStreamingEventType.END_DOCUMENT)
+                .expect(YamlStreamingEventType.END_STREAM)
+                .validate();
+        }
+    }
+
+    @Test
+    public void testEmptyLiteral() throws Exception {
+        String yaml = "--- |0\n";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+
+            YamlStreamingEvent doc = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, doc.getType());
+            assertEquals("---", doc.getContent());
+
+            assertFalse(parser.hasNext());
+        }
+    }
+
+    @Test
+    public void testEmptyKey() throws Exception {
+        String yaml = ": a";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+
+            YamlStreamingEvent key = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.KEY, key.getType());
+            assertEquals("", key.getContent());
+
+            YamlStreamingEvent value = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, value.getType());
+            assertEquals("a", value.getContent());
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void testSetWithTag() throws Exception {
+        String yaml = "--- !!set\n? key\n";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+
+            YamlStreamingEvent map = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_MAP, map.getType());
+            assertEquals("tag:yaml.org,2002:set", map.getResolvedTag());
+
+            YamlStreamingEvent key = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.KEY, key.getType());
+            assertEquals("key", key.getContent());
+
+            YamlStreamingEvent value = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, value.getType());
+            assertEquals(null, value.getContent());
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void testFlowMap() throws Exception {
+        String yaml = "{\na: b\n}\n";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+
+            YamlStreamingEvent map = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_MAP, map.getType());
+            assertEquals(NodeStyle.FLOW, map.getNodeStyle());
+
+            YamlStreamingEvent key = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.KEY, key.getType());
+            assertEquals("a", key.getContent());
+
+            YamlStreamingEvent value = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, value.getType());
+            assertEquals("b", value.getContent());
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void test4FJ6() throws Exception {
+        String yaml = "[\n  [ a, [ [[b,c]]: d, e]]: 23\n]";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType()); // [
+
+            YamlStreamingEvent outerMap = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_MAP, outerMap.getType());
+            assertEquals(NodeStyle.FLOW, outerMap.getNodeStyle());
+
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // a
+
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // b
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // c
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // d
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // e
+
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // 23
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType()); // ]
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void testLocalTag() throws Exception {
+        String yaml = "%TAG !m! !my-\n---\n!m! a\n";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+
+            YamlStreamingEvent value = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, value.getType());
+            assertEquals("a", value.getContent());
+            assertEquals("!my-", value.getResolvedTag());
+
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void test6BFJ() throws Exception {
+        String yaml = "---\n&mapping\n&key [ &item a, b, c ]: value\n";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+
+            YamlStreamingEvent map = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_MAP, map.getType());
+            assertEquals("mapping", map.getAnchor(), "&mapping should belong to the map");
+
+            YamlStreamingEvent seq = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, seq.getType());
+            assertEquals("key", seq.getAnchor(), "&key should belong to the sequence");
+
+            YamlStreamingEvent item = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, item.getType());
+            assertEquals("item", item.getAnchor(), "&item should belong to the first item");
+            assertEquals("a", item.getContent());
+
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void test753E() throws Exception {
+        String yaml = "--- |-\n a\n\n\n...\n";
+
+        // parserOptions.setPreloadTokenBuffer(true);
+        // reporter.setLevel(Level.TRACE);
+
+        // YamlAstParser astParser = new YamlAstParser();
+        // astParser.getTokenizer() .setReporter(reporter);
+        // YamlNode root = astParser.parseMulti(yaml);
+        // TestUtils.dumpTokens(astParser.getTokens());
+
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+            YamlStreamingEvent endDoc = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, endDoc.getType());
+            assertEquals("...", endDoc.getContent());
+
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    void test_pull_7BMT() throws Exception {
+        String yaml = """
+            ---
+            top1: &node1
+              &k1 key1: one
+            """;
+
+        // parserOptions.setPreloadTokenBuffer(true);
+        // parserReporter.setLevel(Level.TRACE);
+
+        // YamlAstParser astParser = new YamlAstParser();
+        // YamlNode root = astParser.parseMulti(yaml);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+
+            YamlStreamingEvent outer = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_MAP, outer.getType());
+            // System.out.println("outer: " + outer.getAnchor());
+            // assertEquals("node1", outer.getAnchor());
+
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType()); //top1
+
+            YamlStreamingEvent inner = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_MAP, inner.getType());
+            // System.out.println("inner: " + inner.getAnchor());
+            assertEquals("node1", inner.getAnchor());
+
+            YamlStreamingEvent key1 = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.KEY, key1.getType());
+            assertEquals("k1", key1.getAnchor());
+            assertEquals("key1", key1.getContent());
+
+            YamlStreamingEvent val = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, val.getType());
+            assertEquals("one", val.getContent());
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+
+    }
+
+    @Test
+    public void testAnchorOnMap2() throws Exception {
+        String yaml = """
+            top6: &anchor
+                &k1 'key6': scalar6
+            """;
+
+        // parserOptions.setPreloadTokenBuffer(true);
+        // parserReporter.setLevel(Level.TRACE);
+
+        // YamlAstParser astParser = new YamlAstParser();
+        // YamlNode root = astParser.parseMulti(yaml);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+
+            YamlStreamingEvent outer = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_MAP, outer.getType());
+            // System.out.println("outer: " + outer.getAnchor());
+            // assertEquals("node1", outer.getAnchor());
+
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType()); //top1
+
+            YamlStreamingEvent inner = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_MAP, inner.getType());
+            // System.out.println("inner: " + inner.getAnchor());
+            assertEquals("anchor", inner.getAnchor());
+
+            YamlStreamingEvent key1 = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.KEY, key1.getType());
+            assertEquals("k1", key1.getAnchor());
+            assertEquals("key6", key1.getContent());
+
+            YamlStreamingEvent val = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, val.getType());
+            assertEquals("scalar6", val.getContent());
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void testAnchorOnKey() throws Exception {
+        String yaml = """
+            top6:
+                &k1 'key6': scalar6
+            """;
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+
+            YamlStreamingEvent outer = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_MAP, outer.getType());
+
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType()); //top1
+
+            YamlStreamingEvent inner = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.START_MAP, inner.getType());
+            // System.out.println("inner: " + inner.getAnchor());
+            assertEquals("", inner.getAnchor());
+
+            YamlStreamingEvent key1 = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.KEY, key1.getType());
+            assertEquals("k1", key1.getAnchor());
+            assertEquals("key6", key1.getContent());
+
+            YamlStreamingEvent val = (YamlStreamingEvent) parser.next();
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, val.getType());
+            assertEquals("scalar6", val.getContent());
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void testImplicitSecondDocument() throws Exception {
+        String yaml = "---\nscalar1\n...\nkey: value\n";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void testNestedSequences() throws Exception {
+        String yaml = "---\n" + //
+                        "nested sequences:\n" + //
+                        "- - - []\n" + //
+                        "- - - {}\n" + //
+                        "key1: []\n" + //
+                        "key2: {}\n";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType()); // nested sequences
+
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType()); //[]
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType()); // {}
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType()); // key1
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType()); //[]
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType()); // key2
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType()); // {}
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    // @Disabled // TODO
+    @Test
+    public void testTagAndAnchorOrderWithScalars() throws Exception {
+        String yaml = """
+            - &a1
+              !!str
+              x1
+
+            - !!str
+              &b1
+              y1
+
+            - *a1
+
+            - *b1
+            """;
+
+        // parserOptions.setPreloadTokenBuffer(true);
+        // parserReporter.setLevel(Level.TRACE);
+
+        // YamlAstParser astParser = new YamlAstParser();
+        // YamlNode root = astParser.parseMulti(yaml);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+
+
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+
+
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    //TODO
+    // @Disabled
+    @Test
+    public void testTagAndAnchorOrderWithMaps() throws Exception {
+        String yaml = """
+            - &a1
+              !!str
+              c: x
+            - !!str
+              &a2
+              c: x
+            - *a1
+            - *a2
+            """;
+
+        // parserOptions.setPreloadTokenBuffer(true);
+        // parserReporter.setLevel(Level.TRACE);
+
+        // YamlAstParser astParser = new YamlAstParser();
+        // YamlNode root = astParser.parseMulti(yaml);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    // TODO
+    @Disabled
+    @Test
+    public void testTagAndAnchorOrderWithMapsAndScalars() throws Exception {
+        String yaml = """
+            - !!str
+              &m1
+              &s1 c: x
+            - &m2
+              !!str
+              &s2 c: x
+            - *m1
+            - *s1
+            - *m2
+            - *s2
+            """;
+
+        // parserOptions.setPreloadTokenBuffer(true);
+        // parserReporter.setLevel(Level.TRACE);
+
+        // YamlAstParser astParser = new YamlAstParser();
+        // YamlNode root = astParser.parseMulti(yaml);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+
+
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+
+
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+
+    // TODO: This should not fully parse
+    @Disabled
+    @Test
+    public void testSetItemsMustHaveNullValues() throws Exception {
+        String yaml = """
+            - &c1
+              !!set
+              c: x
+            """;
+
+        // parserOptions.setPreloadTokenBuffer(true);
+        // parserReporter.setLevel(Level.TRACE);
+
+        // YamlAstParser astParser = new YamlAstParser();
+        // YamlNode root = astParser.parseMulti(yaml);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+
+
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+            assertEquals(YamlStreamingEventType.ALIAS, parser.next().getType());
+
+
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+
+            assertTrue(false); // TODO: This test should not get to here
+        }
+    }
+
+    @Test
+    public void test_FH7J() throws Exception {
+        String yaml = """
+            - !!str
+            -
+              !!null : a
+              b: !!str
+            - !!str : !!null
+            """;
+
+        // parserOptions.setPreloadTokenBuffer(true);
+        // reporter.setLevel(Level.TRACE);
+
+        // YamlAstParser astParser = new YamlAstParser();
+        // astParser.getTokenizer() .setReporter(reporter);
+        // YamlNode root = astParser.parseMulti(yaml);
+        // TestUtils.dumpTokens(astParser.getTokens());
+
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_SEQUENCE, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // gets START_ARRAY
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.END_SEQUENCE, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void testEmptyFlowNodes() throws Exception {
+        String yaml = """
+            {
+              ? foo :,
+              : bar,
+            }
+            """;
+
+        // parserReporter.setLevel(Level.TRACE);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void test_Q9WF() throws Exception {
+        String yaml = """
+            { first: Sammy, last: Sosa }:
+            # Statistics:
+              hr:  # Home runs
+                 65
+              avg: # Average
+               0.278
+            """;
+
+        // parserReporter.setLevel(Level.TRACE);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+
+            YamlStreamingEvent root = parser.next();
+            assertEquals(NodeStyle.BLOCK, root.getNodeStyle());
+            assertEquals(YamlStreamingEventType.START_MAP, root.getType());
+
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+        }
+    }
+
+    @Test
+    public void test_QLJ7() throws Exception {
+        String yaml = """
+            %TAG !prefix! tag:example.com,2011:
+            --- !prefix!A
+            a: b
+            --- !prefix!B
+            c: d
+            --- !prefix!C
+            e: f
+            """;
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            YamlStreamingEvent doc = parser.next();
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, doc.getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            YamlStreamingEvent key = parser.next();
+            assertEquals(YamlStreamingEventType.KEY, key.getType());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType());
+
+            assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+
+            // TODO: Not sure about this
+
+            YamlStreamingEvent unexpected = parser.next();
+            assertEquals(null, unexpected);
+        }
+    }
+
+
+    @Test
+    public void test_6WLZ() throws Exception {
+        String yaml = """
+            # Private
+            ---
+            !foo "bar"
+            ...
+            # Global
+            %TAG ! tag:example.com,2000:app/
+            ---
+            !foo "bar"
+            """;
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            YamlStreamingEvent doc = parser.next();
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, doc.getType());
+
+            YamlStreamingEvent key0 = parser.next();
+            assertEquals("!foo", key0.getResolvedTag());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, key0.getType());
+
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+
+            YamlStreamingEvent key1 = parser.next();
+            assertEquals("tag:example.com,2000:app/foo", key1.getResolvedTag());
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, key1.getType());
+
+            assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+
+            YamlStreamingEvent unexpected = parser.next();
+            assertEquals(null, unexpected);
+        }
+    }
+
+    @Test
+    void test_correctPointOfFailure() throws Exception {
+        String yaml = """
+            a: x
+            !!str b: y
+            key: &m
+            !!map
+              c: z
+            """;
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        try (YamlPullParser parser = newParser(inputStream)) {
+            assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_DOCUMENT, parser.next().getType());
+            assertEquals(YamlStreamingEventType.START_MAP, parser.next().getType());
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());          // a
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // x
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());          // b
+            assertEquals(YamlStreamingEventType.VALUE_SCALAR, parser.next().getType()); // y
+            assertEquals(YamlStreamingEventType.KEY, parser.next().getType());          // key
+            YamlStreamingEvent event = parser.next();
+            assertNull(event);
+        }
+    }
+
+    // @Test
+    // public void test_S4GJ() throws Exception {
+    //     String yaml = """
+    //         ---
+    //         folded: > first line
+    //           second line
+    //         """;
+
+    //     ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+    //     try (YamlPullParser parser = newParser(inputStream)) {
+    //         assertEquals(YamlStreamingEventType.START_STREAM, parser.next().getType());
+    //         YamlStreamingEvent doc = parser.next();
+    //         assertEquals(YamlStreamingEventType.START_DOCUMENT, doc.getType());
+    //         assertEquals(YamlStreamingEventType.START_MAP, doc.getType());
+
+    //         YamlStreamingEvent key0 = parser.next();
+    //         assertEquals("!foo", key0.getResolvedTag());
+    //         assertEquals(YamlStreamingEventType.VALUE_SCALAR, key0.getType());
+
+    //         assertEquals(YamlStreamingEventType.END_MAP, parser.next().getType());
+    //         assertEquals(YamlStreamingEventType.END_DOCUMENT, parser.next().getType());
+    //         assertEquals(YamlStreamingEventType.END_STREAM, parser.next().getType());
+    //     }
+    // }
+}

@@ -38,18 +38,20 @@ package io.github.qishr.cascara.lang.yaml.ast;
 import java.util.List;
 import java.util.Objects;
 
+import io.github.qishr.cascara.common.annotation.Nullable;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
-public class YamlAnchor extends YamlNode {
+public class YamlAnchor extends YamlNodeProperty {
     private final String name;
 
     // TODO: Should this be called innerNode or wrappedNode, or something else?
-    private final YamlNode innerNode;
+    // private final YamlNode innerNode;
 
-    public YamlAnchor(int line, int column, String name, YamlNode node) {
-        super(line, column, null);
+    public YamlAnchor(String name, YamlNode node) {
+        super();
         this.name = name;
-        this.innerNode = node;
+        // this.innerNode = node;
         this.setAnchor(name);
         // Also ensure the inner node knows it's anchored
         if (node != null) {
@@ -58,9 +60,9 @@ public class YamlAnchor extends YamlNode {
     }
 
     public YamlAnchor(YamlToken token, String name, YamlNode node) {
-        super(token, null);
+        super(token);
         this.name = name;
-        this.innerNode = node;
+        // this.innerNode = node;
         this.setAnchor(name);
         // Also ensure the inner node knows it's anchored
         if (node != null) {
@@ -68,23 +70,36 @@ public class YamlAnchor extends YamlNode {
         }
     }
 
+    public YamlAnchor(YamlToken token) {
+        super(token);
+        // String content = token.getContent();
+        this.name = extractAnchorName(token);
+        // this.innerNode = node;
+        this.setAnchor(name);
+        // Also ensure the inner node knows it's anchored
+        // if (node != null) {
+        //     node.setAnchor(name);
+        // }
+    }
+
     public String getName() { return name; }
-    public YamlNode getInnerNode() { return innerNode; }
+    // public YamlNode getInnerNode() { return innerNode; }
 
     /// {@inheritDoc}
     @Override
-    public List<YamlNode> getChildren() { return List.of(innerNode); }
+    public List<YamlNode> getChildren() { return List.of(); }
 
     /// {@inheritDoc}
     @Override
     public String asString() {
-        return innerNode == null ? "" : innerNode.toString();
+        return name;
+        // return innerNode == null ? "" : innerNode.toString();
     }
 
-    @Override
-    public void accept(YamlVisitor visitor) {
-        visitor.visit(this);
-    }
+    // @Override
+    // public void accept(YamlVisitor visitor) {
+    //     visitor.visit(this);
+    // }
 
     @Override
     public boolean equals(Object o) {
@@ -107,4 +122,18 @@ public class YamlAnchor extends YamlNode {
     public String toString() {
         return asString();
     }
+
+    @Nullable
+    public static String extractAnchorName(YamlToken anchorToken) {
+        if (anchorToken == null) {
+            return null;
+        }
+        String raw = anchorToken.getContent();
+        if (raw == null || raw.isEmpty()) {
+            return null;
+        }
+        String name = raw.startsWith("&") ? raw.substring(1) : raw;
+        return name;
+    }
+
 }

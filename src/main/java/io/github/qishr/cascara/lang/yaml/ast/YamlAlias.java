@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
+import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 public class YamlAlias extends YamlNode {
 
@@ -74,6 +75,11 @@ public class YamlAlias extends YamlNode {
         // In the context of an alias node, the 'anchor' it's interested in
         // is the string name it points to.
         return getName();
+    }
+
+    @Override
+    public String asString() {
+        return name;
     }
 
     @Override

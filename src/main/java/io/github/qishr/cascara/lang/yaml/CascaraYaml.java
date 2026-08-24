@@ -45,9 +45,9 @@ import io.github.qishr.cascara.common.semver.SemVer;
 import io.github.qishr.cascara.common.util.JarManifest;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
-import io.github.qishr.cascara.lang.yaml.processor.YamlAliasResolver;
 import io.github.qishr.cascara.lang.yaml.processor.YamlNormalizer;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
+import io.github.qishr.cascara.lang.yaml.util.YamlAliasResolver;
 
 public final class CascaraYaml {
 
@@ -87,7 +87,7 @@ public final class CascaraYaml {
 
     /// Read YAML text into a JVM object of the given type.
     public static <T> T read(String text, Class<T> type) {
-        return newSerializer().fromText(text, type);
+        return newSerializer().fromString(text, type);
     }
 
     /// Read YAML text using a generic type reference.
@@ -129,12 +129,12 @@ public final class CascaraYaml {
 
     /// Write a JVM object to YAML text.
     public static String write(Object value) {
-        return newSerializer().toText(value);
+        return newSerializer().toString(value);
     }
 
     /// Write a JVM object to a Writer as YAML.
     public static void write(Object value, Writer writer) throws IOException {
-        writer.write(newSerializer().toText(value));
+        writer.write(newSerializer().toString(value));
     }
 
     //

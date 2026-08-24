@@ -37,35 +37,38 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.common.lang.exception.ParserException;
 import io.github.qishr.cascara.common.lang.processor.PushParser;
-import io.github.qishr.cascara.common.lang.streaming.StreamingEvent;
-import io.github.qishr.cascara.lang.yaml.internal.YamlStreamEngine;
+import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlParser;
+import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
 import io.github.qishr.cascara.common.lang.streaming.StreamHandler;
 
 import java.io.InputStream;
 
-public class YamlPushParser extends AbstractYamlProcessor<YamlPushParser> implements PushParser {
+public class YamlPushParser extends AbstractYamlParser<YamlPushParser> implements PushParser {
 
-    private YamlStreamEngine engine = new YamlStreamEngine();
+    StreamHandler handler;
 
     public YamlPushParser() {}
 
     @Override protected YamlPushParser self() { return this; }
 
-    public YamlTokenizer getTokenizer() {
-        return engine.getTokenizer();
-    }
-
     @Override
     public void parse(InputStream input, StreamHandler handler) throws ParserException {
-        engine.setOptions(options);
-        engine.setReporter(reporter);
-        engine.setStream(input);
+        this.handler = handler;
+        preParseStateInit();
 
-        while (engine.hasNextEvent()) {
-            StreamingEvent event = engine.nextEvent();
-            if (event != null) {
-                handler.onEvent(event);
-            }
-        }
+        setContinueAfterError(false);
+        // tokenBuffer.getTokenizer().setContinueAfterError(false);
+
+        tokenBuffer.open(input);
+        parseStream();
+    }
+
+    //
+    //
+    //
+
+    @Override
+    protected void handleEvent(YamlStreamingEvent event) {
+        handler.onEvent(event);
     }
 }
