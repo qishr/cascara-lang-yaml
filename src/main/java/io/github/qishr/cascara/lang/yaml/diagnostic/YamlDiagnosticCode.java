@@ -95,6 +95,7 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     FLOW_SEQUENCE_BLOCK_COLLECTION_INDENT("YAML-224", "Flow sequence in block collection must be sufficiently indented and end with a ]"),
     FLOW_MAP_BLOCK_INDENT("YAML-225", "Flow map in block collection must be sufficiently indented and end with a }"),
     BLOCK_COLLECTION_IN_FLOW_COLLECTION("YAML-226", "Block collections are not allowed within flow collections"),
+    NESTED_MAPPING_IN_COMPACT_MAPPING("YAML-227", "Nested mappings are not allowed in compact mappings"),
 
     // TODO:
     // Anchor cannot be an empty string

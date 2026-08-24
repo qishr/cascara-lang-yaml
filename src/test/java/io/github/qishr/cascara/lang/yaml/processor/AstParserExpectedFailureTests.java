@@ -275,4 +275,12 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
+
+    // NESTED_MAPPING_IN_COMPACT_MAPPING
+    @Test
+    void test_ZCZ6() {
+        String yaml = "a: b: c: d\n";
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
 }
