@@ -96,11 +96,13 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     FLOW_MAP_BLOCK_INDENT("YAML-225", "Flow map in block collection must be sufficiently indented and end with a }"),
     BLOCK_COLLECTION_IN_FLOW_COLLECTION("YAML-226", "Block collections are not allowed within flow collections"),
     NESTED_MAPPING_IN_COMPACT_MAPPING("YAML-227", "Nested mappings are not allowed in compact mappings"),
+    BLOCK_SEQ_IND_SAME_LINE("YAML-228","Unexpected block-seq-ind on same line with key"),
 
     // TODO:
     // Anchor cannot be an empty string
     // Set items must all have null values
     // Block collection cannot start on same line with directives-end marker
+    // ^^^ "with" -> "as"
 
     // Serializer / Emitter
     UNEXPECTED_NODE_TYPE("YAML-301", "Unexpected node type: {0}");

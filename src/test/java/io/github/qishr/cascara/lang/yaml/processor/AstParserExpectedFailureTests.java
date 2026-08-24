@@ -283,4 +283,15 @@ public class AstParserExpectedFailureTests extends AstParserTestBase {
         tokenize(yaml);
         assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
     }
+
+    // Unexpected block-seq-ind on same line with key
+    @Test
+    void test_5U3A() {
+        String yaml = """
+            key: - a
+                 - b
+            """;
+        tokenize(yaml);
+        assertThrows(YamlParserException.class, () -> parser.parseMulti(yaml));
+    }
 }

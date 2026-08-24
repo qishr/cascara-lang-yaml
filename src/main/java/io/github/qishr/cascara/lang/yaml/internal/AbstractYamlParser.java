@@ -716,6 +716,12 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                     if (nodeProperties.anchor != null && nodeProperties.anchor.getStartLine() == tokenBuffer.peek().getStartLine()) {
                         error(nodeProperties.anchor.getToken(), YamlDiagnosticCode.MISSING_NEWLINE_BLOCK_SEQ_PROPS);
                     }
+                    if (parentCollection instanceof YamlMap &&
+                        parentCollection.getStartLine() == tokenBuffer.peek().getStartLine() &&
+                        !inMappingWithExplicitKey
+                    ) {
+                        error(tokenBuffer.peek(), YamlDiagnosticCode.BLOCK_SEQ_IND_SAME_LINE);
+                    }
                     result = parseSequence(nodeProperties);
                     if (result == null) return null;
                 }
