@@ -332,7 +332,11 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         try {
             // Write explicit document markers if there are multiple documents,
             // or if the document explicitly contains directives.
-            if (options.isExplicitStart() || numDocs > 1 || !doc.getDirectives().isEmpty()) {
+            if (options.isExplicitStart() ||
+                numDocs > 1 ||
+                !doc.getDirectives().isEmpty() ||
+                doc.hasStartMarker())
+            {
                 emit(DOCUMENT_START_MARKER);
                 if (doc.getBody() instanceof YamlScalar) {
                     emitSpace();

@@ -313,6 +313,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
             YamlToken docStartToken = tokenBuffer.peek();
             if (docStartToken.getType() == YamlTokenType.DOCUMENT_START) {
+                document.setHasStartMarker(true);
                 createEvent(tokenBuffer.peek(), YamlStreamingEventType.START_DOCUMENT, "---");
                 tokenBuffer.advance();
                 onMarkerLine = true;

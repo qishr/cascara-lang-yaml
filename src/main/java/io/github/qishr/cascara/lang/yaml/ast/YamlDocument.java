@@ -45,6 +45,7 @@ public class YamlDocument extends YamlNode {
     private final List<YamlDirective> directives = new ArrayList<>();
     private final List<YamlTagDirective> tagsDirectives = new ArrayList<>();
     private YamlNode body;
+    private boolean hasStartMarker;
     private boolean hasEndMarker;
     private YamlDirective yamlDirective;
 
@@ -95,6 +96,14 @@ public class YamlDocument extends YamlNode {
 
     public void setHasEndMarker(boolean b) {
         hasEndMarker = b;
+    }
+
+    public boolean hasStartMarker() {
+        return hasStartMarker;
+    }
+
+    public void setHasStartMarker(boolean b) {
+        hasStartMarker = b;
     }
 
     @Override
