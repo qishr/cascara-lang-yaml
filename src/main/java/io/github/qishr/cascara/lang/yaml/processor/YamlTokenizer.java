@@ -103,6 +103,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     private String leadingWhitespace = "";
     private boolean lineHasContent;
 
+    String debugSource;
 
     /// Default constructor for SPI
     public YamlTokenizer() {}
@@ -149,8 +150,6 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     public List<YamlToken> tokenize(byte[] bytes) {
         return tokenize(new String(bytes, StandardCharsets.UTF_8));
     }
-
-    String debugSource;
 
     @Override
     public List<YamlToken> tokenize(String text) {

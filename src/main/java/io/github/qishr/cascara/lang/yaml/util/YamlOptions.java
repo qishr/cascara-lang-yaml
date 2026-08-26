@@ -55,6 +55,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
             .setForceExplicitNull(true)
             .setForceBlockCollections(true)
             .setOutputResolvedAliases(false)
+            .setAlwaysEndWithNewLine(true)
     );
 
     private int depthLimit = 500;
@@ -77,6 +78,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     private boolean forceBlockCollections = false;
     private boolean preloadTokenBuffer = false;
     private boolean outputResolvedAliases = false;
+    private boolean alwaysEndWithNewLine = true;
 
     public YamlOptions() {}
 
@@ -102,6 +104,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         forceBlockCollections = original.forceBlockCollections;
         preloadTokenBuffer = original.preloadTokenBuffer;
         outputResolvedAliases = original.outputResolvedAliases;
+        alwaysEndWithNewLine = original.alwaysEndWithNewLine;
     }
 
     public int getDepthLimit() {return depthLimit; }
@@ -122,6 +125,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     public boolean forceBlockCollections() { return forceBlockCollections; }
     public boolean preloadTokenBuffer() { return preloadTokenBuffer; }
     public boolean outputResolvedAliases() { return outputResolvedAliases; }
+    public boolean setAlwaysEndWithNewLine() { return alwaysEndWithNewLine; }
 
     public YamlOptions setDepthLimit(int val) {
         this.depthLimit = val;
@@ -205,6 +209,11 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         return this;
     }
 
+    public YamlOptions setAlwaysEndWithNewLine(boolean b) {
+        alwaysEndWithNewLine = b;
+        return this;
+    }
+
     @Override
     public YamlOptions duplicate() {
         return new YamlOptions(this);
@@ -282,6 +291,10 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
 
         public YamlOptions setOutputResolvedAliases(boolean b) {
             throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setOutputResolvedAliases");
+        }
+
+        public YamlOptions setAlwaysEndWithNewLine(boolean b) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setAlwaysEndWithNewLine");
         }
     }
 }

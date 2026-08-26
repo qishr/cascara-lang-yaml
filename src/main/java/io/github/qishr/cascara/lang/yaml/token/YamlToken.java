@@ -154,7 +154,10 @@ public class YamlToken implements Token {
         return this;
     }
 
-    public void setType(YamlTokenType type) { this.type = type; }
+    public YamlToken setType(YamlTokenType type) {
+        this.type = type;
+        return this;
+    }
 
     @Override
     public String toString() {

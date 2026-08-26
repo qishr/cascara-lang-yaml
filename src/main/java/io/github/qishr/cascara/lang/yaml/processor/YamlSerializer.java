@@ -100,7 +100,8 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private boolean outputComments;
     private boolean outputExpandedStyle;
     private boolean forceExplicitNull;
-    private boolean debugStringBuilder = false;
+    private boolean debugStringBuilder = true;
+    private boolean alwaysEndWithNewLine;
 
     // State
     private int indentSpaces;
@@ -165,7 +166,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         }
         string = new StringBuilder();
         setupEmitter();
-        emitNode(rootNode, false, false, false);
+        emitNode(rootNode);
         emitTrailingComments(rootNode);
         emitFileEnding();
         return string.toString();
@@ -181,7 +182,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         }
         this.writer = writer;
         setupEmitter();
-        emitNode(rootNode, false, false, false);
+        emitNode(rootNode);
         emitTrailingComments(rootNode);
         emitFileEnding();
     }
@@ -279,6 +280,13 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     // Node emitting methods
     //
 
+    private void emitNode(YamlNode node) {
+        emitNode(node, false, false, false);
+        if (alwaysEndWithNewLine && !atStartOfLine) {
+            emitNewLine();
+        }
+    }
+
     private void emitNode(YamlNode node, boolean isMapKey, boolean isSequenceItem, boolean isInsideFlow) {
         emitNodeProperties(node);
 
@@ -305,37 +313,51 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
     private void emitStream(YamlStream stream) {
         debug(">emitStream");
-        var documents = stream.getDocuments();
-        for (int i = 0; i < documents.size(); i++) {
-            YamlDocument doc = documents.get(i);
-            emitDocument(doc, i, documents.size());
+        depth++;
+        try {
+            var documents = stream.getDocuments();
+            for (int i = 0; i < documents.size(); i++) {
+                YamlDocument doc = documents.get(i);
+                emitDocument(doc, i, documents.size());
+            }
+        } finally {
+            depth--;
+            debug("<emitStream");
         }
-        debug("<emitStream");
     }
 
     private void emitDocument(YamlDocument doc, int docNum, int numDocs) {
         debug(">emitDocument");
-        // Write explicit document markers if there are multiple documents,
-        // or if the document explicitly contains directives.
-        if (options.isExplicitStart() || numDocs > 1 || !doc.getDirectives().isEmpty()) {
-            emit(DOCUMENT_START_MARKER);
-            emitNewLine();;
+        depth++;
+        try {
+            // Write explicit document markers if there are multiple documents,
+            // or if the document explicitly contains directives.
+            if (options.isExplicitStart() || numDocs > 1 || !doc.getDirectives().isEmpty()) {
+                emit(DOCUMENT_START_MARKER);
+                if (doc.getBody() instanceof YamlScalar) {
+                    emitSpace();
+                } else {
+                    emitNewLine();
+                }
+            }
+
+            // TODO: Directives
+
+            // Process the body of this specific document
+            emitNode(doc.getBody(), false, false, false);
+
+            // Append a newline between documents if we aren't at the very end
+            // if (docNum < numDocs - 1 && sb.length() > 0 && sb.charAt(sb.length() - 1) != '\n') {
+            //     appendText(NL);
+            // }
+
+            // if (docNum < numDocs - 1 && !isSingleScalar) {
+            //     emitNewLine();
+            // }
+        } finally {
+            depth--;
+            debug("<emitDocument");
         }
-
-        // TODO: Directives
-
-        // Process the body of this specific document
-        emitNode(doc.getBody(), false, false, false);
-
-        // Append a newline between documents if we aren't at the very end
-        // if (docNum < numDocs - 1 && sb.length() > 0 && sb.charAt(sb.length() - 1) != '\n') {
-        //     appendText(NL);
-        // }
-
-        // if (docNum < numDocs - 1 && !isSingleScalar) {
-        //     emitNewLine();
-        // }
-        debug("<emitDocument");
     }
 
     private void emitMap(YamlMap map, boolean isMapKey, boolean isSequenceItem, boolean isInsideFlow) {
@@ -391,6 +413,10 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                     if (!(isSynthetic(key))) {
                         indentSpaces = keyIndent - 2;
                     }
+                }
+
+                if (previousNode instanceof YamlAlias) {
+                    emitSpace();
                 }
 
                 emit(VALUE_INDICATOR);
@@ -643,6 +669,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                     emitInlineComments(alias);
                 }
             }
+            previousNode = alias;
         } finally {
             depth--;
             debug("<emitAlias");
@@ -769,7 +796,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     // Helpers
     //
 
-    // TODO: This was supposed to be eused
+    // TODO: This was supposed to be used
     private int startLineOf(YamlNode node) {
         if (node.getProperties().isEmpty()) {
             return node.getStartLine();
@@ -780,32 +807,46 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
     private boolean newLineBefore(YamlNode node, boolean isSequenceItem, boolean isInsideFlow) {
         if (!preceededByWhitespace && previousNode != null) {
-            if (isSynthetic(node)) {
-                // Synthetic node
-                // if (node instanceof YamlScalar s && "2".equals(s.getContent())) {
-                //     debug("Debug");
-                // }
-                if (isScalar(node) || isSequenceItem || isInsideFlow) {
-                    return false;
-                } else {
-                    return true;
-                }
+            if (isScalar(node) || isSequenceItem || isInsideFlow) {
+                return false;
             } else {
-                // Parsed node
-                if (node.getStartLine() > previousEmissionLineNumber) {
-                    trace("Start line differs for " + debugNode(node) + " (prev line = " + previousEmissionLineNumber + ")");
-                    return true;
-                } else {
-                    return false;
-                }
+                return true;
             }
+
+            // if (isSynthetic(node)) {
+            //     // Synthetic node
+            //     // if (node instanceof YamlScalar s && "2".equals(s.getContent())) {
+            //     //     debug("Debug");
+            //     // }
+
+
+            //     //
+            //     // TODO: This needs changed to use canonical YAML
+            //     //
+
+
+            //     if (isScalar(node) || isSequenceItem || isInsideFlow) {
+            //         return false;
+            //     } else {
+            //         return true;
+            //     }
+            // } else {
+            //     // Parsed node
+            //     if (node.getStartLine() > previousEmissionLineNumber) {
+            //         trace("Start line differs for " + debugNode(node) + " (prev line = " + previousEmissionLineNumber + ")");
+            //         return true;
+            //     } else {
+            //         return false;
+            //     }
+            // }
         } else {
             return false;
         }
     }
 
     private boolean isSynthetic(YamlNode node) {
-        return node.getStartLine() < 1;
+        return false;
+        // return node.getStartLine() < 1;
     }
 
     private boolean isScalar(YamlNode node) {
@@ -814,15 +855,15 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     }
 
     private int indentOf(YamlNode node, int expectedIndent) {
-        if (isSynthetic(node)) {
+        // if (isSynthetic(node)) {
             return expectedIndent;
-        } else {
-            if (node.getProperties().isEmpty()) {
-                return node.getStartColumn() - 1; // Columns start at 1
-            } else {
-                return indentOf(node.getProperties().getFirst(), expectedIndent);
-            }
-        }
+        // } else {
+        //     if (node.getProperties().isEmpty()) {
+        //         return node.getStartColumn() - 1; // Columns start at 1
+        //     } else {
+        //         return indentOf(node.getProperties().getFirst(), expectedIndent);
+        //     }
+        // }
     }
 
     private boolean isImplicitNull(YamlNode node) {
@@ -897,6 +938,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         outputComments = options.outputComments();
         outputExpandedStyle = options.outputExpandedStyle();
         forceExplicitNull = options.forceExplicitNull();
+        alwaysEndWithNewLine = options.setAlwaysEndWithNewLine();
 
         // State
         atStartOfLine = true;
