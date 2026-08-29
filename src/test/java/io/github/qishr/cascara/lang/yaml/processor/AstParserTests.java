@@ -37,7 +37,9 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -280,5 +282,26 @@ public class AstParserTests extends AstParserTestBase {
 
         YamlScalar scalar = root.getScalar("b");
         TestUtils.assertEquals("plain value", scalar.asString());
+    }
+
+    @Test
+    void testNewLineAfterDocMarker() {
+        String yaml = """
+            ---
+            text
+            """;
+
+        YamlNode root = parser.parse(yaml);
+        assertTrue(root.isPreceededByNewLine());
+    }
+
+    @Test
+    void testScalarOnSameLineAsDocMarker() {
+        String yaml = """
+            --- text
+            """;
+
+        YamlNode root = parser.parse(yaml);
+        assertFalse(root.isPreceededByNewLine());
     }
 }

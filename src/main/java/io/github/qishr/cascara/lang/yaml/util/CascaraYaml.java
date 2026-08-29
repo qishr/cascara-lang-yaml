@@ -33,7 +33,7 @@
 // version.
 
 
-package io.github.qishr.cascara.lang.yaml;
+package io.github.qishr.cascara.lang.yaml.util;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,7 +47,6 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 import io.github.qishr.cascara.lang.yaml.processor.YamlNormalizer;
 import io.github.qishr.cascara.lang.yaml.processor.YamlSerializer;
-import io.github.qishr.cascara.lang.yaml.util.YamlAliasResolver;
 
 public final class CascaraYaml {
 

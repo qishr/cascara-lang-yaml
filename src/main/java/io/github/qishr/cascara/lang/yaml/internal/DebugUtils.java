@@ -45,8 +45,6 @@ public class DebugUtils {
         for (StackTraceElement frame : callStack) {
             String className = frame.getClassName();
             String methodName = frame.getMethodName();
-            // String clName = frame.getClassLoaderName();
-
             Class<?> clazz;
             try {
                 clazz = Class.forName(className);

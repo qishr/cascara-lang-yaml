@@ -63,7 +63,8 @@ public class TokenizerScalarTests {
             : ScalarStyle.LITERAL;
         // String string = source.substring(1);
 
-        SourceStringBuffer buffer = new SourceStringBuffer(source);
+        SourceStringBuffer buffer = new SourceStringBuffer();
+        buffer.open(source);
 
         tokenizer.indentationLevels.push(indent);
         tokenizer.buffer = buffer;

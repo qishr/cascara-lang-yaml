@@ -125,24 +125,28 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
     @Override
     public void open(String text) {
-        this.debugSource = text;
-
-        this.buffer = new SourceStringBuffer(text);
         this.isLegacyMode = false;
+
+        this.debugSource = text; // TODO: Remove this
+
+        this.buffer = new SourceStringBuffer();
+        this.buffer.open(text);
         setup();
     }
 
     @Override
     public void open(Reader reader) {
-        buffer = new SourceInputStreamBuffer(reader);
         this.isLegacyMode = false;
+        buffer = new SourceInputStreamBuffer();
+        this.buffer.open(reader);
         setup();
     }
 
     @Override
     public void open(InputStream is) {
-        this.buffer = new SourceInputStreamBuffer(is);
         this.isLegacyMode = false;
+        this.buffer = new SourceInputStreamBuffer();
+        this.buffer.open(is);
         setup();
     }
 
@@ -200,6 +204,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         if (!streamStarted) {
             streamStarted = true;
+            // Handle UTF-8 BOM if present at start of stream
+            if (buffer.peek() == '\uFEFF') {
+                advance();
+            }
             return queueToken(new YamlToken(buffer.line(), buffer.column(), buffer.offset(), YamlTokenType.STREAM_START));
         }
 
@@ -1573,17 +1581,17 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         pendingTokens.clear();
 
-        // Handle UTF-8 BOM if present at start of stream/string
-        if (buffer.peek() == '\uFEFF') {
-            advance();
-        }
+        // // Handle UTF-8 BOM if present at start of stream/string
+        // if (buffer.peek() == '\uFEFF') {
+        //     advance();
+        // }
     }
 
     private void updatePreviousNonWhitespaceToken(YamlToken token) {
         TokenCategory cat = token.getType().getCategory();
         if (cat != TokenCategory.WHITESPACE &&
             cat != TokenCategory.INDENTATION &&
-            cat != TokenCategory.INTERNAL &&
+            // cat != TokenCategory.INTERNAL &&
             cat != TokenCategory.NEWLINE &&
             cat != TokenCategory.COMMENT
         ) {
@@ -1606,6 +1614,9 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         debug("addToken: " + token.getType());
         if (token != null) {
             pendingTokens.add(token); // Queue it up so nextToken() can yield it!
+        }
+        if (previousNonWhitespaceToken != null && previousNonWhitespaceToken.getStartLine() < token.getStartLine()) {
+            token.setHasPreceedingNewLine(true);
         }
         updatePreviousNonWhitespaceToken(token);
         return token;

@@ -39,8 +39,7 @@ public class SerializerTestBase extends AstParserTestBase {
             .setStackTraceEnabled(true);
 
         serializer = new YamlSerializer()
-            .setReporter(serializerReporter)
-            .setOptions(YamlOptions.CANONICAL);
+            .setReporter(serializerReporter);
     }
 
     //
@@ -172,6 +171,7 @@ public class SerializerTestBase extends AstParserTestBase {
 
         YamlOptions options = new YamlOptions()
             .setOutputResolvedAliases(false);
+
         serializer.setOptions(options);
 
         String emitted = serializer.toString(root);

@@ -52,10 +52,16 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
             .setNormalizeScalarFormatting(true)
             .setIndentSize(2)
             .setExplicitStart(false) // YTS expects no --- if there doesn't need to be one
-            .setForceExplicitNull(true)
+
+
+            .setForceExplicitNull(false)
+            // .setForceExplicitNull(true) // TODO: This was changed
+
+
             .setForceBlockCollections(true)
             .setOutputResolvedAliases(false)
             .setAlwaysEndWithNewLine(true)
+            .setRetainFormatting(false)
     );
 
     private int depthLimit = 500;
@@ -78,7 +84,8 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     private boolean forceBlockCollections = false;
     private boolean preloadTokenBuffer = false;
     private boolean outputResolvedAliases = false;
-    private boolean alwaysEndWithNewLine = true;
+    private boolean alwaysEndWithNewLine = false; // TODO: This was changed
+    private boolean retainFormatting = true;
 
     public YamlOptions() {}
 
@@ -105,7 +112,17 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         preloadTokenBuffer = original.preloadTokenBuffer;
         outputResolvedAliases = original.outputResolvedAliases;
         alwaysEndWithNewLine = original.alwaysEndWithNewLine;
+        retainFormatting = original.retainFormatting;
     }
+
+    protected int indentSize = 2;
+
+    public YamlOptions setIndentSize(int size) {
+        this.indentSize = size;
+        return this;
+    }
+
+    public int getIndentSize() { return indentSize; }
 
     public int getDepthLimit() {return depthLimit; }
     public boolean allowUnicode() { return allowUnicode; }
@@ -126,6 +143,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     public boolean preloadTokenBuffer() { return preloadTokenBuffer; }
     public boolean outputResolvedAliases() { return outputResolvedAliases; }
     public boolean setAlwaysEndWithNewLine() { return alwaysEndWithNewLine; }
+    public boolean retainFormatting() { return retainFormatting; }
 
     public YamlOptions setDepthLimit(int val) {
         this.depthLimit = val;
@@ -214,6 +232,11 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         return this;
     }
 
+    public YamlOptions setRetainFormatting(boolean b) {
+        retainFormatting = b;
+        return this;
+    }
+
     @Override
     public YamlOptions duplicate() {
         return new YamlOptions(this);
@@ -295,6 +318,10 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
 
         public YamlOptions setAlwaysEndWithNewLine(boolean b) {
             throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setAlwaysEndWithNewLine");
+        }
+
+        public YamlOptions setRetainFormatting(boolean b) {
+            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setRetainFormatting");
         }
     }
 }

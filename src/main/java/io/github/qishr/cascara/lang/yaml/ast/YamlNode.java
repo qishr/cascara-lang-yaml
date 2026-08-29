@@ -67,7 +67,8 @@ public abstract class YamlNode implements AstNode {
     private List<YamlNodeProperty> properties = null;
     protected YamlOptions options;
 
-    private boolean fileEndsWithNewLine = false;
+    private boolean fileEndsWithNewLine;
+    private boolean preceededByNewLine;
 
     protected YamlNode() {
         startLine = 0;
@@ -139,6 +140,15 @@ public abstract class YamlNode implements AstNode {
 
     public void setFileEndsWithNewLine(boolean b) {
         fileEndsWithNewLine = b;
+    }
+
+    public boolean isPreceededByNewLine() {
+        return preceededByNewLine;
+    }
+
+    public YamlNode setPreceededByNewLine(boolean b) {
+         preceededByNewLine = b;
+         return this;
     }
 
     public String getTag() {

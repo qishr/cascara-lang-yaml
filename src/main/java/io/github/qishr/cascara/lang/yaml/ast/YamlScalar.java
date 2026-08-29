@@ -206,7 +206,9 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
 
     /// Returns the original raw (unescaped) string as seen in the source file.
     public String getLexeme() {
-        return token == null ? null : token.getLexeme();
+        return primitiveType == PrimitiveType.NULL
+            ? ""
+            : token == null ? null : token.getLexeme();
     }
 
     @Override

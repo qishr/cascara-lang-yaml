@@ -15,7 +15,7 @@ public class SerializerSyntheticYamlTests extends SerializerTestBase {
               foo: 1
               bar baz: 2
               "qux:quux": 3
-            """.stripTrailing();
+            """;
 
         YamlMap tiles = new YamlMap().put(
             new YamlScalar("mapping"),
@@ -45,7 +45,7 @@ public class SerializerSyntheticYamlTests extends SerializerTestBase {
               : 2
               ? "qux:quux"
               : 3
-            """.stripTrailing();
+            """;
 
         YamlMap tiles = new YamlMap().put(
             new YamlScalar("mapping"),
@@ -81,7 +81,7 @@ public class SerializerSyntheticYamlTests extends SerializerTestBase {
               ? x: -10
                 y: -10
               : 2
-            """.stripTrailing();
+            """;
 
         YamlMap tiles = new YamlMap().put(
             new YamlScalar("tiles"),

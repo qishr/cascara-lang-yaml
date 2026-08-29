@@ -102,8 +102,10 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private boolean forceExplicitNull;
     private boolean debugStringBuilder = true;
     private boolean alwaysEndWithNewLine;
+    private boolean retainFormatting;
 
     // State
+    private boolean isSynthetic;
     private int indentSpaces;
     private boolean atStartOfLine;
     private boolean preceededByWhitespace;
@@ -111,6 +113,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private int previousEmissionLineNumber;
     private YamlNode previousNode;
     private YamlNode rootNode;
+    private boolean newLineAlreadyEmitted;
 
     public YamlSerializer() {
         super(AbstractYamlProcessor.YAML_CONTENT_TYPE_STRING, new YamlNodeFactory(), new YamlOptions());
@@ -166,7 +169,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         }
         string = new StringBuilder();
         setupEmitter();
-        emitNode(rootNode);
+        emitRootNode(rootNode);
         emitTrailingComments(rootNode);
         emitFileEnding();
         return string.toString();
@@ -182,7 +185,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         }
         this.writer = writer;
         setupEmitter();
-        emitNode(rootNode);
+        emitRootNode(rootNode);
         emitTrailingComments(rootNode);
         emitFileEnding();
     }
@@ -280,9 +283,16 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     // Node emitting methods
     //
 
-    private void emitNode(YamlNode node) {
+    private void emitRootNode(YamlNode node) {
+        if (node.getToken() == null || node.getStartLine() < 1) {
+            isSynthetic = true;
+        }
         emitNode(node, false, false, false);
-        if (alwaysEndWithNewLine && !atStartOfLine) {
+
+        boolean isMultiLine = previousEmissionLineNumber > 1;
+        // if (alwaysEndWithNewLine && !atStartOfLine) {
+        // if ((alwaysEndWithNewLine || isSynthetic) && !atStartOfLine) {
+        if ((alwaysEndWithNewLine || isMultiLine) && !atStartOfLine) {
             emitNewLine();
         }
     }
@@ -290,13 +300,21 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private void emitNode(YamlNode node, boolean isMapKey, boolean isSequenceItem, boolean isInsideFlow) {
         emitNodeProperties(node);
 
-        if (!preceededByWhitespace && previousNode != null && !isImplicitNull(node)) {
+        // if (!preceededByWhitespace && previousNode != null && !isImplicitNull(node)) {
+        //     if (newLineBefore(node, isSequenceItem, isInsideFlow)) {
+        //         emitNewLine();
+        //     } else {
+        //         emitSpace();
+        //     }
+        // }
+
+        // if (!preceededByWhitespace && previousNode != null && !isImplicitNull(node)) {
             if (newLineBefore(node, isSequenceItem, isInsideFlow)) {
                 emitNewLine();
-            } else {
-                emitSpace();
+            // } else {
+            //     emitSpace();
             }
-        }
+        // }
 
         emitBlockComments(node);
         switch (node) {
@@ -337,11 +355,14 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                 !doc.getDirectives().isEmpty() ||
                 doc.hasStartMarker())
             {
-                emit(DOCUMENT_START_MARKER);
-                if (doc.getBody() instanceof YamlScalar) {
-                    emitSpace();
-                } else {
+                if (!atStartOfLine) {
                     emitNewLine();
+                }
+                emit(DOCUMENT_START_MARKER);
+                if (doc.getBody().isPreceededByNewLine()) {
+                    emitNewLine();
+                } else {
+                    emitSpace();
                 }
             }
 
@@ -387,7 +408,9 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                 boolean hasComplexKey = (key instanceof YamlMap m && m.getNodeStyle() == NodeStyle.BLOCK) ||
                                         (key instanceof YamlSequence s && s.getNodeStyle() == NodeStyle.BLOCK);
 
-                hasComplexKey |= entry.hasExplicitKey();
+                if (retainFormatting) {
+                    hasComplexKey |= entry.hasExplicitKey();
+                }
 
                 // if ("key".equals(key.asString())) {
                 //     debug("Debug");
@@ -400,12 +423,19 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
                 indentSpaces = keyIndent;
                 if (hasComplexKey) {
-                    if (!isSynthetic(key)) {
-                        indentSpaces = keyIndent - 2;
-                    }
+
+
+
+                    // if (!isSynthetic(key)) {
+                    //     indentSpaces = keyIndent - 2;
+                    // }
+
+
+
                     emit(KEY_INDICATOR);
                     emitSpace();
                     indentSpaces = keyIndent + 2;
+                    newLineAlreadyEmitted = true;
                 }
 
                 // indentSpaces = keyIndent;
@@ -414,9 +444,15 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                 if (hasComplexKey) {
                     emitNewLine();
                     indentSpaces = keyIndent;
-                    if (!(isSynthetic(key))) {
-                        indentSpaces = keyIndent - 2;
-                    }
+
+
+
+                    // if (!(isSynthetic(key))) {
+                    //     indentSpaces = keyIndent - 2;
+                    // }
+
+
+
                 }
 
                 if (previousNode instanceof YamlAlias) {
@@ -427,6 +463,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
                 if (hasComplexKey) {
                     indentSpaces = keyIndent;
+                    newLineAlreadyEmitted = true;
                 }
 
                 if (newLineBefore(value, false, false)) {
@@ -480,6 +517,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                 }
 
                 indentSpaces = indicatorIndent + 2; // Indicator plus space
+                newLineAlreadyEmitted = true;
                 emitNode(item, false, true, false);
 
                 firstItem = false;
@@ -495,6 +533,9 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         debug(">emitFlowMap");
         depth++;
         try {
+            if (!preceededByWhitespace) {
+                emitSpace();
+            }
             emit("{");
             var entries = map.getEntries();
             for (int i = 0; i < entries.size(); i++) {
@@ -519,6 +560,9 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         debug(">emitFlowSequence");
         depth++;
         try {
+            if (!preceededByWhitespace) {
+                emitSpace();
+            }
             emit("[");
             var items = seq.getElements();
             for (int i = 0; i < items.size(); i++) {
@@ -587,6 +631,11 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
             if (!isSynthetic(scalar)) {
                 originalLineNumber = scalar.getStartLine();
             }
+
+            if (!preceededByWhitespace && !text.isBlank()) {
+                emitSpace();
+            }
+
             emit(text);
             if (!isMapKey) {
                 emitInlineComments(scalar);
@@ -667,6 +716,11 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                 if (!isSynthetic(alias)) {
                     originalLineNumber = alias.getStartLine();
                 }
+
+                if (!preceededByWhitespace) {
+                    emitSpace();
+                }
+
                 emit("*");
                 emit(alias.getName());
                 if (!isBlockKey) {
@@ -692,6 +746,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
             for (YamlNodeProperty property : node.getProperties()) {
                 // if (previousNode != null && property.getStartLine() > previousNode.getStartLine()) {
                 if (newLineBefore(property, false, false)) {
+                // if (property.isPreceededByNewLine()) {
                     emitNewLine();
                 }
                 if (!preceededByWhitespace) {
@@ -755,6 +810,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private void emitNewLine() {
         emit(NEWLINE);
         preceededByWhitespace = true;
+        newLineAlreadyEmitted = true;
         originalLineNumber++;
     }
 
@@ -777,7 +833,10 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         append(text);
         atStartOfLine = text.endsWith("\n");
         preceededByWhitespace = atStartOfLine;
-        previousEmissionLineNumber = originalLineNumber;
+        // if (originalLineNumber > -1) {
+            previousEmissionLineNumber = originalLineNumber;
+        // }
+        newLineAlreadyEmitted = false;
         trace("Emitted text for line " + originalLineNumber + ": " + StringUtils.debugString(16, text));
     }
 
@@ -810,6 +869,18 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     }
 
     private boolean newLineBefore(YamlNode node, boolean isSequenceItem, boolean isInsideFlow) {
+        if (newLineAlreadyEmitted) {
+            return false;
+        }
+        if (retainFormatting) {
+            if (previousNode != null && node.getStartLine() > previousNode.getStartLine()) {
+                return true;
+            }
+            if (node.isPreceededByNewLine()) {
+                return true;
+            }
+            return false;
+        }
         if (!preceededByWhitespace && previousNode != null) {
             if (isScalar(node) || isSequenceItem || isInsideFlow) {
                 return false;
@@ -849,8 +920,8 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     }
 
     private boolean isSynthetic(YamlNode node) {
-        return false;
-        // return node.getStartLine() < 1;
+        // return false;
+        return node.getStartLine() < 1;
     }
 
     private boolean isScalar(YamlNode node) {
@@ -943,6 +1014,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         outputExpandedStyle = options.outputExpandedStyle();
         forceExplicitNull = options.forceExplicitNull();
         alwaysEndWithNewLine = options.setAlwaysEndWithNewLine();
+        retainFormatting = options.retainFormatting();
 
         // State
         atStartOfLine = true;
@@ -952,6 +1024,8 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         previousEmissionLineNumber = 1;
         originalLineNumber = 1;
         depth = 0;
+        isSynthetic = false;
+        newLineAlreadyEmitted = true;
     }
 
     protected void error(YamlNode node, DiagnosticCode code, Object... details) {

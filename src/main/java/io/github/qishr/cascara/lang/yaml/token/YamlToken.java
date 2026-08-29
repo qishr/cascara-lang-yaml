@@ -47,6 +47,7 @@ public class YamlToken implements Token {
     private int blockIndent;
     private boolean startsOnNewLine;
     private boolean followedByTab;
+    private boolean hasPreceedingNewLine;
     private YamlTokenType type;
     private String lexeme;
     private String content;
@@ -151,6 +152,15 @@ public class YamlToken implements Token {
 
     public YamlToken setFollowedByTab(boolean b) {
         followedByTab = b;
+        return this;
+    }
+
+    public boolean hasPreceedingNewLine() {
+        return hasPreceedingNewLine;
+    }
+
+    public YamlToken setHasPreceedingNewLine(boolean b) {
+        hasPreceedingNewLine = b;
         return this;
     }
 

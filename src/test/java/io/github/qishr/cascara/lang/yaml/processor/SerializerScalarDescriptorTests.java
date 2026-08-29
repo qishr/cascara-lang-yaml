@@ -116,7 +116,7 @@ public class SerializerScalarDescriptorTests extends SerializerTestBase {
                 firstName: Dave
                 lastName: Smith
                 age: "31"
-                """.stripTrailing();
+                """;
         assertEquals(expected, yaml);
     }
 
@@ -140,7 +140,7 @@ public class SerializerScalarDescriptorTests extends SerializerTestBase {
                 lastName: Smith
                 personAge: "31"
                 bytes: AQID
-                """.stripTrailing();
+                """;
         assertEquals(expected, yaml);
 
         Person copy = yamlSerializer.fromString(yaml, Person.class);

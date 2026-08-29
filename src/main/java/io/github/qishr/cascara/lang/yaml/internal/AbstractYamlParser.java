@@ -325,8 +325,11 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             if (check(YamlTokenType.DOCUMENT_END) || check(YamlTokenType.DOCUMENT_START) || tokenBuffer.isAtEnd()) {
                 document.setBody(createNullScalar(null, false, null));
             } else {
+                YamlToken t = tokenBuffer.peek();
+                boolean preceededByNewLine = t.hasPreceedingNewLine();
                 YamlNode body = parseValue(null, null, false, false);
                 if (body != null) {
+                    body.setPreceededByNewLine(preceededByNewLine);
                     document.setBody(body);
                     document.setTag(body.getTag());   // if any
                 }

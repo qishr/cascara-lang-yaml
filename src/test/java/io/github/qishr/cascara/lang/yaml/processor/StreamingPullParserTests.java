@@ -280,6 +280,7 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
         }
     }
 
+    // TODO: This occasionally hangs
     @Test
     public void testNestedMappingStreaming() throws Exception {
         String yaml = """

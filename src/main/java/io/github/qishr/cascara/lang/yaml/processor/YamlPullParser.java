@@ -47,7 +47,7 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implements PullParser {
+public class YamlPullParser extends AbstractYamlParser<YamlPullParser> implements PullParser<YamlStreamingEvent> {
     private final InputStream input;
     private Thread parserThread;
     private BlockingDeque<YamlStreamingEvent> events;
