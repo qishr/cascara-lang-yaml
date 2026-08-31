@@ -35,6 +35,7 @@
 package io.github.qishr.cascara.lang.yaml.util;
 
 import io.github.qishr.cascara.common.diagnostic.LocalizableRuntimeException;
+import io.github.qishr.cascara.common.diagnostic.UnimplementedMethodException;
 import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.util.Duplicable;
@@ -249,79 +250,79 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         }
 
         public YamlOptions setAllowComments(boolean val) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setAllowComments");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setAllowUnicode(boolean val) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setAllowUnicode");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setExplicitStart(boolean val) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setExplicitStart");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setOutputExpandedStyle(boolean val) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setExpandedStyle");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setStrict(boolean val) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setStrict");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setOutputComments(boolean val) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setIncludeComments");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setMultiDocument(boolean val) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setMultiDocument");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setStripComments(boolean val) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setStripComments");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setStripTags(boolean val) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setStripTags");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setStripAnchors(boolean val) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setStripAnchors");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setSortKeys(boolean val) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setSortKeys");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setNormalizeIndent(boolean val) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setNormalizeIndent");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setNormalizeScalarFormatting(boolean val) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setNormalizeScalarFormatting");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setForceExplicitNull(boolean b) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setForceExplicitNull");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setForceBlockCollections(boolean b) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setForceBlockCollections");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setPreloadTokenBuffer(boolean b) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setPreloadTokenBuffer");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setOutputResolvedAliases(boolean b) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setOutputResolvedAliases");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setAlwaysEndWithNewLine(boolean b) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setAlwaysEndWithNewLine");
+            throw new UnimplementedMethodException();
         }
 
         public YamlOptions setRetainFormatting(boolean b) {
-            throw new LocalizableRuntimeException(GenericDiagnosticCode.UNSUPPORTED_OPERATION, "setRetainFormatting");
+            throw new UnimplementedMethodException();
         }
     }
 }
