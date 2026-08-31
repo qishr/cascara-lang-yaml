@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
@@ -126,4 +127,32 @@ public class SerializerComplianceTests extends SerializerCanonicalTestBase {
 
     }
 
+
+    @Test
+    public void test35KP() {
+        String yaml = """
+            --- !!str
+            d
+            e
+            """;
+
+        DEBUG = true;
+
+        tokenize(yaml);
+
+        YamlStream stream = parser.parseMulti(yaml);
+
+        String expected = """
+            --- !!str d e
+            """;
+
+        String emitted = serializer.toString(stream);
+
+        if (DEBUG) {
+            reporter.debug("Expected: " + StringUtils.debugString(expected));
+            reporter.debug("Emitted:  " + StringUtils.debugString(emitted));
+        }
+
+        TestUtils.assertEquals(expected, emitted);
+    }
 }

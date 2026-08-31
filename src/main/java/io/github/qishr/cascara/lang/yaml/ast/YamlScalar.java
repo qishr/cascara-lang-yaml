@@ -150,6 +150,9 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
 
     @Override
     public PrimitiveType getPrimitiveType() {
+        if (primitiveType == PrimitiveType.ANY) {
+            primitiveType = PrimitiveType.of(getPrimitive());
+        }
         return primitiveType;
     }
 
@@ -230,9 +233,10 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
     @Override
     public String asString() {
         if (!isStringValueCached) {
-            if (primitiveType != PrimitiveType.NULL) {
+            PrimitiveType ptype = getPrimitiveType();
+            if (ptype != PrimitiveType.NULL) {
                 if (token == null) {
-                    if (primitiveType == PrimitiveType.NUMBER) {
+                    if (ptype == PrimitiveType.NUMBER) {
                         Number number = (Number) jvmValue;
                         if (number.intValue() == number.doubleValue()) {
                             stringValue = String.valueOf(number.intValue());

@@ -583,7 +583,10 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         debug(">emitScalar");
         depth++;
         try {
-            String text;
+            String text = formatScalar(scalar);
+
+
+
             String lexeme = scalar.getLexeme();
 
             if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
@@ -594,38 +597,12 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                 }
             } else if (lexeme == null) {
                 if (scalar.getPrimitiveType() == PrimitiveType.STRING) {
-                    String string = scalar.asString();
-                    ScalarStyle scalarStyle = scalar.getScalarStyle();
 
-                    // if ("value".equals(string)) {
-                    //     debug("Debug");
-                    // }
-
-                    if (scalarStyle == ScalarStyle.PLAIN) {
-                        if (!isSafePlain(string)) {
-                            scalarStyle = ScalarStyle.DOUBLE_QUOTED;
-                        }
-                    }
-
-                    if (scalarStyle == ScalarStyle.SINGLE_QUOTED) {
-                        text = singleQuote(string);
-                    } else if (scalarStyle == ScalarStyle.DOUBLE_QUOTED) {
-                        text = doubleQuote(string);
-                    } else if (scalarStyle == ScalarStyle.LITERAL) {
-                        // TODO: Implement this
-                        text = "";
-                    } else if (scalarStyle == ScalarStyle.FOLDED) {
-                        // TODO: Implement this
-                        text = "";
-                    } else {
-                        // Plain
-                        text = string;
-                    }
                 } else {
                     text = scalar.asString();
                 }
             } else {
-                text = formatLexeme(scalar);
+                text = formatScalar(scalar);
             }
 
             if (!isSynthetic(scalar)) {
@@ -945,11 +922,67 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return node instanceof YamlScalar s && s.asString() == null;
     }
 
-    private String formatLexeme(YamlScalar scalar) {
-        String lexeme = scalar.getLexeme();
-        // TODO: Transform indentation if any ancestor node has been modified
-        return lexeme;
+    private String formatScalar(YamlScalar scalar) {
+        if (options.normalizeScalarFormatting() || scalar.getLexeme() == null) {
+            return normalizeScalar(scalar);
+        } else {
+            String lexeme = scalar.getLexeme();
+            warn(GenericDiagnosticCode.WARN, "formatLexeme called");
+            // TODO: Transform indentation if any ancestor node has been modified
+            return lexeme;
+        }
     }
+
+    private String normalizeScalar(YamlScalar scalar) {
+        return switch(scalar.getPrimitiveType()) {
+            case STRING -> formatString(scalar);
+            default -> {
+                // TODO: Number formatting
+                yield scalar.getLexeme();
+            }
+        };
+    }
+
+    private String formatString(YamlScalar scalar) {
+        String text;
+        String string = scalar.asString();
+        ScalarStyle scalarStyle = scalar.getScalarStyle();
+
+        // TODO: We need to o a similar "isSafePlain" check for single quoted, and blocks.
+        if (scalarStyle == ScalarStyle.PLAIN) {
+            if (!isSafePlain(string)) {
+                scalarStyle = ScalarStyle.DOUBLE_QUOTED;
+            }
+        }
+
+        if (scalarStyle == ScalarStyle.SINGLE_QUOTED) {
+            text = singleQuote(string);
+        } else if (scalarStyle == ScalarStyle.DOUBLE_QUOTED) {
+            text = doubleQuote(string);
+        } else if (scalarStyle == ScalarStyle.LITERAL) {
+            // TODO: Implement this
+            text = "";
+        } else if (scalarStyle == ScalarStyle.FOLDED) {
+            // TODO: Implement this
+            text = "";
+        } else {
+            // Plain
+            text = string;
+        }
+        return text;
+    }
+
+    // private String normalizeString(YamlScalar scalar) {
+
+    //     return scalar.asString();
+
+    //     // String content = scalar.getContent();
+    //     // if (isSafePlain(content)) {
+    //     //     return content;
+    //     // } else {
+    //     //     return doubleQuote(content);
+    //     // }
+    // }
 
     private String singleQuote(String text) {
         return SINGLE_QUOTE + escapeSingleQuoted(text) + SINGLE_QUOTE;
@@ -970,12 +1003,33 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return text.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
+    // private boolean isSafePlain(String s) {
+    //     if (s == null || s.isEmpty()) return false;
+    //     if (s.contains("\n") || s.contains("\r")) return false;
+    //     if (s.matches("^(true|false|null|True|False|NULL)$")) return true; // TOOO: Values are missing from here
+    //     char first = s.charAt(0);
+    //     if ("-?:,[]{}#&*!|>'\"%@` ".indexOf(first) != -1) return false;
+    //     if (s.contains(": ") || s.contains(" #") || s.endsWith(":")) return false;
+    //     return s.chars().allMatch(c -> c <= 127);
+    // }
+
     private boolean isSafePlain(String s) {
         if (s == null || s.isEmpty()) return false;
         if (s.contains("\n") || s.contains("\r")) return false;
         if (s.matches("^(true|false|null|True|False|NULL)$")) return true; // TOOO: Values are missing from here
         char first = s.charAt(0);
-        if ("-?:,[]{}#&*!|>'\"%@` ".indexOf(first) != -1) return false;
+        char second = s.length() == 1 ? ' ' : s.charAt(1);
+
+        boolean secondIsWhiteSpace = second == ' ' || second == '\t' || second == '\n' || second == '\r';
+
+        if (secondIsWhiteSpace && "-?:,[]{}#&*!|>'\"%@` ".indexOf(first) != -1) {
+            return false;
+        }
+        if (",[]{}#&*!|>'\"%@` ".indexOf(first) != -1) {
+            return false;
+        }
+
+        // if ("-,[]{}#&*!|>'\"%@` ".indexOf(first) != -1) return false;
         if (s.contains(": ") || s.contains(" #") || s.endsWith(":")) return false;
         return s.chars().allMatch(c -> c <= 127);
     }

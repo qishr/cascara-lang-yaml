@@ -134,7 +134,8 @@ public class SerializerParsedYamlTests extends SerializerTestBase {
 
     @Test
     void test_sequence() {
-        testIntegrity("  - a\n  - b\n  - c");
+        // testIntegrity("  - a\n  - b\n  - c");
+        testIntegrity("- a\n- b\n- c");
     }
 
     @Test

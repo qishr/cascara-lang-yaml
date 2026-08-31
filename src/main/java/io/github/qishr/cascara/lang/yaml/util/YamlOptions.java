@@ -198,13 +198,13 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         return this;
     }
 
-    public YamlOptions setNormalizeIndent(boolean val) {
-        // TODO: Not implemented
+    public YamlOptions setNormalizeIndent(boolean b) {
+        normalizeIndent = b;
         return this;
     }
 
-    public YamlOptions setNormalizeScalarFormatting(boolean val) {
-        // TODO: Not implemented
+    public YamlOptions setNormalizeScalarFormatting(boolean b) {
+        normalizeScalarFormatting = b;
         return this;
     }
 
