@@ -123,9 +123,9 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
         return this;
     }
 
-    public int getIndentSize() { return indentSize; }
+    public int indentSize() { return indentSize; }
 
-    public int getDepthLimit() {return depthLimit; }
+    public int depthLimit() {return depthLimit; }
     public boolean allowUnicode() { return allowUnicode; }
     public boolean isExplicitStart() { return explicitStart; }
     public boolean outputExpandedStyle() { return outputExpandedStyle; }
@@ -143,7 +143,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     public boolean forceBlockCollections() { return forceBlockCollections; }
     public boolean preloadTokenBuffer() { return preloadTokenBuffer; }
     public boolean outputResolvedAliases() { return outputResolvedAliases; }
-    public boolean setAlwaysEndWithNewLine() { return alwaysEndWithNewLine; }
+    public boolean alwaysEndWithNewLine() { return alwaysEndWithNewLine; }
     public boolean retainFormatting() { return retainFormatting; }
 
     public YamlOptions setDepthLimit(int val) {

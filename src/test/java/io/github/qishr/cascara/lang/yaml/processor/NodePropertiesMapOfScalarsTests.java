@@ -16,9 +16,9 @@ public class NodePropertiesMapOfScalarsTests extends BasePropertiesTest {
         tokenize(yaml);
         YamlMap root = (YamlMap) parser.parse(yaml);
         YamlScalar scalar = root.getScalar("x");
-        TestUtils.assertEquals("v", scalar.getContent());
-        TestUtils.assertEquals("!!str", scalar.getTag());
-        TestUtils.assertEquals(STR_TAG, scalar.getResolvedTag());
+        assertStringEquals("v", scalar.getContent());
+        assertStringEquals("!!str", scalar.getTag());
+        assertStringEquals(STR_TAG, scalar.getResolvedTag());
     }
 
     @Test
@@ -30,8 +30,8 @@ public class NodePropertiesMapOfScalarsTests extends BasePropertiesTest {
         tokenize(yaml);
         YamlMap root = (YamlMap) parser.parse(yaml);
         YamlScalar scalar = root.getScalar("x");
-        TestUtils.assertEquals("v", scalar.getContent());
-        TestUtils.assertEquals("a", scalar.getAnchor());
+        assertStringEquals("v", scalar.getContent());
+        assertStringEquals("a", scalar.getAnchor());
     }
 
     @Test
@@ -43,10 +43,10 @@ public class NodePropertiesMapOfScalarsTests extends BasePropertiesTest {
         tokenize(yaml);
         YamlMap root = (YamlMap) parser.parse(yaml);
         YamlScalar scalar = root.getScalar("x");
-        TestUtils.assertEquals("v", scalar.getContent());
-        TestUtils.assertEquals("!!str", scalar.getTag());
-        TestUtils.assertEquals(STR_TAG, scalar.getResolvedTag());
-        TestUtils.assertEquals("a", scalar.getAnchor());
+        assertStringEquals("v", scalar.getContent());
+        assertStringEquals("!!str", scalar.getTag());
+        assertStringEquals(STR_TAG, scalar.getResolvedTag());
+        assertStringEquals("a", scalar.getAnchor());
     }
 
     @Test
@@ -58,9 +58,9 @@ public class NodePropertiesMapOfScalarsTests extends BasePropertiesTest {
         tokenize(yaml);
         YamlMap root = (YamlMap) parser.parse(yaml);
         YamlScalar scalar = root.getScalar("x");
-        TestUtils.assertEquals("v", scalar.getContent());
-        TestUtils.assertEquals("a", scalar.getAnchor());
-        TestUtils.assertEquals("!!str", scalar.getTag());
-        TestUtils.assertEquals(STR_TAG, scalar.getResolvedTag());
+        assertStringEquals("v", scalar.getContent());
+        assertStringEquals("a", scalar.getAnchor());
+        assertStringEquals("!!str", scalar.getTag());
+        assertStringEquals(STR_TAG, scalar.getResolvedTag());
     }
 }

@@ -311,11 +311,11 @@ public class AstParserSpecTests extends AstParserTestBase {
         assertInstanceOf(YamlMap.class, body);
         YamlMap map = (YamlMap) body;
 
-        TestUtils.assertEquals("safe",map.getScalar("a!\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~").asString());
-        TestUtils.assertEquals("safe question mark",map.getScalar("?foo").asString());
-        TestUtils.assertEquals("safe colon",map.getScalar(":foo").asString());
-        TestUtils.assertEquals("safe dash",map.getScalar("-foo").asString());
-        TestUtils.assertEquals("a comment",map.getScalar("this is#not").asString());
+        assertStringEquals("safe",map.getScalar("a!\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~").asString());
+        assertStringEquals("safe question mark",map.getScalar("?foo").asString());
+        assertStringEquals("safe colon",map.getScalar(":foo").asString());
+        assertStringEquals("safe dash",map.getScalar("-foo").asString());
+        assertStringEquals("a comment",map.getScalar("this is#not").asString());
     }
 
     @Test
@@ -433,10 +433,10 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         assertEquals(4, seq.size());
 
-        TestUtils.assertEquals("detected\n", seq.get(0).asString());
-        TestUtils.assertEquals("\n\n# detected\n", seq.get(1).asString());
-        TestUtils.assertEquals(" explicit\n", seq.get(2).asString());
-        TestUtils.assertEquals("detected\n", seq.get(3).asString());
+        assertStringEquals("detected\n", seq.get(0).asString());
+        assertStringEquals("\n\n# detected\n", seq.get(1).asString());
+        assertStringEquals(" explicit\n", seq.get(2).asString());
+        assertStringEquals("detected\n", seq.get(3).asString());
     }
 
     @Test
@@ -469,8 +469,8 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         YamlMap map = (YamlMap)seq.get(0);
 
-        TestUtils.assertEquals("xxx\n", map.get("aaa").asString());
-        TestUtils.assertEquals("xxx\n", map.get("bbb").asString());
+        assertStringEquals("xxx\n", map.get("aaa").asString());
+        assertStringEquals("xxx\n", map.get("bbb").asString());
     }
 
     @Test
@@ -503,7 +503,7 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         YamlMap map = (YamlMap)body;
 
-        TestUtils.assertEquals("Empty line\nas a line feed", map.get("Folding").asString());
+        assertStringEquals("Empty line\nas a line feed", map.get("Folding").asString());
     }
 
     @Test
@@ -540,9 +540,9 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         assertEquals(3, seq.size());
 
-        TestUtils.assertEquals("foo", seq.get(0).asString());
-        TestUtils.assertEquals("bar", seq.get(1).asString());
-        TestUtils.assertEquals("baz", seq.get(2).asString());
+        assertStringEquals("foo", seq.get(0).asString());
+        assertStringEquals("bar", seq.get(1).asString());
+        assertStringEquals("baz", seq.get(2).asString());
     }
 
     @Test
@@ -564,7 +564,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
 
-        TestUtils.assertEquals("ab\n\n \n", scalar.asString());
+        assertStringEquals("ab\n\n \n", scalar.asString());
     }
 
     @Test
@@ -583,8 +583,8 @@ public class AstParserSpecTests extends AstParserTestBase {
         YamlMap map = (YamlMap)body;
         assertEquals(2, map.size());
 
-        TestUtils.assertEquals(null, map.get("a").asString());
-        TestUtils.assertEquals(null, map.get("b").asString());
+        assertStringEquals(null, map.get("a").asString());
+        assertStringEquals(null, map.get("b").asString());
     }
 
     @Test
@@ -658,7 +658,7 @@ public class AstParserSpecTests extends AstParserTestBase {
             System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
         }
 
-        TestUtils.assertEquals(expected, scalar.asString());
+        assertStringEquals(expected, scalar.asString());
     }
 
     @Test
@@ -680,7 +680,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         assertInstanceOf(YamlScalar.class, body);
         YamlScalar scalar = (YamlScalar) body;
 
-        TestUtils.assertEquals(" foo\nbar\nbaz ", scalar.asString());
+        assertStringEquals(" foo\nbar\nbaz ", scalar.asString());
     }
 
     @Test
@@ -712,7 +712,7 @@ public class AstParserSpecTests extends AstParserTestBase {
             System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
         }
 
-        TestUtils.assertEquals(expected, scalar.asString());
+        assertStringEquals(expected, scalar.asString());
     }
 
     @Test
@@ -817,7 +817,7 @@ public class AstParserSpecTests extends AstParserTestBase {
             System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
         }
 
-        TestUtils.assertEquals(expected, scalar.asString());
+        assertStringEquals(expected, scalar.asString());
     }
 
     @Test
@@ -852,7 +852,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         YamlMap map = (YamlMap) body;
 
         YamlScalar scalar = map.getScalar("plain");
-        TestUtils.assertEquals("a b\nc", scalar.asString());
+        assertStringEquals("a b\nc", scalar.asString());
     }
 
     @Test
@@ -890,7 +890,7 @@ public class AstParserSpecTests extends AstParserTestBase {
             System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
         }
 
-        TestUtils.assertEquals(expected, scalar.asString());
+        assertStringEquals(expected, scalar.asString());
     }
 
     @Test
@@ -987,9 +987,9 @@ public class AstParserSpecTests extends AstParserTestBase {
             System.out.println("Actual  : " + StringUtils.debugString(canonical.asString()));
         }
 
-        TestUtils.assertEquals(expectedCanonical, canonical.asString());
-        TestUtils.assertEquals("R0lGODlhDAAMAIQAAP//9/X17unp5WZmZgAAAOfn515eXvPz7Y6OjuDg4J+fn5\nOTk6enp56enmlpaWNjY6Ojo4SEhP/++f/++f/++f/++f/++f/++f/++f/++f/+\n+f/++f/++f/++f/++f/++SH+Dk1hZGUgd2l0aCBHSU1QACwAAAAADAAMAAAFLC\nAgjoEwnuNAFOhpEMTRiggcz4BNJHrv/zCFcLiwMWYNG84BwwEeECcgggoBADs=\n", generic.asString());
-        TestUtils.assertEquals("The binary value above is a tiny arrow encoded as a gif image.", description.asString());
+        assertStringEquals(expectedCanonical, canonical.asString());
+        assertStringEquals("R0lGODlhDAAMAIQAAP//9/X17unp5WZmZgAAAOfn515eXvPz7Y6OjuDg4J+fn5\nOTk6enp56enmlpaWNjY6Ojo4SEhP/++f/++f/++f/++f/++f/++f/++f/++f/+\n+f/++f/++f/++f/++f/++SH+Dk1hZGUgd2l0aCBHSU1QACwAAAAADAAMAAAFLC\nAgjoEwnuNAFOhpEMTRiggcz4BNJHrv/zCFcLiwMWYNG84BwwEeECcgggoBADs=\n", generic.asString());
+        assertStringEquals("The binary value above is a tiny arrow encoded as a gif image.", description.asString());
     }
 
     @Test
@@ -1019,9 +1019,9 @@ public class AstParserSpecTests extends AstParserTestBase {
         YamlMap map = bodySeq.getMap(0);
         YamlSequence seq = bodySeq.getSequence(1);
 
-        TestUtils.assertEquals("bar", map.getString("foo"));
-        TestUtils.assertEquals("baz", seq.getFirst().asString());
-        TestUtils.assertEquals("baz", seq.getLast().asString());
+        assertStringEquals("bar", map.getString("foo"));
+        assertStringEquals("baz", seq.getFirst().asString());
+        assertStringEquals("baz", seq.getLast().asString());
     }
 
     @Test
@@ -1045,7 +1045,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         YamlNode body = normalize(doc.getBody());
         YamlMap map = (YamlMap) body;
 
-        TestUtils.assertEquals("baz", map.getString("foo"));
+        assertStringEquals("baz", map.getString("foo"));
     }
 
     @Test
@@ -1077,9 +1077,9 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         YamlMap map = seq.getMap(2);
 
-        TestUtils.assertEquals("flow in block", seq.getScalar(0).asString());
-        TestUtils.assertEquals("Block scalar\n", seq.getScalar(1).asString());
-        TestUtils.assertEquals("bar", map.getScalar("foo").asString());
+        assertStringEquals("flow in block", seq.getScalar(0).asString());
+        assertStringEquals("Block scalar\n", seq.getScalar(1).asString());
+        assertStringEquals("bar", map.getScalar("foo").asString());
     }
 
     @Test
@@ -1112,7 +1112,7 @@ public class AstParserSpecTests extends AstParserTestBase {
             System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
         }
 
-        TestUtils.assertEquals(expected, scalar.asString());
+        assertStringEquals(expected, scalar.asString());
     }
 
     @Test
@@ -1158,7 +1158,7 @@ public class AstParserSpecTests extends AstParserTestBase {
             System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
         }
 
-        TestUtils.assertEquals(expected, scalar.asString());
+        assertStringEquals(expected, scalar.asString());
     }
 
     @Test
@@ -1201,7 +1201,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         // System.out.println("Expected: " + StringUtils.debugString(expected));
         // System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
 
-        TestUtils.assertEquals(expected, scalar.asString());
+        assertStringEquals(expected, scalar.asString());
     }
 
     @Disabled("Parses as expected. Compliance test seems wrong.")
@@ -1244,7 +1244,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         // System.out.println("Expected: " + StringUtils.debugString(expected));
         // System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
 
-        TestUtils.assertEquals(expected, scalar.asString());
+        assertStringEquals(expected, scalar.asString());
     }
 
     @Test
@@ -1278,7 +1278,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         // System.out.println("Expected: " + StringUtils.debugString(expected));
         // System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
 
-        TestUtils.assertEquals(expected, scalar.asString());
+        assertStringEquals(expected, scalar.asString());
     }
 
     @Test
@@ -1317,7 +1317,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         System.out.println("Expected: " + StringUtils.debugString(expected));
         System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
 
-        TestUtils.assertEquals(expected, scalar.asString());
+        assertStringEquals(expected, scalar.asString());
     }
 
     @Test
@@ -1469,7 +1469,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         System.out.println("Expected: " + StringUtils.debugString(expected));
         System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
 
-        TestUtils.assertEquals(expected, scalar.asString());
+        assertStringEquals(expected, scalar.asString());
     }
 
     @Test
@@ -1504,7 +1504,7 @@ public class AstParserSpecTests extends AstParserTestBase {
             System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
         }
 
-        TestUtils.assertEquals(expected, scalar.asString());
+        assertStringEquals(expected, scalar.asString());
     }
 
     @Test
@@ -1548,12 +1548,12 @@ public class AstParserSpecTests extends AstParserTestBase {
         YamlScalar control = map.getScalar("control");
         assertEquals(ScalarStyle.DOUBLE_QUOTED, control.getScalarStyle());
 
-        TestUtils.assertEquals("Sosa did fine.☺", map.getString("unicode"));
-        TestUtils.assertEquals("\b1998\t1999\t2000\n", control.asString());
-        TestUtils.assertEquals("\r\n is \r\n", map.getString("hex esc"));
-        TestUtils.assertEquals("\"Howdy!\" he cried.", map.getString("single"));
-        TestUtils.assertEquals(" # Not a 'comment'.", map.getString("quoted"));
-        TestUtils.assertEquals("|\\-*-/|", map.getString("tie-fighter"));
+        assertStringEquals("Sosa did fine.☺", map.getString("unicode"));
+        assertStringEquals("\b1998\t1999\t2000\n", control.asString());
+        assertStringEquals("\r\n is \r\n", map.getString("hex esc"));
+        assertStringEquals("\"Howdy!\" he cried.", map.getString("single"));
+        assertStringEquals(" # Not a 'comment'.", map.getString("quoted"));
+        assertStringEquals("|\\-*-/|", map.getString("tie-fighter"));
     }
 
     @Test
@@ -1588,7 +1588,7 @@ public class AstParserSpecTests extends AstParserTestBase {
             System.out.println("Actual  : " + StringUtils.debugString(scalar.asString()));
         }
 
-        TestUtils.assertEquals(expected, scalar.asString());
+        assertStringEquals(expected, scalar.asString());
     }
 
     @Test
@@ -1616,7 +1616,7 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         YamlSequence seq = (YamlSequence)body;
 
-        TestUtils.assertEquals("\n", seq.getScalar(0).asString());
+        assertStringEquals("\n", seq.getScalar(0).asString());
     }
 
     @Test
@@ -1670,8 +1670,8 @@ public class AstParserSpecTests extends AstParserTestBase {
             System.out.println("Actual  : " + StringUtils.debugString(map.getScalar("b").asString()));
         }
 
-        TestUtils.assertEquals(expected1, map.getScalar("a").asString());
-        TestUtils.assertEquals(expected2, map.getScalar("b").asString());
+        assertStringEquals(expected1, map.getScalar("a").asString());
+        assertStringEquals(expected2, map.getScalar("b").asString());
     }
 
     @Test
@@ -1717,8 +1717,8 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         YamlScalar value = (YamlScalar)entry.getValue();
 
-        TestUtils.assertEquals("", entry.getKeyString());
-        TestUtils.assertEquals(null, value.asString());
+        assertStringEquals("", entry.getKeyString());
+        assertStringEquals(null, value.asString());
     }
 
     @Test
@@ -1747,9 +1747,9 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         YamlMap map = (YamlMap)body;
 
-        TestUtils.assertEquals("", map.getScalar("strip").asString());
-        TestUtils.assertEquals("", map.getScalar("clip").asString());
-        TestUtils.assertEquals("\n", map.getScalar("keep").asString());
+        assertStringEquals("", map.getScalar("strip").asString());
+        assertStringEquals("", map.getScalar("clip").asString());
+        assertStringEquals("\n", map.getScalar("keep").asString());
     }
 
     @Test
@@ -1791,9 +1791,9 @@ public class AstParserSpecTests extends AstParserTestBase {
         YamlMap map = (YamlMap) body;
         assertEquals(3, map.size());
 
-        TestUtils.assertEquals("# text1", map.getString("strip"));
-        TestUtils.assertEquals("# text2\n", map.getString("clip"));
-        TestUtils.assertEquals("# text3\n\n", map.getString("keep"));
+        assertStringEquals("# text1", map.getString("strip"));
+        assertStringEquals("# text2\n", map.getString("clip"));
+        assertStringEquals("# text3\n\n", map.getString("keep"));
     }
 
     @Test
@@ -1824,26 +1824,26 @@ public class AstParserSpecTests extends AstParserTestBase {
         YamlSequence seq = (YamlSequence) body;
         assertEquals(8, seq.size());
 
-        TestUtils.assertEquals("a?string", seq.getScalar(0).asString());
-        TestUtils.assertEquals("another ? string", seq.getScalar(1).asString());
+        assertStringEquals("a?string", seq.getScalar(0).asString());
+        assertStringEquals("another ? string", seq.getScalar(1).asString());
 
         YamlMap map2 = seq.getMap(2);
-        TestUtils.assertEquals("value?", map2.getString("key"));
+        assertStringEquals("value?", map2.getString("key"));
 
         YamlSequence seq3 = seq.getSequence(3);
-        TestUtils.assertEquals("a?string", seq3.getScalar(0).asString());
+        assertStringEquals("a?string", seq3.getScalar(0).asString());
 
         YamlSequence seq4 = seq.getSequence(4);
-        TestUtils.assertEquals("another ? string", seq4.getScalar(0).asString());
+        assertStringEquals("another ? string", seq4.getScalar(0).asString());
 
         YamlMap map5 = seq.getMap(5);
-        TestUtils.assertEquals("value?", map5.getString("key"));
+        assertStringEquals("value?", map5.getString("key"));
 
         YamlMap map6 = seq.getMap(6);
-        TestUtils.assertEquals("value?", map6.getString("key"));
+        assertStringEquals("value?", map6.getString("key"));
 
         YamlMap map7 = seq.getMap(7);
-        TestUtils.assertEquals("value", map7.getString("key?"));
+        assertStringEquals("value", map7.getString("key?"));
 
     }
 
@@ -1877,10 +1877,10 @@ public class AstParserSpecTests extends AstParserTestBase {
         PlainSequenceNode seq = (PlainSequenceNode)agnostic;
         assertEquals(3, seq.size());
 
-        TestUtils.assertEquals("x\n", seq.getScalar(0).asString());
+        assertStringEquals("x\n", seq.getScalar(0).asString());
 
         PlainMapNode map1 = seq.getMap(1);
-        TestUtils.assertEquals("bar", map1.getScalar("foo").asString());
+        assertStringEquals("bar", map1.getScalar("foo").asString());
 
         PlainSequenceNode seq2 = seq.getSequence(2);
         assertEquals(42, seq2.getScalar(0).asInteger());
@@ -1906,7 +1906,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         YamlNode body = normalize(doc.getBody());
         YamlScalar scalar = (YamlScalar)body;
 
-        TestUtils.assertEquals("foo \n\n\t bar\n\nbaz\n", scalar.asString());
+        assertStringEquals("foo \n\n\t bar\n\nbaz\n", scalar.asString());
 
     }
 
@@ -1934,9 +1934,9 @@ public class AstParserSpecTests extends AstParserTestBase {
 
 
 
-        TestUtils.assertEquals(null, map.getString("Mark McGwire"));
-        TestUtils.assertEquals(null, map.getString("Sammy Sosa"));
-        TestUtils.assertEquals(null, map.getString("Ken Griff"));
+        assertStringEquals(null, map.getString("Mark McGwire"));
+        assertStringEquals(null, map.getString("Sammy Sosa"));
+        assertStringEquals(null, map.getString("Ken Griff"));
 
     }
 
@@ -1969,9 +1969,9 @@ public class AstParserSpecTests extends AstParserTestBase {
 
 
 
-        TestUtils.assertEquals(null, map.getString("Mark McGwire"));
-        TestUtils.assertEquals(null, map.getString("Sammy Sosa"));
-        TestUtils.assertEquals(null, map.getString("Ken Griff"));
+        assertStringEquals(null, map.getString("Mark McGwire"));
+        assertStringEquals(null, map.getString("Sammy Sosa"));
+        assertStringEquals(null, map.getString("Ken Griff"));
 
     }
 

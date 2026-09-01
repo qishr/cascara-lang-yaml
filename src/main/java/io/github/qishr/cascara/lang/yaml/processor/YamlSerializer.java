@@ -39,6 +39,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
@@ -94,15 +96,15 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private YamlOptions options = new YamlOptions();
 
     // Options
-    private int indentSize;
-    private int indicatorIndentSize;
-    private boolean outputResolvedAliases;
-    private boolean outputComments;
-    private boolean outputExpandedStyle;
-    private boolean forceExplicitNull;
+    // private int indentSize;
+    private int indicatorIndentSize = 0;
+    // private boolean outputResolvedAliases;
+    // private boolean outputComments;
+    // private boolean outputExpandedStyle;
+    // private boolean forceExplicitNull;
     private boolean debugStringBuilder = true;
-    private boolean alwaysEndWithNewLine;
-    private boolean retainFormatting;
+    // private boolean alwaysEndWithNewLine;
+    // private boolean retainFormatting;
 
     // State
     private boolean isSynthetic;
@@ -292,7 +294,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         boolean isMultiLine = previousEmissionLineNumber > 1;
         // if (alwaysEndWithNewLine && !atStartOfLine) {
         // if ((alwaysEndWithNewLine || isSynthetic) && !atStartOfLine) {
-        if ((alwaysEndWithNewLine || isMultiLine) && !atStartOfLine) {
+        if ((options.alwaysEndWithNewLine() || isMultiLine) && !atStartOfLine) {
             emitNewLine();
         }
     }
@@ -408,7 +410,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                 boolean hasComplexKey = (key instanceof YamlMap m && m.getNodeStyle() == NodeStyle.BLOCK) ||
                                         (key instanceof YamlSequence s && s.getNodeStyle() == NodeStyle.BLOCK);
 
-                if (retainFormatting) {
+                if (options.retainFormatting()) {
                     hasComplexKey |= entry.hasExplicitKey();
                 }
 
@@ -470,7 +472,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                     emitInlineComments(key);
                 }
 
-                int expectedValueIndent = keyIndent + indentSize;
+                int expectedValueIndent = keyIndent + options.indentSize();
                 // int expectedValueIndent = hasComplexKey
                 //     ? keyIndent + 2
                 //     : keyIndent + indentSize;
@@ -510,7 +512,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
                 indentSpaces = indicatorIndent;
                 emit(ITEM_INDICATOR);
-                if (outputExpandedStyle) {
+                if (options.outputExpandedStyle()) {
                     emitNewLine();
                 } else {
                     emitSpace();
@@ -583,26 +585,19 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         debug(">emitScalar");
         depth++;
         try {
-            String text = formatScalar(scalar);
+            String text;
 
-
-
-            String lexeme = scalar.getLexeme();
-
-            if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
-                if (!forceExplicitNull && isImplicitNull(scalar)) {
-                    text = "";
-                } else {
+            if (options.normalizeScalarFormatting()) {
+                text = normalizeScalar(scalar);
+            } else if (scalar.getLexeme() == null) {
+                if (isImplicitNull(scalar) && options.forceExplicitNull()) {
                     text = "null";
-                }
-            } else if (lexeme == null) {
-                if (scalar.getPrimitiveType() == PrimitiveType.STRING) {
-
                 } else {
-                    text = scalar.asString();
+                    text = formatScalar(scalar);
                 }
             } else {
-                text = formatScalar(scalar);
+                warn(GenericDiagnosticCode.WARN, "formatLexeme called");
+                text = scalar.getLexeme();
             }
 
             if (!isSynthetic(scalar)) {
@@ -686,7 +681,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         debug(">emitAlias");
         depth++;
         try {
-            if (outputResolvedAliases) {
+            if (options.outputResolvedAliases()) {
                 YamlNode target = alias.getResolvedNode();
                 emitNode(target, isBlockKey, isSequenceItem, isInsideFlow);
             } else {
@@ -741,7 +736,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
     /// Emits comments that were identified by the parser as being on their own line.
     private void emitBlockComments(YamlNode node) {
-        if (node == null || !outputComments) return;
+        if (node == null || !options.outputComments()) return;
         for (YamlComment comment : node.getComments()) {
             if (comment.getCommentStyle() == CommentStyle.LEADING) {
                 emit("#");
@@ -753,7 +748,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
     /// Emits comments identified as "inline" (appended to the end of a data line).
     private void emitInlineComments(YamlNode node) {
-        if (node == null || !outputComments) return;
+        if (node == null || !options.outputComments()) return;
         for (YamlComment comment : node.getComments()) {
             if (comment.getCommentStyle() == CommentStyle.INLINE) {
                 if (!preceededByWhitespace) {
@@ -767,7 +762,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     }
 
     private void emitTrailingComments(YamlNode node) {
-        if (node == null || !outputComments) return;
+        if (node == null || !options.outputComments()) return;
         for (YamlComment comment : node.getComments()) {
             if (comment.getCommentStyle() == CommentStyle.TRAILING) {
                 if (!preceededByWhitespace) {
@@ -775,7 +770,6 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                 }
                 emit("#");
                 emit(comment.asString());
-                // emitNewLine();
             }
         }
     }
@@ -798,6 +792,14 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
     private void emitComma() {
         emit(COMMA);
+    }
+
+    private void emitFileEnding() {
+        if (rootNode.fileEndsWithNewLine()) {
+            if (!atStartOfLine) {
+                emitNewLine();
+            }
+        }
     }
 
     private void emit(String text) {
@@ -836,20 +838,11 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     // Helpers
     //
 
-    // TODO: This was supposed to be used
-    private int startLineOf(YamlNode node) {
-        if (node.getProperties().isEmpty()) {
-            return node.getStartLine();
-        } else {
-            return node.getProperties().getFirst().getStartLine();
-        }
-    }
-
     private boolean newLineBefore(YamlNode node, boolean isSequenceItem, boolean isInsideFlow) {
         if (newLineAlreadyEmitted) {
             return false;
         }
-        if (retainFormatting) {
+        if (options.retainFormatting()) {
             if (previousNode != null && node.getStartLine() > previousNode.getStartLine()) {
                 return true;
             }
@@ -864,40 +857,12 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
             } else {
                 return true;
             }
-
-            // if (isSynthetic(node)) {
-            //     // Synthetic node
-            //     // if (node instanceof YamlScalar s && "2".equals(s.getContent())) {
-            //     //     debug("Debug");
-            //     // }
-
-
-            //     //
-            //     // TODO: This needs changed to use canonical YAML
-            //     //
-
-
-            //     if (isScalar(node) || isSequenceItem || isInsideFlow) {
-            //         return false;
-            //     } else {
-            //         return true;
-            //     }
-            // } else {
-            //     // Parsed node
-            //     if (node.getStartLine() > previousEmissionLineNumber) {
-            //         trace("Start line differs for " + debugNode(node) + " (prev line = " + previousEmissionLineNumber + ")");
-            //         return true;
-            //     } else {
-            //         return false;
-            //     }
-            // }
         } else {
             return false;
         }
     }
 
     private boolean isSynthetic(YamlNode node) {
-        // return false;
         return node.getStartLine() < 1;
     }
 
@@ -916,91 +881,6 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         //         return indentOf(node.getProperties().getFirst(), expectedIndent);
         //     }
         // }
-    }
-
-    private boolean isImplicitNull(YamlNode node) {
-        return node instanceof YamlScalar s && s.asString() == null;
-    }
-
-    private String formatScalar(YamlScalar scalar) {
-        if (options.normalizeScalarFormatting() || scalar.getLexeme() == null) {
-            return normalizeScalar(scalar);
-        } else {
-            String lexeme = scalar.getLexeme();
-            warn(GenericDiagnosticCode.WARN, "formatLexeme called");
-            // TODO: Transform indentation if any ancestor node has been modified
-            return lexeme;
-        }
-    }
-
-    private String normalizeScalar(YamlScalar scalar) {
-        return switch(scalar.getPrimitiveType()) {
-            case STRING -> formatString(scalar);
-            default -> {
-                // TODO: Number formatting
-                yield scalar.getLexeme();
-            }
-        };
-    }
-
-    private String formatString(YamlScalar scalar) {
-        String text;
-        String string = scalar.asString();
-        ScalarStyle scalarStyle = scalar.getScalarStyle();
-
-        // TODO: We need to o a similar "isSafePlain" check for single quoted, and blocks.
-        if (scalarStyle == ScalarStyle.PLAIN) {
-            if (!isSafePlain(string)) {
-                scalarStyle = ScalarStyle.DOUBLE_QUOTED;
-            }
-        }
-
-        if (scalarStyle == ScalarStyle.SINGLE_QUOTED) {
-            text = singleQuote(string);
-        } else if (scalarStyle == ScalarStyle.DOUBLE_QUOTED) {
-            text = doubleQuote(string);
-        } else if (scalarStyle == ScalarStyle.LITERAL) {
-            // TODO: Implement this
-            text = "";
-        } else if (scalarStyle == ScalarStyle.FOLDED) {
-            // TODO: Implement this
-            text = "";
-        } else {
-            // Plain
-            text = string;
-        }
-        return text;
-    }
-
-    // private String normalizeString(YamlScalar scalar) {
-
-    //     return scalar.asString();
-
-    //     // String content = scalar.getContent();
-    //     // if (isSafePlain(content)) {
-    //     //     return content;
-    //     // } else {
-    //     //     return doubleQuote(content);
-    //     // }
-    // }
-
-    private String singleQuote(String text) {
-        return SINGLE_QUOTE + escapeSingleQuoted(text) + SINGLE_QUOTE;
-    }
-
-    private String doubleQuote(String text) {
-        return DOUBLE_QUOTE + escapeDoubleQuoted(text) + DOUBLE_QUOTE;
-    }
-
-    private String escapeSingleQuoted(String text) {
-        return text.replace("'", "''");
-    }
-
-    private String escapeDoubleQuoted(String text) {
-        if (text == null) return "";
-        // Only escape literal backslashes and quotes; literal inline \n and \r checks are omitted
-        // here because they are handled structurally by the line splitter.
-        return text.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     // private boolean isSafePlain(String s) {
@@ -1034,16 +914,186 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return s.chars().allMatch(c -> c <= 127);
     }
 
-    private void emitFileEnding() {
-        // if (previousNode != null && !isSingleScalar) {
-        //     emitNewLine();
-        // }
+    private boolean isImplicitNull(YamlNode node) {
+        return node instanceof YamlScalar s && s.asString() == null;
+    }
 
-        if (rootNode.fileEndsWithNewLine()) {
-            if (!atStartOfLine) {
-                emitNewLine();
+    private boolean isMultiLine(YamlScalar scalar) {
+        return (scalar.asString() != null && scalar.asString().contains("\n"));
+    }
+
+    //
+    // Scalar Formatting
+    //
+
+    private String formatScalar(YamlScalar scalar) {
+        String text;
+        if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
+            if (isImplicitNull(scalar)) {
+                text = "";
+            } else {
+                text = "null";
+            }
+        } else if (scalar.getPrimitiveType() == PrimitiveType.STRING) {
+            text = formatString(scalar);
+        } else {
+            text = scalar.asString();
+        }
+        return text;
+    }
+
+    private String formatString(YamlScalar scalar) {
+        if (!options.normalizeScalarFormatting() && scalar.getLexeme() != null) {
+            return scalar.getLexeme();
+        }
+
+        String text;
+        String string = scalar.asString();
+        ScalarStyle scalarStyle = scalar.getScalarStyle();
+
+        // TODO: We need to o a similar "isSafePlain" check for single quoted, and blocks.
+        if (scalarStyle == ScalarStyle.PLAIN) {
+            if (!isSafePlain(string)) {
+                scalarStyle = ScalarStyle.DOUBLE_QUOTED;
             }
         }
+
+        if (scalarStyle == ScalarStyle.SINGLE_QUOTED) {
+            text = singleQuote(string);
+        } else if (scalarStyle == ScalarStyle.DOUBLE_QUOTED) {
+            text = doubleQuote(string);
+        } else if (scalarStyle == ScalarStyle.LITERAL) {
+            // TODO: Implement this
+            text = "";
+        } else if (scalarStyle == ScalarStyle.FOLDED) {
+            // TODO: Implement this
+            text = "";
+        } else {
+            // Plain
+            text = string;
+        }
+        return text;
+    }
+
+    // private String formatStringSingleQuoted(YamlScalar scalar) {
+
+    //     // PLAIN, SINGLE_QUOTED, DOUBLE_QUOTED, LITERAL, FOLDED
+    //     // ScalarStyle scalarStype = scalar.getScalarStyle();
+    //     // String lexeme = scalar.getLexeme();
+
+    //     String content = scalar.getContent();
+
+    //     // TODO: Output this scalar with correct indentation an quotation
+
+    //     // 2. Split into lines
+    //     String[] lines = content.split("\n", -1);
+
+    //     StringBuilder out = new StringBuilder();
+    //     out.append("'");
+
+    //     // 3. First line: emit as-is (escaping single quotes)
+    //     out.append(lines[0].replace("'", "''"));
+
+    //     // 4. Remaining lines: YAML Test Suite canonical indentation = 2 spaces
+    //     for (int i = 1; i < lines.length; i++) {
+    //         out.append("\n  ");
+    //         out.append(lines[i].replace("'", "''"));
+    //     }
+
+    //     // 5. Close the single-quoted scalar
+    //     out.append("'");
+
+    //     return out.toString();
+    // }
+
+
+
+
+
+    private String formatStringSingleQuoted(YamlScalar scalar) {
+        String lexeme = scalar.getLexeme();
+        if (lexeme == null) {
+            return singleQuote(scalar.asString()); // TODO: Deal with newline folding
+        } else {
+            YamlToken token = scalar.getToken();
+            int blockIndent = token.getBlockIndent();
+            boolean startsOnNewLine = token.startsOnNewLine();
+            StringBuilder sb = new StringBuilder();
+            String[] rawLines = lexeme.split("\n", -1);
+            List<String> outLines = new ArrayList<>();
+            String line = "";
+            for (int i = 0; i < rawLines.length; i++) {
+                line = rawLines[i];
+                if (line.isEmpty()) {
+                    sb.append("\n");
+                    outLines.add(sb.toString());
+                    sb.setLength(0);
+                } else {
+                    if (i > 0 || startsOnNewLine) {
+                        line = line.substring(blockIndent);
+                    }
+                    if (!sb.isEmpty()) {
+                        sb.append(" ");
+                    } else if (i > 0 || startsOnNewLine) {
+                        sb.append("  "); // TODO: proper indent
+                    }
+                    sb.append(line);
+                }
+            }
+            if (!sb.isEmpty()) {
+                outLines.add(sb.toString());
+            }
+            String joined = String.join("\n", outLines);
+            return singleQuote(joined);
+        }
+    }
+
+
+
+
+
+
+
+
+    private String singleQuote(String text) {
+        return SINGLE_QUOTE + escapeSingleQuoted(text) + SINGLE_QUOTE;
+    }
+
+    private String doubleQuote(String text) {
+        return DOUBLE_QUOTE + escapeDoubleQuoted(text) + DOUBLE_QUOTE;
+    }
+
+    private String escapeSingleQuoted(String text) {
+        return text.replace("'", "''");
+    }
+
+    private String escapeDoubleQuoted(String text) {
+        if (text == null) return "";
+        // Only escape literal backslashes and quotes; literal inline \n and \r checks are omitted
+        // here because they are handled structurally by the line splitter.
+        return text.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    //
+    // Scalar Normalization
+    //
+
+    private String normalizeScalar(YamlScalar scalar) {
+        if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
+            return "null";
+        } else if (scalar.getPrimitiveType() == PrimitiveType.STRING) {
+            return normalizeString(scalar);
+        }
+        return formatScalar(scalar);
+    }
+
+    private String normalizeString(YamlScalar scalar) {
+        if (isMultiLine(scalar)) {
+            if (scalar.getScalarStyle() == ScalarStyle.PLAIN) {
+                return formatStringSingleQuoted(scalar);
+            }
+        }
+        return formatScalar(scalar);
     }
 
     //
@@ -1053,23 +1103,13 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     protected void setupSerializer() {
         // Configuration
         super.setupSerializer();
-        depthLimit = options.getDepthLimit();
+        depthLimit = options.depthLimit();
 
         // State
         depth = 0;
     }
 
     private void setupEmitter() {
-        // Configuration
-        indentSize = options.getIndentSize();
-        indicatorIndentSize = 0; // TODO: Add to options
-        outputResolvedAliases = options.outputResolvedAliases();
-        outputComments = options.outputComments();
-        outputExpandedStyle = options.outputExpandedStyle();
-        forceExplicitNull = options.forceExplicitNull();
-        alwaysEndWithNewLine = options.setAlwaysEndWithNewLine();
-        retainFormatting = options.retainFormatting();
-
         // State
         atStartOfLine = true;
         indentSpaces = 0;
@@ -1110,11 +1150,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     protected void debugStringBuilder() {
         if (debugStringBuilder) {
             reporter.trace("StringBuilder:");
-            try {
-                reporter.getWriter(Level.TRACE).write(2, DebugUtils.debugStringBuilder(string, -1));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            reporter.getWriter(Level.TRACE).write(2, DebugUtils.debugStringBuilder(string, -1));
         }
     }
 

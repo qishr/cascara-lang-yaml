@@ -2443,7 +2443,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
 
     protected void preParseStateInit() {
         // Options
-        depthLimit = options.getDepthLimit();
+        depthLimit = options.depthLimit();
         isMultiDocumentParsing = options.isMultiDocument();
         if (options.preloadTokenBuffer()) {
             tokenBuffer = new PreloadedTokenBuffer();

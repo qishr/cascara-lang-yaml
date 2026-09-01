@@ -8,41 +8,41 @@ import io.github.qishr.cascara.common.lang.util.SourceStringBuffer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
 
-public class TokenizerScalarTests {
+public class TokenizerScalarTests extends TokenizerTestBase {
 
     @Test
     void test4Q9F(){
-        TestUtils.assertEquals("ab cd\nef\n\ngh\n", blockScalar(">\n ab\n cd\n\n ef\n\n\n gh\n"));
+        assertStringEquals("ab cd\nef\n\ngh\n", blockScalar(">\n ab\n cd\n\n ef\n\n\n gh\n"));
     }
 
     @Test
     void test4QFQa(){
-        TestUtils.assertEquals("detected\n", blockScalar("|\n detected\n", 1));
+        assertStringEquals("detected\n", blockScalar("|\n detected\n", 1));
     }
 
     @Test
     void test4QFQb(){
-        TestUtils.assertEquals("\n\n# detected\n", blockScalar(">\n\n\n  # detected\n", 1));
+        assertStringEquals("\n\n# detected\n", blockScalar(">\n\n\n  # detected\n", 1));
     }
 
     @Test
     void test4QFQc(){
-        TestUtils.assertEquals(" explicit\n", blockScalar("|1\n  explicit\n", 1));
+        assertStringEquals(" explicit\n", blockScalar("|1\n  explicit\n", 1));
     }
 
     @Test
     void test4QFQd(){
-        TestUtils.assertEquals("detected\n", blockScalar(">\n detected\n", 1));
+        assertStringEquals("detected\n", blockScalar(">\n detected\n", 1));
     }
 
     @Test
     void test4WAa(){
-        TestUtils.assertEquals("xxx\n", blockScalar("|2\n    xxx\n", 3));
+        assertStringEquals("xxx\n", blockScalar("|2\n    xxx\n", 3));
     }
 
     @Test
     void test4WAb(){
-        TestUtils.assertEquals("xxx\n", blockScalar("|\n    xxx\n", 3));
+        assertStringEquals("xxx\n", blockScalar("|\n    xxx\n", 3));
     }
 
 

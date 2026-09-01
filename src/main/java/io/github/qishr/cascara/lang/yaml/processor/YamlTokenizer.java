@@ -760,17 +760,19 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                     }
 
                     if (blockIndent == -1) {
-                        blockIndent = charOffset;
-                        debug("Block indent set: " + blockIndent);
+                        if (isBlock) {
+                            blockIndent = charOffset;
+                            debug("Block indent set: " + blockIndent);
 
+                            // TODO: set mostSpacesInBlankLine
 
-
-                        // TODO: set mostSpacesInBlankLine
-
-
-
-                        if (isBlock && mostSpacesInBlankLine > blockIndent) {
-                            error(YamlDiagnosticCode.EXPLICIT_INDENTATION_INDICATOR_NEEDED);
+                            if (isBlock && mostSpacesInBlankLine > blockIndent) {
+                                error(YamlDiagnosticCode.EXPLICIT_INDENTATION_INDICATOR_NEEDED);
+                            }
+                        } else {
+                            if (startsOnNewLine || lineNum > 0) {
+                                blockIndent = charOffset;
+                            }
                         }
                     }
 
@@ -1588,10 +1590,14 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     }
 
     private void updatePreviousNonWhitespaceToken(YamlToken token) {
+        YamlTokenType type = token.getType();
         TokenCategory cat = token.getType().getCategory();
         if (cat != TokenCategory.WHITESPACE &&
             cat != TokenCategory.INDENTATION &&
+
             // cat != TokenCategory.INTERNAL &&
+            type != YamlTokenType.STREAM_START &&
+
             cat != TokenCategory.NEWLINE &&
             cat != TokenCategory.COMMENT
         ) {

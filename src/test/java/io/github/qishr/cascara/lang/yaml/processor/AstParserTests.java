@@ -281,7 +281,7 @@ public class AstParserTests extends AstParserTestBase {
         assertEquals(1, root.size());
 
         YamlScalar scalar = root.getScalar("b");
-        TestUtils.assertEquals("plain value", scalar.asString());
+        assertStringEquals("plain value", scalar.asString());
     }
 
     @Test

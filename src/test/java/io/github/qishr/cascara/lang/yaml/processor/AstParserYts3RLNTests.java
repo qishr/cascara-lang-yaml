@@ -18,7 +18,7 @@ public class AstParserYts3RLNTests extends AstParserTestBase {
         String expected = "1 leading \ttab";
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        TestUtils.assertEquals(expected, actual);
+        assertStringEquals(expected, actual);
     }
 
     @Test
@@ -27,7 +27,7 @@ public class AstParserYts3RLNTests extends AstParserTestBase {
         String expected = "2 leading \ttab";
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        TestUtils.assertEquals(expected, actual);
+        assertStringEquals(expected, actual);
     }
 
     @Test
@@ -36,7 +36,7 @@ public class AstParserYts3RLNTests extends AstParserTestBase {
         String expected = "3 leading tab";
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        TestUtils.assertEquals(expected, actual);
+        assertStringEquals(expected, actual);
     }
 
     @Test
@@ -45,7 +45,7 @@ public class AstParserYts3RLNTests extends AstParserTestBase {
         String expected = "4 leading \t  tab";
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        TestUtils.assertEquals(expected, actual);
+        assertStringEquals(expected, actual);
     }
 
     @Test
@@ -63,7 +63,7 @@ public class AstParserYts3RLNTests extends AstParserTestBase {
         String expected = "6 leading tab";
         String actual = convert(yaml);
         debug(yaml, expected, actual);
-        TestUtils.assertEquals(expected, actual);
+        assertStringEquals(expected, actual);
     }
 
     //

@@ -189,22 +189,18 @@ public class SerializerTestBase extends AstParserTestBase {
             reportMismatch(yaml, emitted);
         }
 
-        TestUtils.assertEquals(yaml, emitted);
+        assertStringEquals(yaml, emitted);
     }
 
     protected void reportMismatch(String expected, String actual) {
-        try {
-            reporter.debug("Expected YAML:");
-            reporter.getWriter(Level.DEBUG).write(2, StringUtils.debugString(expected));
-            reporter.debug("Actual YAML:");
-            reporter.getWriter(Level.DEBUG).write(2, StringUtils.debugString(actual));
+        reporter.debug("Expected YAML:");
+        reporter.getWriter(Level.DEBUG).write(2, StringUtils.debugString(expected));
+        reporter.debug("Actual YAML:");
+        reporter.getWriter(Level.DEBUG).write(2, StringUtils.debugString(actual));
 
-            reporter.debug("Expected YAML:");
-            reporter.getWriter(Level.DEBUG).write(2, expected);
-            reporter.debug("Actual YAML:");
-            reporter.getWriter(Level.DEBUG).write(2, actual);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        reporter.debug("Expected YAML:");
+        reporter.getWriter(Level.DEBUG).write(2, expected);
+        reporter.debug("Actual YAML:");
+        reporter.getWriter(Level.DEBUG).write(2, actual);
     }
 }

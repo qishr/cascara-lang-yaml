@@ -85,8 +85,8 @@ public class SerializerComplianceTests extends SerializerCanonicalTestBase {
         YamlAlias map3k = (YamlAlias) map3e.getKey();
         YamlScalar map3v = (YamlScalar) map3e.getValue();
 
-        TestUtils.assertEquals("alias1", map3k.getName());
-        TestUtils.assertEquals("scalar3", map3v.asString());
+        assertStringEquals("alias1", map3k.getName());
+        assertStringEquals("scalar3", map3v.asString());
 
     }
 
@@ -114,16 +114,16 @@ public class SerializerComplianceTests extends SerializerCanonicalTestBase {
         YamlMap map = (YamlMap) body;
 
         YamlMapEntry entry0 = map.getEntry(0);
-        TestUtils.assertEquals("unquoted", entry0.getKeyString());
-        TestUtils.assertEquals("separate", entry0.getValue().asString());
+        assertStringEquals("unquoted", entry0.getKeyString());
+        assertStringEquals("separate", entry0.getValue().asString());
 
         YamlMapEntry entry1 = map.getEntry(1);
-        TestUtils.assertEquals("http://foo.com", entry1.getKeyString());
-        TestUtils.assertEquals(null, entry1.getValue().asString());
+        assertStringEquals("http://foo.com", entry1.getKeyString());
+        assertStringEquals(null, entry1.getValue().asString());
 
         YamlMapEntry entry2 = map.getEntry(2);
-        TestUtils.assertEquals("omitted value", entry2.getKeyString());
-        TestUtils.assertEquals(null, entry2.getValue().asString());
+        assertStringEquals("omitted value", entry2.getKeyString());
+        assertStringEquals(null, entry2.getValue().asString());
 
     }
 
@@ -136,23 +136,75 @@ public class SerializerComplianceTests extends SerializerCanonicalTestBase {
             e
             """;
 
-        DEBUG = true;
-
         tokenize(yaml);
-
         YamlStream stream = parser.parseMulti(yaml);
-
         String expected = """
             --- !!str d e
             """;
-
         String emitted = serializer.toString(stream);
-
         if (DEBUG) {
             reporter.debug("Expected: " + StringUtils.debugString(expected));
             reporter.debug("Emitted:  " + StringUtils.debugString(emitted));
         }
+        assertStringEquals(expected, emitted);
+    }
 
-        TestUtils.assertEquals(expected, emitted);
+
+    @Test
+    public void test36F6() {
+        String yaml = """
+            ---
+            plain: a
+             b
+
+             c
+            """;
+
+        tokenize(yaml);
+        YamlStream stream = parser.parseMulti(yaml);
+        String expected = """
+            ---
+            plain: 'a b
+
+              c'
+            """;
+        String emitted = serializer.toString(stream);
+        assertStringEquals(yaml, expected, emitted);
+    }
+
+    @Test
+    public void test36F6_insideMap() {
+        String yaml = """
+            ---
+            key:
+              plain: a
+               b
+
+               c
+            """;
+
+        tokenize(yaml);
+        YamlStream stream = parser.parseMulti(yaml);
+        String expected = """
+            ---
+            key:
+              plain: 'a b
+
+               c'
+            """;
+        String emitted = serializer.toString(stream);
+        assertStringEquals(yaml, expected, emitted);
+    }
+
+    @Test
+    public void test36F6_withSyntheticScalar() {
+        YamlMap root = new YamlMap().put("plain", "a b\nc");
+        String expected = """
+            plain: 'a b
+
+              c'
+            """;
+        String emitted = serializer.toString(root);
+        assertStringEquals(expected, emitted);
     }
 }

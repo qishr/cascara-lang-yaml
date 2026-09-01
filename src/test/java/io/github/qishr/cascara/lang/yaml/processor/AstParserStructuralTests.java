@@ -75,7 +75,7 @@ public class AstParserStructuralTests extends AstParserTestBase {
 
         YamlScalar scalar = (YamlScalar) normalize(doc.getBody());
 
-        TestUtils.assertEquals("x b\n", scalar.asString());
+        assertStringEquals("x b\n", scalar.asString());
     }
 
     // This fails

@@ -28,12 +28,12 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar value = map.getScalar("y");
 
         // Confirm tag is on correct node
-        TestUtils.assertEquals("!!str", map.getTag());
-        TestUtils.assertEquals(STR_TAG, map.getResolvedTag());
+        assertStringEquals("!!str", map.getTag());
+        assertStringEquals(STR_TAG, map.getResolvedTag());
 
         // Confirm tag is not on wrong nodes
-        TestUtils.assertEquals(NO_TAG, key.getTag());
-        TestUtils.assertEquals(NO_TAG, value.getTag());
+        assertStringEquals(NO_TAG, key.getTag());
+        assertStringEquals(NO_TAG, value.getTag());
     }
 
     @Test
@@ -52,12 +52,12 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar value = map.getScalar("y");
 
         // Confirm tag is on correct node
-        TestUtils.assertEquals("!!str", key.getTag());
-        TestUtils.assertEquals(STR_TAG, key.getResolvedTag());
+        assertStringEquals("!!str", key.getTag());
+        assertStringEquals(STR_TAG, key.getResolvedTag());
 
         // Confirm tag is not on wrong nodes
-        TestUtils.assertEquals(NO_TAG, map.getTag());
-        TestUtils.assertEquals(NO_TAG, value.getTag());
+        assertStringEquals(NO_TAG, map.getTag());
+        assertStringEquals(NO_TAG, value.getTag());
     }
 
     @Test
@@ -76,12 +76,12 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar value = map.getScalar("y");
 
         // Confirm tag is on correct node
-        TestUtils.assertEquals("!!str", value.getTag());
-        TestUtils.assertEquals(STR_TAG, value.getResolvedTag());
+        assertStringEquals("!!str", value.getTag());
+        assertStringEquals(STR_TAG, value.getResolvedTag());
 
         // Confirm tag is not on wrong nodes
-        TestUtils.assertEquals(NO_TAG, map.getTag());
-        TestUtils.assertEquals(NO_TAG, key.getTag());
+        assertStringEquals(NO_TAG, map.getTag());
+        assertStringEquals(NO_TAG, key.getTag());
     }
 
     //
@@ -104,11 +104,11 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar val = map.getScalar("y");
 
         // Confirm anchor is on correct node
-        TestUtils.assertEquals("a", map.getAnchor());
+        assertStringEquals("a", map.getAnchor());
 
         // Confirm tag is not on wrong nodes
-        TestUtils.assertEquals(NO_ANC, key.getAnchor());
-        TestUtils.assertEquals(NO_ANC, val.getAnchor());
+        assertStringEquals(NO_ANC, key.getAnchor());
+        assertStringEquals(NO_ANC, val.getAnchor());
     }
 
     @Test
@@ -127,11 +127,11 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar val = map.getScalar("y");
 
         // Confirm anchor is on correct node
-        TestUtils.assertEquals("a", key.getAnchor());
+        assertStringEquals("a", key.getAnchor());
 
         // Confirm tag is not on wrong nodes
-        TestUtils.assertEquals(NO_ANC, map.getAnchor());
-        TestUtils.assertEquals(NO_ANC, val.getAnchor());
+        assertStringEquals(NO_ANC, map.getAnchor());
+        assertStringEquals(NO_ANC, val.getAnchor());
     }
 
     @Test
@@ -150,11 +150,11 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar val = map.getScalar("y");
 
         // Confirm anchor is on correct node
-        TestUtils.assertEquals("a", val.getAnchor());
+        assertStringEquals("a", val.getAnchor());
 
         // Confirm tag is not on wrong nodes
-        TestUtils.assertEquals(NO_ANC, map.getAnchor());
-        TestUtils.assertEquals(NO_ANC, key.getAnchor());
+        assertStringEquals(NO_ANC, map.getAnchor());
+        assertStringEquals(NO_ANC, key.getAnchor());
     }
 
     //
@@ -177,15 +177,15 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar val = map.getScalar("y");
 
         // Confirm anchor and tag are on correct node
-        TestUtils.assertEquals("a", map.getAnchor());
-        TestUtils.assertEquals("!!str", map.getTag());
-        TestUtils.assertEquals(STR_TAG, map.getResolvedTag());
+        assertStringEquals("a", map.getAnchor());
+        assertStringEquals("!!str", map.getTag());
+        assertStringEquals(STR_TAG, map.getResolvedTag());
 
         // Confirm tag is not on wrong nodes
-        TestUtils.assertEquals(NO_ANC, key.getAnchor());
-        TestUtils.assertEquals(NO_TAG, key.getTag());
-        TestUtils.assertEquals(NO_ANC, val.getAnchor());
-        TestUtils.assertEquals(NO_TAG, val.getTag());
+        assertStringEquals(NO_ANC, key.getAnchor());
+        assertStringEquals(NO_TAG, key.getTag());
+        assertStringEquals(NO_ANC, val.getAnchor());
+        assertStringEquals(NO_TAG, val.getTag());
     }
 
     @Test
@@ -204,15 +204,15 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar val = map.getScalar("y");
 
         // Confirm anchor and tag are on correct node
-        TestUtils.assertEquals("a", key.getAnchor());
-        TestUtils.assertEquals("!!str", key.getTag());
-        TestUtils.assertEquals(STR_TAG, key.getResolvedTag());
+        assertStringEquals("a", key.getAnchor());
+        assertStringEquals("!!str", key.getTag());
+        assertStringEquals(STR_TAG, key.getResolvedTag());
 
         // Confirm tag is not on wrong nodes
-        TestUtils.assertEquals(NO_ANC, map.getAnchor());
-        TestUtils.assertEquals(NO_TAG, map.getTag());
-        TestUtils.assertEquals(NO_ANC, val.getAnchor());
-        TestUtils.assertEquals(NO_TAG, val.getTag());
+        assertStringEquals(NO_ANC, map.getAnchor());
+        assertStringEquals(NO_TAG, map.getTag());
+        assertStringEquals(NO_ANC, val.getAnchor());
+        assertStringEquals(NO_TAG, val.getTag());
     }
 
     @Test
@@ -231,15 +231,15 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar val = map.getScalar("y");
 
         // Confirm anchor and tag are on correct node
-        TestUtils.assertEquals("a", val.getAnchor());
-        TestUtils.assertEquals("!!str", val.getTag());
-        TestUtils.assertEquals(STR_TAG, val.getResolvedTag());
+        assertStringEquals("a", val.getAnchor());
+        assertStringEquals("!!str", val.getTag());
+        assertStringEquals(STR_TAG, val.getResolvedTag());
 
         // Confirm tag is not on wrong nodes
-        TestUtils.assertEquals(NO_ANC, map.getAnchor());
-        TestUtils.assertEquals(NO_TAG, map.getTag());
-        TestUtils.assertEquals(NO_ANC, key.getAnchor());
-        TestUtils.assertEquals(NO_TAG, key.getTag());
+        assertStringEquals(NO_ANC, map.getAnchor());
+        assertStringEquals(NO_TAG, map.getTag());
+        assertStringEquals(NO_ANC, key.getAnchor());
+        assertStringEquals(NO_TAG, key.getTag());
     }
 
     //
@@ -262,15 +262,15 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar val = map.getScalar("y");
 
         // Confirm anchor and tag are on correct node
-        TestUtils.assertEquals("a", map.getAnchor());
-        TestUtils.assertEquals("!!str", map.getTag());
-        TestUtils.assertEquals(STR_TAG, map.getResolvedTag());
+        assertStringEquals("a", map.getAnchor());
+        assertStringEquals("!!str", map.getTag());
+        assertStringEquals(STR_TAG, map.getResolvedTag());
 
         // Confirm tag is not on wrong nodes
-        TestUtils.assertEquals(NO_ANC, key.getAnchor());
-        TestUtils.assertEquals(NO_TAG, key.getTag());
-        TestUtils.assertEquals(NO_ANC, val.getAnchor());
-        TestUtils.assertEquals(NO_TAG, val.getTag());
+        assertStringEquals(NO_ANC, key.getAnchor());
+        assertStringEquals(NO_TAG, key.getTag());
+        assertStringEquals(NO_ANC, val.getAnchor());
+        assertStringEquals(NO_TAG, val.getTag());
     }
 
     @Test
@@ -289,15 +289,15 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar val = map.getScalar("y");
 
         // Confirm anchor and tag are on correct node
-        TestUtils.assertEquals("a", key.getAnchor());
-        TestUtils.assertEquals("!!str", key.getTag());
-        TestUtils.assertEquals(STR_TAG, key.getResolvedTag());
+        assertStringEquals("a", key.getAnchor());
+        assertStringEquals("!!str", key.getTag());
+        assertStringEquals(STR_TAG, key.getResolvedTag());
 
         // Confirm tag is not on wrong nodes
-        TestUtils.assertEquals(NO_ANC, map.getAnchor());
-        TestUtils.assertEquals(NO_TAG, map.getTag());
-        TestUtils.assertEquals(NO_ANC, val.getAnchor());
-        TestUtils.assertEquals(NO_TAG, val.getTag());
+        assertStringEquals(NO_ANC, map.getAnchor());
+        assertStringEquals(NO_TAG, map.getTag());
+        assertStringEquals(NO_ANC, val.getAnchor());
+        assertStringEquals(NO_TAG, val.getTag());
     }
 
     @Test
@@ -316,15 +316,15 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar val = map.getScalar("y");
 
         // Confirm anchor and tag are on correct node
-        TestUtils.assertEquals("a", val.getAnchor());
-        TestUtils.assertEquals("!!str", val.getTag());
-        TestUtils.assertEquals(STR_TAG, val.getResolvedTag());
+        assertStringEquals("a", val.getAnchor());
+        assertStringEquals("!!str", val.getTag());
+        assertStringEquals(STR_TAG, val.getResolvedTag());
 
         // Confirm tag is not on wrong nodes
-        TestUtils.assertEquals(NO_ANC, map.getAnchor());
-        TestUtils.assertEquals(NO_TAG, map.getTag());
-        TestUtils.assertEquals(NO_ANC, key.getAnchor());
-        TestUtils.assertEquals(NO_TAG, key.getTag());
+        assertStringEquals(NO_ANC, map.getAnchor());
+        assertStringEquals(NO_TAG, map.getTag());
+        assertStringEquals(NO_ANC, key.getAnchor());
+        assertStringEquals(NO_TAG, key.getTag());
     }
 
     //
@@ -350,8 +350,8 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar key = (YamlScalar) entry.getKey();
 
         // Confirm tags are on correct nodes
-        TestUtils.assertEquals("!!str", map.getTag());
-        TestUtils.assertEquals("!!str", key.getTag());
+        assertStringEquals("!!str", map.getTag());
+        assertStringEquals("!!str", key.getTag());
     }
 
     @Test
@@ -369,11 +369,11 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar key = (YamlScalar) entry.getKey();
 
         // Confirm tag and anchor are on correct nodes
-        TestUtils.assertEquals("!!str", map.getTag());
-        TestUtils.assertEquals("a", key.getAnchor());
+        assertStringEquals("!!str", map.getTag());
+        assertStringEquals("a", key.getAnchor());
 
         // Confirm tag is not on wrong node
-        TestUtils.assertEquals(NO_TAG, key.getTag());
+        assertStringEquals(NO_TAG, key.getTag());
     }
 
     @Test
@@ -391,12 +391,12 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar key = (YamlScalar) entry.getKey();
 
         // Confirm tag and anchor are on correct nodes
-        TestUtils.assertEquals("!!str", map.getTag());
-        TestUtils.assertEquals("!!str", key.getTag());
-        TestUtils.assertEquals("a", key.getAnchor());
+        assertStringEquals("!!str", map.getTag());
+        assertStringEquals("!!str", key.getTag());
+        assertStringEquals("a", key.getAnchor());
 
         // Confirm anchor is not on wrong nodes
-        TestUtils.assertEquals(NO_ANC, map.getAnchor());
+        assertStringEquals(NO_ANC, map.getAnchor());
     }
 
     @Test
@@ -414,12 +414,12 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar key = (YamlScalar) entry.getKey();
 
         // Confirm tag and anchor are on correct nodes
-        TestUtils.assertEquals("!!str", map.getTag());
-        TestUtils.assertEquals("!!str", key.getTag());
-        TestUtils.assertEquals("a", key.getAnchor());
+        assertStringEquals("!!str", map.getTag());
+        assertStringEquals("!!str", key.getTag());
+        assertStringEquals("a", key.getAnchor());
 
         // Confirm anchor is not on wrong nodes
-        TestUtils.assertEquals(NO_ANC, map.getAnchor());
+        assertStringEquals(NO_ANC, map.getAnchor());
     }
 
     //
@@ -441,12 +441,12 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar key = (YamlScalar) entry.getKey();
 
         // Confirm anchor and tag are on correct nodes
-        TestUtils.assertEquals("a", map.getAnchor());
-        TestUtils.assertEquals("!!str", key.getTag());
+        assertStringEquals("a", map.getAnchor());
+        assertStringEquals("!!str", key.getTag());
 
         // Confirm anchor and tag are not on wrong nodes
-        TestUtils.assertEquals(NO_ANC, key.getAnchor());
-        TestUtils.assertEquals(NO_TAG, map.getTag());
+        assertStringEquals(NO_ANC, key.getAnchor());
+        assertStringEquals(NO_TAG, map.getTag());
     }
 
     @Test
@@ -464,8 +464,8 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar key = (YamlScalar) entry.getKey();
 
         // Confirm tag and anchor are on correct nodes
-        TestUtils.assertEquals("a", map.getAnchor());
-        TestUtils.assertEquals("b", key.getAnchor());
+        assertStringEquals("a", map.getAnchor());
+        assertStringEquals("b", key.getAnchor());
     }
 
     @Test
@@ -483,12 +483,12 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar key = (YamlScalar) entry.getKey();
 
         // Confirm tag and anchor are on correct nodes
-        TestUtils.assertEquals("a", map.getAnchor());
-        TestUtils.assertEquals("!!str", key.getTag());
-        TestUtils.assertEquals("b", key.getAnchor());
+        assertStringEquals("a", map.getAnchor());
+        assertStringEquals("!!str", key.getTag());
+        assertStringEquals("b", key.getAnchor());
 
         // Confirm tag is not on wrong node
-        TestUtils.assertEquals(NO_TAG, map.getTag());
+        assertStringEquals(NO_TAG, map.getTag());
     }
 
     @Test
@@ -506,12 +506,12 @@ public class AstNodePropertiesMapOfMapsTests extends AstNodePropertiesTestBase {
         YamlScalar key = (YamlScalar) entry.getKey();
 
         // Confirm tag and anchors are on correct nodes
-        TestUtils.assertEquals("a", map.getAnchor());
-        TestUtils.assertEquals("b", key.getAnchor());
-        TestUtils.assertEquals("!!str", key.getTag());
+        assertStringEquals("a", map.getAnchor());
+        assertStringEquals("b", key.getAnchor());
+        assertStringEquals("!!str", key.getTag());
 
         // Confirm tag is not on wrong node
-        TestUtils.assertEquals(NO_TAG, map.getTag());
+        assertStringEquals(NO_TAG, map.getTag());
     }
 
     //

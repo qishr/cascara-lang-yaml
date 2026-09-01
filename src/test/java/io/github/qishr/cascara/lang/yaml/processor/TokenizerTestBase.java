@@ -44,7 +44,7 @@ import org.junit.jupiter.api.BeforeEach;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
-public abstract class TokenizerTestBase {
+public abstract class TokenizerTestBase extends TestBase {
     /// Asserts that the sequence of token types matches the expected types.
     ///
     /// This helper is used to verify the internal state of the [YamlTokenizer]

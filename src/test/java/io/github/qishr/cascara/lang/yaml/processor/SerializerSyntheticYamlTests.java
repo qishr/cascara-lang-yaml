@@ -32,7 +32,7 @@ public class SerializerSyntheticYamlTests extends SerializerTestBase {
         if (!expected.equals(actual)) {
             reportMismatch(expected, actual);
         }
-        TestUtils.assertEquals(expected, actual);
+        assertStringEquals(expected, actual);
     }
 
     @Test
@@ -71,7 +71,7 @@ public class SerializerSyntheticYamlTests extends SerializerTestBase {
         if (!expected.equals(actual)) {
             reportMismatch(expected, actual);
         }
-        TestUtils.assertEquals(expected, actual);
+        assertStringEquals(expected, actual);
     }
 
     @Test
@@ -97,6 +97,6 @@ public class SerializerSyntheticYamlTests extends SerializerTestBase {
         if (!expected.equals(actual)) {
             reportMismatch(expected, actual);
         }
-        TestUtils.assertEquals(expected, actual);
+        assertStringEquals(expected, actual);
     }
 }
