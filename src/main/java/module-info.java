@@ -35,7 +35,6 @@
 
 module cascara.lang.yaml {
     requires transitive cascara.common;
-    requires javafx.graphics;
 
     exports io.github.qishr.cascara.lang.yaml.ast;
     exports io.github.qishr.cascara.lang.yaml.diagnostic;

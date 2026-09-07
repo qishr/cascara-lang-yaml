@@ -975,41 +975,6 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return text;
     }
 
-    // private String formatStringSingleQuoted(YamlScalar scalar) {
-
-    //     // PLAIN, SINGLE_QUOTED, DOUBLE_QUOTED, LITERAL, FOLDED
-    //     // ScalarStyle scalarStype = scalar.getScalarStyle();
-    //     // String lexeme = scalar.getLexeme();
-
-    //     String content = scalar.getContent();
-
-    //     // TODO: Output this scalar with correct indentation an quotation
-
-    //     // 2. Split into lines
-    //     String[] lines = content.split("\n", -1);
-
-    //     StringBuilder out = new StringBuilder();
-    //     out.append("'");
-
-    //     // 3. First line: emit as-is (escaping single quotes)
-    //     out.append(lines[0].replace("'", "''"));
-
-    //     // 4. Remaining lines: YAML Test Suite canonical indentation = 2 spaces
-    //     for (int i = 1; i < lines.length; i++) {
-    //         out.append("\n  ");
-    //         out.append(lines[i].replace("'", "''"));
-    //     }
-
-    //     // 5. Close the single-quoted scalar
-    //     out.append("'");
-
-    //     return out.toString();
-    // }
-
-
-
-
-
     private String formatStringSingleQuoted(YamlScalar scalar) {
         String lexeme = scalar.getLexeme();
         if (lexeme == null) {
@@ -1035,7 +1000,8 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                     if (!sb.isEmpty()) {
                         sb.append(" ");
                     } else if (i > 0 || startsOnNewLine) {
-                        sb.append("  "); // TODO: proper indent
+                        // TODO: proper indent
+                        sb.append(" ".repeat(indentSpaces));
                     }
                     sb.append(line);
                 }
@@ -1080,7 +1046,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
     private String normalizeScalar(YamlScalar scalar) {
         if (scalar.getPrimitiveType() == PrimitiveType.NULL) {
-            return "null";
+            return "";
         } else if (scalar.getPrimitiveType() == PrimitiveType.STRING) {
             return normalizeString(scalar);
         }

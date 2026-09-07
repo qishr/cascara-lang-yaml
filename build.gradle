@@ -4,6 +4,11 @@ plugins {
 }
 
 
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+}
+
+
 repositories {
 	mavenLocal()
 	mavenCentral()
