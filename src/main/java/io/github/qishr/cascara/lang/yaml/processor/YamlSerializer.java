@@ -210,7 +210,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
     /// {@inheritDoc}
     @Override
-    public <C> C fromText(String text, TypeReference<C> typeRef) {
+    public <C> C fromString(String text, TypeReference<C> typeRef) {
         // Step 1: String -> AST
         YamlNode ast = getParser().parse(text);
         // Step 2: AST -> Object

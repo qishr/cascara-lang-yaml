@@ -231,6 +231,15 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
     }
 
     @Override
+    public YamlScalar setPrimitive(Object jvmValue) {
+        this.jvmValue = jvmValue;
+        this.isJvmValueCached = true;
+        isStringValueCached = false;
+        scalarStyle = ScalarStyle.UNDETERMINED;
+        return this;
+    }
+
+    @Override
     public String asString() {
         if (!isStringValueCached) {
             PrimitiveType ptype = getPrimitiveType();
