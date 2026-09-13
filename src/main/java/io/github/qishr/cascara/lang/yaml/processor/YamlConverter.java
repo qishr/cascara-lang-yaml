@@ -35,7 +35,7 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.diagnostic.code.LangDiagnosticCode;
+import io.github.qishr.cascara.common.lang.diagnostic.LangDiagnosticCode;
 import io.github.qishr.cascara.common.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
@@ -60,7 +60,7 @@ import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlProcessor;
 public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implements AstConverter<YamlNode> {
     @Override protected YamlConverter self() { return this; }
 
-    public String toText(AstNode ast) {
+    public String toString(AstNode ast) {
         YamlNode yamlNode = fromAst(ast);
         YamlSerializer serializer = new YamlSerializer();
         return serializer.toString(yamlNode);

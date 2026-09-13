@@ -35,7 +35,7 @@
 
 package io.github.qishr.cascara.lang.yaml.util;
 
-import io.github.qishr.cascara.common.lang.exception.SerializerException;
+import io.github.qishr.cascara.common.lang.diagnostic.SerializerException;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.processor.AbstractYamlTypeSerializer;

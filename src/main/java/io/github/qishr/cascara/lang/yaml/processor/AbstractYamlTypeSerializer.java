@@ -37,7 +37,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
-import io.github.qishr.cascara.common.lang.exception.SerializerException;
+import io.github.qishr.cascara.common.lang.diagnostic.SerializerException;
 import io.github.qishr.cascara.common.lang.type.AbstractTypeDescriptor;
 import io.github.qishr.cascara.common.lang.type.TypeSerializer;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
