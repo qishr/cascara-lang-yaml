@@ -39,15 +39,16 @@ import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.diagnostic.SerializerException;
 import io.github.qishr.cascara.common.lang.type.AbstractTypeDescriptor;
+import io.github.qishr.cascara.common.lang.type.PrimitiveType;
 import io.github.qishr.cascara.common.lang.type.TypeSerializer;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 
 public abstract class AbstractYamlTypeSerializer<T> extends AbstractTypeDescriptor<T> implements TypeSerializer<T> {
     protected AbstractYamlTypeSerializer(Class<T> javaType) {
-        super(javaType, "object");
+        super(javaType, PrimitiveType.OBJECT);
     }
 
-    protected AbstractYamlTypeSerializer(Class<T> javaType, String schemaType) {
+    protected AbstractYamlTypeSerializer(Class<T> javaType, PrimitiveType schemaType) {
         super(javaType, schemaType);
     }
 
