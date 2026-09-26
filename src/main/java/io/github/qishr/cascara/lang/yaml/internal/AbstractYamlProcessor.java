@@ -51,8 +51,8 @@ public abstract class AbstractYamlProcessor<P extends Processor> implements Proc
 
     public static final ContentType YAML_CONTENT_TYPE =
         new ContentType("YAML")
-            .withType("text/yaml")
             .withType("application/yaml")
+            .withType("text/yaml")
             .withSuffix(".yaml")
             .withSuffix(".yml");
 
