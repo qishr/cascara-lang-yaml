@@ -35,9 +35,9 @@
 
 package io.github.qishr.cascara.lang.yaml.diagnostic;
 
-import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
+import io.github.qishr.cascara.common.diagnostic.message.DiagnosticMessage;
 
-public enum YamlDiagnosticCode implements DiagnosticCode {
+public enum YamlDiagnosticMessage implements DiagnosticMessage {
 
     ERROR("YAML-101", "{0}"),
     TABS_NOT_ALLOWED_AS_INDENTATION("YAML-102", "Tabs are not allowed as indentation"),
@@ -110,13 +110,13 @@ public enum YamlDiagnosticCode implements DiagnosticCode {
     UNEXPECTED_NODE_TYPE("YAML-301", "Unexpected node type: {0}");
 
     private final String code;
-    private final String message;
+    private final String format;
 
-    YamlDiagnosticCode(String code, String message) {
+    YamlDiagnosticMessage(String code, String format) {
         this.code = code;
-        this.message = message;
+        this.format = format;
     }
 
     @Override public String getCode() { return code; }
-    @Override public String getMessage() { return message; }
+    @Override public String getFormat() { return format; }
 }

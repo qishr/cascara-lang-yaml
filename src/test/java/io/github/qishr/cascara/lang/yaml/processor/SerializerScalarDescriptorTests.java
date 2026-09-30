@@ -104,8 +104,8 @@ public class SerializerScalarDescriptorTests extends SerializerTestBase {
     void testCustomSerializer() {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
+        // This is required as PersonSerializer has a @NoAutoRegistration annotation
         TypeDescriptor<?> personSerializer = new PersonSerializer();
-
         yamlSerializer.registerTypeDescriptor(personSerializer);
 
         Person person = new Person("Dave", "Smith", "31");
@@ -124,15 +124,16 @@ public class SerializerScalarDescriptorTests extends SerializerTestBase {
     void testByteArray() {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
-        // TODO: Remove this...
-        // yamlSerializer.setReporter(new StandardReporter().setLevel(Level.DEBUG));
-
-        // THis is called here because tests runnig from Gradle don't have SPI
-        yamlSerializer.registerTypeDescriptor(new ByteArrayDescriptor());
+        // This is not require as the serializer gets it from SPL:
+        // yamlSerializer.registerTypeDescriptor(new ByteArrayDescriptor());
 
         Person person = new Person("Dave", "Smith", "31");
         person.setBytes(new byte[]{1,2,3});
 
+        // TODO: This uses PersonSerializer because SPL finds it.
+        // We probably need a way of choosing not to use it.
+        // Perhaps an annotation to say "don't auto-register this at SPL boot time"
+        // or just "don't auto-register this" ?
         String yaml = yamlSerializer.toString(person);
 
         String expected = """

@@ -54,7 +54,7 @@ import io.github.qishr.cascara.common.lang.util.SourceBuffer;
 import io.github.qishr.cascara.common.lang.util.SourceInputStreamBuffer;
 import io.github.qishr.cascara.common.lang.util.SourceStringBuffer;
 import io.github.qishr.cascara.common.util.StringUtils;
-import io.github.qishr.cascara.lang.yaml.diagnostic.YamlDiagnosticCode;
+import io.github.qishr.cascara.lang.yaml.diagnostic.YamlDiagnosticMessage;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlProcessor;
 import io.github.qishr.cascara.lang.yaml.token.YamlErrorToken;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
@@ -344,7 +344,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
         if (c == '#') {
 
             if (!isWhitespace(buffer.previous()) && buffer.offset() != 0) {
-                error(YamlDiagnosticCode.COMMENT_NOT_SEPARATED);
+                error(YamlDiagnosticMessage.COMMENT_NOT_SEPARATED);
             }
 
             advance();
@@ -376,7 +376,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
         if (c == '-') {
             if (lineHasTabs) {
-                error(YamlDiagnosticCode.TABS_NOT_ALLOWED_AS_INDENTATION);
+                error(YamlDiagnosticMessage.TABS_NOT_ALLOWED_AS_INDENTATION);
             }
             if (buffer.offset() + 1 >= buffer.length()) {
                 isDocumentLevel = false;
@@ -434,7 +434,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
 
             if (lineHasTabs) {
             // if (lineHasTabs || next == '\t') {
-                error(YamlDiagnosticCode.TABS_NOT_ALLOWED_AS_INDENTATION);
+                error(YamlDiagnosticMessage.TABS_NOT_ALLOWED_AS_INDENTATION);
             }
 
             boolean isAtEnd = buffer.offset() + 1 == buffer.length();
@@ -567,7 +567,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                 } else if (next ==' ' || next == '\t') {
                     advance();
                 } else {
-                    error(YamlDiagnosticCode.BLOCK_SCALAR_HEADER_EXTRA, next);
+                    error(YamlDiagnosticMessage.BLOCK_SCALAR_HEADER_EXTRA, next);
                     break;
                 }
                 prev = next;
@@ -576,7 +576,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             char c = buffer.peek();
             if (c == '#') {
                 if (!(prev == ' ' || prev == '\t')) {
-                    error(YamlDiagnosticCode.COMMENT_NOT_SEPARATED);
+                    error(YamlDiagnosticMessage.COMMENT_NOT_SEPARATED);
                 }
                 // TODO: inline comments
                 advance();
@@ -586,7 +586,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             } else if (c != '\n') {
                 while (!buffer.isAtEnd() && buffer.peek() != '\n') {
                     if (buffer.peek() != ' ' && buffer.peek() != '\t' && buffer.peek() != '\r' ) {
-                        error(YamlDiagnosticCode.BLOCK_SCALAR_HEADER_EXTRA, buffer.peek());
+                        error(YamlDiagnosticMessage.BLOCK_SCALAR_HEADER_EXTRA, buffer.peek());
                     }
                     advance();
                 }
@@ -750,7 +750,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                             scalarStyle != ScalarStyle.SINGLE_QUOTED &&
                             scalarStyle != ScalarStyle.LITERAL &&
                             !isValidEscape(c, scalarStyle)) {
-                            error(YamlDiagnosticCode.INVALID_ESCAPE, "\\" + c);
+                            error(YamlDiagnosticMessage.INVALID_ESCAPE, "\\" + c);
                         }
                         isCharEscaped = false;
                     } else {
@@ -767,7 +767,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
                             // TODO: set mostSpacesInBlankLine
 
                             if (isBlock && mostSpacesInBlankLine > blockIndent) {
-                                error(YamlDiagnosticCode.EXPLICIT_INDENTATION_INDICATOR_NEEDED);
+                                error(YamlDiagnosticMessage.EXPLICIT_INDENTATION_INDICATOR_NEEDED);
                             }
                         } else {
                             if (startsOnNewLine || lineNum > 0) {
@@ -1030,10 +1030,10 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             // We exited due to reaching the end of the buffer.
             // This line is already in the string builders.
             if (scalarStyle == ScalarStyle.SINGLE_QUOTED) {
-                error(YamlDiagnosticCode.EXPECTED_CLOSE_SINGLE_QUOTE);
+                error(YamlDiagnosticMessage.EXPECTED_CLOSE_SINGLE_QUOTE);
                 return;
             } else if (scalarStyle == ScalarStyle.DOUBLE_QUOTED) {
-                error(YamlDiagnosticCode.EXPECTED_CLOSE_DOUBLE_QUOTE);
+                error(YamlDiagnosticMessage.EXPECTED_CLOSE_DOUBLE_QUOTE);
                 return;
             }
             currLineTrimmed = null;
@@ -1684,7 +1684,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
     // Errors & Diagnostics
     //
 
-    private void error(YamlDiagnosticCode msgCode, Object... details) {
+    private void error(YamlDiagnosticMessage msgCode, Object... details) {
         YamlErrorToken errorToken = new YamlErrorToken(
             buffer.line(),
             buffer.column(),

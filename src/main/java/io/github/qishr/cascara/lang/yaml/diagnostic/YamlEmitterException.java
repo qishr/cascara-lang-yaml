@@ -35,17 +35,17 @@
 
 package io.github.qishr.cascara.lang.yaml.diagnostic;
 
-import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
+import io.github.qishr.cascara.common.diagnostic.message.DiagnosticMessage;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.LocatableException;
 
 public class YamlEmitterException extends LocatableException {
 
-    public YamlEmitterException(Throwable cause, DiagnosticCode code, Object... details) {
+    public YamlEmitterException(Throwable cause, DiagnosticMessage code, Object... details) {
         super(null, Diagnostic.UNKNOWN_COORD, Diagnostic.UNKNOWN_COORD, cause, code, details);
     }
 
-    public YamlEmitterException(DiagnosticCode code, Object... details) {
+    public YamlEmitterException(DiagnosticMessage code, Object... details) {
         this(null, code, details);
     }
 

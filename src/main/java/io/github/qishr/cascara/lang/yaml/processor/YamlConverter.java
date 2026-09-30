@@ -35,7 +35,7 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.lang.diagnostic.LangDiagnosticCode;
+import io.github.qishr.cascara.common.lang.diagnostic.LangMessage;
 import io.github.qishr.cascara.common.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.ast.MapAstNode;
@@ -104,7 +104,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
             return yamlScalar;
         } else {
             String name = (ast == null) ? "null" : ast.getClass().getSimpleName();
-            throw new YamlConverterException(LangDiagnosticCode.UNKNOWN_NODE_TYPE, name);
+            throw new YamlConverterException(LangMessage.UNKNOWN_NODE_TYPE, name);
         }
     }
 
@@ -135,7 +135,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         }
 
         throw new YamlConverterException(
-            LangDiagnosticCode.UNKNOWN_NODE_TYPE,
+            LangMessage.UNKNOWN_NODE_TYPE,
             yaml.getClass().getSimpleName()
         );
     }

@@ -44,8 +44,8 @@ import java.util.List;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.code.DiagnosticCode;
-import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
+import io.github.qishr.cascara.common.diagnostic.message.DiagnosticMessage;
+import io.github.qishr.cascara.common.diagnostic.message.GenericMessage;
 import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.lang.diagnostic.SerializerException;
 import io.github.qishr.cascara.common.lang.processor.AbstractSerializer;
@@ -65,7 +65,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNodeProperty;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
-import io.github.qishr.cascara.lang.yaml.diagnostic.YamlDiagnosticCode;
+import io.github.qishr.cascara.lang.yaml.diagnostic.YamlDiagnosticMessage;
 import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlProcessor;
 import io.github.qishr.cascara.lang.yaml.internal.DebugUtils;
@@ -155,7 +155,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     @Override
     public YamlSerializer setParser(AstParser<YamlNode,?,?> parser) {
         if (!(parser instanceof YamlAstParser YamlAstParser)) {
-            throw new SerializerException(GenericDiagnosticCode.ERROR, "Parser must be a YamlAstParser");
+            throw new SerializerException(GenericMessage.ERROR, "Parser must be a YamlAstParser");
         }
         this.parser = YamlAstParser;
         return this;
@@ -326,7 +326,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
             case YamlSequence sequence -> emitSequence(sequence, isMapKey, isSequenceItem, isInsideFlow);
             case YamlScalar scalar -> emitScalar(scalar, isMapKey, isSequenceItem, isInsideFlow);
             case YamlAlias alias -> emitAlias(alias, isMapKey, isSequenceItem, isInsideFlow);
-            default -> error(node, YamlDiagnosticCode.UNEXPECTED_NODE_TYPE,
+            default -> error(node, YamlDiagnosticMessage.UNEXPECTED_NODE_TYPE,
                              node.getClass().getSimpleName());
         }
     }
@@ -596,7 +596,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                     text = formatScalar(scalar);
                 }
             } else {
-                warn(GenericDiagnosticCode.WARN, "formatLexeme called");
+                warn(GenericMessage.WARN, "formatLexeme called");
                 text = scalar.getLexeme();
             }
 
@@ -1088,14 +1088,14 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         newLineAlreadyEmitted = true;
     }
 
-    protected void error(YamlNode node, DiagnosticCode code, Object... details) {
+    protected void error(YamlNode node, DiagnosticMessage code, Object... details) {
         reporter.errorAt(node.getToken(), code, details);
         if (!reporter.collectsProblems()) {
             throw new YamlParserException(node.getToken(), code, details);
         }
     }
 
-    protected void warn(YamlToken token, DiagnosticCode code, Object... details) {
+    protected void warn(YamlToken token, DiagnosticMessage code, Object... details) {
         reporter.warnAt(token, code, details);
     }
 

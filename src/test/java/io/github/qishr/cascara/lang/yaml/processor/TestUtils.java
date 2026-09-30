@@ -77,7 +77,7 @@ public class TestUtils {
                         String.format("%2d", i),
                         t.getType().toString(),
                         String.format("L:%-3d C:%-3d", t.getStartLine(), t.getStartColumn()),
-                        "", et.getCode().getMessage()
+                        "", et.getCode().getFormat()
                     );
                     break;
                 case SCALAR, ALIAS, ANCHOR, TAG, COMMENT:

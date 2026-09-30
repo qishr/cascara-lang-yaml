@@ -35,7 +35,7 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.diagnostic.code.GenericDiagnosticCode;
+import io.github.qishr.cascara.common.diagnostic.message.GenericMessage;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.diagnostic.SerializerException;
 import io.github.qishr.cascara.common.lang.type.AbstractTypeDescriptor;
@@ -76,7 +76,7 @@ public abstract class AbstractYamlTypeSerializer<T> extends AbstractTypeDescript
             return this.deserialize(yamlNode);
         }
         throw new SerializerException(
-            GenericDiagnosticCode.ERROR,
+            GenericMessage.ERROR,
             "Expected a YamlNode branch, but received: " + node.getClass().getSimpleName()
         );
     }

@@ -15,7 +15,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
-import io.github.qishr.cascara.lang.yaml.diagnostic.YamlDiagnosticCode;
+import io.github.qishr.cascara.lang.yaml.diagnostic.YamlDiagnosticMessage;
 
 public class YamlAliasResolver {
 
@@ -39,7 +39,7 @@ public class YamlAliasResolver {
         if (root == null) return null;
         YamlNode resolved = resolve(root, 0);
         if (resolved == null) {
-            reporter.error(YamlDiagnosticCode.DEPTH_LIMIT);
+            reporter.error(YamlDiagnosticMessage.DEPTH_LIMIT);
         }
         return resolved;
     }
@@ -58,7 +58,7 @@ public class YamlAliasResolver {
         if (stream == null) return null;
         YamlStream resolved = resolve(stream, 0);
         if (resolved == null) {
-            reporter.error(YamlDiagnosticCode.ERROR, "Unresolved alias");
+            reporter.error(YamlDiagnosticMessage.ERROR, "Unresolved alias");
         }
         return resolved;
     }

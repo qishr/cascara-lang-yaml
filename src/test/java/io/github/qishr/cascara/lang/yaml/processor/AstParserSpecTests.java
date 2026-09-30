@@ -837,7 +837,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         // reporter.getWriter(Level.WARN).write("Sample warning\n");
 
         // reporter.error(new LocalizableRuntimeException(
-        //     new Exception("Sample error"), GenericDiagnosticCode.ERROR, "Sample error")
+        //     new Exception("Sample error"), GenericMessage.ERROR, "Sample error")
         // );
 
         if (DEBUG) {
