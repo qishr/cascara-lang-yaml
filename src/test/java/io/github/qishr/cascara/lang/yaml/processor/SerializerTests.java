@@ -44,7 +44,7 @@ import java.net.URI;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.lang.diagnostic.SerializerException;
-import io.github.qishr.cascara.common.lang.type.UriTypeDescriptor;
+import io.github.qishr.cascara.common.lang.type.UriDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.util.ColorDefinition;
 import io.github.qishr.cascara.lang.yaml.util.LongObject;
@@ -126,7 +126,7 @@ class SerializerTests extends SerializerTestBase {
         uri.uri = URI.create("http://io.com");
         // YamlSerializer yamlSerializer = new YamlSerializer();
 
-        UriTypeDescriptor uriTypeDescriptor = new UriTypeDescriptor();
+        UriDescriptor uriTypeDescriptor = new UriDescriptor();
         serializer.registerTypeDescriptor(uriTypeDescriptor);
 
         String yaml = serializer.toString(uri);

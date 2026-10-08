@@ -35,7 +35,7 @@
 
 package io.github.qishr.cascara.lang.yaml.util;
 
-import io.github.qishr.cascara.common.lang.util.AstNodeFactory;
+import io.github.qishr.cascara.common.lang.ast.AstNodeFactory;
 import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;

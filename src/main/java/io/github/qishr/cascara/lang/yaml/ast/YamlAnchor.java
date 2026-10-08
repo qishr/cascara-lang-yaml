@@ -40,7 +40,6 @@ import java.util.Objects;
 
 import io.github.qishr.cascara.common.annotation.Nullable;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
-import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 public class YamlAnchor extends YamlNodeProperty {
     private final String name;

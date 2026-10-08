@@ -39,20 +39,21 @@ import io.github.qishr.cascara.common.lang.diagnostic.ParserException;
 import io.github.qishr.cascara.common.lang.processor.PushParser;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlParser;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;
+import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEventType;
 import io.github.qishr.cascara.common.lang.streaming.StreamHandler;
 
 import java.io.InputStream;
 
-public class YamlPushParser extends AbstractYamlParser<YamlPushParser> implements PushParser {
+public class YamlPushParser extends AbstractYamlParser<YamlPushParser> implements PushParser<YamlStreamingEventType,YamlStreamingEvent> {
 
-    StreamHandler handler;
+    StreamHandler<YamlStreamingEvent> handler;
 
     public YamlPushParser() {}
 
     @Override protected YamlPushParser self() { return this; }
 
     @Override
-    public void parse(InputStream input, StreamHandler handler) throws ParserException {
+    public void parse(InputStream input, StreamHandler<YamlStreamingEvent> handler) throws ParserException {
         this.handler = handler;
         preParseStateInit();
 

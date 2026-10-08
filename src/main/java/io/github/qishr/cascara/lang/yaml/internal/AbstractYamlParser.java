@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
 
 import io.github.qishr.cascara.common.diagnostic.AbstractLocalizableException;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
@@ -1549,24 +1548,6 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             }
             tokenBuffer.advance();
             onMarkerLine = false;
-        }
-    }
-
-    private void parseBlockComments() {
-        while (!tokenBuffer.isAtEnd()) {
-            if (check(YamlTokenType.COMMENT)) {
-                YamlComment comment = parseComment(CommentStyle.LEADING);
-                pendingComments.add(comment);
-                continue;
-            } else if (checkIndented(YamlTokenType.COMMENT)) {
-                tokenBuffer.advance();
-                YamlComment comment = parseComment(CommentStyle.LEADING);
-                pendingComments.add(comment);
-                tokenBuffer.advance();
-                continue;
-            } else {
-                break;
-            }
         }
     }
 

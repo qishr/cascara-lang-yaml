@@ -20,7 +20,6 @@ import io.github.qishr.cascara.lang.yaml.diagnostic.YamlDiagnosticMessage;
 public class YamlAliasResolver {
 
     private Reporter reporter = new NoOpReporter();
-    private int depth;
 
     public YamlAliasResolver() {
 

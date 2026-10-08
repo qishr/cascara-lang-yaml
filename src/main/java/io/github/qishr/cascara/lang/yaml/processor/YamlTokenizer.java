@@ -438,7 +438,7 @@ public class YamlTokenizer extends AbstractYamlProcessor<YamlTokenizer> implemen
             }
 
             boolean isAtEnd = buffer.offset() + 1 == buffer.length();
-            boolean prevTokenWasColon = (previousNonWhitespaceToken != null && previousNonWhitespaceToken.getType() == YamlTokenType.VALUE_INDICATOR);
+            // boolean prevTokenWasColon = (previousNonWhitespaceToken != null && previousNonWhitespaceToken.getType() == YamlTokenType.VALUE_INDICATOR);
 
             boolean nextCharIsWhitespace = isWhitespace(next);
 
