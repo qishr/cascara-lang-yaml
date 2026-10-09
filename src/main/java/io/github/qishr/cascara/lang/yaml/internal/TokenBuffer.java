@@ -37,7 +37,7 @@ package io.github.qishr.cascara.lang.yaml.internal;
 import java.io.InputStream;
 import java.io.Reader;
 
-import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.diagnostic.report.Reporter;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 

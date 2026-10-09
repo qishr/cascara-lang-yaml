@@ -36,8 +36,8 @@
 package io.github.qishr.cascara.lang.yaml.internal;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.diagnostic.report.NoOpReporter;
+import io.github.qishr.cascara.common.diagnostic.report.Reporter;
 import io.github.qishr.cascara.common.lang.processor.Processor;
 import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.semver.SemVer;

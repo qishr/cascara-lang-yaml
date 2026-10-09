@@ -13,8 +13,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.diagnostic.report.Reporter;
+import io.github.qishr.cascara.common.diagnostic.report.LocalReporter;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
@@ -32,7 +32,7 @@ public class SerializerTestBase extends AstParserTestBase {
     protected void setup() {
         super.setup();
 
-        serializerReporter = new StandardReporter()
+        serializerReporter = new LocalReporter()
             .setLevel(SERIALIZER_LEVEL)
             .setAnsiColoringEnabled(true)
             .setFlushEnabled(true)
@@ -57,7 +57,7 @@ public class SerializerTestBase extends AstParserTestBase {
 
         if (DEBUG){
             YamlTokenizer tz = new YamlTokenizer()
-                .setReporter(new StandardReporter()
+                .setReporter(new LocalReporter()
                     .setLevel(Level.DEBUG)
                     .setAnsiColoringEnabled(true)
             );
@@ -132,7 +132,7 @@ public class SerializerTestBase extends AstParserTestBase {
 
     private void traceParser(String content, String title) {
         System.out.println("\n=== Parser Trace for " + title + " ===");
-        parserReporter = new StandardReporter().setLevel(Level.TRACE);
+        parserReporter = new LocalReporter().setLevel(Level.TRACE);
         YamlAstParser parser = new YamlAstParser()
             .setReporter(parserReporter);
         parser.parse(content);

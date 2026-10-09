@@ -42,7 +42,7 @@ import java.time.ZonedDateTime;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.lang.type.DateTimeDescriptor;
+import io.github.qishr.cascara.common.lang.type.ZonedDateTimeDescriptor;
 import io.github.qishr.cascara.common.lang.type.TypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.util.LongInstant;
@@ -55,7 +55,7 @@ public class SerializerScalarDescriptorTests extends SerializerTestBase {
     void testDateScalarDescriptor() {
         YamlSerializer yamlSerializer = new YamlSerializer();
 
-        DateTimeDescriptor dateScalarDescriptor = new DateTimeDescriptor();
+        ZonedDateTimeDescriptor dateScalarDescriptor = new ZonedDateTimeDescriptor();
         yamlSerializer.registerTypeDescriptor(dateScalarDescriptor);
 
         ZonedDateTime dt = ZonedDateTime.now();

@@ -5,9 +5,9 @@ import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
-import io.github.qishr.cascara.common.diagnostic.LocalizableIOException;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.diagnostic.exception.LocalizableIOException;
+import io.github.qishr.cascara.common.diagnostic.report.Reporter;
+import io.github.qishr.cascara.common.diagnostic.report.LocalReporter;
 import io.github.qishr.cascara.common.lang.plain.PlainMapNode;
 import io.github.qishr.cascara.common.lang.plain.PlainNode;
 import io.github.qishr.cascara.common.lang.plain.PlainSequenceNode;
@@ -45,7 +45,7 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         if (DUMP_TOKENS) {
             YamlTokenizer tokenizer = new YamlTokenizer()
-                .setReporter(new StandardReporter().setLevel(TOKENIZER_LEVEL).setAnsiColoringEnabled(true));
+                .setReporter(new LocalReporter().setLevel(TOKENIZER_LEVEL).setAnsiColoringEnabled(true));
             List<YamlToken> tokens = tokenizer.tokenize(yaml);
             TestUtils.dumpTokens(tokens);
         }
@@ -106,7 +106,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         //
         if (DUMP_TOKENS) {
             YamlTokenizer tokenizer = new YamlTokenizer()
-                .setReporter(new StandardReporter().setLevel(TOKENIZER_LEVEL).setAnsiColoringEnabled(true));
+                .setReporter(new LocalReporter().setLevel(TOKENIZER_LEVEL).setAnsiColoringEnabled(true));
             List<YamlToken> tokens = tokenizer.tokenize(yaml);
             TestUtils.dumpTokens(tokens);
         }
@@ -182,7 +182,7 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         // Collect diagnostics
         List<Diagnostic> diagnostics = new ArrayList<>();
-        StandardReporter reporter = new StandardReporter()
+        LocalReporter reporter = new LocalReporter()
             // .setLevel(LEVEL)
             .setAnsiColoringEnabled(true)
             .setDiagnosticConsumer(d -> {
@@ -275,7 +275,7 @@ public class AstParserSpecTests extends AstParserTestBase {
             """;
 
         if (DEBUG) {
-            YamlTokenizer tz = new YamlTokenizer().setReporter(new StandardReporter().setLevel(Level.TRACE));
+            YamlTokenizer tz = new YamlTokenizer().setReporter(new LocalReporter().setLevel(Level.TRACE));
             TestUtils.dumpTokens(tz.tokenize(yaml));
         }
 
@@ -295,7 +295,7 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         if (DEBUG) {
             YamlTokenizer tokenizer = new YamlTokenizer();
-            tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
+            tokenizer.setReporter(new LocalReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
             List<YamlToken> tokens = tokenizer.tokenize(yaml);
             TestUtils.dumpTokens(tokens);
         }
@@ -866,7 +866,7 @@ public class AstParserSpecTests extends AstParserTestBase {
 
            """;
 
-        // parser.getTokenizer().setReporter(new StandardReporter().setLevel(Level.DEBUG));
+        // parser.getTokenizer().setReporter(new LocalReporter().setLevel(Level.DEBUG));
 
         YamlStream stream = parser.parseMulti(yaml);
 
@@ -1123,13 +1123,13 @@ public class AstParserSpecTests extends AstParserTestBase {
             """;
 
         // parser.getTokenizer().setReporter(
-        //     new StandardReporter()
+        //     new LocalReporter()
         //         .setLevel(TOKENIZER_LEVEL)
         //         .setAnsiColoringEnabled(true)
         // );
 
         // parser.setReporter(
-        //     new StandardReporter()
+        //     new LocalReporter()
         //         .setLevel(Level.DEBUG)
         //         .setAnsiColoringEnabled(true)
         // );
@@ -1169,13 +1169,13 @@ public class AstParserSpecTests extends AstParserTestBase {
             """;
 
         // parser.getTokenizer().setReporter(
-        //     new StandardReporter()
+        //     new LocalReporter()
         //         .setLevel(TOKENIZER_LEVEL)
         //         .setAnsiColoringEnabled(true)
         // );
 
         // parser.setReporter(
-        //     new StandardReporter()
+        //     new LocalReporter()
         //         .setLevel(Level.DEBUG)
         //         .setAnsiColoringEnabled(true)
         // );
@@ -1214,13 +1214,13 @@ public class AstParserSpecTests extends AstParserTestBase {
             """;
 
         // parser.getTokenizer().setReporter(
-        //     new StandardReporter()
+        //     new LocalReporter()
         //         .setLevel(TOKENIZER_LEVEL)
         //         .setAnsiColoringEnabled(true)
         // );
 
         // parser.setReporter(
-        //     new StandardReporter()
+        //     new LocalReporter()
         //         .setLevel(Level.DEBUG)
         //         .setAnsiColoringEnabled(true)
         // );
@@ -1251,7 +1251,7 @@ public class AstParserSpecTests extends AstParserTestBase {
     public void test9YRD() {
         String yaml = "a\nb  \n  c\nd\n\ne";
 
-        Reporter reporter = new StandardReporter()
+        Reporter reporter = new LocalReporter()
             .setLevel(TOKENIZER_LEVEL)
             .setAnsiColoringEnabled(true);
 
@@ -1288,7 +1288,7 @@ public class AstParserSpecTests extends AstParserTestBase {
              - sequence entry
             """;
 
-        // Reporter reporter =  new StandardReporter()
+        // Reporter reporter =  new LocalReporter()
         //     .setLevel(TOKENIZER_LEVEL)
         //     .setAnsiColoringEnabled(true);
 
@@ -1441,7 +1441,7 @@ public class AstParserSpecTests extends AstParserTestBase {
     public void testDE56_02() {
         String yaml = "3 trailing\\\t\n    tab";
 
-        Reporter reporter =  new StandardReporter()
+        Reporter reporter =  new LocalReporter()
             .setLevel(TOKENIZER_LEVEL)
             .setAnsiColoringEnabled(true);
 
@@ -1476,7 +1476,7 @@ public class AstParserSpecTests extends AstParserTestBase {
     public void testDWX9() {
         String yaml = "|\n \n  \n  literal\n   \n  \n  text\n\n # Comment";
 
-        Reporter reporter =  new StandardReporter()
+        Reporter reporter =  new LocalReporter()
             .setLevel(TOKENIZER_LEVEL)
             .setAnsiColoringEnabled(true);
 
@@ -1519,7 +1519,7 @@ public class AstParserSpecTests extends AstParserTestBase {
             tie-fighter: '|\\-*-/|'
             """;
 
-        Reporter reporter =  new StandardReporter()
+        Reporter reporter =  new LocalReporter()
             .setLevel(TOKENIZER_LEVEL)
             .setAnsiColoringEnabled(true);
 
@@ -1560,7 +1560,7 @@ public class AstParserSpecTests extends AstParserTestBase {
     public void testHS5T() {
         String yaml = "1st non-empty\n\n 2nd non-empty \n\t3rd non-empty";
 
-        // Reporter reporter =  new StandardReporter()
+        // Reporter reporter =  new LocalReporter()
         //     .setLevel(TOKENIZER_LEVEL)
         //     .setAnsiColoringEnabled(true);
 
@@ -1595,7 +1595,7 @@ public class AstParserSpecTests extends AstParserTestBase {
     public void testJEF9_02() {
         String yaml = "- |+\n   ";
 
-        // Reporter reporter =  new StandardReporter()
+        // Reporter reporter =  new LocalReporter()
         //     .setLevel(Level.DEBUG)
         //     .setAnsiColoringEnabled(true);
 
@@ -1633,7 +1633,7 @@ public class AstParserSpecTests extends AstParserTestBase {
               regular2
             """;
 
-        Reporter reporter =  new StandardReporter()
+        Reporter reporter =  new LocalReporter()
             .setLevel(TOKENIZER_LEVEL)
             .setAnsiColoringEnabled(true);
 

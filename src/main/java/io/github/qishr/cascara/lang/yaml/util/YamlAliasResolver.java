@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.diagnostic.report.NoOpReporter;
+import io.github.qishr.cascara.common.diagnostic.report.Reporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlDocument;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;

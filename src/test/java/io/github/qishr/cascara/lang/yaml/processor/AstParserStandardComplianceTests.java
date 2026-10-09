@@ -45,8 +45,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.diagnostic.report.Reporter;
+import io.github.qishr.cascara.common.diagnostic.report.LocalReporter;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
 
@@ -69,7 +69,7 @@ class AstParserStandardComplianceTests extends AstParserTestBase {
     @BeforeEach
     void init() {
         diagnostics = new ArrayList<>();
-        reporter = new StandardReporter().setProblemConsumer(this::collect);
+        reporter = new LocalReporter().setProblemConsumer(this::collect);
         options = new YamlOptions().setStrict(true);
         parser = new YamlAstParser()
             .setOptions(options)

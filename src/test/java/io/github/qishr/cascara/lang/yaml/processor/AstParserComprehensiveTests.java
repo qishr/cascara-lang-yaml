@@ -42,8 +42,8 @@ import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.diagnostic.report.Reporter;
+import io.github.qishr.cascara.common.diagnostic.report.LocalReporter;
 import io.github.qishr.cascara.common.lang.diagnostic.ParserException;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
@@ -166,7 +166,7 @@ class AstParserComprehensiveTests extends AstParserTestBase {
         String yaml = "key:\n\t- item";
 
         if (DEBUG) {
-            Reporter reporter = new StandardReporter()
+            Reporter reporter = new LocalReporter()
             .setLevel(Level.DEBUG)
             .setAnsiColoringEnabled(true)
             .setStackTraceEnabled(true);

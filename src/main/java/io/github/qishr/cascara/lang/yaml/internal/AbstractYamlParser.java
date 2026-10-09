@@ -43,7 +43,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.github.qishr.cascara.common.diagnostic.AbstractLocalizableException;
+import io.github.qishr.cascara.common.diagnostic.exception.AbstractLocalizableException;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.message.DiagnosticMessage;
 import io.github.qishr.cascara.common.diagnostic.message.GenericMessage;

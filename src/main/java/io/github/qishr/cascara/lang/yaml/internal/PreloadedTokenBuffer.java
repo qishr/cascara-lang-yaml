@@ -40,8 +40,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.NoOpReporter;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.diagnostic.report.NoOpReporter;
+import io.github.qishr.cascara.common.diagnostic.report.Reporter;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.processor.YamlTokenizer;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;

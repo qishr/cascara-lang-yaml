@@ -34,7 +34,7 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.diagnostic.report.Reporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;

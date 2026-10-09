@@ -67,7 +67,7 @@ public class SerializerParsedYamlTests extends SerializerTestBase {
 
 
         // TODO: make diagnostics for all tests configurable in one place
-        // parser.setReporter(new StandardReporter((s) -> {
+        // parser.setReporter(new LocalReporter((s) -> {
         //     System.err.print(s);
         // }).setLevel(Level.TRACE));
 

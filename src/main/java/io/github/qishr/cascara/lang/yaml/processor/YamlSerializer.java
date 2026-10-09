@@ -43,7 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.Reporter;
+import io.github.qishr.cascara.common.diagnostic.report.Reporter;
 import io.github.qishr.cascara.common.diagnostic.message.DiagnosticMessage;
 import io.github.qishr.cascara.common.diagnostic.message.GenericMessage;
 import io.github.qishr.cascara.common.lang.util.LanguageOptions;

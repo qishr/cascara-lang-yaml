@@ -50,7 +50,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.diagnostic.report.LocalReporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
@@ -137,7 +137,7 @@ public class AstParserTests extends AstParserTestBase {
 
         if (DEBUG) {
             YamlTokenizer tokenizer = new YamlTokenizer()
-                .setReporter(new StandardReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
+                .setReporter(new LocalReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
             List<YamlToken> tokens = tokenizer.tokenize(yaml);
             TestUtils.dumpTokens(tokens);
         }

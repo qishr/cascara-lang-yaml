@@ -172,7 +172,7 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
         try (YamlPullParser parser = newParser(inputStream)) {
 
-            // parser.setReporter(new StandardReporter()
+            // parser.setReporter(new LocalReporter()
             //     .setLevel(Level.TRACE)
             //     .setAnsiColoringEnabled(true)
             // );

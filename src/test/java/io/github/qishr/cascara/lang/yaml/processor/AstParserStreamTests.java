@@ -35,7 +35,7 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.diagnostic.report.LocalReporter;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.lang.yaml.ast.*;
 import io.github.qishr.cascara.lang.yaml.util.DirectiveType;
@@ -101,7 +101,7 @@ class AstParserStreamTests extends AstParserTestBase {
 
         if (true|DEBUG) {
             parser.getTokenizer().setReporter(
-                new StandardReporter()
+                new LocalReporter()
                     .setLevel(Level.DEBUG)
                     .setAnsiColoringEnabled(true)
             );

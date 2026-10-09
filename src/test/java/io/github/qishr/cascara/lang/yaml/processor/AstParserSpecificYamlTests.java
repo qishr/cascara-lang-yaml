@@ -45,7 +45,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.StandardReporter;
+import io.github.qishr.cascara.common.diagnostic.report.LocalReporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
@@ -67,7 +67,7 @@ class AstParserSpecificYamlTests extends AstParserTestBase {
 
         if (DEBUG) {
             YamlTokenizer tokenizer = new YamlTokenizer().setReporter(
-                new StandardReporter()
+                new LocalReporter()
                     .setLevel(Level.TRACE)
                     .setAnsiColoringEnabled(true)
             );
@@ -167,7 +167,7 @@ class AstParserSpecificYamlTests extends AstParserTestBase {
 
         if (DEBUG) {
             parser.getTokenizer().setReporter(
-                new StandardReporter()
+                new LocalReporter()
                     .setLevel(Level.DEBUG)
                     .setAnsiColoringEnabled(true)
             );
@@ -266,7 +266,7 @@ class AstParserSpecificYamlTests extends AstParserTestBase {
 
         if (DEBUG) {
             YamlTokenizer tokenizer = new YamlTokenizer();
-            tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG));
+            tokenizer.setReporter(new LocalReporter().setLevel(Level.DEBUG));
             List<YamlToken> tokens = tokenizer.tokenize(yamlString);
             TestUtils.dumpTokens(tokens);
         }
@@ -307,7 +307,7 @@ class AstParserSpecificYamlTests extends AstParserTestBase {
 
             if (DEBUG) {
                 YamlTokenizer tokenizer = new YamlTokenizer();
-                tokenizer.setReporter(new StandardReporter().setLevel(Level.DEBUG));
+                tokenizer.setReporter(new LocalReporter().setLevel(Level.DEBUG));
                 List<YamlToken> tokens = tokenizer.tokenize(yamlString);
                     TestUtils.dumpTokens(tokens);
             }
@@ -328,7 +328,7 @@ class AstParserSpecificYamlTests extends AstParserTestBase {
         if (DEBUG) {
             YamlTokenizer tokenizer = new YamlTokenizer();
             tokenizer.setReporter(
-                new StandardReporter()
+                new LocalReporter()
                     .setLevel(Level.DEBUG)
                     .setAnsiColoringEnabled(true)
             );
