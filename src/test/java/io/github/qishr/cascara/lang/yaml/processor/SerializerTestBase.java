@@ -36,7 +36,7 @@ public class SerializerTestBase extends AstParserTestBase {
             .setLevel(SERIALIZER_LEVEL)
             .setAnsiColoringEnabled(true)
             .setFlushEnabled(true)
-            .setStackTraceEnabled(true);
+            .setStackTraceEnabled(STACK_TRACE);
 
         serializer = new YamlSerializer()
             .setReporter(serializerReporter);

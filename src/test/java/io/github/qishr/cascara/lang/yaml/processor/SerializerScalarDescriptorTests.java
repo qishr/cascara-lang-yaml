@@ -42,8 +42,8 @@ import java.time.ZonedDateTime;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.lang.type.ZonedDateTimeDescriptor;
-import io.github.qishr.cascara.common.lang.type.TypeDescriptor;
+import io.github.qishr.cascara.common.type.time.ZonedDateTimeDescriptor;
+import io.github.qishr.cascara.common.type.TypeDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.util.LongInstant;
 import io.github.qishr.cascara.lang.yaml.util.Person;

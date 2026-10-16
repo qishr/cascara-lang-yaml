@@ -44,7 +44,7 @@ import java.net.URI;
 import org.junit.jupiter.api.Test;
 
 import io.github.qishr.cascara.common.lang.diagnostic.SerializerException;
-import io.github.qishr.cascara.common.lang.type.UriDescriptor;
+import io.github.qishr.cascara.common.type.net.UriDescriptor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.util.ColorDefinition;
 import io.github.qishr.cascara.lang.yaml.util.LongObject;

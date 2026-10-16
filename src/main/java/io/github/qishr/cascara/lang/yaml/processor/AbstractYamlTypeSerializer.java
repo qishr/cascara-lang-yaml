@@ -35,12 +35,15 @@
 
 package io.github.qishr.cascara.lang.yaml.processor;
 
+import java.lang.reflect.Type;
+
 import io.github.qishr.cascara.common.diagnostic.message.GenericMessage;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.diagnostic.SerializerException;
-import io.github.qishr.cascara.common.lang.type.AbstractTypeDescriptor;
-import io.github.qishr.cascara.common.lang.type.PrimitiveType;
-import io.github.qishr.cascara.common.lang.type.TypeSerializer;
+import io.github.qishr.cascara.common.lang.processor.Serializer;
+import io.github.qishr.cascara.common.type.AbstractTypeDescriptor;
+import io.github.qishr.cascara.common.type.PrimitiveType;
+import io.github.qishr.cascara.common.type.TypeSerializer;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 
 public abstract class AbstractYamlTypeSerializer<T> extends AbstractTypeDescriptor<T> implements TypeSerializer<T> {
@@ -71,7 +74,7 @@ public abstract class AbstractYamlTypeSerializer<T> extends AbstractTypeDescript
 
     /// This explicitly overrides the top-level multi-format interface contract
     @Override
-    public final T deserialize(AstNode node) throws SerializerException {
+    public final T deserialize(AstNode node, Type targetType, Serializer.Context ctx) throws SerializerException {
         if (node instanceof YamlNode yamlNode) {
             return this.deserialize(yamlNode);
         }

@@ -46,12 +46,13 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.report.Reporter;
 import io.github.qishr.cascara.common.diagnostic.message.DiagnosticMessage;
 import io.github.qishr.cascara.common.diagnostic.message.GenericMessage;
+import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.util.LanguageOptions;
 import io.github.qishr.cascara.common.lang.diagnostic.SerializerException;
 import io.github.qishr.cascara.common.lang.processor.AbstractSerializer;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
-import io.github.qishr.cascara.common.lang.type.PrimitiveType;
-import io.github.qishr.cascara.common.lang.type.TypeReference;
+import io.github.qishr.cascara.common.type.PrimitiveType;
+import io.github.qishr.cascara.common.type.TypeReference;
 import io.github.qishr.cascara.common.util.ContentType;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.common.util.TermUtils;
@@ -251,14 +252,14 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
     /// {@inheritDoc}
     @Override
-    public <C> C fromAst(YamlNode astNode, Class<C> jvmType) {
+    public <C> C fromAst(AstNode astNode, Class<C> jvmType) {
         setupSerializer();
         return (C) deserialize(astNode, jvmType);
     }
 
     /// {@inheritDoc}
     @Override
-    public <C> C fromAst(YamlNode astNode, TypeReference<C> typeRef) {
+    public <C> C fromAst(AstNode astNode, TypeReference<C> typeRef) {
         setupSerializer();
         return (C) deserialize(astNode, typeRef);
     }
@@ -596,7 +597,12 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
                     text = formatScalar(scalar);
                 }
             } else {
-                warn(GenericMessage.WARN, "formatLexeme called");
+
+
+                // TODO:
+                // warn(GenericMessage.WARN, "formatLexeme called");
+
+
                 text = scalar.getLexeme();
             }
 

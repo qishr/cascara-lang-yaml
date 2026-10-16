@@ -1201,6 +1201,9 @@ public class StreamingPullParserTests extends StreamingPullParserTestBase {
             YamlStreamingEvent event = parser.next();
             assertNull(event);
         }
+
+        // TODO: Remove this
+        // Thread.sleep(60000);
     }
 
     // @Test

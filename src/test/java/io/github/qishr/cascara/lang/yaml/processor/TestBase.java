@@ -14,6 +14,7 @@ import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.YamlAliasResolver;
 
 public abstract class TestBase {
+
     protected static final Level TOKENIZER_LEVEL = Level.INFO;
     // protected static final Level TOKENIZER_LEVEL = Level.DEBUG;
 
@@ -24,6 +25,8 @@ public abstract class TestBase {
 
     protected static final Level SERIALIZER_LEVEL = Level.INFO;
     // protected static final Level SERIALIZER_LEVEL = Level.TRACE;
+
+    protected static boolean STACK_TRACE = false;
 
     protected static boolean DEBUG = false;
     // protected static boolean DEBUG = true;
@@ -47,19 +50,19 @@ public abstract class TestBase {
             .setLevel(Level.DEBUG)
             .setAnsiColoringEnabled(true)
             .setFlushEnabled(true)
-            .setStackTraceEnabled(true);
+            .setStackTraceEnabled(STACK_TRACE);
 
         tokenizerReporter = new LocalReporter()
             .setLevel(TOKENIZER_LEVEL)
             .setAnsiColoringEnabled(true)
             .setFlushEnabled(true)
-            .setStackTraceEnabled(true);
+            .setStackTraceEnabled(STACK_TRACE);
 
         parserReporter = new LocalReporter()
             .setLevel(PARSER_LEVEL)
             .setAnsiColoringEnabled(true)
             .setFlushEnabled(true)
-            .setStackTraceEnabled(true);
+            .setStackTraceEnabled(STACK_TRACE);
 
         // emitterReporter = new LocalReporter()
         //     .setLevel(EMITTER_LEVEL)

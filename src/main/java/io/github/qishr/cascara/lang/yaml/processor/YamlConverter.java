@@ -47,7 +47,7 @@ import io.github.qishr.cascara.common.lang.plain.PlainNode;
 import io.github.qishr.cascara.common.lang.plain.PlainScalarNode;
 import io.github.qishr.cascara.common.lang.plain.PlainSequenceNode;
 import io.github.qishr.cascara.common.lang.processor.AstConverter;
-import io.github.qishr.cascara.common.lang.type.PrimitiveType;
+import io.github.qishr.cascara.common.type.PrimitiveType;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
@@ -73,21 +73,10 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         if (ast instanceof MapAstNode astMap) {
             YamlMap yamlMap = new YamlMap();
             for (Object entry : astMap.getEntries()) {
-                // TODO: MapEntryAstNode should probably have a method of obtaining a string key
                 if (entry instanceof MapEntryAstNode astMapEntry) {
-                    if (astMapEntry.getKey() instanceof AstNode astKey) {
-                        AstNode astValue = astMapEntry.getValue();
-                        if (astKey instanceof ScalarAstNode astScalarKey) {
-                            YamlScalar yamlKey = new YamlScalar(astScalarKey.asString());
-                            YamlNode yamlValue = fromAst(astValue);
-                            yamlMap.put(yamlKey, yamlValue);
-                        }
-                    } else if (astMapEntry.getKey() instanceof String stringKey) {
-                        AstNode astValue = astMapEntry.getValue();
-                        YamlScalar yamlKey = new YamlScalar(stringKey);
-                        YamlNode yamlValue = fromAst(astValue);
-                        yamlMap.put(yamlKey, yamlValue);
-                    }
+                    String key = astMapEntry.getKeyString();
+                    YamlNode yamlValue = fromAst(astMapEntry.getValue());
+                    yamlMap.put(key, yamlValue);
                 }
             }
             return yamlMap;
