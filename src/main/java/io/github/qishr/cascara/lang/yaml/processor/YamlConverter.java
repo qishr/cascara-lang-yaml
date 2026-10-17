@@ -42,10 +42,10 @@ import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.common.lang.ast.MapEntryAstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
-import io.github.qishr.cascara.common.lang.plain.PlainMapNode;
-import io.github.qishr.cascara.common.lang.plain.PlainNode;
-import io.github.qishr.cascara.common.lang.plain.PlainScalarNode;
-import io.github.qishr.cascara.common.lang.plain.PlainSequenceNode;
+import io.github.qishr.cascara.common.lang.generic.GenericAstMap;
+import io.github.qishr.cascara.common.lang.generic.GenericAstNode;
+import io.github.qishr.cascara.common.lang.generic.GenericAstScalar;
+import io.github.qishr.cascara.common.lang.generic.GenericAstSequence;
 import io.github.qishr.cascara.common.lang.processor.AstConverter;
 import io.github.qishr.cascara.common.type.PrimitiveType;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
@@ -98,23 +98,23 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
     }
 
     @Nullable
-    public PlainNode toPlainAst(YamlNode yaml) {
+    public GenericAstNode toGenericAst(YamlNode yaml) {
         if (yaml == null) return null;
 
         if (yaml instanceof YamlMap map) {
-            PlainMapNode out = new PlainMapNode();
+            GenericAstMap out = new GenericAstMap();
             for (YamlMapEntry e : map.getEntries()) {
-                PlainNode key = toPlainAst(e.getKey());
-                PlainNode val = toPlainAst(e.getValue());
+                GenericAstNode key = toGenericAst(e.getKey());
+                GenericAstNode val = toGenericAst(e.getValue());
                 out.put(key, val);
             }
             return out;
         }
 
         if (yaml instanceof YamlSequence seq) {
-            PlainSequenceNode out = new PlainSequenceNode();
+            GenericAstSequence out = new GenericAstSequence();
             for (YamlNode child : seq.getChildren()) {
-                out.add(toPlainAst(child));
+                out.add(toGenericAst(child));
             }
             return out;
         }
@@ -130,7 +130,7 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
     }
 
     @Nullable
-    private PlainScalarNode convertScalar(YamlScalar scalar) {
+    private GenericAstScalar convertScalar(YamlScalar scalar) {
         if (scalar == null) return null;
 
         String tag = scalar.getTag();
@@ -138,12 +138,12 @@ public class YamlConverter extends AbstractYamlProcessor<YamlConverter> implemen
         if (tag == null) {
             // Untagged: if double-quoted, treat as string
             if (scalar.getQuoteStyle() == QuoteStyle.DOUBLE) {
-                return new PlainScalarNode(normalizeString(scalar));
+                return new GenericAstScalar(normalizeString(scalar));
             }
-            return new PlainScalarNode(scalar.getPrimitive());
+            return new GenericAstScalar(scalar.getPrimitive());
         }
         Object value = scalar.getPrimitive();
-        return new PlainScalarNode(value);
+        return new GenericAstScalar(value);
     }
 
     private String normalizeString(YamlScalar scalar) {

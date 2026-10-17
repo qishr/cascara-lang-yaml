@@ -114,6 +114,10 @@ public class YamlSequence
         return elements.getLast();
     }
 
+    //
+    // Convenience Getters
+    //
+
     public YamlMap getMap(int i) {
         if (get(i) instanceof YamlMap map) {
             return map;
@@ -135,8 +139,6 @@ public class YamlSequence
         return null;
     }
 
-    // TODO: getString, getInteger, etc
-
     public String getString(int i) {
         if (getScalar(i) instanceof YamlScalar scalar) {
             return scalar.asString();
@@ -150,6 +152,24 @@ public class YamlSequence
         }
         return 0;
     }
+
+    public Number getDouble(int i) {
+        if (getScalar(i) instanceof YamlScalar scalar) {
+            return scalar.asDouble();
+        }
+        return 0;
+    }
+
+    public boolean getBoolean(int i) {
+        if (getScalar(i) instanceof YamlScalar scalar) {
+            return scalar.asBoolean();
+        }
+        return false;
+    }
+
+    //
+    //
+    //
 
     /// {@inheritDoc}
     @Override

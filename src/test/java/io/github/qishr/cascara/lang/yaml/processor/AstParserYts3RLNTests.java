@@ -88,7 +88,7 @@ public class AstParserYts3RLNTests extends AstParserTestBase {
 
         YamlConverter converter = new YamlConverter();
         YamlNode normalized = normalize(doc.getBody());
-        AstNode ast = converter.toPlainAst(normalized);
+        AstNode ast = converter.toGenericAst(normalized);
 
         assertInstanceOf(ScalarAstNode.class, ast);
         ScalarAstNode<?> scalar = (ScalarAstNode<?>) ast;

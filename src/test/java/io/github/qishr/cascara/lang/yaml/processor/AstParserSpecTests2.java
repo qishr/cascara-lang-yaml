@@ -3,9 +3,10 @@ package io.github.qishr.cascara.lang.yaml.processor;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import io.github.qishr.cascara.common.lang.plain.PlainNode;
-import io.github.qishr.cascara.common.lang.plain.PlainScalarNode;
-import io.github.qishr.cascara.common.lang.plain.PlainSequenceNode;
+import io.github.qishr.cascara.common.lang.generic.GenericAstNode;
+import io.github.qishr.cascara.common.lang.generic.GenericAstScalar;
+import io.github.qishr.cascara.common.lang.generic.GenericAstSequence;
+import io.github.qishr.cascara.common.lang.generic.GenericAstNode;
 import io.github.qishr.cascara.common.type.PrimitiveType;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
@@ -246,8 +247,6 @@ public class AstParserSpecTests2 extends AstParserTestBase {
         YamlDocument doc = stream.getDocuments().getFirst();
 
         YamlNode body = normalize(doc.getBody());
-        // PlainNode agnostic = new YamlConverter().toPlainAst(body);
-        // PlainSequenceNode seq = (PlainMapNode)agnostic;
 
         YamlSequence seq = (YamlSequence) body;
         assertEquals(3, seq.size());
@@ -759,7 +758,7 @@ public class AstParserSpecTests2 extends AstParserTestBase {
         assertStringEquals("\n\n", map.getString("g"));
         assertStringEquals("\n\n", map.getString("h"));
 
-        MapAstNode<?,?,?> plain = (MapAstNode<?,?,?>) new YamlConverter().toPlainAst(body);
+        MapAstNode<?,?,?> plain = (MapAstNode<?,?,?>) new YamlConverter().toGenericAst(body);
         assertEquals(8, plain.size());
     }
 
@@ -852,12 +851,7 @@ public class AstParserSpecTests2 extends AstParserTestBase {
 
         YamlNode body = normalize(doc.getBody());
 
-        AstNode node = new YamlConverter().toPlainAst(body);
-
-
-        // TODO: Rename Plain -> Plain (or Intermediate)
-
-
+        AstNode node = new YamlConverter().toGenericAst(body);
 
         YamlScalar scalar = (YamlScalar) body;
         assertStringEquals("1 - 3", scalar.asString());
@@ -936,8 +930,8 @@ public class AstParserSpecTests2 extends AstParserTestBase {
         YamlDocument doc = stream.getDocuments().getFirst();
 
         YamlNode body = normalize(resolveAliases(doc.getBody()));
-        PlainNode agnostic = new YamlConverter().toPlainAst(body);
-        PlainSequenceNode seq = (PlainSequenceNode)agnostic;
+        GenericAstNode agnostic = new YamlConverter().toGenericAst(body);
+        GenericAstSequence seq = (GenericAstSequence)agnostic;
 
         assertEquals(5, seq.size());
 
@@ -1034,8 +1028,8 @@ public class AstParserSpecTests2 extends AstParserTestBase {
 
         YamlNode body = normalize(doc.getBody());
 
-        PlainNode agnostic = new YamlConverter().toPlainAst(body);
-        PlainScalarNode scalar = (PlainScalarNode)agnostic;
+        GenericAstNode agnostic = new YamlConverter().toGenericAst(body);
+        GenericAstScalar scalar = (GenericAstScalar)agnostic;
 
         String actual = scalar.asString();
         String expected = "2 inline\ttab";
@@ -1061,8 +1055,8 @@ public class AstParserSpecTests2 extends AstParserTestBase {
 
         YamlNode body = normalize(doc.getBody());
 
-        PlainNode agnostic = new YamlConverter().toPlainAst(body);
-        PlainScalarNode scalar = (PlainScalarNode)agnostic;
+        GenericAstNode agnostic = new YamlConverter().toGenericAst(body);
+        GenericAstScalar scalar = (GenericAstScalar)agnostic;
 
         String actual = scalar.asString();
         String expected = "2 inline\ttab";

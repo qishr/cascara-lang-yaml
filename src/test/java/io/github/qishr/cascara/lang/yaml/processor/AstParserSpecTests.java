@@ -8,11 +8,13 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.exception.LocalizableIOException;
 import io.github.qishr.cascara.common.diagnostic.report.Reporter;
 import io.github.qishr.cascara.common.diagnostic.report.LocalReporter;
-import io.github.qishr.cascara.common.lang.plain.PlainMapNode;
-import io.github.qishr.cascara.common.lang.plain.PlainNode;
-import io.github.qishr.cascara.common.lang.plain.PlainSequenceNode;
+import io.github.qishr.cascara.common.lang.generic.GenericAstMap;
+import io.github.qishr.cascara.common.lang.generic.GenericAstNode;
+import io.github.qishr.cascara.common.lang.generic.GenericAstSequence;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
+import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
+import io.github.qishr.cascara.common.lang.ast.SequenceAstNode;
 import io.github.qishr.cascara.common.type.PrimitiveType;
 import io.github.qishr.cascara.common.util.StringUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
@@ -375,7 +377,7 @@ public class AstParserSpecTests extends AstParserTestBase {
 
         YamlConverter converter = new YamlConverter();
         YamlNode normalized = normalize(doc.getBody());
-        AstNode ast = converter.toPlainAst(normalized);
+        AstNode ast = converter.toGenericAst(normalized);
 
         assertInstanceOf(ScalarAstNode.class, ast);
         ScalarAstNode<?> scalar = (ScalarAstNode<?>) ast;
@@ -1872,17 +1874,17 @@ public class AstParserSpecTests extends AstParserTestBase {
         YamlDocument doc = stream.getDocuments().getFirst();
 
         YamlNode body = normalize(doc.getBody());
-        PlainNode agnostic = new YamlConverter().toPlainAst(body);
+        GenericAstNode agnostic = new YamlConverter().toGenericAst(body);
 
-        PlainSequenceNode seq = (PlainSequenceNode)agnostic;
+        GenericAstSequence seq = (GenericAstSequence)agnostic;
         assertEquals(3, seq.size());
 
         assertStringEquals("x\n", seq.getScalar(0).asString());
 
-        PlainMapNode map1 = seq.getMap(1);
+        MapAstNode<?,?,?> map1 = seq.getMap(1);
         assertStringEquals("bar", map1.getScalar("foo").asString());
 
-        PlainSequenceNode seq2 = seq.getSequence(2);
+        SequenceAstNode<?> seq2 = seq.getSequence(2);
         assertEquals(42, seq2.getScalar(0).asInteger());
 
     }
