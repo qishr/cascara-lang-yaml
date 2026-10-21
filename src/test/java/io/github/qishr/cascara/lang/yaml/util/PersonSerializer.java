@@ -35,9 +35,13 @@
 
 package io.github.qishr.cascara.lang.yaml.util;
 
+import java.lang.reflect.Type;
+
 import io.github.qishr.cascara.common.annotation.NoAutoRegistration;
+import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.diagnostic.SerializerException;
 import io.github.qishr.cascara.common.lang.processor.Serializer;
+import io.github.qishr.cascara.common.lang.processor.Serializer.Context;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.processor.AbstractYamlTypeSerializer;
@@ -49,7 +53,7 @@ public class PersonSerializer extends AbstractYamlTypeSerializer<Person> {
     }
 
 	@Override
-	public YamlNode serialize(Person value, Serializer.Context ctx) throws SerializerException {
+	public YamlNode serialize(Person value, Type jvmType, Serializer.Context ctx) throws SerializerException {
         return new YamlMap()
             .put("firstName", value.getFirstName())
             .put("lastName", value.getLastName())

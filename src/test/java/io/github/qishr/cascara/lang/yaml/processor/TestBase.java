@@ -49,19 +49,19 @@ public abstract class TestBase {
         reporter = new LocalReporter()
             .setLevel(Level.DEBUG)
             .setAnsiColoringEnabled(true)
-            .setFlushEnabled(true)
+            .setImmediateFlushEnabled(true)
             .setStackTraceEnabled(STACK_TRACE);
 
         tokenizerReporter = new LocalReporter()
             .setLevel(TOKENIZER_LEVEL)
             .setAnsiColoringEnabled(true)
-            .setFlushEnabled(true)
+            .setImmediateFlushEnabled(true)
             .setStackTraceEnabled(STACK_TRACE);
 
         parserReporter = new LocalReporter()
             .setLevel(PARSER_LEVEL)
             .setAnsiColoringEnabled(true)
-            .setFlushEnabled(true)
+            .setImmediateFlushEnabled(true)
             .setStackTraceEnabled(STACK_TRACE);
 
         // emitterReporter = new LocalReporter()

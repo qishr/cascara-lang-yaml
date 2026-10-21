@@ -264,17 +264,17 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         return (C) deserialize(astNode, typeRef);
     }
 
-    //
-    //
-    //
-
-    private YamlAstParser getParser() {
+    public YamlAstParser getParser() {
         if (parser == null) {
             parser = new YamlAstParser();
             parser.setReporter(reporter);
         }
         return parser;
     }
+
+    //
+    //
+    //
 
     /// {@inheritDoc}
     @Override
