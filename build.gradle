@@ -1,7 +1,7 @@
 plugins {
     id "java-library"
     id "io.github.qishr.cascara.conventions" version "0.1.0"
-    id "io.github.qishr.cascara.publish" version "0.1.0"
+    id "io.github.qishr.cascara.publish" version "0.1.1"
 }
 
 
