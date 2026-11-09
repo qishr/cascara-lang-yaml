@@ -43,7 +43,7 @@ import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.ChompingStyle;
 import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlConfig;
 import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 import io.github.qishr.cascara.common.lang.ast.ScalarAstNode;
 import io.github.qishr.cascara.common.type.PrimitiveType;
@@ -70,7 +70,7 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
     public YamlScalar(
         YamlToken token,
         PrimitiveType primitiveType,
-        YamlOptions options
+        YamlConfig options
     ) {
         super(token, options);
         this.originalContent = token.getContent();
@@ -91,7 +91,7 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
         String content,
         PrimitiveType primitiveType,
         ScalarStyle scalarStyle,
-        YamlOptions options
+        YamlConfig options
     ) {
         super(token, options);
         this.originalContent = content;
@@ -109,7 +109,7 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
     public YamlScalar(
         Object jvmValue,
         ScalarStyle scalarStyle,
-        YamlOptions options
+        YamlConfig options
     ) {
         super(options);
         this.primitiveType = PrimitiveType.of(jvmValue);
@@ -126,7 +126,7 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
     /// Used when building an AST dynamically in code.
     /// Takes a pre-typed Object and skips text-based type inference.
     public YamlScalar(Object jvmValue, ScalarStyle scalarStyle) {
-        this(jvmValue, scalarStyle, YamlOptions.DEFAULT);
+        this(jvmValue, scalarStyle, YamlConfig.DEFAULT);
         nodeStyle = (scalarStyle == ScalarStyle.LITERAL || scalarStyle == ScalarStyle.FOLDED)
             ? NodeStyle.BLOCK
             : NodeStyle.FLOW;
@@ -144,7 +144,7 @@ public class YamlScalar extends YamlNode implements ScalarAstNode<YamlNode> {
         this(null);
     }
 
-    public YamlOptions getOptions() {
+    public YamlConfig getOptions() {
         return options;
     }
 

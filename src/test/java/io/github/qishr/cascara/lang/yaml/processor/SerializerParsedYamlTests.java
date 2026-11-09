@@ -44,7 +44,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlConfig;
 
 public class SerializerParsedYamlTests extends SerializerTestBase {
 
@@ -93,8 +93,8 @@ public class SerializerParsedYamlTests extends SerializerTestBase {
         root.put("tags", seq);
 
         // Act: Use the new fluent expanded style
-        YamlOptions options = new YamlOptions().setOutputExpandedStyle(true);
-        serializer.setOptions(options);
+        YamlConfig options = new YamlConfig().setOutputExpandedStyle(true);
+        serializer.setConfig(options);
         String output = serializer.toString(root);
 
         // Assert: Check for the characteristic newline-and-indent after the dash

@@ -187,7 +187,7 @@ public class AstParserSpecTests extends AstParserTestBase {
         LocalReporter reporter = new LocalReporter()
             // .setLevel(LEVEL)
             .setAnsiColoringEnabled(true)
-            .setDiagnosticConsumer(d -> {
+            .addDiagnosticConsumer(d -> {
                 diagnostics.add(d);
             });
 

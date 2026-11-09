@@ -13,7 +13,7 @@ import io.github.qishr.cascara.common.diagnostic.report.LocalReporter;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlSequence;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlConfig;
 
 public class SerializerRoundTripTests extends SerializerTestBase {
 
@@ -22,12 +22,12 @@ public class SerializerRoundTripTests extends SerializerTestBase {
     protected void setup() {
         super.setup();
 
-        YamlOptions options = new YamlOptions()
+        YamlConfig options = new YamlConfig()
             .setOutputExpandedStyle(true)
             .setStrict(true);
 
-        parser.setOptions(options);
-        serializer.setOptions(options);
+        parser.setConfig(options);
+        serializer.setConfig(options);
     }
 
     @Test

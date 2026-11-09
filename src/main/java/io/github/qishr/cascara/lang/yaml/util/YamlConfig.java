@@ -35,14 +35,14 @@
 package io.github.qishr.cascara.lang.yaml.util;
 
 import io.github.qishr.cascara.common.diagnostic.exception.UnimplementedMethodException;
-import io.github.qishr.cascara.common.lang.util.LanguageOptions;
+import io.github.qishr.cascara.common.lang.util.LanguageConfig;
 import io.github.qishr.cascara.common.util.Duplicable;
 
-public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplicable<YamlOptions> {
-    public static final YamlOptions DEFAULT = new YamlOptions();
+public class YamlConfig extends LanguageConfig<YamlConfig> implements Duplicable<YamlConfig> {
+    public static final YamlConfig DEFAULT = new YamlConfig();
 
-    public static final YamlOptions CANONICAL = new ImmutableYamlOptions(
-        new YamlOptions()
+    public static final YamlConfig CANONICAL = new ImmutableYamlConfig(
+        new YamlConfig()
             .setOutputComments(false)
             .setStripTags(true)
             .setStripAnchors(false) // YTS expects anchors to remain
@@ -86,9 +86,9 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     private boolean alwaysEndWithNewLine = false; // TODO: This was changed
     private boolean retainFormatting = true;
 
-    public YamlOptions() {}
+    public YamlConfig() {}
 
-    public YamlOptions(YamlOptions original) {
+    public YamlConfig(YamlConfig original) {
         depthLimit = original.depthLimit;
 
         allowUnicode = original.allowUnicode;
@@ -116,7 +116,7 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
 
     protected int indentSize = 2;
 
-    public YamlOptions setIndentSize(int size) {
+    public YamlConfig setIndentSize(int size) {
         this.indentSize = size;
         return this;
     }
@@ -144,182 +144,182 @@ public class YamlOptions extends LanguageOptions<YamlOptions> implements Duplica
     public boolean alwaysEndWithNewLine() { return alwaysEndWithNewLine; }
     public boolean retainFormatting() { return retainFormatting; }
 
-    public YamlOptions setDepthLimit(int val) {
+    public YamlConfig setDepthLimit(int val) {
         this.depthLimit = val;
         return this;
     }
 
     /// Sets whether unicode characters are allowed in scalars.
-    public YamlOptions setAllowUnicode(boolean val) {
+    public YamlConfig setAllowUnicode(boolean val) {
         this.allowUnicode = val;
         return this;
     }
 
     /// Sets whether to always output the '---' document start marker.
-    public YamlOptions setExplicitStart(boolean val) {
+    public YamlConfig setExplicitStart(boolean val) {
         this.explicitStart = val;
         return this;
     }
 
-    public YamlOptions setOutputExpandedStyle(boolean val) {
+    public YamlConfig setOutputExpandedStyle(boolean val) {
         this.outputExpandedStyle = val;
         return this;
     }
 
-    public YamlOptions setStrict(boolean val) {
+    public YamlConfig setStrict(boolean val) {
         this.strict = val;
         return this;
     }
 
-    public YamlOptions setOutputComments(boolean val) {
+    public YamlConfig setOutputComments(boolean val) {
         this.outputComments = val;
         return this;
     }
 
-    public YamlOptions setMultiDocument(boolean val) {
+    public YamlConfig setMultiDocument(boolean val) {
         this.multiDocument = val;
         return this;
     }
 
-    public YamlOptions setStripTags(boolean val) {
+    public YamlConfig setStripTags(boolean val) {
         this.stripTags = val;
         return this;
     }
 
-    public YamlOptions setStripAnchors(boolean val) {
+    public YamlConfig setStripAnchors(boolean val) {
         this.stripAnchors = val;
         return this;
     }
 
-    public YamlOptions setSortKeys(boolean val) {
+    public YamlConfig setSortKeys(boolean val) {
         this.sortKeys = val;
         return this;
     }
 
-    public YamlOptions setNormalizeIndent(boolean b) {
+    public YamlConfig setNormalizeIndent(boolean b) {
         normalizeIndent = b;
         return this;
     }
 
-    public YamlOptions setNormalizeScalarFormatting(boolean b) {
+    public YamlConfig setNormalizeScalarFormatting(boolean b) {
         normalizeScalarFormatting = b;
         return this;
     }
 
-    public YamlOptions setForceExplicitNull(boolean b) {
+    public YamlConfig setForceExplicitNull(boolean b) {
         forceExplicitNull = b;
         return this;
     }
 
-    public YamlOptions setForceBlockCollections(boolean b) {
+    public YamlConfig setForceBlockCollections(boolean b) {
         forceBlockCollections = b;
         return this;
     }
 
-    public YamlOptions setPreloadTokenBuffer(boolean b) {
+    public YamlConfig setPreloadTokenBuffer(boolean b) {
         preloadTokenBuffer = b;
         return this;
     }
 
-    public YamlOptions setOutputResolvedAliases(boolean b) {
+    public YamlConfig setOutputResolvedAliases(boolean b) {
         outputResolvedAliases = b;
         return this;
     }
 
-    public YamlOptions setAlwaysEndWithNewLine(boolean b) {
+    public YamlConfig setAlwaysEndWithNewLine(boolean b) {
         alwaysEndWithNewLine = b;
         return this;
     }
 
-    public YamlOptions setRetainFormatting(boolean b) {
+    public YamlConfig setRetainFormatting(boolean b) {
         retainFormatting = b;
         return this;
     }
 
     @Override
-    public YamlOptions duplicate() {
-        return new YamlOptions(this);
+    public YamlConfig duplicate() {
+        return new YamlConfig(this);
     }
 
 
-    public static class ImmutableYamlOptions extends YamlOptions {
-        public ImmutableYamlOptions(YamlOptions options) {
+    public static class ImmutableYamlConfig extends YamlConfig {
+        public ImmutableYamlConfig(YamlConfig options) {
             super(options);
         }
 
-        public YamlOptions setAllowComments(boolean val) {
+        public YamlConfig setAllowComments(boolean val) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setAllowUnicode(boolean val) {
+        public YamlConfig setAllowUnicode(boolean val) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setExplicitStart(boolean val) {
+        public YamlConfig setExplicitStart(boolean val) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setOutputExpandedStyle(boolean val) {
+        public YamlConfig setOutputExpandedStyle(boolean val) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setStrict(boolean val) {
+        public YamlConfig setStrict(boolean val) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setOutputComments(boolean val) {
+        public YamlConfig setOutputComments(boolean val) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setMultiDocument(boolean val) {
+        public YamlConfig setMultiDocument(boolean val) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setStripComments(boolean val) {
+        public YamlConfig setStripComments(boolean val) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setStripTags(boolean val) {
+        public YamlConfig setStripTags(boolean val) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setStripAnchors(boolean val) {
+        public YamlConfig setStripAnchors(boolean val) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setSortKeys(boolean val) {
+        public YamlConfig setSortKeys(boolean val) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setNormalizeIndent(boolean val) {
+        public YamlConfig setNormalizeIndent(boolean val) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setNormalizeScalarFormatting(boolean val) {
+        public YamlConfig setNormalizeScalarFormatting(boolean val) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setForceExplicitNull(boolean b) {
+        public YamlConfig setForceExplicitNull(boolean b) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setForceBlockCollections(boolean b) {
+        public YamlConfig setForceBlockCollections(boolean b) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setPreloadTokenBuffer(boolean b) {
+        public YamlConfig setPreloadTokenBuffer(boolean b) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setOutputResolvedAliases(boolean b) {
+        public YamlConfig setOutputResolvedAliases(boolean b) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setAlwaysEndWithNewLine(boolean b) {
+        public YamlConfig setAlwaysEndWithNewLine(boolean b) {
             throw new UnimplementedMethodException();
         }
 
-        public YamlOptions setRetainFormatting(boolean b) {
+        public YamlConfig setRetainFormatting(boolean b) {
             throw new UnimplementedMethodException();
         }
     }

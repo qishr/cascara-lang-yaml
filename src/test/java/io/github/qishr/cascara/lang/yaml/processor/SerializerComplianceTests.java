@@ -19,7 +19,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
 import io.github.qishr.cascara.lang.yaml.ast.YamlStream;
 import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlConfig;
 
 public class SerializerComplianceTests extends SerializerCanonicalTestBase {
 
@@ -27,7 +27,7 @@ public class SerializerComplianceTests extends SerializerCanonicalTestBase {
     @BeforeEach
     protected void setup() {
         super.setup();
-        serializer.setOptions(YamlOptions.CANONICAL);
+        serializer.setConfig(YamlConfig.CANONICAL);
     }
 
     @Disabled // TODO: EMITTER
@@ -51,7 +51,7 @@ public class SerializerComplianceTests extends SerializerCanonicalTestBase {
 
         YamlStream stream0 = parser.parseMulti(yaml);
 
-        serializer.setOptions(new YamlOptions().setIndentSize(4));
+        serializer.setConfig(new YamlConfig().setIndentSize(4));
         String emittedYaml = serializer.toString(stream0);
 
         YamlStream stream1;

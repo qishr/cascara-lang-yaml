@@ -39,12 +39,12 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.report.NoOpReporter;
 import io.github.qishr.cascara.common.diagnostic.report.Reporter;
 import io.github.qishr.cascara.common.lang.processor.Processor;
-import io.github.qishr.cascara.common.lang.util.LanguageOptions;
+import io.github.qishr.cascara.common.lang.util.LanguageConfig;
 import io.github.qishr.cascara.common.semver.SemVer;
 import io.github.qishr.cascara.common.util.ContentType;
 import io.github.qishr.cascara.common.util.JarManifest;
 import io.github.qishr.cascara.common.property.Properties;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlConfig;
 
 public abstract class AbstractYamlProcessor<P extends Processor> implements Processor {
     public static final String YAML_CONTENT_TYPE_STRING = "application/yaml";
@@ -56,7 +56,7 @@ public abstract class AbstractYamlProcessor<P extends Processor> implements Proc
             .withSuffix(".yaml")
             .withSuffix(".yml");
 
-    protected YamlOptions options = new YamlOptions();
+    protected YamlConfig options = new YamlConfig();
     protected Reporter reporter = new NoOpReporter();
     private Properties properties;
 
@@ -85,12 +85,12 @@ public abstract class AbstractYamlProcessor<P extends Processor> implements Proc
 
     /// {@inheritDoc}
     @Override
-    public P setOptions(LanguageOptions<?> options) {
-        this.options = options == null ? new YamlOptions() : (YamlOptions) options;
+    public P setConfig(LanguageConfig<?> options) {
+        this.options = options == null ? new YamlConfig() : (YamlConfig) options;
         return self();
     }
 
-    public YamlOptions getOptions() {
+    public YamlConfig getOptions() {
         return options;
     }
 

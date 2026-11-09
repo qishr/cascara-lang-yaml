@@ -65,7 +65,7 @@ class AstParserComprehensiveTests extends AstParserTestBase {
     //     }
     // }
 
-    // private YamlOptions options;
+    // private YamlConfig options;
     // private YamlTokenizer tokenizer;
     // private YamlAstParser parser;
     // private Reporter reporter;

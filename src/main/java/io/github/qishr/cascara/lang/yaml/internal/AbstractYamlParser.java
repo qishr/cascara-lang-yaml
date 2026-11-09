@@ -128,7 +128,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
             // We don't set the tokenizer's reporter.
             // If the caller wants to set it, they should use:
             //   parser.getTokenizer().setReporter()
-            tokenizer.setOptions(options);
+            tokenizer.setConfig(options);
         }
         return tokenizer;
     }

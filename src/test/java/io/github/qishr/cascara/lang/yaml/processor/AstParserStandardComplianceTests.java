@@ -48,11 +48,11 @@ import io.github.qishr.cascara.common.diagnostic.Diagnostic;
 import io.github.qishr.cascara.common.diagnostic.report.Reporter;
 import io.github.qishr.cascara.common.diagnostic.report.LocalReporter;
 import io.github.qishr.cascara.lang.yaml.ast.*;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlConfig;
 
 class AstParserStandardComplianceTests extends AstParserTestBase {
 
-    private YamlOptions options;
+    private YamlConfig options;
     private YamlAstParser parser;
     private Reporter reporter;
     private List<Diagnostic> diagnostics;
@@ -70,9 +70,9 @@ class AstParserStandardComplianceTests extends AstParserTestBase {
     void init() {
         diagnostics = new ArrayList<>();
         reporter = new LocalReporter().setProblemConsumer(this::collect);
-        options = new YamlOptions().setStrict(true);
+        options = new YamlConfig().setStrict(true);
         parser = new YamlAstParser()
-            .setOptions(options)
+            .setConfig(options)
             .setReporter(reporter);
     }
 

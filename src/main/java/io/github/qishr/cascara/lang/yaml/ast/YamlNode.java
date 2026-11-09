@@ -44,7 +44,7 @@ import io.github.qishr.cascara.common.annotation.Nullable;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlConfig;
 import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 /// Base implementation for all YAML AST nodes.
@@ -65,7 +65,7 @@ public abstract class YamlNode implements AstNode {
     protected NodeStyle nodeStyle; // = NodeStyle.FLOW;
     private List<YamlComment> comments = null;
     private List<YamlNodeProperty> properties = null;
-    protected YamlOptions options;
+    protected YamlConfig options;
 
     private boolean fileEndsWithNewLine;
     private boolean preceededByNewLine;
@@ -77,7 +77,7 @@ public abstract class YamlNode implements AstNode {
 
     public abstract void accept(YamlVisitor visitor);
 
-    protected YamlNode(YamlOptions options) {
+    protected YamlNode(YamlConfig options) {
         this(null, options);
     }
 
@@ -86,7 +86,7 @@ public abstract class YamlNode implements AstNode {
     ///
     /// @param token The YAML token.
     protected YamlNode(YamlToken token) {
-        this(token, YamlOptions.DEFAULT);
+        this(token, YamlConfig.DEFAULT);
     }
 
     /// Constructs a new YamlNode with specific source coordinates
@@ -94,7 +94,7 @@ public abstract class YamlNode implements AstNode {
     ///
     /// @param token   The YAML token.
     /// @param options The YAML options.
-    protected YamlNode(YamlToken token, YamlOptions options) {
+    protected YamlNode(YamlToken token, YamlConfig options) {
         this(
             token,
             token == null ? Diagnostic.UNKNOWN_COORD : token.getStartLine(),
@@ -110,14 +110,14 @@ public abstract class YamlNode implements AstNode {
     /// @param line    The line number (1-based).
     /// @param column  The column number (1-based).
     /// @param options The YAML options.
-    protected YamlNode(YamlToken token, int line, int column, YamlOptions options) {
+    protected YamlNode(YamlToken token, int line, int column, YamlConfig options) {
         this.token = token;
         this.startLine = line;
         this.startColumn = column;
-        this.options = (options == null) ? YamlOptions.DEFAULT : options;
+        this.options = (options == null) ? YamlConfig.DEFAULT : options;
     }
 
-    public YamlOptions getOptions() {
+    public YamlConfig getOptions() {
         return options;
     }
 

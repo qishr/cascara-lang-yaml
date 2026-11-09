@@ -48,7 +48,7 @@ import java.util.stream.Stream;
 
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlConfig;
 
 class SerializerDirectoryTestSuite extends SerializerTestBase {
 
@@ -59,7 +59,7 @@ class SerializerDirectoryTestSuite extends SerializerTestBase {
         parser.getOptions()
             .setStrict(true);
 
-        serializer.setOptions(new YamlOptions()
+        serializer.setConfig(new YamlConfig()
             .setOutputExpandedStyle(true)
         );
 
@@ -104,8 +104,8 @@ class SerializerDirectoryTestSuite extends SerializerTestBase {
         YamlMap doc = (YamlMap)parser.parse(content);
 
         // 1. Setup ONE emitter with desired options
-        YamlOptions testOptions = new YamlOptions();
-        serializer.setOptions(testOptions);
+        YamlConfig testOptions = new YamlConfig();
+        serializer.setConfig(testOptions);
 
         // 2. First Emit
         String emitted = serializer.toString(doc);

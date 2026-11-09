@@ -47,7 +47,7 @@ import io.github.qishr.cascara.common.diagnostic.report.Reporter;
 import io.github.qishr.cascara.common.diagnostic.message.DiagnosticMessage;
 import io.github.qishr.cascara.common.diagnostic.message.GenericMessage;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
-import io.github.qishr.cascara.common.lang.util.LanguageOptions;
+import io.github.qishr.cascara.common.lang.util.LanguageConfig;
 import io.github.qishr.cascara.common.lang.diagnostic.SerializerException;
 import io.github.qishr.cascara.common.lang.processor.AbstractSerializer;
 import io.github.qishr.cascara.common.lang.processor.AstParser;
@@ -75,7 +75,7 @@ import io.github.qishr.cascara.lang.yaml.util.CommentStyle;
 import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
 import io.github.qishr.cascara.lang.yaml.util.YamlNodeFactory;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlConfig;
 
 /// Standard implementation for YAML serialization.
 public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,YamlScalar,YamlSequence,YamlMap,YamlMapEntry,YamlNode> {
@@ -94,7 +94,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private StringBuilder string;
     private Writer writer;
     private YamlAstParser parser;
-    private YamlOptions options = new YamlOptions();
+    private YamlConfig options = new YamlConfig();
 
     // Options
     // private int indentSize;
@@ -119,7 +119,7 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
     private boolean newLineAlreadyEmitted;
 
     public YamlSerializer() {
-        super(AbstractYamlProcessor.YAML_CONTENT_TYPE_STRING, new YamlNodeFactory(), new YamlOptions());
+        super(AbstractYamlProcessor.YAML_CONTENT_TYPE_STRING, new YamlNodeFactory(), new YamlConfig());
     }
 
     @Override
@@ -142,9 +142,9 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
 
     /// {@inheritDoc}
     @Override
-    public YamlSerializer setOptions(LanguageOptions<?> options) {
-        this.options = (YamlOptions) options;
-        super.setOptions(options);
+    public YamlSerializer setConfig(LanguageConfig<?> options) {
+        this.options = (YamlConfig) options;
+        super.setConfig(options);
         return this;
     }
 

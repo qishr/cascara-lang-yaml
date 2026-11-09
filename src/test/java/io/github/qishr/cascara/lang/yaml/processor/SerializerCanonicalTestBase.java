@@ -2,7 +2,7 @@ package io.github.qishr.cascara.lang.yaml.processor;
 
 import org.junit.jupiter.api.BeforeEach;
 
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlConfig;
 
 public abstract class SerializerCanonicalTestBase extends SerializerTestBase {
     @BeforeEach
@@ -11,6 +11,6 @@ public abstract class SerializerCanonicalTestBase extends SerializerTestBase {
 
         serializer = new YamlSerializer()
             .setReporter(serializerReporter)
-            .setOptions(YamlOptions.CANONICAL);
+            .setConfig(YamlConfig.CANONICAL);
     }
 }

@@ -49,7 +49,7 @@ import io.github.qishr.cascara.common.lang.ast.MapAstNode;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 import io.github.qishr.cascara.lang.yaml.util.NodeStyle;
 import io.github.qishr.cascara.lang.yaml.util.ScalarStyle;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlConfig;
 import io.github.qishr.cascara.lang.yaml.util.YamlVisitor;
 
 public class YamlMap
@@ -62,12 +62,12 @@ public class YamlMap
         nodeStyle = NodeStyle.BLOCK;
     }
 
-    public YamlMap(YamlToken token, YamlOptions options) {
+    public YamlMap(YamlToken token, YamlConfig options) {
         super(token, options);
         nodeStyle = NodeStyle.BLOCK;
     }
 
-    public YamlMap(YamlToken token, int line, int column, YamlOptions options) {
+    public YamlMap(YamlToken token, int line, int column, YamlConfig options) {
         super(token, token.getStartLine(), column, options);
         nodeStyle = NodeStyle.BLOCK;
     }

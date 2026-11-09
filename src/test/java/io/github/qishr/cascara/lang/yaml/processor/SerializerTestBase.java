@@ -20,7 +20,7 @@ import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
-import io.github.qishr.cascara.lang.yaml.util.YamlOptions;
+import io.github.qishr.cascara.lang.yaml.util.YamlConfig;
 
 public class SerializerTestBase extends AstParserTestBase {
     private static String VALID_PATH = "src/test/resources/yaml-suite/valid";
@@ -169,10 +169,10 @@ public class SerializerTestBase extends AstParserTestBase {
 
         // YamlNode resolvedRoot = CascaraYaml.resolve(root);
 
-        YamlOptions options = new YamlOptions()
+        YamlConfig options = new YamlConfig()
             .setOutputResolvedAliases(false);
 
-        serializer.setOptions(options);
+        serializer.setConfig(options);
 
         String emitted = serializer.toString(root);
 

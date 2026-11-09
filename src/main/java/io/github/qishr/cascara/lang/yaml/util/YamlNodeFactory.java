@@ -36,7 +36,7 @@
 package io.github.qishr.cascara.lang.yaml.util;
 
 import io.github.qishr.cascara.common.lang.ast.AstNodeFactory;
-import io.github.qishr.cascara.common.lang.util.LanguageOptions;
+import io.github.qishr.cascara.common.lang.util.LanguageConfig;
 import io.github.qishr.cascara.common.lang.util.QuoteStyle;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
@@ -57,8 +57,8 @@ public class YamlNodeFactory implements AstNodeFactory<YamlNode,YamlScalar,YamlS
     }
 
 	@Override
-	public YamlScalar createScalarNode(Object jvmValue, QuoteStyle quoteStyle, LanguageOptions<?> options) {
-        return new YamlScalar(jvmValue, scalarStyle(quoteStyle), (YamlOptions)options);
+	public YamlScalar createScalarNode(Object jvmValue, QuoteStyle quoteStyle, LanguageConfig<?> options) {
+        return new YamlScalar(jvmValue, scalarStyle(quoteStyle), (YamlConfig)options);
 	}
 
     @Override
