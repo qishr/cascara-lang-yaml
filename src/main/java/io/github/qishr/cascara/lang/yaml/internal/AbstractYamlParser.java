@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.qishr.cascara.common.diagnostic.exception.AbstractLocalizableException;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.message.DiagnosticMessage;
+import io.github.qishr.cascara.common.diagnostic.message.LocalizableMessage;
 import io.github.qishr.cascara.common.diagnostic.message.GenericMessage;
 import io.github.qishr.cascara.common.lang.diagnostic.LangMessage;
 import io.github.qishr.cascara.common.annotation.Nullable;
@@ -1807,7 +1807,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     //
 
     @Nullable
-    private YamlToken consume(YamlTokenType type, DiagnosticMessage msgCode) {
+    private YamlToken consume(YamlTokenType type, LocalizableMessage msgCode) {
         if (check(type)) return tokenBuffer.advance();
         YamlToken token = tokenBuffer.peek();
         error(tokenBuffer.peek(), msgCode, token.getType());
@@ -2471,7 +2471,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
                reporter.getLevel().includes(Level.TRACE);
     }
 
-    protected void error(YamlToken token, DiagnosticMessage code, Object... details) {
+    protected void error(YamlToken token, LocalizableMessage code, Object... details) {
         errorEncountered.set(true);
         createEvent(token, YamlStreamingEventType.ERROR, formatMessage(code, details));
 
@@ -2486,7 +2486,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
     }
 
-    protected void warn(YamlToken token, DiagnosticMessage code, Object... details) {
+    protected void warn(YamlToken token, LocalizableMessage code, Object... details) {
         reporter.warnAt(token, code, details);
     }
 
@@ -2526,7 +2526,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
         }
     }
 
-    private String formatMessage(DiagnosticMessage code, Object... details) {
+    private String formatMessage(LocalizableMessage code, Object... details) {
         return AbstractLocalizableException.getLocalizer().format(code, details);
     }
 

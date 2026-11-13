@@ -222,11 +222,11 @@ public class PreloadedTokenBuffer implements TokenBuffer {
     // Errors and Diagnostics
     //
 
-    // private void warn(YamlToken token, DiagnosticMessage code, Object... details) {
+    // private void warn(YamlToken token, LocalizableMessage code, Object... details) {
     //     reporter.warnAt(token, code, details);
     // }
 
-    // private void error(YamlToken token, DiagnosticMessage code, Object... details) {
+    // private void error(YamlToken token, LocalizableMessage code, Object... details) {
     //     if (token instanceof YamlErrorToken error) {
     //         code = error.getCode();
     //         details = error.getDetails();

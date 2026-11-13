@@ -35,9 +35,9 @@
 
 package io.github.qishr.cascara.lang.yaml.diagnostic;
 
-import io.github.qishr.cascara.common.diagnostic.message.DiagnosticMessage;
+import io.github.qishr.cascara.common.diagnostic.message.LocalizableMessage;
 
-public enum YamlDiagnosticMessage implements DiagnosticMessage {
+public enum YamlDiagnosticMessage implements LocalizableMessage {
 
     ERROR("YAML-101", "{0}"),
     TABS_NOT_ALLOWED_AS_INDENTATION("YAML-102", "Tabs are not allowed as indentation"),

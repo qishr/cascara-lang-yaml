@@ -44,7 +44,7 @@ import java.util.List;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
 import io.github.qishr.cascara.common.diagnostic.report.Reporter;
-import io.github.qishr.cascara.common.diagnostic.message.DiagnosticMessage;
+import io.github.qishr.cascara.common.diagnostic.message.LocalizableMessage;
 import io.github.qishr.cascara.common.diagnostic.message.GenericMessage;
 import io.github.qishr.cascara.common.lang.ast.AstNode;
 import io.github.qishr.cascara.common.lang.util.LanguageConfig;
@@ -1094,14 +1094,14 @@ public class YamlSerializer extends AbstractSerializer<YamlSerializer,YamlNode,Y
         newLineAlreadyEmitted = true;
     }
 
-    protected void error(YamlNode node, DiagnosticMessage code, Object... details) {
+    protected void error(YamlNode node, LocalizableMessage code, Object... details) {
         reporter.errorAt(node.getToken(), code, details);
         if (!reporter.collectsProblems()) {
             throw new YamlParserException(node.getToken(), code, details);
         }
     }
 
-    protected void warn(YamlToken token, DiagnosticMessage code, Object... details) {
+    protected void warn(YamlToken token, LocalizableMessage code, Object... details) {
         reporter.warnAt(token, code, details);
     }
 

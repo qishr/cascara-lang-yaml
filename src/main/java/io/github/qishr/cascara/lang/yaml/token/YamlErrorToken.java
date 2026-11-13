@@ -35,20 +35,20 @@
 
 package io.github.qishr.cascara.lang.yaml.token;
 
-import io.github.qishr.cascara.common.diagnostic.message.DiagnosticMessage;
+import io.github.qishr.cascara.common.diagnostic.message.LocalizableMessage;
 
 public class YamlErrorToken extends YamlToken {
-    private final DiagnosticMessage code;
+    private final LocalizableMessage code;
     private final Object[] details;
 
     //YamlToken(int line, int column, int startOffset, YamlTokenType type, String lexeme, String content) {
-    public YamlErrorToken(int line, int column, int offset, DiagnosticMessage code, Object... details) {
+    public YamlErrorToken(int line, int column, int offset, LocalizableMessage code, Object... details) {
         super(line, column, offset, YamlTokenType.ERROR);
         this.code = code;
         this.details = details;
     }
 
-    public DiagnosticMessage getCode() {
+    public LocalizableMessage getCode() {
         return code;
     }
 

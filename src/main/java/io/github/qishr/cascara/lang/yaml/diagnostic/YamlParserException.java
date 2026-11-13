@@ -35,24 +35,24 @@
 
 package io.github.qishr.cascara.lang.yaml.diagnostic;
 
-import io.github.qishr.cascara.common.diagnostic.message.DiagnosticMessage;
+import io.github.qishr.cascara.common.diagnostic.message.LocalizableMessage;
 import io.github.qishr.cascara.common.lang.diagnostic.ParserException;
 import io.github.qishr.cascara.lang.yaml.token.YamlToken;
 
 public class YamlParserException extends ParserException {
 
     /// Standard constructor for parser-detected logic errors.
-    public YamlParserException(int line, int column, DiagnosticMessage code, Object... details) {
+    public YamlParserException(int line, int column, LocalizableMessage code, Object... details) {
         super(line, column, code, details);
     }
 
     /// Standard constructor for parser-detected logic errors.
-    public YamlParserException(YamlToken token, DiagnosticMessage code, Object... details) {
+    public YamlParserException(YamlToken token, LocalizableMessage code, Object... details) {
         super(token, code, details);
     }
 
     /// Constructor for I/O or Stream failures.
-    public YamlParserException(Throwable cause, DiagnosticMessage code, Object... details) {
+    public YamlParserException(Throwable cause, LocalizableMessage code, Object... details) {
         super(cause, code, details);
     }
 

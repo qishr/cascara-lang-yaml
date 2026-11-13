@@ -35,16 +35,16 @@
 
 package io.github.qishr.cascara.lang.yaml.diagnostic;
 
-import io.github.qishr.cascara.common.diagnostic.message.DiagnosticMessage;
+import io.github.qishr.cascara.common.diagnostic.message.LocalizableMessage;
 import io.github.qishr.cascara.common.diagnostic.exception.LocalizableRuntimeException;
 
 public class YamlConverterException extends LocalizableRuntimeException {
 
-    public YamlConverterException(Throwable cause, DiagnosticMessage code, Object... details) {
+    public YamlConverterException(Throwable cause, LocalizableMessage code, Object... details) {
         super(cause, code, details);
     }
 
-    public YamlConverterException(DiagnosticMessage code, Object... details) {
+    public YamlConverterException(LocalizableMessage code, Object... details) {
         this(null, code, details);
     }
 }
