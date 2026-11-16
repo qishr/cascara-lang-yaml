@@ -43,9 +43,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.github.qishr.cascara.common.diagnostic.exception.AbstractLocalizableException;
+import io.github.qishr.cascara.common.i18n.exception.AbstractLocalizableException;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
-import io.github.qishr.cascara.common.diagnostic.message.LocalizableMessage;
+import io.github.qishr.cascara.common.i18n.LocalizableMessage;
+import io.github.qishr.cascara.common.i18n.Localizer;
 import io.github.qishr.cascara.common.diagnostic.message.GenericMessage;
 import io.github.qishr.cascara.common.lang.diagnostic.LangMessage;
 import io.github.qishr.cascara.common.annotation.Nullable;
@@ -2527,7 +2528,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
     private String formatMessage(LocalizableMessage code, Object... details) {
-        return AbstractLocalizableException.getLocalizer().format(code, details);
+        return Localizer.instance().format(code, details);
     }
 
     private static interface AnchorAttacher {

@@ -34,7 +34,7 @@
 
 package io.github.qishr.cascara.lang.yaml.util;
 
-import io.github.qishr.cascara.common.diagnostic.exception.UnimplementedMethodException;
+import io.github.qishr.cascara.common.exception.UnimplementedMethodException;
 import io.github.qishr.cascara.common.lang.util.LanguageConfig;
 import io.github.qishr.cascara.common.util.Duplicable;
 

@@ -35,7 +35,7 @@
 
 package io.github.qishr.cascara.lang.yaml.token;
 
-import io.github.qishr.cascara.common.diagnostic.message.LocalizableMessage;
+import io.github.qishr.cascara.common.i18n.LocalizableMessage;
 
 public class YamlErrorToken extends YamlToken {
     private final LocalizableMessage code;

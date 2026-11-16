@@ -35,9 +35,9 @@
 
 package io.github.qishr.cascara.lang.yaml.diagnostic;
 
-import io.github.qishr.cascara.common.diagnostic.message.LocalizableMessage;
+import io.github.qishr.cascara.common.i18n.LocalizableMessage;
 import io.github.qishr.cascara.common.diagnostic.Diagnostic;
-import io.github.qishr.cascara.common.diagnostic.exception.LocatableException;
+import io.github.qishr.cascara.common.exception.LocatableException;
 
 public class YamlEmitterException extends LocatableException {
 
