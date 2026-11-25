@@ -6,6 +6,8 @@ import org.junit.jupiter.api.AssertionFailureBuilder;
 import org.junit.jupiter.api.BeforeEach;
 
 import io.github.qishr.cascara.common.diagnostic.Diagnostic.Level;
+import io.github.qishr.cascara.common.diagnostic.format.LogFormatConfig;
+import io.github.qishr.cascara.common.diagnostic.log.ConsoleLoggerConfig;
 import io.github.qishr.cascara.common.diagnostic.report.Reporter;
 import io.github.qishr.cascara.common.diagnostic.report.LocalReporter;
 import io.github.qishr.cascara.common.util.StringUtils;
@@ -46,29 +48,16 @@ public abstract class TestBase {
 
     @BeforeEach
     protected void setup() {
-        reporter = new LocalReporter()
-            .setLevel(Level.DEBUG)
+        LogFormatConfig.get().setIncludeStackTrace(STACK_TRACE);
+        ConsoleLoggerConfig.get()
             .setAnsiColoringEnabled(true)
-            .setImmediateFlushEnabled(true)
-            .setStackTraceEnabled(STACK_TRACE);
+            .setImmediateFlushEnabled(true);
 
-        tokenizerReporter = new LocalReporter()
-            .setLevel(TOKENIZER_LEVEL)
-            .setAnsiColoringEnabled(true)
-            .setImmediateFlushEnabled(true)
-            .setStackTraceEnabled(STACK_TRACE);
+        reporter = new LocalReporter().setLevel(Level.DEBUG);
 
-        parserReporter = new LocalReporter()
-            .setLevel(PARSER_LEVEL)
-            .setAnsiColoringEnabled(true)
-            .setImmediateFlushEnabled(true)
-            .setStackTraceEnabled(STACK_TRACE);
+        tokenizerReporter = new LocalReporter().setLevel(TOKENIZER_LEVEL);
 
-        // emitterReporter = new LocalReporter()
-        //     .setLevel(EMITTER_LEVEL)
-        //     .setAnsiColoringEnabled(true)
-        //     .setFlushEnabled(true)
-        //     .setStackTraceEnabled(true);
+        parserReporter = new LocalReporter().setLevel(PARSER_LEVEL);
 
         tokenizer = new YamlTokenizer()
             .setReporter(tokenizerReporter);

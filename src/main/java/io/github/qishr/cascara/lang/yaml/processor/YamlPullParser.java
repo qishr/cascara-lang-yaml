@@ -36,7 +36,7 @@
 package io.github.qishr.cascara.lang.yaml.processor;
 
 import io.github.qishr.cascara.common.lang.processor.PullParser;
-import io.github.qishr.cascara.common.util.TermUtils;
+import io.github.qishr.cascara.lang.yaml.internal.TermUtils;
 import io.github.qishr.cascara.lang.yaml.diagnostic.YamlParserException;
 import io.github.qishr.cascara.lang.yaml.internal.AbstractYamlParser;
 import io.github.qishr.cascara.lang.yaml.streaming.YamlStreamingEvent;

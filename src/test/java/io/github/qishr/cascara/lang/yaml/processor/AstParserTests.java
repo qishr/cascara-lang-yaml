@@ -137,7 +137,7 @@ public class AstParserTests extends AstParserTestBase {
 
         if (DEBUG) {
             YamlTokenizer tokenizer = new YamlTokenizer()
-                .setReporter(new LocalReporter().setLevel(Level.DEBUG).setAnsiColoringEnabled(true));
+                .setReporter(new LocalReporter().setLevel(Level.DEBUG));
             List<YamlToken> tokens = tokenizer.tokenize(yaml);
             TestUtils.dumpTokens(tokens);
         }

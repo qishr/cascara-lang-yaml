@@ -13,7 +13,6 @@ import org.junit.jupiter.api.AssertionFailureBuilder;
 import io.github.qishr.cascara.common.annotation.Nullable;
 import io.github.qishr.cascara.common.data.TextualTable;
 import io.github.qishr.cascara.common.util.StringUtils;
-import io.github.qishr.cascara.common.util.TermUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMap;
 import io.github.qishr.cascara.lang.yaml.ast.YamlNode;
 import io.github.qishr.cascara.lang.yaml.ast.YamlScalar;
@@ -24,6 +23,7 @@ import io.github.qishr.cascara.lang.yaml.token.YamlTokenType;
 
 public class TestUtils {
 
+    private static final String ANSI_WHITE = "\u001B[37m";
 
     public static void assertEquals(String expected, String actual) {
         if (expected == actual) return;
@@ -59,7 +59,7 @@ public class TestUtils {
         TextualTable table = new TextualTable()
             .setStyle(TextualTable.Style.ROUNDED)
             .setMaxColumnWidth(maxColumnWidth)
-            .setBorderColor(TermUtils.ANSI_WHITE)
+            .setBorderColor(ANSI_WHITE)
             .addColumn("#")
             .addColumn("Token")
             .addColumn("Location")

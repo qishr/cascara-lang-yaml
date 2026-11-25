@@ -101,9 +101,7 @@ class AstParserStreamTests extends AstParserTestBase {
 
         if (true|DEBUG) {
             parser.getTokenizer().setReporter(
-                new LocalReporter()
-                    .setLevel(Level.DEBUG)
-                    .setAnsiColoringEnabled(true)
+                new LocalReporter().setLevel(Level.DEBUG)
             );
             TestUtils.dumpTokens(parser.getTokenizer().tokenize(yaml));
         }

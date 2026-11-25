@@ -32,11 +32,7 @@ public class SerializerTestBase extends AstParserTestBase {
     protected void setup() {
         super.setup();
 
-        serializerReporter = new LocalReporter()
-            .setLevel(SERIALIZER_LEVEL)
-            .setAnsiColoringEnabled(true)
-            .setImmediateFlushEnabled(true)
-            .setStackTraceEnabled(STACK_TRACE);
+        serializerReporter = new LocalReporter().setLevel(SERIALIZER_LEVEL);
 
         serializer = new YamlSerializer()
             .setReporter(serializerReporter);
@@ -57,10 +53,7 @@ public class SerializerTestBase extends AstParserTestBase {
 
         if (DEBUG){
             YamlTokenizer tz = new YamlTokenizer()
-                .setReporter(new LocalReporter()
-                    .setLevel(Level.DEBUG)
-                    .setAnsiColoringEnabled(true)
-            );
+                .setReporter(new LocalReporter().setLevel(Level.DEBUG));
             TestUtils.dumpTokens(tz.tokenize(fileContent));
         }
 

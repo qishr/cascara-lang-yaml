@@ -55,7 +55,7 @@ import io.github.qishr.cascara.common.lang.token.TokenCategory;
 import io.github.qishr.cascara.common.type.PrimitiveType;
 import io.github.qishr.cascara.common.util.Pair;
 import io.github.qishr.cascara.common.util.StringUtils;
-import io.github.qishr.cascara.common.util.TermUtils;
+import io.github.qishr.cascara.lang.yaml.internal.TermUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAnchor;
 import io.github.qishr.cascara.lang.yaml.ast.YamlCollection;
@@ -2528,7 +2528,7 @@ public abstract class AbstractYamlParser<P extends Processor> extends AbstractYa
     }
 
     private String formatMessage(LocalizableMessage code, Object... details) {
-        return Localizer.instance().format(code, details);
+        return Localizer.get().format(code, details);
     }
 
     private static interface AnchorAttacher {

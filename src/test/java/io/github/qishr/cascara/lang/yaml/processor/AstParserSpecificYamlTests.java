@@ -69,7 +69,7 @@ class AstParserSpecificYamlTests extends AstParserTestBase {
             YamlTokenizer tokenizer = new YamlTokenizer().setReporter(
                 new LocalReporter()
                     .setLevel(Level.TRACE)
-                    .setAnsiColoringEnabled(true)
+
             );
             TestUtils.dumpTokens(tokenizer.tokenize(yamlString));
         }
@@ -169,7 +169,7 @@ class AstParserSpecificYamlTests extends AstParserTestBase {
             parser.getTokenizer().setReporter(
                 new LocalReporter()
                     .setLevel(Level.DEBUG)
-                    .setAnsiColoringEnabled(true)
+
             );
 
             TestUtils.dumpTokens(parser.getTokens());
@@ -330,7 +330,7 @@ class AstParserSpecificYamlTests extends AstParserTestBase {
             tokenizer.setReporter(
                 new LocalReporter()
                     .setLevel(Level.DEBUG)
-                    .setAnsiColoringEnabled(true)
+
             );
             List<YamlToken> tokens = tokenizer.tokenize(yamlString);
             TestUtils.dumpTokens(tokens);

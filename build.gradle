@@ -5,9 +5,7 @@ plugins {
 }
 
 
-tasks.withType(JavaCompile).configureEach {
-    options.release = 21
-}
+java { modularity.inferModulePath = true }
 
 
 repositories {
@@ -49,6 +47,7 @@ tasks.withType(Test).configureEach {
 
 
 test {
+    useJUnitPlatform()
     testLogging {
         events "started"
     }

@@ -9,6 +9,16 @@
 					"label": ""
 				}
 			]
+		},
+		{
+			"path": "src/test/java/io/github/qishr/cascara/lang/yaml/processor/AstParserStandardComplianceTests.java",
+			"bookmarks": [
+				{
+					"line": 151,
+					"column": 9,
+					"label": ""
+				}
+			]
 		}
 	]
 }

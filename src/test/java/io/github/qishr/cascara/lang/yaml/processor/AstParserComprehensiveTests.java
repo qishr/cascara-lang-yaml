@@ -167,9 +167,7 @@ class AstParserComprehensiveTests extends AstParserTestBase {
 
         if (DEBUG) {
             Reporter reporter = new LocalReporter()
-            .setLevel(Level.DEBUG)
-            .setAnsiColoringEnabled(true)
-            .setStackTraceEnabled(true);
+            .setLevel(Level.DEBUG);
 
             YamlTokenizer tokenizer = new YamlTokenizer()
                .setReporter(reporter);

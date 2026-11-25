@@ -55,7 +55,7 @@ import io.github.qishr.cascara.common.type.PrimitiveType;
 import io.github.qishr.cascara.common.type.TypeReference;
 import io.github.qishr.cascara.common.util.ContentType;
 import io.github.qishr.cascara.common.util.StringUtils;
-import io.github.qishr.cascara.common.util.TermUtils;
+import io.github.qishr.cascara.lang.yaml.internal.TermUtils;
 import io.github.qishr.cascara.lang.yaml.ast.YamlMapEntry;
 import io.github.qishr.cascara.lang.yaml.ast.YamlAlias;
 import io.github.qishr.cascara.lang.yaml.ast.YamlComment;
